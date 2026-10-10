@@ -187,9 +187,9 @@ export function Navbar({ categoryTree }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white text-[#4e4e4e] transition-all border-b border-neutral-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-      {/* ── Main Navigation Header ── */}
-      <div className="w-full">
+    <header className="sticky top-0 z-50 w-full bg-white text-[#4e4e4e] transition-all">
+      {/* ── Main Navigation Header (Border directly under navbar) ── */}
+      <div className="w-full border-b border-neutral-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
         <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5">
           
           {/* Left: Brand Logo (Exact Gorur Ghash Header Logo) */}
@@ -530,9 +530,9 @@ export function Navbar({ categoryTree }: NavbarProps) {
           </div>
         </div>
 
-        {/* Mobile In-Header Dropdown Menu (Matches Image 2 exactly - airy gaps, #4e4e4e text, no purple tint) */}
+        {/* Mobile In-Header Dropdown Menu (Under navbar border, NO border after dropdown) */}
         {openMobile && (
-          <div className="lg:hidden w-full border-b border-neutral-100 bg-white px-6 sm:px-8 pt-6 pb-8 animate-in slide-in-from-top-1 duration-150">
+          <div className="lg:hidden w-full bg-white px-6 sm:px-8 pt-6 pb-8 animate-in slide-in-from-top-1 duration-150">
             <ul className="flex flex-col space-y-4 text-[15px] font-normal text-[#4e4e4e]">
               <li>
                 <Link

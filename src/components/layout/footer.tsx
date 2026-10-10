@@ -19,7 +19,7 @@ const HELP_LINKS = [
 export function Footer() {
   return (
     <footer className="bg-white text-neutral-800 border-t border-neutral-200">
-      <div className="mx-auto px-4 max-w-[1240px] py-12 md:py-16">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
           {/* Column 1: Pages */}
           <div>
@@ -88,7 +88,7 @@ export function Footer() {
 
       {/* Copyright Bar matching Gorur Ghash */}
       <div className="bg-white py-5 border-t border-neutral-200">
-        <div className="mx-auto px-4 max-w-[1240px] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-500">
           <p>
             Copyright © {new Date().getFullYear()} ANGKON — HOUSE OF MODERN HERITAGE
           </p>

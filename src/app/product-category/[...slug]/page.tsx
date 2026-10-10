@@ -69,10 +69,14 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   const currentPathString = `/product-category/${slug.join("/")}`;
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="container mx-auto max-w-[1500px] space-y-6 px-4 py-6 sm:py-8 lg:px-8">
-        <CategoryBreadcrumb path={path} basePrefix="/product-category" />
-        <CategoryHero category={node} productCount={total} />
+    <div className="min-h-screen bg-white text-[#333333]">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-5 lg:px-6 pt-4 sm:pt-6 pb-12">
+        <div className="mb-2 sm:mb-2.5">
+          <CategoryBreadcrumb path={path} basePrefix="/product-category" />
+        </div>
+        <div className="mb-5 sm:mb-6">
+          <CategoryHero category={node} productCount={total} />
+        </div>
         {showSubcategories ? (
           <SubcategoryNavigation
             subcategories={node.children}

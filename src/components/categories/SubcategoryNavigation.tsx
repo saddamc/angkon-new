@@ -62,8 +62,8 @@ export function SubcategoryNavigation({
   const prefix = basePrefix ? basePrefix : "";
 
   return (
-    <div className="mb-12">
-      <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 lg:gap-7">
+    <div className="mb-8 sm:mb-12">
+      <div className="grid grid-cols-2 gap-x-3.5 sm:gap-x-5 md:gap-x-6 gap-y-4 sm:gap-y-6 md:grid-cols-3 lg:grid-cols-4">
         {sorted.map((sub) => (
           <CategoryCard
             key={sub.id}

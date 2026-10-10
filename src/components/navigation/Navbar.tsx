@@ -198,9 +198,9 @@ export function Navbar({ categoryTree }: NavbarProps) {
               <Image
                 src="/logo-gg.png"
                 alt="Gorur Ghash"
-                width={85}
-                height={51}
-                className="h-10 sm:h-12 w-auto object-contain transition-transform duration-200 hover:scale-[1.02]"
+                width={140}
+                height={58}
+                className="h-8 sm:h-9 md:h-10 w-auto object-contain transition-transform duration-200 hover:scale-[1.02]"
                 priority
               />
             </Link>

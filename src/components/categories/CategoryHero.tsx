@@ -11,12 +11,12 @@ export function CategoryHero({
   const description = decodeHtmlCharCodes(category.description);
 
   return (
-    <div className="pt-1 pb-2">
-      <h1 className="text-4xl sm:text-[48px] font-light tracking-tight text-[#222222] leading-tight">
+    <div>
+      <h1 className="text-[34px] sm:text-[42px] md:text-[46px] font-light tracking-tight text-[#333333] leading-none">
         {name}
       </h1>
       {description && (
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-neutral-600">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#666666]">
           {description}
         </p>
       )}

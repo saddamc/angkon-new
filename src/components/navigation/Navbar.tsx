@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ShoppingCart, Menu, User, Search, X, Loader2 } from "lucide-react";
+import { ShoppingCart, Menu, User, Search, X } from "lucide-react";
 import { CartDrawer } from "@/components/layout/cart-drawer";
 import { useCartStore } from "@/store/cart-store";
 import type { CategoryNode } from "@/types/woocommerce";
@@ -45,20 +45,30 @@ export function Navbar({ categoryTree }: NavbarProps) {
   const [searchLoading, setSearchLoading] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const focusActiveSearchInput = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      mobileInputRef.current?.focus();
+    } else {
+      desktopInputRef.current?.focus();
+    }
+  };
+
   const handleOpenSearch = () => {
     setIsSearchClosing(false);
     setSearchOpen(true);
-    setSearchLoading(true);
-    // Initial loading spinner indicator for 500ms as search slides in (matches user screenshot)
-    setTimeout(() => {
-      setSearchLoading(false);
-    }, 550);
+    setSearchLoading(false); // No fake loading on click!
+    // Multiple microtask attempts ensure cursor is immediately placed ready to type
+    focusActiveSearchInput();
+    setTimeout(focusActiveSearchInput, 15);
+    setTimeout(focusActiveSearchInput, 50);
+    setTimeout(focusActiveSearchInput, 120);
   };
 
   const handleCloseSearch = () => {
@@ -75,10 +85,13 @@ export function Navbar({ categoryTree }: NavbarProps) {
   // Focus input on search open
   useEffect(() => {
     if (searchOpen && !isSearchClosing) {
-      const timer = setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-      return () => clearTimeout(timer);
+      focusActiveSearchInput();
+      const t1 = setTimeout(focusActiveSearchInput, 30);
+      const t2 = setTimeout(focusActiveSearchInput, 100);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
     }
   }, [searchOpen, isSearchClosing]);
 
@@ -286,7 +299,8 @@ export function Navbar({ categoryTree }: NavbarProps) {
                   className="relative flex items-center w-full h-[38px] sm:h-[40px] border border-[#602bb7] bg-white px-3.5 py-1.5 rounded-[2px] transition-all shadow-[0_2px_8px_rgba(96,43,183,0.06)]"
                 >
                   <input
-                    ref={searchInputRef}
+                    ref={desktopInputRef}
+                    autoFocus
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -294,10 +308,12 @@ export function Navbar({ categoryTree }: NavbarProps) {
                     className="flex-1 text-[13.5px] text-[#4e4e4e] placeholder:text-[#777777] bg-transparent outline-none pr-3 font-normal"
                   />
 
-                  {/* Loading Spinner - Exactly matches user uploaded media_1791619306455_ad1507e2.png */}
+                  {/* Loading Spinner - shows when actively searching products */}
                   <div
                     className={`flex items-center justify-center transition-opacity duration-150 mr-2.5 ${
-                      searchLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+                      searchLoading && searchQuery.trim().length > 0
+                        ? "opacity-100"
+                        : "opacity-0 pointer-events-none"
                     }`}
                     aria-hidden={!searchLoading}
                   >
@@ -429,7 +445,8 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 className="relative flex items-center w-full h-[38px] border border-[#602bb7] bg-white px-3 py-1 rounded-[2px]"
               >
                 <input
-                  ref={searchInputRef}
+                  ref={mobileInputRef}
+                  autoFocus
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -438,7 +455,9 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 />
                 <div
                   className={`flex items-center justify-center transition-opacity duration-150 mr-2 ${
-                    searchLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+                    searchLoading && searchQuery.trim().length > 0
+                      ? "opacity-100"
+                      : "opacity-0 pointer-events-none"
                   }`}
                 >
                   <svg

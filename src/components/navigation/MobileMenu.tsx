@@ -75,15 +75,15 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
               className="h-9 w-auto object-contain"
             />
           </Link>
-          <button onClick={onClose} className="-mr-2 p-2 text-black hover:text-neutral-600 transition">
-            <X className="h-6 w-6" />
+          <button onClick={onClose} className="-mr-2 p-2 text-[#ccc2c2] hover:text-[#999999] transition" aria-label="Close menu">
+            <X className="h-5 w-5 stroke-[1.5]" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-2">
           <ul className="flex flex-col text-[14px] font-bold uppercase tracking-wider text-[#4e4e4e]">
             <li>
-              <Link href="/" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50 text-[#602bb7]">
+              <Link href="/" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50 text-[#4e4e4e]">
                 Home
               </Link>
             </li>

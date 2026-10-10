@@ -511,36 +511,34 @@ export function Navbar({ categoryTree }: NavbarProps) {
               <Search className="h-5 w-5 stroke-[2]" />
             </button>
 
-            {/* Mobile-only: Menu Toggle Button (Square box with thin border matching Image 1 & 2) */}
+            {/* Mobile-only: Menu Toggle Button (Exact Gorur Ghash Astra outline & #ccc2c2 color) */}
             <button
               type="button"
               onClick={() => {
                 setOpenMobile(!openMobile);
                 if (searchOpen) handleCloseSearch();
               }}
-              className="lg:hidden flex h-8.5 w-8.5 items-center justify-center border border-neutral-300 rounded-[2px] text-[#4e4e4e] hover:border-black transition cursor-pointer"
+              className="lg:hidden flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center border border-[#ccc2c2] rounded-[2px] text-[#ccc2c2] hover:border-[#999999] hover:text-[#999999] transition cursor-pointer"
               aria-label={openMobile ? "Close navigation menu" : "Open navigation menu"}
             >
               {openMobile ? (
-                <X className="h-4.5 w-4.5 stroke-[1.8]" />
+                <X className="h-[15px] w-[15px] stroke-[1.4]" />
               ) : (
-                <Menu className="h-4.5 w-4.5 stroke-[1.8]" />
+                <Menu className="h-[15px] w-[15px] stroke-[1.4]" />
               )}
             </button>
           </div>
         </div>
 
-        {/* Mobile In-Header Dropdown Menu (Matches Image 2 exactly - in-flow so category content pushes down) */}
+        {/* Mobile In-Header Dropdown Menu (Matches Image 2 exactly - airy gaps, #4e4e4e text, no purple tint) */}
         {openMobile && (
-          <div className="lg:hidden w-full border-t border-neutral-100 bg-white px-6 py-4 animate-in slide-in-from-top-1 duration-150">
+          <div className="lg:hidden w-full border-b border-neutral-100 bg-white px-6 sm:px-8 pt-6 pb-8 animate-in slide-in-from-top-1 duration-150">
             <ul className="flex flex-col space-y-4 text-[15px] font-normal text-[#4e4e4e]">
               <li>
                 <Link
                   href="/"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname === "/" ? "text-[#602bb7] font-medium" : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   Home
                 </Link>
@@ -549,11 +547,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/women"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname.startsWith("/product-category/women") || pathname.startsWith("/women")
-                      ? "text-[#602bb7] font-medium"
-                      : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   Women
                 </Link>
@@ -562,11 +556,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/men"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname.startsWith("/product-category/men") || pathname.startsWith("/men")
-                      ? "text-[#602bb7] font-medium"
-                      : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   Men
                 </Link>
@@ -577,11 +567,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                     <Link
                       href="/product-category/mighto"
                       onClick={() => setOpenMobile(false)}
-                      className={`flex-1 hover:text-black transition ${
-                        pathname.startsWith("/product-category/mighto") || pathname.startsWith("/mighto")
-                          ? "text-[#602bb7] font-medium"
-                          : ""
-                      }`}
+                      className="flex-1 text-[#4e4e4e] hover:text-black transition"
                     >
                       Mighto
                     </Link>
@@ -591,23 +577,23 @@ export function Navbar({ categoryTree }: NavbarProps) {
                         e.preventDefault();
                         setMightoExpanded(!mightoExpanded);
                       }}
-                      className="p-1 text-neutral-500 hover:text-black cursor-pointer"
+                      className="p-1 text-[#888888] hover:text-black cursor-pointer"
                       aria-label="Toggle Mighto subcategories"
                     >
                       <ChevronDown
-                        className={`h-4 w-4 transition-transform duration-200 ${
+                        className={`h-4 w-4 stroke-[1.5] transition-transform duration-200 ${
                           mightoExpanded ? "rotate-180" : ""
                         }`}
                       />
                     </button>
                   </div>
                   {mightoExpanded && (
-                    <ul className="pl-4 pt-2 pb-1 space-y-3 text-[14px] text-neutral-600 animate-in fade-in duration-150">
+                    <ul className="pl-4 pt-3 pb-1 space-y-3.5 text-[14px] text-[#666666] animate-in fade-in duration-150">
                       <li>
                         <Link
                           href="/product-category/mighto/mighto-men"
                           onClick={() => setOpenMobile(false)}
-                          className="block py-1 hover:text-[#602bb7]"
+                          className="block py-0.5 hover:text-black transition"
                         >
                           Mighto Men
                         </Link>
@@ -616,7 +602,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                         <Link
                           href="/product-category/mighto/mighto-women"
                           onClick={() => setOpenMobile(false)}
-                          className="block py-1 hover:text-[#602bb7]"
+                          className="block py-0.5 hover:text-black transition"
                         >
                           Mighto Women
                         </Link>
@@ -629,11 +615,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/accessories"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname.startsWith("/product-category/accessories") || pathname.startsWith("/accessories")
-                      ? "text-[#602bb7] font-medium"
-                      : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   Accessories
                 </Link>
@@ -642,9 +624,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/policies"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname.startsWith("/policies") ? "text-[#602bb7] font-medium" : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   Policies
                 </Link>
@@ -653,9 +633,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/sale"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname.startsWith("/sale") ? "text-[#602bb7] font-medium" : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   On Sale
                 </Link>
@@ -664,9 +642,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/about"
                   onClick={() => setOpenMobile(false)}
-                  className={`block py-1 hover:text-black transition ${
-                    pathname.startsWith("/about") ? "text-[#602bb7] font-medium" : ""
-                  }`}
+                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
                 >
                   About Us
                 </Link>

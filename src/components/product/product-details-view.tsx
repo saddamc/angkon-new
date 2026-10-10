@@ -14,7 +14,9 @@ import {
   Heart,
   Loader2,
   MapPin,
+  Maximize,
   MessageSquare,
+  Minimize,
   Package,
   RotateCcw,
   Search,
@@ -554,6 +556,37 @@ export function ProductDetailsView({
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxFullscreen, setLightboxFullscreen] = useState(false);
+  const [lightboxZoomed, setLightboxZoomed] = useState(false);
+
+  const toggleBrowserFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setLightboxFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setLightboxFullscreen(false);
+    }
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+    setLightboxFullscreen(false);
+    setLightboxZoomed(false);
+    setLightboxOpen(false);
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setLightboxFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -581,7 +614,7 @@ export function ProductDetailsView({
     document.body.style.overflow = "hidden";
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setLightboxOpen(false);
+        closeLightbox();
       } else if (e.key === "ArrowLeft") {
         setActiveImage((prev) => (prev > 0 ? prev - 1 : (product.images.length || 1) - 1));
       } else if (e.key === "ArrowRight") {
@@ -593,7 +626,7 @@ export function ProductDetailsView({
       document.body.style.overflow = "";
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [lightboxOpen, product.images.length]);
+  }, [lightboxOpen, product.images.length, closeLightbox]);
 
   const insideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_inside")?.value || "60");
   const outsideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_outside")?.value || "120");
@@ -1144,26 +1177,75 @@ export function ProductDetailsView({
         </div>
       )}
 
-      {/* ── Fullscreen Lightbox Modal ── */}
+      {/* ── PhotoSwipe Style Lightbox Modal (Matches Image 1 & Image 2) ── */}
       {lightboxOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Image lightbox"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm select-none"
-          onClick={() => setLightboxOpen(false)}
+          className={`fixed inset-0 z-[100] flex items-center justify-center transition-colors duration-200 select-none ${
+            lightboxFullscreen ? "bg-black" : "bg-black/70 backdrop-blur-[2px]"
+          }`}
+          onClick={closeLightbox}
         >
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={() => setLightboxOpen(false)}
-            className="absolute top-5 right-5 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition cursor-pointer"
-            aria-label="Close lightbox"
-          >
-            <X className="h-6 w-6" />
-          </button>
+          {/* Top Bar: Counter & Controls */}
+          <div className="absolute top-0 left-0 right-0 z-[110] flex h-12 items-center justify-between px-3 sm:px-6">
+            {/* Top-Left: Counter (Matches Image 1 & 2) */}
+            <div className="text-[13px] font-normal tracking-wide text-white/90">
+              {activeImage + 1} / {images.length}
+            </div>
 
-          {/* Prev button */}
+            {/* Top-Right: Zoom, Fullscreen, Close */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Zoom In / Out */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxZoomed(!lightboxZoomed);
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded text-white/80 transition hover:bg-white/10 hover:text-white cursor-pointer"
+                title={lightboxZoomed ? "Zoom out" : "Zoom in"}
+                aria-label="Toggle zoom"
+              >
+                <Search className="h-4.5 w-4.5 stroke-[2]" />
+              </button>
+
+              {/* Fullscreen Toggle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleBrowserFullscreen();
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded text-white/80 transition hover:bg-white/10 hover:text-white cursor-pointer"
+                title={lightboxFullscreen ? "Exit full screen" : "Toggle full screen"}
+                aria-label="Toggle full screen"
+              >
+                {lightboxFullscreen ? (
+                  <Minimize className="h-4.5 w-4.5 stroke-[2]" />
+                ) : (
+                  <Maximize className="h-4.5 w-4.5 stroke-[2]" />
+                )}
+              </button>
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeLightbox();
+                }}
+                className="flex h-10 w-10 items-center justify-center rounded text-white/80 transition hover:bg-white/10 hover:text-white cursor-pointer"
+                title="Close"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5 stroke-[2]" />
+              </button>
+            </div>
+          </div>
+
+          {/* Left Arrow (Flush to edge matching PhotoSwipe) */}
           {images.length > 1 && (
             <button
               type="button"
@@ -1171,29 +1253,42 @@ export function ProductDetailsView({
                 e.stopPropagation();
                 setActiveImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
               }}
-              className="absolute left-4 sm:left-8 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition cursor-pointer"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-[110] flex h-24 w-12 items-center justify-center text-white/70 hover:text-white hover:bg-white/5 transition cursor-pointer"
               aria-label="Previous image"
             >
-              <ChevronLeft className="h-7 w-7" />
+              <ChevronLeft className="h-8 w-8 stroke-[1.5]" />
             </button>
           )}
 
-          {/* Large image */}
+          {/* Main Image Container */}
           <div
-            className="relative h-[80vh] w-full max-w-[88vw] flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+            className={`relative flex items-center justify-center transition-all duration-200 ${
+              lightboxFullscreen
+                ? "h-[94vh] w-[94vw]"
+                : "h-[88vh] max-h-[88vh] w-[88vw] max-w-[88vw]"
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxZoomed(!lightboxZoomed);
+            }}
           >
-            <Image
-              src={activeImg}
-              alt={product.name}
-              fill
-              className="object-contain"
-              priority
-              sizes="90vw"
-            />
+            <div
+              className={`relative w-full h-full transition-transform duration-200 select-none ${
+                lightboxZoomed ? "scale-[1.65] cursor-zoom-out" : "scale-100 cursor-zoom-in"
+              }`}
+            >
+              <Image
+                src={activeImg}
+                alt={product.name}
+                fill
+                className="object-contain"
+                priority
+                sizes="100vw"
+              />
+            </div>
           </div>
 
-          {/* Next button */}
+          {/* Right Arrow (Flush to edge matching PhotoSwipe) */}
           {images.length > 1 && (
             <button
               type="button"
@@ -1201,18 +1296,11 @@ export function ProductDetailsView({
                 e.stopPropagation();
                 setActiveImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
               }}
-              className="absolute right-4 sm:right-8 z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition cursor-pointer"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-[110] flex h-24 w-12 items-center justify-center text-white/70 hover:text-white hover:bg-white/5 transition cursor-pointer"
               aria-label="Next image"
             >
-              <ChevronRight className="h-7 w-7" />
+              <ChevronRight className="h-8 w-8 stroke-[1.5]" />
             </button>
-          )}
-
-          {/* Counter indicator */}
-          {images.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 rounded-full bg-black/60 text-white text-xs tracking-wider">
-              {activeImage + 1} / {images.length}
-            </div>
           )}
         </div>
       )}

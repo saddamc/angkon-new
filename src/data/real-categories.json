@@ -1793,5 +1793,44 @@
       "src": "https://gorurghash.com/wp-content/uploads/2023/12/605A1053-copy.jpg",
       "alt": "Women&#8217;s Jewelry"
     }
+  },
+  {
+    "id": 990,
+    "name": "Tawakkal",
+    "slug": "tawakkal",
+    "parent": 163,
+    "description": "Tawakkal Designer Ethnic 3-Piece Suits",
+    "count": 7,
+    "image": {
+      "id": 300001,
+      "src": "/products/tawakkal-wada/midnight-black/1.jpeg",
+      "alt": "Tawakkal"
+    }
+  },
+  {
+    "id": 991,
+    "name": "3-Piece Suit",
+    "slug": "3-piece-suit",
+    "parent": 163,
+    "description": "Ready to Wear 3-Piece Suits",
+    "count": 7,
+    "image": {
+      "id": 300002,
+      "src": "/products/tawakkal-wada/deep-emerald-green/1.jpeg",
+      "alt": "3-Piece Suit"
+    }
+  },
+  {
+    "id": 992,
+    "name": "Wada Collection",
+    "slug": "wada-collection",
+    "parent": 990,
+    "description": "Tawakkal Wada Collection",
+    "count": 7,
+    "image": {
+      "id": 300003,
+      "src": "/products/tawakkal-wada/dark-coffee-brown/1.jpeg",
+      "alt": "Wada Collection"
+    }
   }
 ]

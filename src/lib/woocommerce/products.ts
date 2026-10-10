@@ -66,6 +66,11 @@ export async function getProductsByCategorySlug(
     });
 
     const sorted = [...filtered].sort((a, b) => {
+      if (orderby === "popularity") {
+        const pA = ((a as any).total_sales || 0);
+        const pB = ((b as any).total_sales || 0);
+        return order === "asc" ? pA - pB : pB - pA || b.id - a.id;
+      }
       if (orderby === "price") {
         const pA = parseFloat(a.price || "0");
         const pB = parseFloat(b.price || "0");

@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { WooProduct } from "@/types/product";
 import { ProductGrid } from "@/components/product/product-grid";
 
 const SORT_OPTIONS = [
-  { value: "date-desc", label: "Newest" },
-  { value: "price-asc", label: "Price: Low → High" },
-  { value: "price-desc", label: "Price: High → Low" },
-  { value: "title-asc", label: "Name: A → Z" },
-  { value: "title-desc", label: "Name: Z → A" },
+  { value: "popularity", label: "Sort by popularity" },
+  { value: "date-desc", label: "Sort by latest" },
+  { value: "price-asc", label: "Sort by price: low to high" },
+  { value: "price-desc", label: "Sort by price: high to low" },
 ];
 
 export function CategoryGrid({
@@ -42,18 +41,25 @@ export function CategoryGrid({
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-100 pb-4">
-        <span className="text-sm font-medium text-neutral-600">{total} Products</span>
-        <select
-          value={sort}
-          onChange={(e) => router.push(hrefWith({ sort: e.target.value, page: "1" }))}
-          className="h-10 rounded-full border border-neutral-200 bg-white px-4 pr-8 text-sm text-black shadow-none outline-none transition focus:border-black appearance-none cursor-pointer"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-white text-black">
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <p className="text-[14px] text-[#666666]">
+          {totalPages > 1
+            ? `Showing ${(page - 1) * 24 + 1}–${Math.min(page * 24, total)} of ${total} results`
+            : `Showing all ${total} results`}
+        </p>
+        <div className="relative inline-block self-start sm:self-auto">
+          <select
+            value={sort}
+            onChange={(e) => router.push(hrefWith({ sort: e.target.value, page: "1" }))}
+            className="appearance-none bg-white border border-[#dddddd] hover:border-[#bbbbbb] focus:border-black text-[14px] text-[#4e4e4e] py-1.5 sm:py-2 pl-3 pr-8 rounded-[2px] outline-none cursor-pointer transition-colors"
+          >
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value} className="bg-white text-[#333333]">
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#555555] stroke-[1.8]" />
+        </div>
       </div>
 
       {products.length === 0 ? (

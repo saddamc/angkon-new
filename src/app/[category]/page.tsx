@@ -34,11 +34,17 @@ interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function parseSort(sort: string): { orderby: "date" | "price" | "title"; order: "asc" | "desc" } {
-  const [orderby, order] = sort.split("-");
-  const validOrderby = ["date", "price", "title"].includes(orderby) ? (orderby as "date" | "price" | "title") : "date";
-  const validOrder = order === "asc" ? "asc" : "desc";
-  return { orderby: validOrderby, order: validOrder };
+function parseSort(sort: string): { orderby: "date" | "price" | "popularity" | "title"; order: "asc" | "desc" } {
+  if (sort === "popularity") {
+    return { orderby: "popularity", order: "desc" };
+  }
+  if (sort === "price-asc" || sort === "price") {
+    return { orderby: "price", order: "asc" };
+  }
+  if (sort === "price-desc") {
+    return { orderby: "price", order: "desc" };
+  }
+  return { orderby: "date", order: "desc" };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

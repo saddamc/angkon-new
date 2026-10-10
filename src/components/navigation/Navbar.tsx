@@ -39,6 +39,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
   // Search State: when open, full menu hides and search bar takes over
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isSearchClosing, setIsSearchClosing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchProduct[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -50,18 +51,36 @@ export function Navbar({ categoryTree }: NavbarProps) {
     setMounted(true);
   }, []);
 
+  const handleOpenSearch = () => {
+    setIsSearchClosing(false);
+    setSearchOpen(true);
+    setSearchLoading(true);
+    // Initial loading spinner indicator for 500ms as search slides in (matches user screenshot)
+    setTimeout(() => {
+      setSearchLoading(false);
+    }, 550);
+  };
+
+  const handleCloseSearch = () => {
+    setIsSearchClosing(true);
+    setTimeout(() => {
+      setSearchOpen(false);
+      setIsSearchClosing(false);
+      setSearchQuery("");
+      setSearchResults([]);
+      setSearchLoading(false);
+    }, 200);
+  };
+
   // Focus input on search open
   useEffect(() => {
-    if (searchOpen) {
+    if (searchOpen && !isSearchClosing) {
       const timer = setTimeout(() => {
         searchInputRef.current?.focus();
       }, 50);
       return () => clearTimeout(timer);
-    } else {
-      setSearchQuery("");
-      setSearchResults([]);
     }
-  }, [searchOpen]);
+  }, [searchOpen, isSearchClosing]);
 
   // Click outside listener to close search and restore menu
   useEffect(() => {
@@ -70,32 +89,33 @@ export function Navbar({ categoryTree }: NavbarProps) {
         searchContainerRef.current &&
         !searchContainerRef.current.contains(event.target as Node)
       ) {
-        setSearchOpen(false);
+        handleCloseSearch();
       }
     }
-    if (searchOpen) {
+    if (searchOpen && !isSearchClosing) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [searchOpen]);
+  }, [searchOpen, isSearchClosing]);
 
   // Escape key closes search
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setSearchOpen(false);
+      if (e.key === "Escape" && searchOpen && !isSearchClosing) {
+        handleCloseSearch();
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [searchOpen, isSearchClosing]);
 
   // Live search query fetching
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
 
@@ -127,7 +147,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
+      handleCloseSearch();
     }
   };
 
@@ -163,7 +183,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
               <Menu className="h-6 w-6" />
             </button>
             <button
-              onClick={() => setSearchOpen(true)}
+              onClick={handleOpenSearch}
               className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition"
               aria-label="Open search"
             >
@@ -186,7 +206,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
           </div>
 
           {/* ── Center: Menu Row OR Expanded Search Bar ── */}
-          <div className="flex-1 mx-4 xl:mx-8 flex items-center justify-center">
+          <div className="flex-1 mx-4 xl:mx-8 flex items-center justify-center min-w-0">
             {!searchOpen ? (
               /* Normal State: Centered Navigation Menu with Search Icon at the End */
               <nav className="hidden lg:flex items-center justify-center gap-6 xl:gap-8 text-[13px] xl:text-[14px] font-bold tracking-normal uppercase animate-in fade-in duration-150">
@@ -243,7 +263,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 {/* Search Icon placed at the end of the menu (NOT on cart side) */}
                 <button
                   type="button"
-                  onClick={() => setSearchOpen(true)}
+                  onClick={handleOpenSearch}
                   className="py-2 text-[#4e4e4e] hover:text-[#602bb7] transition flex items-center justify-center cursor-pointer"
                   aria-label="Open search"
                   title="Search"
@@ -252,14 +272,18 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 </button>
               </nav>
             ) : (
-              /* Search Active State: Full Menu Gone, Search Bar Takes Over Middle Space */
+              /* Search Active State: Full Menu Gone, Search Bar Slides In from Right to Left (Matches Screenshot) */
               <div
                 ref={searchContainerRef}
-                className="relative w-full max-w-[560px] flex items-center animate-in fade-in zoom-in-95 duration-150"
+                className={`relative w-full max-w-[700px] flex items-center ${
+                  isSearchClosing
+                    ? "animate-slide-search-out"
+                    : "animate-slide-search-in"
+                }`}
               >
                 <form
                   onSubmit={handleSearchSubmit}
-                  className="flex items-center w-full border border-dotted border-[#4e4e4e] bg-white px-3 py-1.5 rounded-[2px] transition-all shadow-sm focus-within:border-solid focus-within:border-[#602bb7]"
+                  className="relative flex items-center w-full h-[38px] sm:h-[40px] border border-[#602bb7] bg-white px-3.5 py-1.5 rounded-[2px] transition-all shadow-[0_2px_8px_rgba(96,43,183,0.06)]"
                 >
                   <input
                     ref={searchInputRef}
@@ -267,30 +291,48 @@ export function Navbar({ categoryTree }: NavbarProps) {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search..."
-                    className="flex-1 text-[13px] text-[#4e4e4e] placeholder:text-[#888888] bg-transparent outline-none pr-2 font-normal"
+                    className="flex-1 text-[13.5px] text-[#4e4e4e] placeholder:text-[#777777] bg-transparent outline-none pr-3 font-normal"
                   />
-                  <button
-                    type="submit"
-                    className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition flex items-center justify-center"
-                    aria-label="Submit search"
+
+                  {/* Loading Spinner - Exactly matches user uploaded media_1791619306455_ad1507e2.png */}
+                  <div
+                    className={`flex items-center justify-center transition-opacity duration-150 mr-2.5 ${
+                      searchLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+                    }`}
+                    aria-hidden={!searchLoading}
                   >
-                    {searchLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-[#602bb7]" />
-                    ) : (
-                      <Search className="h-4 w-4" />
-                    )}
-                  </button>
+                    <svg
+                      className="animate-spin h-4 w-4 text-[#602bb7]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        className="opacity-20"
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      />
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        d="M12 3a9 9 0 0 1 9 9"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Dismiss / Close Icon (✕) - Exactly matches user uploaded media_1791619306455_ad1507e2.png */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setSearchOpen(false);
-                      setSearchQuery("");
-                    }}
-                    className="p-1 text-neutral-400 hover:text-black transition ml-1"
+                    onClick={handleCloseSearch}
+                    className="p-1 text-neutral-400 hover:text-[#4e4e4e] transition-colors flex items-center justify-center cursor-pointer"
                     aria-label="Close search"
                     title="Close"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4 stroke-[1.8]" />
                   </button>
                 </form>
 
@@ -299,7 +341,27 @@ export function Navbar({ categoryTree }: NavbarProps) {
                   <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-neutral-200 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     {searchLoading && searchResults.length === 0 ? (
                       <div className="py-6 text-center text-xs text-neutral-400 flex items-center justify-center gap-2">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[#602bb7]" />
+                        <svg
+                          className="animate-spin h-3.5 w-3.5 text-[#602bb7]"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-20"
+                            cx="12"
+                            cy="12"
+                            r="9"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                          />
+                          <path
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            d="M12 3a9 9 0 0 1 9 9"
+                          />
+                        </svg>
                         Searching products...
                       </div>
                     ) : searchResults.length === 0 ? (
@@ -316,8 +378,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                             key={product.id}
                             href={`/products/${product.slug}`}
                             onClick={() => {
-                              setSearchOpen(false);
-                              setSearchQuery("");
+                              handleCloseSearch();
                             }}
                             className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-neutral-50 transition group"
                           >
@@ -331,15 +392,15 @@ export function Navbar({ categoryTree }: NavbarProps) {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#602bb7] transition">
+                              <h4 className="line-clamp-1 text-xs font-semibold text-[#4e4e4e] group-hover:text-[#602bb7] transition">
                                 {product.name}
                               </h4>
                               <p className="text-[10px] text-neutral-400">
                                 {product.category}
                               </p>
                             </div>
-                            <span className="text-xs font-bold text-black flex-shrink-0">
-                              {formatPrice(product.price)}
+                            <span className="text-xs font-bold text-[#4e4e4e] flex-shrink-0">
+                              Tk{product.price.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </Link>
                         ))}
@@ -359,6 +420,47 @@ export function Navbar({ categoryTree }: NavbarProps) {
               </div>
             )}
           </div>
+
+          {/* Mobile Full-Width Search Overlay Bar when Search is Open on Mobile */}
+          {searchOpen && (
+            <div className="lg:hidden absolute inset-0 z-50 bg-white px-3 flex items-center animate-slide-search-in shadow-md">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="relative flex items-center w-full h-[38px] border border-[#602bb7] bg-white px-3 py-1 rounded-[2px]"
+              >
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="flex-1 text-[13.5px] text-[#4e4e4e] placeholder:text-[#777777] bg-transparent outline-none pr-2 font-normal"
+                />
+                <div
+                  className={`flex items-center justify-center transition-opacity duration-150 mr-2 ${
+                    searchLoading ? "opacity-100" : "opacity-0 pointer-events-none"
+                  }`}
+                >
+                  <svg
+                    className="animate-spin h-3.5 w-3.5 text-[#602bb7]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle className="opacity-20" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" />
+                    <path fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" d="M12 3a9 9 0 0 1 9 9" />
+                  </svg>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseSearch}
+                  className="p-1 text-neutral-400 hover:text-black transition flex items-center justify-center"
+                  aria-label="Close search"
+                >
+                  <X className="h-4 w-4 stroke-[1.8]" />
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Right: Actions (Cart & My Account ONLY - NO search icon here) */}
           <div className="flex-shrink-0 flex items-center gap-4 sm:gap-5">

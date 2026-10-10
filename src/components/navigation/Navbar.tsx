@@ -121,16 +121,16 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 Accessories
               </Link>
               <Link
-                href="/products"
-                className="text-[#cbb18a] hover:text-[#E1B76F] hover:border-b-2 hover:border-[#E1B76F] py-2 transition"
-              >
-                All Products
-              </Link>
-              <Link
                 href="/policies"
                 className="text-[#cbb18a] hover:text-[#E1B76F] hover:border-b-2 hover:border-[#E1B76F] py-2 transition"
               >
                 Policies
+              </Link>
+              <Link
+                href="/sale"
+                className="text-[#cbb18a] hover:text-[#E1B76F] hover:border-b-2 hover:border-[#E1B76F] py-2 transition font-semibold"
+              >
+                On Sale
               </Link>
               <Link
                 href="/about"
@@ -138,26 +138,39 @@ export function Navbar({ categoryTree }: NavbarProps) {
               >
                 About Us
               </Link>
-              <Link
-                href="/sale"
-                className="inline-flex items-center gap-1 rounded-full bg-[#E1B76F] px-3 py-1 text-[11px] font-black uppercase text-[#400604] hover:bg-[#f3cb87] transition shadow-sm"
-              >
-                SALE 🔥
-              </Link>
             </nav>
           </div>
 
-          {/* Right: Actions (Search, Wishlist, Astra Cart Drawer) */}
-          <div className="flex items-center gap-3 sm:gap-5">
+          {/* Right: Actions (Search, Woo Cart, My Account, Wishlist) matching Gorur Ghash */}
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Desktop Search */}
             <div className="hidden lg:block text-[#E1B76F]">
               <SearchModal />
             </div>
 
+            {/* Woo Cart (Astra Header Cart Style: Tk amount then Icon) */}
+            <button
+              onClick={openCart}
+              className="group flex items-center gap-2.5 rounded-full border border-[#E1B76F]/60 bg-[#400604] px-3.5 py-1.5 transition hover:border-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604] shadow-sm"
+              aria-label="View shopping cart"
+            >
+              <span className="text-[12px] sm:text-[13px] font-bold text-[#E1B76F] group-hover:text-[#400604] transition">
+                {mounted ? `Tk ${subtotal.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Tk 0.00"}
+              </span>
+              <div className="relative flex items-center justify-center">
+                <ShoppingBag className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-[#E1B76F] group-hover:text-[#400604] transition" />
+                {mounted && itemCount > 0 && (
+                  <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E1B76F] px-1 text-[9px] font-black text-[#400604] shadow-sm group-hover:bg-[#400604] group-hover:text-[#E1B76F]">
+                    {itemCount}
+                  </span>
+                )}
+              </div>
+            </button>
+
             {/* My Account */}
             <Link
               href="/my-account"
-              className="p-2 text-[#E1B76F] hover:text-white transition"
+              className="p-1.5 text-[#E1B76F] hover:text-white transition"
               title="My Account"
               aria-label="My Account"
             >
@@ -167,8 +180,9 @@ export function Navbar({ categoryTree }: NavbarProps) {
             {/* Wishlist */}
             <Link
               href="/wishlist"
-              className="relative p-2 text-[#E1B76F] hover:text-white transition"
+              className="relative p-1.5 text-[#E1B76F] hover:text-white transition"
               aria-label="Wishlist"
+              title="Wishlist"
             >
               <Heart className="h-5 w-5" />
               {mounted && wishlistCount > 0 && (
@@ -177,25 +191,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 </span>
               )}
             </Link>
-
-            {/* Cart Button (Astra Cart Header Style) */}
-            <button
-              onClick={openCart}
-              className="group flex items-center gap-2 rounded-full border border-[#E1B76F] bg-[#4a0705] px-3 sm:px-4 py-1.5 transition hover:bg-[#E1B76F] hover:text-[#400604]"
-              aria-label="View shopping cart"
-            >
-              <div className="relative flex items-center justify-center">
-                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 text-[#E1B76F] group-hover:text-[#400604] transition" />
-                {mounted && (
-                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#E1B76F] px-1 text-[10px] font-black text-[#400604] shadow-sm group-hover:bg-[#400604] group-hover:text-[#E1B76F]">
-                    {itemCount}
-                  </span>
-                )}
-              </div>
-              <span className="hidden sm:inline text-[13px] font-bold text-[#E1B76F] group-hover:text-[#400604]">
-                {mounted ? formatPrice(subtotal) : "৳0"}
-              </span>
-            </button>
           </div>
         </div>
       </div>

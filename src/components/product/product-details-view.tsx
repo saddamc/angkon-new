@@ -903,7 +903,7 @@ export function ProductDetailsView({
             <div className="my-5 border-t border-neutral-200" />
 
             {/* Quantity & Add to Cart (Matches Image 1 Exactly) */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3">
               <input
                 type="number"
                 min={1}
@@ -920,41 +920,36 @@ export function ProductDetailsView({
               >
                 {added ? "Added to cart" : "Add to cart"}
               </button>
-
-              <Link
-                href="/checkout"
-                onClick={(e) => {
-                  if (variationAttrs.length > 0 && !size) {
-                    e.preventDefault();
-                    setOptionError(true);
-                    return;
-                  }
-                  onAddToCart();
-                }}
-                className="h-10 rounded-md bg-black px-6 text-sm font-semibold text-white transition hover:bg-neutral-800 flex items-center justify-center active:scale-95"
-              >
-                Buy It Now
-              </Link>
             </div>
 
-            {/* Delivery Info Card (Bangladeshi Shipping Estimator) */}
-            {deliveryFee && (deliveryFee.inside > 0 || deliveryFee.outside > 0) && (
-              <div className="mt-5 flex items-center gap-3.5 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#ffd800] text-black shadow-sm">
-                  <Truck className="h-5 w-5" />
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-heading text-[13px] font-bold text-black uppercase tracking-wider">Estimated Delivery</span>
-                  <div className="flex items-center gap-2 text-[12px] text-neutral-600 flex-wrap">
-                    <span>Inside Dhaka (2-3 Days): <strong className="font-bold text-black">Tk{deliveryFee.inside.toLocaleString()}</strong></span>
-                    <span className="text-neutral-300">•</span>
-                    <span>Outside Dhaka (3-5 Days): <strong className="font-bold text-black">Tk{deliveryFee.outside.toLocaleString()}</strong></span>
-                  </div>
-                </div>
-              </div>
-            )}
+            <div className="my-5 border-t border-neutral-200" />
 
-            {/* Share */}
+            {/* Product Meta: SKU & Category (Matches Image 1 Exactly) */}
+            <div className="flex flex-wrap items-center gap-6 text-[13px] text-[#333333]">
+              {product.sku && (
+                <div>
+                  <span className="text-[#666666]">SKU:</span>{" "}
+                  <span className="font-normal text-[#222222]">{product.sku}</span>
+                </div>
+              )}
+              {product.categories.length > 0 && (
+                <div>
+                  <span className="text-[#666666]">{product.categories.length > 1 ? "Categories:" : "Category:"}</span>{" "}
+                  <span className="font-normal text-[#222222]">
+                    {product.categories.map((c, i) => (
+                      <span key={c.id}>
+                        <Link href={`/${c.slug}`} className="hover:text-black transition">
+                          {c.name}
+                        </Link>
+                        {i < product.categories.length - 1 && ", "}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Share Strip */}
             <div className="border-t border-neutral-200 mt-5 pt-4">
               <ShareStrip title={product.name} />
             </div>

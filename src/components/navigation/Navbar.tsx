@@ -32,18 +32,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-[#400604] transition-all">
-      {/* ── 1. Top Announcement Bar (Royal Heritage Ticker) ── */}
-      <div className="bg-[#2b0403] text-[#E1B76F] border-b border-[#5c0f0d] py-2 px-4 text-center text-[11px] sm:text-[12px] font-semibold tracking-wider uppercase">
-        <div className="container mx-auto flex items-center justify-center gap-2">
-          <span>⚡ FREE SHIPPING OVER ৳3,000</span>
-          <span className="text-[#E1B76F]">●</span>
-          <span>CASH ON DELIVERY ALL OVER BANGLADESH</span>
-          <span className="hidden md:inline text-[#E1B76F]">●</span>
-          <span className="hidden md:inline">EASY 7-DAY EXCHANGE</span>
-        </div>
-      </div>
-
-      {/* ── 2. Main Navigation Header ── */}
+      {/* ── Main Navigation Header ── */}
       <div className="border-b border-[#5c0f0d] bg-[#400604]/95 backdrop-blur-md">
         <div className="container mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 lg:px-8">
           

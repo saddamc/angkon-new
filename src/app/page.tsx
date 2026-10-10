@@ -3,15 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  Clock,
-  MapPin,
-  MessageCircle,
-  RefreshCw,
-  ShieldCheck,
-  ShoppingBag,
-  Truck,
-} from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { getProducts } from "@/services/products.service";
 import type { WooProduct } from "@/types/product";
 import { ProductCard } from "@/components/product/product-card";
@@ -96,12 +88,6 @@ const BANNER_PAIRS = [
   ],
 ];
 
-const PILLARS = [
-  { icon: Truck, title: "Swift Delivery", text: "2–3 days inside Dhaka, 3–5 days outside" },
-  { icon: ShieldCheck, title: "Cash on Delivery", text: "Pay at your doorstep in all 64 districts" },
-  { icon: RefreshCw, title: "7-Day Exchange", text: "Hassle-free size swaps nationwide" },
-  { icon: MapPin, title: "Visit Showroom", text: "Niketan, Gulshan — open daily" },
-];
 
 export default function HomePage() {
   const [products, setProducts] = useState<WooProduct[]>([]);
@@ -217,50 +203,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 6. Trust Pillars & Showroom Center ── */}
-      <section className="border-t border-neutral-200 bg-neutral-50 py-12 px-4 sm:px-6">
-        <div className="max-w-[1240px] mx-auto">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-10">
-            {PILLARS.map(({ icon: Icon, title, text }) => (
-              <div
-                key={title}
-                className="rounded-xl border border-neutral-200 bg-white p-4 text-center shadow-sm"
-              >
-                <div className="mx-auto mb-2.5 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-neutral-100">
-                  <Icon className="h-5 w-5 text-black" />
-                </div>
-                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wide text-black">{title}</h3>
-                <p className="mt-1 text-[11px] sm:text-xs leading-snug text-neutral-600">{text}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mx-auto max-w-2xl rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-md sm:p-8">
-            <p className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-[#990000]">
-              <MapPin className="h-3.5 w-3.5" /> Flagship Experience Center
-            </p>
-            <h3 className="mt-2 font-heading text-xl font-black uppercase tracking-wide text-black sm:text-2xl">
-              HOUSE OF MODERN HERITAGE
-            </h3>
-            <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-neutral-700">
-              H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
-            </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-neutral-600">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-black" /> Open daily 10:00 AM – 10:00 PM
-              </span>
-              <a
-                href="https://wa.me/8801338668899"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 font-bold text-black underline underline-offset-4 hover:text-[#512da8]"
-              >
-                <MessageCircle className="h-4 w-4" /> WhatsApp +880 1338-668899
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

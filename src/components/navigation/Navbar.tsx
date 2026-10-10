@@ -538,13 +538,13 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
         {/* Mobile In-Header Dropdown Menu (Under navbar border, strictly NO border or shadow after dropdown) */}
         {openMobile && (
-          <div className="lg:hidden w-full bg-white px-6 sm:px-8 pt-6 pb-8 border-none shadow-none animate-in slide-in-from-top-1 duration-150">
-            <ul className="flex flex-col space-y-4 text-[15px] font-normal text-[#4e4e4e]">
+          <div className="lg:hidden w-full bg-white px-6 sm:px-8 pt-4 pb-5 sm:pt-4 sm:pb-6 border-none shadow-none animate-in slide-in-from-top-1 duration-150">
+            <ul className="flex flex-col space-y-2.5 text-[15px] font-normal text-[#4e4e4e]">
               <li>
                 <Link
                   href="/"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   Home
                 </Link>
@@ -553,7 +553,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/women"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   Women
                 </Link>
@@ -562,14 +562,14 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/men"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   Men
                 </Link>
               </li>
               <li>
                 <div>
-                  <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center justify-between py-0.5">
                     <Link
                       href="/product-category/mighto"
                       onClick={() => setOpenMobile(false)}
@@ -583,7 +583,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                         e.preventDefault();
                         setMightoExpanded(!mightoExpanded);
                       }}
-                      className="p-1 text-[#888888] hover:text-black cursor-pointer"
+                      className="p-0.5 text-[#888888] hover:text-black cursor-pointer"
                       aria-label="Toggle Mighto subcategories"
                     >
                       <ChevronDown
@@ -594,7 +594,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                     </button>
                   </div>
                   {mightoExpanded && (
-                    <ul className="pl-4 pt-3 pb-1 space-y-3.5 text-[14px] text-[#666666] animate-in fade-in duration-150">
+                    <ul className="pl-4 pt-2 pb-1 space-y-2 text-[14px] text-[#666666] animate-in fade-in duration-150">
                       <li>
                         <Link
                           href="/product-category/mighto/mighto-men"
@@ -621,7 +621,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/accessories"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   Accessories
                 </Link>
@@ -630,7 +630,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/policies"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   Policies
                 </Link>
@@ -639,7 +639,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/sale"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   On Sale
                 </Link>
@@ -648,7 +648,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 <Link
                   href="/about"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-1 text-[#4e4e4e] hover:text-black transition"
+                  className="block py-0.5 text-[#4e4e4e] hover:text-black transition"
                 >
                   About Us
                 </Link>

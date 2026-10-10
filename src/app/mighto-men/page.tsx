@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import { ProductCard } from "@/components/product/product-card";
@@ -17,44 +16,48 @@ export default function MightoMenPage() {
     const isMen = text.includes("men") || text.includes("boy") || text.includes("male");
     const isWomenOnly = text.includes("women") && !text.includes("men");
     return (isMen || !isWomenOnly) && (
+      text.includes("mighto") ||
+      text.includes("omni") ||
+      text.includes("endure") ||
+      text.includes("chase") ||
       text.includes("pant") ||
       text.includes("tee") ||
       text.includes("shirt") ||
-      text.includes("hoodie") ||
+      text.includes("short") ||
       text.includes("jogger")
     );
   }).slice(0, 24);
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-10 px-4 text-center">
+    <div className="min-h-screen bg-white text-black">
+      <div className="border-b border-neutral-100 bg-[#fafafa] py-10 px-4 text-center">
         <div className="container mx-auto max-w-[1000px]">
-          <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#cbb18a]">
-            Mighto Division
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7a7a7a]">
+            Mighto Activewear
           </span>
-          <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-[#E1B76F]">
+          <h1 className="mt-2 font-heading text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-black">
             Mighto Men
           </h1>
-          <p className="mt-3 text-xs sm:text-sm text-[#f5ebd8] max-w-xl mx-auto">
-            High-tensile cotton, stretch utility pants, breathable drop-shoulder tees engineered for physical performance.
+          <p className="mt-2.5 text-xs sm:text-sm text-neutral-600 max-w-xl mx-auto">
+            High-tensile cotton, stretch utility shorts, breathable workout tees engineered for physical performance.
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto max-w-[1500px] px-4 py-10 lg:px-8">
+      <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 py-8 sm:py-10">
         <div className="mb-6 flex items-center justify-between">
-          <span className="text-xs sm:text-sm text-[#cbb18a]">
-            Showing <strong className="text-[#E1B76F]">{menProducts.length}</strong> styles
+          <span className="text-xs sm:text-sm text-neutral-500">
+            Showing <strong className="text-black">{menProducts.length}</strong> styles
           </span>
           <Link
             href="/mighto"
-            className="text-xs font-bold text-[#E1B76F] underline underline-offset-4 hover:text-white"
+            className="text-xs font-bold text-black underline underline-offset-4 hover:opacity-75 transition"
           >
             &larr; Back to Mighto Home
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8">
+        <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 md:gap-x-5 gap-y-8 sm:gap-y-10 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8">
           {menProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

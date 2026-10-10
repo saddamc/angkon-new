@@ -11,11 +11,11 @@ export function SubcategoryNavigation({
   if (subcategories.length === 0) return null;
 
   return (
-    <div>
-      <h2 className="mb-3 text-[13px] font-bold uppercase tracking-widest text-[#cbb18a]">
+    <div className="mb-10">
+      <h2 className="mb-4 text-xs font-bold uppercase tracking-wider text-black">
         Shop by Subcategory
       </h2>
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 sm:gap-5">
+      <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 md:gap-x-5 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
         {subcategories.map((sub) => (
           <CategoryCard key={sub.id} category={sub} href={`/${parentSlug}/${sub.slug}`} />
         ))}

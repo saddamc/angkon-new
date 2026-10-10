@@ -7,38 +7,35 @@ export function CategoryCard({ category, href }: { category: WooCategory; href: 
   return (
     <Link
       href={href}
-      className="group relative block overflow-hidden rounded-[12px] border border-[#5c0f0d] bg-[#2b0403] aspect-[4/5] shadow-lg transition-all duration-300 hover:border-[#E1B76F] hover:shadow-2xl"
+      className="group block text-left bg-white transition-all"
     >
-      {/* Background Category Image */}
-      <div className="absolute inset-0 bg-[#2b0403]">
+      {/* 1. Category Image (Square 1:1 matching live store exactly) */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-none bg-neutral-100">
         {category.image?.src ? (
           <Image
             src={category.image.src}
             alt={category.image.alt || category.name}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#400604] to-[#2b0403]">
+          <div className="flex h-full w-full items-center justify-center bg-neutral-100">
             <span className="text-4xl">{DEFAULT_CATEGORY_EMOJI}</span>
           </div>
         )}
       </div>
 
-      {/* Subtle overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 group-hover:opacity-60 transition-opacity" />
-
-      {/* Frosted White / Gold Banner Pill at Bottom (Gorur Ghash authentic layout) */}
-      <div className="absolute bottom-4 left-3 right-3 z-10 flex flex-col items-center justify-center rounded-[8px] bg-white/90 py-2.5 px-3 text-center backdrop-blur-md transition-all duration-300 group-hover:bg-[#E1B76F] shadow-md">
-        <p className="font-heading text-[11px] sm:text-[12px] font-black uppercase tracking-wider text-black group-hover:text-[#400604] leading-tight">
-          {categoryDisplayName(category.name)}
-        </p>
-        {typeof category.count === "number" && category.count > 0 && (
-          <p className="mt-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-700 group-hover:text-[#400604]/80">
-            {category.count} {category.count === 1 ? "Product" : "Products"}
-          </p>
-        )}
+      {/* 2. Subcategory Information: Title & Product Count */}
+      <div className="pt-2.5 pb-1 text-left">
+        <h3 className="text-[13px] sm:text-[13.5px] font-bold text-black transition-colors group-hover:text-neutral-600 flex items-baseline gap-1.5 flex-wrap">
+          <span>{categoryDisplayName(category.name)}</span>
+          {typeof category.count === "number" && category.count > 0 && (
+            <span className="text-[11px] sm:text-[11.5px] font-normal text-neutral-500">
+              ({category.count} {category.count === 1 ? "Product" : "Products"})
+            </span>
+          )}
+        </h3>
       </div>
     </Link>
   );

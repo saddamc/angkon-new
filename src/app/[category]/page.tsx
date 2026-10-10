@@ -79,20 +79,22 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   });
 
   return (
-    <div className="container mx-auto max-w-[1500px] space-y-6 px-4 py-8 lg:px-8">
-      <CategoryBreadcrumb path={path} />
-      <CategoryHero category={node} productCount={total} />
-      {node.children.length > 0 && (
-        <SubcategoryNavigation subcategories={node.children} parentSlug={slug} />
-      )}
-      <CategoryGrid
-        products={products}
-        total={total}
-        page={page}
-        totalPages={totalPages}
-        sort={sort}
-        baseHref={`/${slug}`}
-      />
+    <div className="min-h-screen bg-white text-black">
+      <div className="container mx-auto max-w-[1500px] space-y-8 px-4 py-8 lg:px-8">
+        <CategoryBreadcrumb path={path} />
+        <CategoryHero category={node} productCount={total} />
+        {node.children.length > 0 && (
+          <SubcategoryNavigation subcategories={node.children} parentSlug={slug} />
+        )}
+        <CategoryGrid
+          products={products}
+          total={total}
+          page={page}
+          totalPages={totalPages}
+          sort={sort}
+          baseHref={`/${slug}`}
+        />
+      </div>
     </div>
   );
 }

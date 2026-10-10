@@ -28,13 +28,13 @@ export default function MightoPage() {
         </Link>
       </section>
 
-      {/* ── 2. Split 2-Column Tiles: Mighto Men & Mighto Women ── */}
-      <section className="w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-0 p-0">
+      {/* ── 2. Split 2-Column Tiles: Mighto Men & Mighto Women (Matching Home Page Category Gaps) ── */}
+      <section className="w-full px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
           {/* MIGHTO MEN */}
           <Link
             href="/mighto-men"
-            className="group block w-full overflow-hidden bg-neutral-100"
+            className="group block w-full overflow-hidden bg-neutral-100 shadow-sm transition hover:opacity-95"
           >
             <Image
               src="/banners/mighto-men-card.png"
@@ -49,7 +49,7 @@ export default function MightoPage() {
           {/* MIGHTO WOMEN */}
           <Link
             href="/mighto-women"
-            className="group block w-full overflow-hidden bg-neutral-100"
+            className="group block w-full overflow-hidden bg-neutral-100 shadow-sm transition hover:opacity-95"
           >
             <Image
               src="/banners/mighto-women-card.png"
@@ -64,7 +64,7 @@ export default function MightoPage() {
       </section>
 
       {/* ── 3. Middle Strip Full Bleed Banner ── */}
-      <section className="w-full">
+      <section className="w-full mb-2 sm:mb-3">
         <div className="w-full overflow-hidden bg-neutral-100">
           <Image
             src="/banners/mighto-strip-1.png"

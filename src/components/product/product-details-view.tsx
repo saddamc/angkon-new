@@ -150,8 +150,15 @@ export function ProductDetailsView({
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [lightboxFullscreen, setLightboxFullscreen] = useState(false);
   const [lightboxZoomed, setLightboxZoomed] = useState(false);
+
+  const openLightbox = useCallback((index?: number) => {
+    setLightboxIndex(typeof index === "number" ? index : activeImage);
+    setLightboxZoomed(false);
+    setLightboxOpen(true);
+  }, [activeImage]);
 
   const toggleBrowserFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -210,9 +217,11 @@ export function ProductDetailsView({
       if (e.key === "Escape") {
         closeLightbox();
       } else if (e.key === "ArrowLeft") {
-        setActiveImage((prev) => (prev > 0 ? prev - 1 : (product.images.length || 1) - 1));
+        setLightboxZoomed(false);
+        setLightboxIndex((prev) => (prev > 0 ? prev - 1 : (product.images.length || 1) - 1));
       } else if (e.key === "ArrowRight") {
-        setActiveImage((prev) => (prev < (product.images.length || 1) - 1 ? prev + 1 : 0));
+        setLightboxZoomed(false);
+        setLightboxIndex((prev) => (prev < (product.images.length || 1) - 1 ? prev + 1 : 0));
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -240,6 +249,7 @@ export function ProductDetailsView({
       ? product.images
       : [{ id: 0, src: "https://placehold.co/1200x1500/f4f4f5/18181b.png?text=Product", alt: product.name, name: product.name }];
   const activeImg = images[activeImage]?.src ?? images[0]?.src;
+  const lightboxImg = images[lightboxIndex]?.src ?? images[0]?.src;
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
   const infoAttributes = product.attributes.filter((a) => a.visible && a.name.toLowerCase() !== "size");
   const brandAttr = product.attributes.find((a) => a.name.toLowerCase() === "brand");
@@ -301,7 +311,7 @@ export function ProductDetailsView({
             {/* Main Image Container */}
             <div
               className="group relative w-full aspect-[4/5] overflow-hidden bg-[#fbfbfb] border border-[#e7e7e7] rounded-none cursor-crosshair select-none"
-              onClick={() => setLightboxOpen(true)}
+              onClick={() => openLightbox(activeImage)}
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={(e) => {
@@ -345,7 +355,7 @@ export function ProductDetailsView({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightboxOpen(true);
+                  openLightbox(activeImage);
                 }}
                 className="absolute right-3.5 top-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#444444] shadow-[0_2px_6px_rgba(0,0,0,0.14)] hover:text-black hover:scale-105 transition cursor-pointer"
                 title="Click to enlarge"
@@ -673,7 +683,7 @@ export function ProductDetailsView({
           aria-modal="true"
           aria-label="Image lightbox"
           className={`fixed inset-0 z-[100] flex items-center justify-center transition-colors duration-200 select-none ${
-            lightboxFullscreen ? "bg-black" : "bg-black/70 backdrop-blur-[2px]"
+            lightboxFullscreen ? "bg-black" : "bg-black/85 backdrop-blur-[2px]"
           }`}
           onClick={closeLightbox}
         >
@@ -681,7 +691,7 @@ export function ProductDetailsView({
           <div className="absolute top-0 left-0 right-0 z-[110] flex h-12 items-center justify-between px-3 sm:px-6">
             {/* Top-Left: Counter (Matches Image 1 & 2) */}
             <div className="text-[13px] font-normal tracking-wide text-white/90">
-              {activeImage + 1} / {images.length}
+              {lightboxIndex + 1} / {images.length}
             </div>
 
             {/* Top-Right: Zoom, Fullscreen, Close */}
@@ -740,7 +750,8 @@ export function ProductDetailsView({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                setLightboxZoomed(false);
+                setLightboxIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1));
               }}
               className="absolute left-0 top-1/2 -translate-y-1/2 z-[110] flex h-24 w-12 items-center justify-center text-white/70 hover:text-white hover:bg-white/5 transition cursor-pointer"
               aria-label="Previous image"
@@ -767,7 +778,7 @@ export function ProductDetailsView({
               }`}
             >
               <Image
-                src={activeImg}
+                src={lightboxImg}
                 alt={product.name}
                 fill
                 className="object-contain"
@@ -783,7 +794,8 @@ export function ProductDetailsView({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                setLightboxZoomed(false);
+                setLightboxIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
               }}
               className="absolute right-0 top-1/2 -translate-y-1/2 z-[110] flex h-24 w-12 items-center justify-center text-white/70 hover:text-white hover:bg-white/5 transition cursor-pointer"
               aria-label="Next image"

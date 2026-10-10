@@ -122,16 +122,18 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
-      {/* Floating cart shortcut (left corner matching Gorur Ghash) */}
+      {/* Floating cart shortcut (left corner matching Gorur Ghash screenshot) */}
       <button
         onClick={openCart}
-        className="group fixed bottom-6 left-3 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-[#5c0f0d] bg-black text-[#E1B76F] shadow-2xl transition-all hover:scale-110 sm:left-6 sm:h-12 sm:w-12"
+        className="group fixed bottom-6 left-3 sm:left-4 z-40 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white text-black border border-neutral-300 shadow-2xl transition-all hover:scale-110"
         aria-label="Open cart"
       >
-        <ShoppingBag className="h-5 w-5 transition group-hover:text-white" />
-        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-black text-[#400604]">
-          {itemCount}
-        </span>
+        <ShoppingBag className="h-5 w-5 text-black transition group-hover:scale-105" />
+        {itemCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ffd800] text-[10px] font-black text-black shadow">
+            {itemCount}
+          </span>
+        )}
       </button>
 
       {/* ── 1. Top Hero Banner (Mighto Activewear - Full Width) ── */}
@@ -174,14 +176,11 @@ export default function HomePage() {
       </section>
 
       {/* ── 3. Yellow Cash On Delivery Band (Exact Gorur Ghash Styling) ── */}
-      <section className="w-full bg-[#ffdc00] py-6 sm:py-8 text-center text-black border-y-2 border-[#e6c600] shadow-md my-4">
+      <section className="w-full bg-[#ffd800] py-5 sm:py-6 text-center text-black border-y border-[#e6c600] shadow-sm my-4">
         <div className="container mx-auto px-4">
-          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black uppercase tracking-tight text-black">
-            Cash on delivery in all 64 districts!
+          <h2 className="font-heading italic text-2xl sm:text-4xl lg:text-5xl font-black text-black tracking-tight">
+            Cash on Delivery in all 64 Districts
           </h2>
-          <p className="mt-1.5 text-xs sm:text-sm font-bold text-black/80 tracking-wide">
-            Inside Dhaka ৳60 (2–3 days) · Outside Dhaka ৳100 (3–5 days) · Easy 7-day exchange
-          </p>
         </div>
       </section>
 

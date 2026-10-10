@@ -191,20 +191,20 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               )}
             </div>
 
-            {/* Action Button (Yellow / Gold Pill Button matching Gorur Ghash) */}
+            {/* Action Button (Bright Yellow Rounded Pill Button matching Gorur Ghash) */}
             <button
               type="button"
               disabled={!inStock}
               onClick={handleAddToCart}
-              className={`w-full flex items-center justify-center gap-1 rounded-[10px] py-2 text-[11px] sm:text-[12px] font-black uppercase tracking-wider transition-all duration-200 shadow-md ${
+              className={`w-full flex items-center justify-center gap-1 rounded-full py-1.5 px-3 text-[11px] sm:text-[12px] font-extrabold transition-all duration-200 shadow-sm ${
                 added
                   ? "bg-[#2b0403] text-[#E1B76F] border border-[#E1B76F]"
-                  : "bg-[#E1B76F] text-[#400604] hover:bg-[#f3cb87]"
+                  : "bg-[#ffd800] text-black hover:bg-[#ffe500]"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {added ? (
                 <>
-                  <Check className="w-3.5 h-3.5" /> Added to Cart
+                  <Check className="w-3.5 h-3.5" /> Added
                 </>
               ) : (
                 <>Select options</>

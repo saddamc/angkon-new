@@ -27,8 +27,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { SizeSelector } from "@/components/product/size-selector";
-import { QuantitySelector } from "@/components/product/quantity-selector";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { WooProduct, WooReview } from "@/types/product";
@@ -533,8 +531,8 @@ function RatingBreakdown({ reviews }: { reviews: WooReview[] }) {
 
 /* ── Main Component ─────────────────────────────────────────────────── */
 
-type Tab = "Description" | "Additional Information" | "Reviews";
-const TABS: Tab[] = ["Description", "Additional Information", "Reviews"];
+type Tab = "Description" | "Additional information" | "Reviews";
+const TABS: Tab[] = ["Description", "Additional information", "Reviews"];
 
 export function ProductDetailsView({
   product,
@@ -544,7 +542,8 @@ export function ProductDetailsView({
   reviews?: WooReview[];
 }) {
   const [activeImage, setActiveImage] = useState(0);
-  const [size, setSize] = useState(product.sizes[0] ?? "M");
+  const [size, setSize] = useState("");
+  const [optionError, setOptionError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [wished, setWished] = useState(false);
@@ -663,9 +662,34 @@ export function ProductDetailsView({
   const brandAttr = product.attributes.find((a) => a.name.toLowerCase() === "brand");
   const brand = brandAttr?.options?.[0];
 
+  const variationAttrs = useMemo(() => {
+    if (product.attributes && product.attributes.length > 0) {
+      return product.attributes.filter((a) => a.options && a.options.length > 0);
+    }
+    if (product.sizes && product.sizes.length > 0) {
+      return [{ id: 0, name: "Size", options: product.sizes, visible: true }];
+    }
+    return [];
+  }, [product.attributes, product.sizes]);
+
   const addItem = useCartStore((state) => state.addItem);
   const onAddToCart = () => {
-    addItem({ productId: product.id, slug: product.slug, name: product.name, image: activeImg, price: pricing.current, size, quantity, shippingClassId: product.shipping_class_id ?? 0, deliveryInside: insideFee, deliveryOutside: outsideFee });
+    if (variationAttrs.length > 0 && !size) {
+      setOptionError(true);
+      return;
+    }
+    addItem({
+      productId: product.id,
+      slug: product.slug,
+      name: product.name,
+      image: activeImg,
+      price: pricing.current,
+      size: size || product.sizes[0] || "Standard",
+      quantity,
+      shippingClassId: product.shipping_class_id ?? 0,
+      deliveryInside: insideFee,
+      deliveryOutside: outsideFee,
+    });
     setAdded(true);
     setTimeout(() => setAdded(false), 2400);
   };
@@ -756,7 +780,6 @@ export function ProductDetailsView({
                     key={img.id ?? i}
                     type="button"
                     onClick={() => setActiveImage(i)}
-                    onMouseEnter={() => setActiveImage(i)}
                     className={`relative aspect-[4/5] w-full overflow-hidden bg-[#fbfbfb] transition-all cursor-pointer ${
                       activeImage === i
                         ? "border border-[#333333] opacity-100 ring-1 ring-[#333333]"
@@ -830,32 +853,93 @@ export function ProductDetailsView({
               </div>
             ) : null}
 
-            <div className="h-px bg-neutral-200" />
-
-            {/* Size */}
-            {product.sizes.length > 0 && (
-              <div>
-                <div className="mb-2.5 flex items-center justify-between">
-                  <span className="text-[14px] font-bold text-black">
-                    Size{size && <span className="ml-2 font-normal text-neutral-500">— {size}</span>}
-                  </span>
-                  <button type="button" onClick={() => setActiveTab("Additional Information")} className="text-[12px] font-medium text-black underline underline-offset-2 hover:opacity-75 transition">
-                    Size Guide
-                  </button>
-                </div>
-                <SizeSelector value={size} onChange={setSize} availableSizes={product.sizes} />
+            {/* Variation Attribute Dropdown (Matches Image 1 Exactly) */}
+            {variationAttrs.length > 0 && (
+              <div className="space-y-4">
+                {variationAttrs.map((attr) => (
+                  <div key={attr.name} className="mt-4">
+                    <label className="block text-[14px] font-semibold text-[#111111] mb-2">
+                      {attr.name}
+                    </label>
+                    <div className="relative max-w-[340px]">
+                      <select
+                        value={size}
+                        onChange={(e) => {
+                          setSize(e.target.value);
+                          setOptionError(false);
+                        }}
+                        className={`w-full appearance-none rounded border bg-white px-3.5 py-2.5 pr-10 text-[14px] text-neutral-800 outline-none transition cursor-pointer ${
+                          optionError && !size
+                            ? "border-red-500 ring-1 ring-red-500"
+                            : "border-neutral-300 focus:border-black"
+                        }`}
+                      >
+                        <option value="">Choose an option</option>
+                        {attr.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                    </div>
+                    {optionError && !size && (
+                      <p className="mt-1 text-xs text-red-500 font-medium">Please choose an option</p>
+                    )}
+                    {size && (
+                      <button
+                        type="button"
+                        onClick={() => setSize("")}
+                        className="mt-1.5 block text-xs text-neutral-500 hover:text-black underline underline-offset-2 transition"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* Quantity */}
-            <div>
-              <span className="mb-2.5 block text-[14px] font-bold text-black">Quantity</span>
-              <QuantitySelector value={quantity} onChange={setQuantity} />
+            <div className="my-5 border-t border-neutral-200" />
+
+            {/* Quantity & Add to Cart (Matches Image 1 Exactly) */}
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="h-10 w-12 rounded border border-neutral-300 bg-white text-center text-sm font-medium text-neutral-800 outline-none focus:border-black [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+
+              <button
+                type="button"
+                onClick={onAddToCart}
+                disabled={product.stock_status !== "instock"}
+                className="h-10 rounded-md bg-[#f6dd62] px-6 text-sm font-semibold text-neutral-900 transition hover:bg-[#eacb45] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {added ? "Added to cart" : "Add to cart"}
+              </button>
+
+              <Link
+                href="/checkout"
+                onClick={(e) => {
+                  if (variationAttrs.length > 0 && !size) {
+                    e.preventDefault();
+                    setOptionError(true);
+                    return;
+                  }
+                  onAddToCart();
+                }}
+                className="h-10 rounded-md bg-black px-6 text-sm font-semibold text-white transition hover:bg-neutral-800 flex items-center justify-center active:scale-95"
+              >
+                Buy It Now
+              </Link>
             </div>
 
             {/* Delivery Info Card (Bangladeshi Shipping Estimator) */}
             {deliveryFee && (deliveryFee.inside > 0 || deliveryFee.outside > 0) && (
-              <div className="flex items-center gap-3.5 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <div className="mt-5 flex items-center gap-3.5 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#ffd800] text-black shadow-sm">
                   <Truck className="h-5 w-5" />
                 </div>
@@ -870,179 +954,93 @@ export function ProductDetailsView({
               </div>
             )}
 
-            {/* CTAs (Gorur Ghash Yellow Add to Cart Pill Button) */}
-            <div className="flex flex-col gap-3 sm:flex-row pt-2">
-              <button
-                type="button"
-                onClick={onAddToCart}
-                disabled={product.stock_status !== "instock"}
-                className={`relative flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full px-8 text-[14px] font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
-                  added ? "bg-black text-[#ffd800]" : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
-                }`}
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {added ? (
-                    <motion.span key="added" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.85 }} className="flex items-center gap-2">
-                      <Check className="h-5 w-5" /> Added to Bag!
-                    </motion.span>
-                  ) : (
-                    <motion.span key="add" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.85 }} className="flex items-center gap-2">
-                      <Package className="h-4.5 w-4.5" /> Add to Cart
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-              <Link
-                href="/checkout"
-                onClick={onAddToCart}
-                className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full border-2 border-black bg-black text-[14px] font-bold text-white shadow-sm transition hover:bg-neutral-800 active:scale-[0.98]"
-              >
-                <Zap className="h-4 w-4" /> Buy It Now
-              </Link>
-            </div>
-
             {/* Share */}
-            <div className="border-t border-neutral-200 pt-4">
+            <div className="border-t border-neutral-200 mt-5 pt-4">
               <ShareStrip title={product.name} />
             </div>
           </div>
         </div>
 
-        {/* ── Tabbed Panel ─────────────────────────────────────────────── */}
-        <div className="mt-16 border-t border-neutral-200 pt-10">
+        {/* ── Tabbed Panel (Exact Match to Image 2) ─────────────────────────────── */}
+        <div className="mt-14 border-t border-neutral-200">
           {/* Tab bar */}
-          <div className="flex gap-0 border-b border-neutral-200 overflow-x-auto">
+          <div className="flex gap-8 border-b border-neutral-200 overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`relative shrink-0 px-6 py-3.5 text-[14px] font-semibold transition whitespace-nowrap ${
-                  activeTab === tab ? "text-black" : "text-neutral-500 hover:text-black"
+                className={`relative shrink-0 py-3 text-[15px] transition whitespace-nowrap ${
+                  activeTab === tab
+                    ? "font-semibold text-black border-t-2 border-[#333333] -mt-[1px]"
+                    : "font-normal text-neutral-600 hover:text-black border-t-2 border-transparent -mt-[1px]"
                 }`}
               >
                 {tab === "Reviews" ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5">
                     Reviews
                     {reviews.length > 0 && (
-                      <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full border border-neutral-200 bg-neutral-100 text-black text-[10px] font-bold">
-                        {reviews.length}
+                      <span className="text-xs text-neutral-500">
+                        ({reviews.length})
                       </span>
                     )}
                   </span>
                 ) : tab}
-                {activeTab === tab && (
-                  <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-black rounded-full" />
-                )}
               </button>
             ))}
           </div>
 
           {/* Tab content */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-              className="pt-8"
-            >
-              {/* DESCRIPTION */}
-              {activeTab === "Description" && (
-                <div className="max-w-3xl">
-                  {product.description ? (
-                    <RichText html={product.description} />
-                  ) : (
-                    <p className="text-neutral-500 text-sm">No description available.</p>
-                  )}
-                </div>
-              )}
+          <div className="pt-6">
+            {/* DESCRIPTION */}
+            {activeTab === "Description" && (
+              <div className="max-w-4xl text-neutral-700 leading-relaxed text-[15px]">
+                {product.description ? (
+                  <RichText html={product.description} />
+                ) : (
+                  <p className="text-neutral-500 text-sm">No description available.</p>
+                )}
+              </div>
+            )}
 
-              {/* ADDITIONAL INFORMATION */}
-              {activeTab === "Additional Information" && (
-                <div className="max-w-2xl space-y-8">
-                  {product.sizes.length > 0 && (
-                    <div>
-                      <h3 className="font-heading text-[15px] font-bold uppercase text-black mb-4">Size Guide</h3>
-                      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-                        <table className="w-full text-[13px]">
-                          <thead>
-                            <tr className="bg-neutral-50 border-b border-neutral-200">
-                              {["Size", "Chest (cm)", "Length (cm)", "Shoulder (cm)"].map((h) => (
-                                <th key={h} className="px-5 py-3 text-left font-semibold text-neutral-900">{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {SIZE_TABLE.filter((r) => product.sizes.includes(r[0])).map((row) => (
-                              <tr key={row[0]} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
-                                {row.map((cell, ci) => (
-                                  <td key={ci} className={`px-5 py-3 ${ci === 0 ? "font-semibold text-black" : "text-neutral-700"}`}>{cell}</td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {(infoAttributes.length > 0 || product.sku || product.categories.length > 0 || product.tags.length > 0) && (
-                    <div>
-                      <h3 className="font-heading text-[15px] font-bold uppercase text-black mb-4">Product Specifications</h3>
-                      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-                        <table className="w-full text-[13px]">
-                          <tbody>
-                            {infoAttributes.map((attr) => (
-                              <tr key={attr.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
-                                <td className="px-5 py-3 font-semibold text-neutral-900 w-40 bg-neutral-50">{attr.name}</td>
-                                <td className="px-5 py-3 text-neutral-700">{attr.options.join(", ")}</td>
-                              </tr>
-                            ))}
-                            {product.sku && (
-                              <tr className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
-                                <td className="px-5 py-3 font-semibold text-neutral-900 bg-neutral-50">SKU</td>
-                                <td className="px-5 py-3 text-neutral-700">{product.sku}</td>
-                              </tr>
-                            )}
-                            {product.categories.length > 0 && (
-                              <tr className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
-                                <td className="px-5 py-3 font-semibold text-neutral-900 bg-neutral-50">{product.categories.length > 1 ? "Categories" : "Category"}</td>
-                                <td className="px-5 py-3 text-neutral-700">
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {product.categories.map((c) => (
-                                      <Link key={c.id} href={`/${c.slug}`} className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-[12px] font-medium text-neutral-700 hover:bg-neutral-200 transition">
-                                        {c.name}
-                                      </Link>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                            {product.tags.length > 0 && (
-                              <tr className="hover:bg-neutral-50/50 transition">
-                                <td className="px-5 py-3 font-semibold text-neutral-900 bg-neutral-50">Tags</td>
-                                <td className="px-5 py-3 text-neutral-700">
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {product.tags.map((t) => (
-                                      <span key={t.id} className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-[12px] text-neutral-600">#{t.name}</span>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
-
-                  {infoAttributes.length === 0 && !product.sku && product.categories.length === 0 && product.tags.length === 0 && (
-                    <p className="text-sm text-neutral-500">No additional information available.</p>
-                  )}
-                </div>
-              )}
+            {/* ADDITIONAL INFORMATION (Exact Match to Image 2) */}
+            {activeTab === "Additional information" && (
+              <div className="max-w-4xl">
+                <table className="w-full border-collapse border border-neutral-200 text-sm">
+                  <tbody>
+                    <tr className="border-b border-neutral-200">
+                      <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-neutral-700 border-r border-neutral-200 bg-white">
+                        Weight
+                      </th>
+                      <td className="p-3 sm:p-4 text-neutral-800 bg-white">
+                        {product.weight ? `${product.weight} kg` : "N/A"}
+                      </td>
+                    </tr>
+                    {product.attributes && product.attributes.length > 0 ? (
+                      product.attributes.map((attr) => (
+                        <tr key={attr.id || attr.name} className="border-b border-neutral-200 last:border-b-0">
+                          <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-neutral-700 border-r border-neutral-200 bg-white">
+                            {attr.name}
+                          </th>
+                          <td className="p-3 sm:p-4 text-neutral-800 bg-white">
+                            {attr.options.join(", ")}
+                          </td>
+                        </tr>
+                      ))
+                    ) : product.sizes && product.sizes.length > 0 ? (
+                      <tr className="border-b border-neutral-200 last:border-b-0">
+                        <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-neutral-700 border-r border-neutral-200 bg-white">
+                          Size
+                        </th>
+                        <td className="p-3 sm:p-4 text-neutral-800 bg-white">
+                          {product.sizes.join(", ")}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
               {/* REVIEWS */}
               {activeTab === "Reviews" && (
@@ -1099,8 +1097,7 @@ export function ProductDetailsView({
                   )}
                 </div>
               )}
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -1130,7 +1127,14 @@ export function ProductDetailsView({
             <div className="flex items-center gap-3 shrink-0">
               <button
                 type="button"
-                onClick={onAddToCart}
+                onClick={() => {
+                  if (variationAttrs.length > 0 && !size) {
+                    window.scrollTo({ top: 400, behavior: "smooth" });
+                    setOptionError(true);
+                    return;
+                  }
+                  onAddToCart();
+                }}
                 disabled={product.stock_status !== "instock"}
                 className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs font-bold uppercase tracking-wider transition shadow-sm ${
                   added
@@ -1138,7 +1142,7 @@ export function ProductDetailsView({
                     : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {added ? "Added to Cart" : "Select options"}
+                {added ? "Added to Cart" : size ? "Add to Cart" : "Select options"}
               </button>
             </div>
           </div>

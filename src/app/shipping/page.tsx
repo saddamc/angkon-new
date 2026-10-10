@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Delivery Time & Shipping Policy — ANGKON",
-  description: "Nationwide Cash on Delivery in all 64 districts. Inside Dhaka 2-3 days, Outside Dhaka 3-5 days. Free delivery over ৳3,000.",
+  description: "Nationwide Cash on Delivery in all 64 districts. Inside Dhaka 2-3 days, Outside Dhaka 3-5 days. Free delivery over Tk3,000.",
 };
 
 export default function ShippingPage() {
@@ -75,7 +75,7 @@ export default function ShippingPage() {
               </div>
             </div>
             <div className="space-y-2 text-[14px] text-[#f5ebd8]">
-              <p><strong>Fee:</strong> ৳70 Flat Rate</p>
+              <p><strong>Fee:</strong> Tk70 Flat Rate</p>
               <p><strong>Timeline:</strong> 2 to 3 Business Days</p>
               <p><strong>Coverage:</strong> All postal zones within Dhaka Metro</p>
             </div>
@@ -92,7 +92,7 @@ export default function ShippingPage() {
               </div>
             </div>
             <div className="space-y-2 text-[14px] text-[#f5ebd8]">
-              <p><strong>Fee:</strong> ৳130 Flat Rate</p>
+              <p><strong>Fee:</strong> Tk130 Flat Rate</p>
               <p><strong>Timeline:</strong> 3 to 5 Business Days</p>
               <p><strong>Coverage:</strong> All divisional and district headquarters</p>
             </div>
@@ -105,10 +105,10 @@ export default function ShippingPage() {
             <ShieldCheck className="h-8 w-8 text-[#E1B76F] shrink-0" />
             <div>
               <h4 className="font-heading text-lg font-black uppercase text-[#E1B76F]">
-                Free Delivery Over ৳3,000
+                Free Delivery Over Tk3,000
               </h4>
               <p className="text-xs text-[#cbb18a]">
-                Add items worth ৳3,000 or more to your cart to enjoy free shipping everywhere in Bangladesh!
+                Add items worth Tk3,000 or more to your cart to enjoy free shipping everywhere in Bangladesh!
               </p>
             </div>
           </div>

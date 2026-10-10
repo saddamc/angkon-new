@@ -1,9 +1,9 @@
-export const formatPrice = (value: number | string) => {
+export const formatPrice = (value: number | string, decimals: number = 2) => {
   const amount = typeof value === "number" ? value : Number(value || 0);
 
-  return `৳${new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+  return `Tk${new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(amount)}`;
 };
 

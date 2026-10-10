@@ -3,35 +3,20 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
-  BadgeCheck,
   Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
-  Heart,
-  Loader2,
-  MapPin,
   Maximize,
-  MessageSquare,
   Minimize,
-  Package,
-  RotateCcw,
   Search,
-  Send,
-  Shield,
-  Star,
-  Store,
-  Truck,
-  User,
   X,
-  Zap,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
-import type { WooProduct, WooReview } from "@/types/product";
+import type { WooProduct } from "@/types/product";
 import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
 import { saveRecentlyViewed } from "@/utils/recently-viewed";
@@ -144,404 +129,15 @@ function RichText({ html, className = "" }: { html: string; className?: string }
   );
 }
 
-function StarRow({ rating, size = "md" }: { rating: number; size?: "sm" | "md" | "lg" }) {
-  const cls = size === "lg" ? "h-5 w-5" : size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5";
-  return (
-    <div className="flex items-center gap-0.5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={`${cls} ${
-            i < Math.floor(rating)
-              ? "fill-amber-400 text-amber-400"
-              : i < rating
-              ? "fill-amber-200 text-amber-300"
-              : "fill-neutral-200 text-neutral-300"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function AccordionRow({
-  label,
-  children,
-  defaultOpen = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-b border-neutral-200 last:border-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between py-4 text-[14px] font-semibold text-neutral-900 transition hover:text-black"
-      >
-        {label}
-        <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <div className="pb-4 text-sm leading-relaxed text-neutral-600">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-/* ── ReviewForm ─────────────────────────────────────────────────────── */
-
-type FormStatus = "idle" | "loading" | "success" | "error";
-
-const RATING_LABELS = ["", "Poor", "Fair", "Good", "Very Good", "Excellent"] as const;
-
-function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (review: WooReview) => void }) {
-  const [rating, setRating]       = useState(0);
-  const [hover, setHover]         = useState(0);
-  const [name, setName]           = useState("");
-  const [email, setEmail]         = useState("");
-  const [text, setText]           = useState("");
-  const [status, setStatus]       = useState<FormStatus>("idle");
-  const [errorMsg, setErrorMsg]   = useState("");
-
-  const validate = (): string => {
-    if (rating === 0) return "Please select a star rating.";
-    if (name.trim().length < 2) return "Please enter your full name.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Please enter a valid email address.";
-    if (text.trim().length < 10) return "Review must be at least 10 characters.";
-    return "";
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const err = validate();
-    if (err) { setErrorMsg(err); return; }
-
-    setStatus("loading");
-    setErrorMsg("");
-
-    try {
-      const res = await fetch("/api/reviews", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId,
-          reviewer:       name.trim(),
-          reviewer_email: email.trim(),
-          review:         text.trim(),
-          rating,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorMsg(data.error ?? "Something went wrong. Please try again.");
-        setStatus("error");
-      } else {
-        // Build a local WooReview from submitted data so it appears immediately
-        // regardless of what the WC API response looks like.
-        const localReview: WooReview = data.review ?? {
-          id:           data.id ?? Date.now(),
-          date_created: new Date().toISOString(),
-          reviewer:     name.trim(),
-          review:       text.trim(),
-          rating,
-          verified:     false,
-        };
-        onSuccess(localReview);
-        setStatus("success");
-      }
-    } catch {
-      setErrorMsg("Network error. Please check your connection and try again.");
-      setStatus("error");
-    }
-  };
-
-  /* ── Success state ── */
-  if (status === "success") {
-    return (
-      <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center shadow-sm">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50">
-          <BadgeCheck className="h-7 w-7 text-emerald-600" />
-        </div>
-        <h3 className="font-heading text-[17px] font-bold uppercase text-black mb-1">Thank you for your review!</h3>
-        <p className="text-[14px] text-neutral-600">Your review has been submitted and is now visible to everyone.</p>
-      </div>
-    );
-  }
-
-  const activeStars = hover || rating;
-
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm">
-      <h3 className="font-heading text-[17px] font-bold uppercase text-black mb-1">Write a Review</h3>
-      <p className="text-[13px] text-neutral-500 mb-6">Share your honest experience with this product</p>
-
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
-        {/* Star Rating Picker */}
-        <div>
-          <label className="mb-2 block text-[13px] font-semibold text-neutral-700">
-            Your Rating <span className="text-red-500">*</span>
-          </label>
-          <div className="flex items-center gap-1">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const val = i + 1;
-              return (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setRating(val)}
-                  onMouseEnter={() => setHover(val)}
-                  onMouseLeave={() => setHover(0)}
-                  className="transition-transform hover:scale-110 active:scale-95 focus:outline-none"
-                  aria-label={`Rate ${val} star${val > 1 ? "s" : ""}`}
-                >
-                  <Star
-                    className={`h-8 w-8 transition-colors ${
-                      val <= activeStars ? "fill-amber-400 text-amber-400" : "fill-neutral-100 text-neutral-200"
-                    }`}
-                  />
-                </button>
-              );
-            })}
-            {activeStars > 0 && (
-              <span className="ml-2 text-[13px] font-semibold text-black">
-                {RATING_LABELS[activeStars]}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Name + Email */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-neutral-700">
-              Full Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Rafiq Hossain"
-              maxLength={100}
-              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[14px] text-black placeholder:text-neutral-400 outline-none transition focus:border-black focus:bg-white"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-neutral-700">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              maxLength={200}
-              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[14px] text-black placeholder:text-neutral-400 outline-none transition focus:border-black focus:bg-white"
-            />
-            <p className="mt-1 text-[11px] text-neutral-400">Will not be published</p>
-          </div>
-        </div>
-
-        {/* Review Text */}
-        <div>
-          <label className="mb-1.5 block text-[13px] font-semibold text-neutral-700">
-            Your Review <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="What did you love about this product? How is the quality and delivery?"
-            rows={5}
-            maxLength={2000}
-            className="w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[14px] text-black placeholder:text-neutral-400 outline-none transition focus:border-black focus:bg-white"
-          />
-          <div className="mt-1 flex justify-between">
-            <span className="text-[11px] text-neutral-400">Minimum 10 characters</span>
-            <span className={`text-[11px] ${text.length > 1900 ? "text-amber-500" : "text-neutral-400"}`}>
-              {text.length}/2000
-            </span>
-          </div>
-        </div>
-
-        {/* Error message */}
-        {errorMsg && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
-            {errorMsg}
-          </div>
-        )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="flex items-center gap-2 rounded-full bg-[#ffd800] px-7 py-3 text-[14px] font-bold text-black shadow-sm transition hover:bg-black hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {status === "loading" ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Submitting…
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4" />
-              Submit Review
-            </>
-          )}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-
-const TRUST_ITEMS = [
-  { icon: Shield, label: "100% Authentic", sub: "Officially licensed" },
-  { icon: Truck, label: "Fast Dispatch", sub: "Ships within 24 hrs" },
-  { icon: RotateCcw, label: "30-Day Returns", sub: "Hassle-free policy" },
-];
-
-const SIZE_TABLE = [
-  ["S", "96", "68", "42"],
-  ["M", "100", "70", "44"],
-  ["L", "104", "72", "46"],
-  ["XL", "108", "74", "48"],
-  ["XXL", "112", "76", "50"],
-];
-
-/* ── ReviewCard ─────────────────────────────────────────────────────── */
-
-function ReviewCard({ review }: { review: WooReview }) {
-  // Defensive: handle missing or malformed fields
-  if (!review || !review.reviewer) {
-    console.warn("[ReviewCard] Skipping invalid review:", review);
-    return null;
-  }
-
-  const avatarUrl = review.reviewer_avatar_urls
-    ? Object.values(review.reviewer_avatar_urls)[0]
-    : null;
-  const nameInitials = review.reviewer
-    .split(" ")
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-  const date = review.date_created
-    ? new Date(review.date_created).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : "";
-  const rating = Number(review.rating) || 0;
-  const reviewText = String(review.review || "").trim();
-
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt={review.reviewer}
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-neutral-200"
-            />
-          ) : (
-            <div className="h-10 w-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[13px] font-bold text-neutral-800">
-              {nameInitials || <User className="h-4 w-4" />}
-            </div>
-          )}
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[14px] font-semibold text-neutral-900">{review.reviewer}</span>
-              {review.verified && (
-                <span className="flex items-center gap-0.5 text-[11px] text-emerald-600 font-medium">
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  Verified
-                </span>
-              )}
-            </div>
-            {date && <span className="text-[12px] text-neutral-500">{date}</span>}
-          </div>
-        </div>
-        <StarRow rating={rating} size="sm" />
-      </div>
-      {reviewText && (
-        <div className="text-[14px] leading-relaxed text-neutral-700">{reviewText}</div>
-      )}
-    </div>
-  );
-}
-
-/* ── RatingBreakdown ─────────────────────────────────────────────────── */
-
-function RatingBreakdown({ reviews }: { reviews: WooReview[] }) {
-  const total = reviews.length;
-  const avg = total > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
-  const counts = [5, 4, 3, 2, 1].map((star) => ({
-    star,
-    count: reviews.filter((r) => r.rating === star).length,
-  }));
-
-  return (
-    <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center p-6 rounded-2xl bg-neutral-50 border border-neutral-200 mb-8 shadow-sm">
-      <div className="text-center shrink-0">
-        <div className="text-[56px] font-black text-black leading-none">{avg.toFixed(1)}</div>
-        <StarRow rating={avg} />
-        <div className="mt-1 text-[13px] text-neutral-600">{total} review{total !== 1 ? "s" : ""}</div>
-      </div>
-      <div className="w-px self-stretch bg-neutral-200 hidden sm:block" />
-      <div className="flex-1 w-full space-y-2">
-        {counts.map(({ star, count }) => {
-          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-          return (
-            <div key={star} className="flex items-center gap-3">
-              <div className="flex items-center gap-1 w-16 shrink-0">
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                <span className="text-[13px] font-medium text-neutral-700">{star}</span>
-              </div>
-              <div className="flex-1 h-2 rounded-full bg-neutral-200 overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.6, delay: (5 - star) * 0.06, ease: "easeOut" }}
-                  className="h-full rounded-full bg-[#ffd800]"
-                />
-              </div>
-              <span className="text-[12px] text-neutral-500 w-10 text-right shrink-0">{count}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /* ── Main Component ─────────────────────────────────────────────────── */
 
-type Tab = "Description" | "Additional information" | "Reviews";
-const TABS: Tab[] = ["Description", "Additional information", "Reviews"];
+type Tab = "Description" | "Additional information";
+const TABS: Tab[] = ["Description", "Additional information"];
 
 export function ProductDetailsView({
   product,
-  reviews: initialReviews = [],
 }: {
   product: WooProduct;
-  reviews?: WooReview[];
 }) {
   const [activeImage, setActiveImage] = useState(0);
   const [size, setSize] = useState("");
@@ -550,8 +146,6 @@ export function ProductDetailsView({
   const [added, setAdded] = useState(false);
   const [wished, setWished] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("Description");
-  const [reviews, setReviews] = useState<WooReview[]>(initialReviews);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
@@ -636,49 +230,6 @@ export function ProductDetailsView({
     outside: outsideFee
   }), [insideFee, outsideFee]);
 
-  // Fetch fresh reviews from WC every time the Reviews tab is opened
-  useEffect(() => {
-    if (activeTab !== "Reviews") return;
-    setReviewsLoading(true);
-    console.log("[ProductDetailsView] Fetching reviews for product:", product.id);
-    fetch(`/api/reviews?productId=${product.id}`)
-      .then((r) => {
-        console.log("[ProductDetailsView] Reviews response status:", r.status);
-        return r.json();
-      })
-      .then((data: WooReview[] | { error?: string }) => {
-        if (Array.isArray(data)) {
-          console.log("[ProductDetailsView] Reviews fetched:", data.length);
-          setReviews(data);
-        } else {
-          console.warn("[ProductDetailsView] Unexpected response:", data);
-          setReviews([]);
-        }
-      })
-      .catch((err) => {
-        console.error("[ProductDetailsView] Fetch error:", err);
-        setReviews([]);
-      })
-      .finally(() => setReviewsLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  const handleReviewSuccess = useCallback((newReview: WooReview) => {
-    // Optimistic: show immediately while the server re-fetch is in flight
-    setReviews((prev) => {
-      const alreadyExists = prev.some((r) => r.id === newReview.id);
-      return alreadyExists ? prev : [newReview, ...prev];
-    });
-    // Then refresh from WC so the list is authoritative
-    fetch(`/api/reviews?productId=${product.id}`)
-      .then((r) => r.json())
-      .then((data: WooReview[]) => {
-        if (Array.isArray(data) && data.length > 0) setReviews(data);
-      })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id]);
-
   const pricing = useMemo(
     () => getDisplayPrice(product.regular_price || product.price, product.sale_price),
     [product.price, product.regular_price, product.sale_price],
@@ -690,7 +241,6 @@ export function ProductDetailsView({
       : [{ id: 0, src: "https://placehold.co/1200x1500/f4f4f5/18181b.png?text=Product", alt: product.name, name: product.name }];
   const activeImg = images[activeImage]?.src ?? images[0]?.src;
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
-  const avgRating = reviews.length > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   const infoAttributes = product.attributes.filter((a) => a.visible && a.name.toLowerCase() !== "size");
   const brandAttr = product.attributes.find((a) => a.name.toLowerCase() === "brand");
   const brand = brandAttr?.options?.[0];
@@ -1004,16 +554,7 @@ export function ProductDetailsView({
                     : "font-normal text-neutral-600 hover:text-black border-t-2 border-transparent -mt-[1px]"
                 }`}
               >
-                {tab === "Reviews" ? (
-                  <span className="flex items-center gap-1.5">
-                    Reviews
-                    {reviews.length > 0 && (
-                      <span className="text-xs text-neutral-500">
-                        ({reviews.length})
-                      </span>
-                    )}
-                  </span>
-                ) : tab}
+                {tab}
               </button>
             ))}
           </div>
@@ -1069,62 +610,6 @@ export function ProductDetailsView({
                 </table>
               </div>
             )}
-
-              {/* REVIEWS */}
-              {activeTab === "Reviews" && (
-                <div className="space-y-10">
-                  {reviewsLoading ? (
-                    /* Loading skeleton while fetching from WC */
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-3 animate-pulse">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-neutral-100" />
-                            <div className="space-y-1.5 flex-1">
-                              <div className="h-3 w-24 rounded bg-neutral-100" />
-                              <div className="h-3 w-16 rounded bg-neutral-100" />
-                            </div>
-                          </div>
-                          <div className="h-3 w-20 rounded bg-neutral-100" />
-                          <div className="space-y-2">
-                            <div className="h-3 w-full rounded bg-neutral-100" />
-                            <div className="h-3 w-3/4 rounded bg-neutral-100" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : reviews.length > 0 ? (
-                    <>
-                      <RatingBreakdown reviews={reviews} />
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {reviews.map((r) => (
-                          <ReviewCard key={r.id} review={r} />
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <div className="h-16 w-16 rounded-full border border-neutral-200 bg-neutral-50 flex items-center justify-center mb-4">
-                        <MessageSquare className="h-7 w-7 text-neutral-400" />
-                      </div>
-                      <h3 className="font-heading text-[16px] font-bold uppercase text-black mb-1">No reviews yet</h3>
-                      <p className="text-[14px] text-neutral-500 max-w-xs">
-                        Be the first to share your experience with this product.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ── Write a Review form ────────────────────────────── */}
-                  {!reviewsLoading && (
-                    <div className="border-t border-neutral-200 pt-8">
-                      <ReviewForm
-                        productId={product.id}
-                        onSuccess={handleReviewSuccess}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
           </div>
         </div>
       </div>

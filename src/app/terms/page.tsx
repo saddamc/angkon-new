@@ -30,7 +30,7 @@ export default function TermsPage() {
         <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-[#E1B76F]">2. Pricing & Currency</h2>
           <p>
-            All listed prices are denominated in Bangladeshi Taka (BDT / ৳) and include applicable statutory taxes. Delivery charges are calculated based on your destination: inside Dhaka (৳70) or outside Dhaka (৳130), with free shipping on orders over ৳3,000.
+            All listed prices are denominated in Bangladeshi Taka (BDT / Tk) and include applicable statutory taxes. Delivery charges are calculated based on your destination: inside Dhaka (Tk70) or outside Dhaka (Tk130), with free shipping on orders over Tk3,000.
           </p>
         </div>
 

@@ -11,7 +11,7 @@ export default function PoliciesPage() {
   const policies = [
     {
       title: "Delivery & Shipping Policy",
-      description: "Nationwide COD in all 64 districts. Inside Dhaka ৳70 (2-3 days), Outside Dhaka ৳130 (3-5 days). Free over ৳3,000.",
+      description: "Nationwide COD in all 64 districts. Inside Dhaka Tk70 (2-3 days), Outside Dhaka Tk130 (3-5 days). Free over Tk3,000.",
       href: "/shipping",
       icon: Truck,
     },

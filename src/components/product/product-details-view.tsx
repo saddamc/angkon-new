@@ -69,7 +69,7 @@ function ShareStrip({ title }: { title: string }) {
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#cbb18a]">Share</p>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">Share</p>
       <div className="flex items-center gap-2">
         {/* Facebook */}
         <button type="button" onClick={() => share("facebook")} aria-label="Share on Facebook" className={`${BTN_BASE} bg-[#1877F2]`}>
@@ -95,14 +95,14 @@ function ShareStrip({ title }: { title: string }) {
           className={`${BTN_BASE} border transition ${
             copied
               ? "border-emerald-500 bg-emerald-500 text-white shadow-emerald-200"
-              : "border-[#5c0f0d] bg-[#2b0403] text-[#cbb18a] hover:bg-[#4a0705] hover:text-[#E1B76F]"
+              : "border-neutral-300 bg-white text-neutral-600 hover:border-black hover:text-black"
           }`}
           title={copied ? "Link Copied!" : "Copy Link"}
         >
           {copied ? (
             <Check className="h-4 w-4 text-white" />
           ) : (
-            <Copy className="h-4 w-4 text-[#cbb18a]" />
+            <Copy className="h-4 w-4 text-neutral-600" />
           )}
         </button>
       </div>
@@ -117,14 +117,14 @@ function RichText({ html, className = "" }: { html: string; className?: string }
   if (/<[a-z][\s\S]*>/i.test(html)) {
     return (
       <div
-        className={`product-prose ${className}`}
+        className={`product-prose text-neutral-800 ${className}`}
         dangerouslySetInnerHTML={{ __html: fixPlainTextTablesAndLists(html) }}
       />
     );
   }
   const paragraphs = html.trim().split(/\n{2,}/);
   return (
-    <div className={`product-prose ${className}`}>
+    <div className={`product-prose text-neutral-800 ${className}`}>
       {paragraphs.map((para, i) => (
         <p key={i}>
           {para.split("\n").map((line, j, arr) => (
@@ -151,7 +151,7 @@ function StarRow({ rating, size = "md" }: { rating: number; size?: "sm" | "md" |
               ? "fill-amber-400 text-amber-400"
               : i < rating
               ? "fill-amber-200 text-amber-300"
-              : "fill-[#5c0f0d] text-[#5c0f0d]"
+              : "fill-neutral-200 text-neutral-300"
           }`}
         />
       ))}
@@ -170,14 +170,14 @@ function AccordionRow({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-[#5c0f0d] last:border-0">
+    <div className="border-b border-neutral-200 last:border-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between py-4 text-[14px] font-semibold text-[#E1B76F] transition hover:text-[#f3cb87]"
+        className="flex w-full items-center justify-between py-4 text-[14px] font-semibold text-neutral-900 transition hover:text-black"
       >
         {label}
-        <ChevronDown className={`h-4 w-4 text-[#cbb18a] transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -188,7 +188,7 @@ function AccordionRow({
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="pb-4 text-sm leading-relaxed text-[#cbb18a]">{children}</div>
+            <div className="pb-4 text-sm leading-relaxed text-neutral-600">{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -266,12 +266,12 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
   /* ── Success state ── */
   if (status === "success") {
     return (
-      <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-10 text-center shadow-lg">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-[#5c0f0d] bg-[#4a0705]">
-          <BadgeCheck className="h-7 w-7 text-[#E1B76F]" />
+      <div className="rounded-2xl border border-neutral-200 bg-white p-10 text-center shadow-sm">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-neutral-200 bg-neutral-50">
+          <BadgeCheck className="h-7 w-7 text-emerald-600" />
         </div>
-        <h3 className="font-heading text-[17px] font-bold uppercase text-[#E1B76F] mb-1">Thank you for your review!</h3>
-        <p className="text-[14px] text-[#cbb18a]">Your review has been submitted and is now visible to everyone.</p>
+        <h3 className="font-heading text-[17px] font-bold uppercase text-black mb-1">Thank you for your review!</h3>
+        <p className="text-[14px] text-neutral-600">Your review has been submitted and is now visible to everyone.</p>
       </div>
     );
   }
@@ -279,15 +279,15 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
   const activeStars = hover || rating;
 
   return (
-    <div className="rounded-2xl border border-[#5c0f0d] bg-[#4a0705] p-6 sm:p-8 shadow-xl">
-      <h3 className="font-heading text-[17px] font-bold uppercase text-[#E1B76F] mb-1">Write a Review</h3>
-      <p className="text-[13px] text-[#cbb18a] mb-6">Share your honest experience with this product</p>
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-sm">
+      <h3 className="font-heading text-[17px] font-bold uppercase text-black mb-1">Write a Review</h3>
+      <p className="text-[13px] text-neutral-500 mb-6">Share your honest experience with this product</p>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Star Rating Picker */}
         <div>
-          <label className="mb-2 block text-[13px] font-semibold text-[#cbb18a]">
-            Your Rating <span className="text-red-400">*</span>
+          <label className="mb-2 block text-[13px] font-semibold text-neutral-700">
+            Your Rating <span className="text-red-500">*</span>
           </label>
           <div className="flex items-center gap-1">
             {Array.from({ length: 5 }).map((_, i) => {
@@ -303,15 +303,15 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
                   aria-label={`Rate ${val} star${val > 1 ? "s" : ""}`}
                 >
                   <Star
-                    className={`h-9 w-9 transition-colors ${
-                      val <= activeStars ? "fill-amber-400 text-amber-400" : "fill-[#2b0403] text-[#5c0f0d]"
+                    className={`h-8 w-8 transition-colors ${
+                      val <= activeStars ? "fill-amber-400 text-amber-400" : "fill-neutral-100 text-neutral-200"
                     }`}
                   />
                 </button>
               );
             })}
             {activeStars > 0 && (
-              <span className="ml-2 text-[13px] font-medium text-[#E1B76F]">
+              <span className="ml-2 text-[13px] font-semibold text-black">
                 {RATING_LABELS[activeStars]}
               </span>
             )}
@@ -321,8 +321,8 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
         {/* Name + Email */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#cbb18a]">
-              Full Name <span className="text-red-400">*</span>
+            <label className="mb-1.5 block text-[13px] font-semibold text-neutral-700">
+              Full Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -330,12 +330,12 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Rafiq Hossain"
               maxLength={100}
-              className="w-full rounded-xl border border-[#5c0f0d] bg-[#2b0403] px-4 py-2.5 text-[14px] text-[#E1B76F] placeholder-[#cbb18a]/40 outline-none transition focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F]"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[14px] text-black placeholder:text-neutral-400 outline-none transition focus:border-black focus:bg-white"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#cbb18a]">
-              Email <span className="text-red-400">*</span>
+            <label className="mb-1.5 block text-[13px] font-semibold text-neutral-700">
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -343,16 +343,16 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               maxLength={200}
-              className="w-full rounded-xl border border-[#5c0f0d] bg-[#2b0403] px-4 py-2.5 text-[14px] text-[#E1B76F] placeholder-[#cbb18a]/40 outline-none transition focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F]"
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-[14px] text-black placeholder:text-neutral-400 outline-none transition focus:border-black focus:bg-white"
             />
-            <p className="mt-1 text-[11px] text-[#cbb18a]/60">Will not be published</p>
+            <p className="mt-1 text-[11px] text-neutral-400">Will not be published</p>
           </div>
         </div>
 
         {/* Review Text */}
         <div>
-          <label className="mb-1.5 block text-[13px] font-semibold text-[#cbb18a]">
-            Your Review <span className="text-red-400">*</span>
+          <label className="mb-1.5 block text-[13px] font-semibold text-neutral-700">
+            Your Review <span className="text-red-500">*</span>
           </label>
           <textarea
             value={text}
@@ -360,11 +360,11 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
             placeholder="What did you love about this product? How is the quality and delivery?"
             rows={5}
             maxLength={2000}
-            className="w-full resize-none rounded-xl border border-[#5c0f0d] bg-[#2b0403] px-4 py-3 text-[14px] text-[#E1B76F] placeholder-[#cbb18a]/40 outline-none transition focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F]"
+            className="w-full resize-none rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-[14px] text-black placeholder:text-neutral-400 outline-none transition focus:border-black focus:bg-white"
           />
           <div className="mt-1 flex justify-between">
-            <span className="text-[11px] text-[#cbb18a]/60">Minimum 10 characters</span>
-            <span className={`text-[11px] ${text.length > 1900 ? "text-amber-400" : "text-[#cbb18a]/60"}`}>
+            <span className="text-[11px] text-neutral-400">Minimum 10 characters</span>
+            <span className={`text-[11px] ${text.length > 1900 ? "text-amber-500" : "text-neutral-400"}`}>
               {text.length}/2000
             </span>
           </div>
@@ -372,7 +372,7 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
 
         {/* Error message */}
         {errorMsg && (
-          <div className="rounded-xl border border-red-500/40 bg-red-950/40 px-4 py-3 text-[13px] font-medium text-red-300">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-600">
             {errorMsg}
           </div>
         )}
@@ -381,7 +381,7 @@ function ReviewForm({ productId, onSuccess }: { productId: number; onSuccess: (r
         <button
           type="submit"
           disabled={status === "loading"}
-          className="flex items-center gap-2 rounded-[12px] bg-[#E1B76F] px-7 py-3 text-[14px] font-bold text-[#400604] shadow-md transition hover:bg-[#f3cb87] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-2 rounded-full bg-[#ffd800] px-7 py-3 text-[14px] font-bold text-black shadow-sm transition hover:bg-black hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {status === "loading" ? (
             <>
@@ -445,7 +445,7 @@ function ReviewCard({ review }: { review: WooReview }) {
   const reviewText = String(review.review || "").trim();
 
   return (
-    <div className="rounded-2xl border border-[#5c0f0d] bg-[#4a0705] p-5 shadow-lg">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
           {avatarUrl ? (
@@ -453,30 +453,30 @@ function ReviewCard({ review }: { review: WooReview }) {
             <img
               src={avatarUrl}
               alt={review.reviewer}
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-[#5c0f0d]"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-neutral-200"
             />
           ) : (
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#2b0403] to-[#400604] border border-[#5c0f0d] flex items-center justify-center text-[13px] font-bold text-[#E1B76F]">
+            <div className="h-10 w-10 rounded-full bg-neutral-100 border border-neutral-200 flex items-center justify-center text-[13px] font-bold text-neutral-800">
               {nameInitials || <User className="h-4 w-4" />}
             </div>
           )}
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[14px] font-semibold text-[#E1B76F]">{review.reviewer}</span>
+              <span className="text-[14px] font-semibold text-neutral-900">{review.reviewer}</span>
               {review.verified && (
-                <span className="flex items-center gap-0.5 text-[11px] text-emerald-400 font-medium">
+                <span className="flex items-center gap-0.5 text-[11px] text-emerald-600 font-medium">
                   <BadgeCheck className="h-3.5 w-3.5" />
                   Verified
                 </span>
               )}
             </div>
-            {date && <span className="text-[12px] text-[#cbb18a]">{date}</span>}
+            {date && <span className="text-[12px] text-neutral-500">{date}</span>}
           </div>
         </div>
         <StarRow rating={rating} size="sm" />
       </div>
       {reviewText && (
-        <div className="text-[14px] leading-relaxed text-[#cbb18a]">{reviewText}</div>
+        <div className="text-[14px] leading-relaxed text-neutral-700">{reviewText}</div>
       )}
     </div>
   );
@@ -493,13 +493,13 @@ function RatingBreakdown({ reviews }: { reviews: WooReview[] }) {
   }));
 
   return (
-    <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center p-6 rounded-2xl bg-[#4a0705] border border-[#5c0f0d] mb-8 shadow-xl">
+    <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center p-6 rounded-2xl bg-neutral-50 border border-neutral-200 mb-8 shadow-sm">
       <div className="text-center shrink-0">
-        <div className="text-[56px] font-black text-[#E1B76F] leading-none">{avg.toFixed(1)}</div>
+        <div className="text-[56px] font-black text-black leading-none">{avg.toFixed(1)}</div>
         <StarRow rating={avg} />
-        <div className="mt-1 text-[13px] text-[#cbb18a]">{total} review{total !== 1 ? "s" : ""}</div>
+        <div className="mt-1 text-[13px] text-neutral-600">{total} review{total !== 1 ? "s" : ""}</div>
       </div>
-      <div className="w-px self-stretch bg-[#5c0f0d] hidden sm:block" />
+      <div className="w-px self-stretch bg-neutral-200 hidden sm:block" />
       <div className="flex-1 w-full space-y-2">
         {counts.map(({ star, count }) => {
           const pct = total > 0 ? Math.round((count / total) * 100) : 0;
@@ -507,17 +507,17 @@ function RatingBreakdown({ reviews }: { reviews: WooReview[] }) {
             <div key={star} className="flex items-center gap-3">
               <div className="flex items-center gap-1 w-16 shrink-0">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                <span className="text-[13px] font-medium text-[#cbb18a]">{star}</span>
+                <span className="text-[13px] font-medium text-neutral-700">{star}</span>
               </div>
-              <div className="flex-1 h-2 rounded-full bg-[#2b0403] overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-neutral-200 overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.6, delay: (5 - star) * 0.06, ease: "easeOut" }}
-                  className="h-full rounded-full bg-[#E1B76F]"
+                  className="h-full rounded-full bg-[#ffd800]"
                 />
               </div>
-              <span className="text-[12px] text-[#cbb18a] w-10 text-right shrink-0">{count}</span>
+              <span className="text-[12px] text-neutral-500 w-10 text-right shrink-0">{count}</span>
             </div>
           );
         })}
@@ -644,21 +644,21 @@ export function ProductDetailsView({
   };
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-white text-black">
       {/* Breadcrumb */}
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-3">
-        <div className="container flex items-center gap-2 text-[13px] text-[#cbb18a] flex-wrap">
-          <Link href="/" className="transition hover:text-[#E1B76F]">Home</Link>
+      <div className="border-b border-neutral-100 bg-[#fafafa] py-3">
+        <div className="container flex items-center gap-2 text-[13px] text-[#7a7a7a] flex-wrap">
+          <Link href="/" className="transition hover:text-black">Home</Link>
           <span>/</span>
-          <Link href="/products" className="transition hover:text-[#E1B76F]">All Products</Link>
+          <Link href="/products" className="transition hover:text-black">All Products</Link>
           {product.categories[0] && (
             <>
               <span>/</span>
-              <Link href={`/${product.categories[0].slug}`} className="transition hover:text-[#E1B76F]">{product.categories[0].name}</Link>
+              <Link href={`/${product.categories[0].slug}`} className="transition hover:text-black">{product.categories[0].name}</Link>
             </>
           )}
           <span>/</span>
-          <span className="line-clamp-1 text-[#E1B76F]">{product.name}</span>
+          <span className="line-clamp-1 text-black font-medium">{product.name}</span>
         </div>
       </div>
 
@@ -669,22 +669,22 @@ export function ProductDetailsView({
           {/* LEFT: Image Gallery */}
           <div className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start w-full">
             {/* Main Image */}
-            <div className="group relative overflow-hidden rounded-2xl bg-[#2b0403] border border-[#5c0f0d] w-full shadow-lg flex items-center justify-center min-h-[380px] sm:min-h-[460px] max-h-[520px] p-3">
-              <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl">
-              <Image
-                src={activeImg}
-                alt={product.name}
-                width={600}
-                height={600}
-                sizes="(max-width: 1024px) 100vw, 45vw"
-                className="max-h-[495px] w-auto max-w-full object-contain rounded-xl transition duration-500 group-hover:scale-[1.03]"
-                priority
-              />
-            </div>
+            <div className="group relative overflow-hidden rounded-none bg-white border border-neutral-100 w-full flex items-center justify-center min-h-[380px] sm:min-h-[460px] max-h-[520px] p-3">
+              <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden">
+                <Image
+                  src={activeImg}
+                  alt={product.name}
+                  width={600}
+                  height={600}
+                  sizes="(max-width: 1024px) 100vw, 45vw"
+                  className="max-h-[495px] w-auto max-w-full object-contain transition duration-500 group-hover:scale-[1.03]"
+                  priority
+                />
+              </div>
 
               <div className="absolute left-3 top-3 flex flex-col gap-1.5 pointer-events-none z-10">
                 {pricing.hasSale && (
-                  <span className="rounded-full bg-[#E1B76F] px-3 py-1 text-[11px] font-bold uppercase text-[#400604] shadow">-{discountPct}%</span>
+                  <span className="rounded-full bg-black text-[#ffd800] px-3 py-1 text-[11px] font-bold uppercase shadow">-{discountPct}%</span>
                 )}
                 {product.stock_status === "instock" && (
                   <span className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-bold uppercase text-white shadow">In Stock</span>
@@ -694,11 +694,11 @@ export function ProductDetailsView({
                 type="button"
                 onClick={handleWishlistToggle}
                 className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border transition backdrop-blur-md z-10 ${
-                  isWished ? "border-[#E1B76F] bg-[#E1B76F] text-[#400604] shadow-sm" : "border-[#5c0f0d] bg-[#400604]/80 text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604]"
+                  isWished ? "border-black bg-black text-[#ffd800] shadow-sm" : "border-neutral-200 bg-white/80 text-black hover:bg-black hover:text-white"
                 }`}
                 aria-label="Toggle wishlist"
               >
-                <Heart className={`h-5 w-5 ${isWished ? "fill-[#400604] text-[#400604]" : ""}`} />
+                <Heart className={`h-5 w-5 ${isWished ? "fill-[#ffd800] text-[#ffd800]" : ""}`} />
               </button>
             </div>
 
@@ -710,10 +710,10 @@ export function ProductDetailsView({
                     key={img.id}
                     type="button"
                     onClick={() => setActiveImage(i)}
-                    className={`relative aspect-square w-full overflow-hidden rounded-xl border-2 bg-[#2b0403] transition-all duration-200 flex items-center justify-center ${
+                    className={`relative aspect-square w-full overflow-hidden rounded border bg-white transition-all duration-200 flex items-center justify-center ${
                       activeImage === i
-                        ? "border-[#E1B76F] opacity-100 ring-1 ring-[#E1B76F] shadow-sm"
-                        : "border-[#5c0f0d] opacity-70 hover:opacity-100 hover:border-[#E1B76F]"
+                        ? "border-black opacity-100 ring-1 ring-black shadow-sm"
+                        : "border-neutral-200 opacity-70 hover:opacity-100 hover:border-black"
                     }`}
                   >
                     <Image
@@ -737,66 +737,66 @@ export function ProductDetailsView({
               {product.categories[0] && (
                 <Link
                   href={`/${product.categories[0].slug}`}
-                  className="inline-flex items-center rounded-full bg-[#2b0403] border border-[#5c0f0d] px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-[#cbb18a] hover:text-[#E1B76F] transition"
+                  className="inline-flex items-center rounded-full bg-neutral-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-neutral-600 hover:text-black transition"
                 >
                   {product.categories[0].name}
                 </Link>
               )}
               {brand && (
-                <span className="text-[12px] text-[#cbb18a]">
-                  by <span className="font-bold text-[#E1B76F]">{brand}</span>
+                <span className="text-[12px] text-neutral-500">
+                  by <span className="font-bold text-black">{brand}</span>
                 </span>
               )}
               {product.on_sale && (
-                <span className="inline-flex items-center rounded-full bg-[#E1B76F] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[#400604]">Sale</span>
+                <span className="inline-flex items-center rounded-full bg-[#ffd800] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-black">Sale</span>
               )}
             </div>
 
             {/* Title */}
             <div>
-              <h1 className="text-[24px] font-extrabold leading-tight text-[#E1B76F] sm:text-[28px] lg:text-[30px] tracking-tight">{product.name}</h1>
+              <h1 className="text-[24px] font-normal leading-tight text-[#111111] sm:text-[28px] lg:text-[30px] tracking-tight">{product.name}</h1>
               <div className="mt-2 flex items-center gap-3 flex-wrap">
                 {/* Stars */}
                 {reviews.length > 0 ? (
                   <button type="button" onClick={() => setActiveTab("Reviews")} className="flex items-center gap-1.5 group">
                     <StarRow rating={avgRating} />
-                    <span className="text-[13px] text-[#cbb18a] group-hover:text-[#E1B76F] transition">
-                      <span className="font-semibold text-[#E1B76F]">{avgRating.toFixed(1)}</span> ({reviews.length} review{reviews.length !== 1 ? "s" : ""})
+                    <span className="text-[13px] text-neutral-500 group-hover:text-black transition">
+                      <span className="font-semibold text-black">{avgRating.toFixed(1)}</span> ({reviews.length} review{reviews.length !== 1 ? "s" : ""})
                     </span>
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setActiveTab("Reviews")} className="text-[12px] text-[#cbb18a] hover:text-[#E1B76F] transition underline underline-offset-2">
+                  <button type="button" onClick={() => setActiveTab("Reviews")} className="text-[12px] text-neutral-500 hover:text-black transition underline underline-offset-2">
                     Be the first to review
                   </button>
                 )}
-                <span className="text-[#5c0f0d]">|</span>
+                <span className="text-neutral-300">|</span>
                 {/* Stock */}
                 {product.stock_status === "instock" ? (
-                  <span className="flex items-center gap-1 text-[12px] font-semibold text-emerald-400">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="flex items-center gap-1 text-[12px] font-semibold text-emerald-600">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                     In Stock{typeof product.stock_quantity === "number" ? ` · ${product.stock_quantity} left` : ""}
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-[12px] font-semibold text-red-400">
-                    <span className="h-2 w-2 rounded-full bg-red-400" />Out of Stock
+                  <span className="flex items-center gap-1 text-[12px] font-semibold text-red-500">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />Out of Stock
                   </span>
                 )}
               </div>
               {/* SKU / ID */}
-              <div className="mt-1.5 flex items-center gap-3 text-[11px] text-[#cbb18a]">
-                {product.sku && <span>SKU: <span className="text-[#E1B76F]">{product.sku}</span></span>}
-                {product.id && <span>ID: <span className="text-[#E1B76F]">{product.id}</span></span>}
+              <div className="mt-1.5 flex items-center gap-3 text-[11px] text-neutral-500">
+                {product.sku && <span>SKU: <span className="text-black font-semibold">{product.sku}</span></span>}
+                {product.id && <span>ID: <span className="text-black font-semibold">{product.id}</span></span>}
               </div>
             </div>
 
             {/* Price Block */}
-            <div className="rounded-xl border border-[#5c0f0d] bg-[#2b0403] px-5 py-4">
+            <div className="rounded-xl border border-neutral-100 bg-[#fafafa] px-5 py-4">
               <div className="flex items-baseline gap-3">
-                <span className="text-[34px] font-black text-[#E1B76F] leading-none">{formatPrice(pricing.current)}</span>
+                <span className="text-[32px] sm:text-[36px] font-bold text-black leading-none">Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 {pricing.hasSale && (
                   <>
-                    <span className="text-[18px] text-[#cbb18a] line-through">{formatPrice(pricing.regular)}</span>
-                    <span className="rounded-full bg-[#E1B76F] px-2.5 py-0.5 text-[12px] font-bold text-[#400604]">-{discountPct}%</span>
+                    <span className="text-[18px] text-neutral-400 line-through">Tk{pricing.regular.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span className="rounded-full bg-black text-[#ffd800] px-2.5 py-0.5 text-[12px] font-bold">-{discountPct}%</span>
                   </>
                 )}
               </div>
@@ -804,19 +804,19 @@ export function ProductDetailsView({
 
             {/* Short Description */}
             {product.short_description && (
-              <RichText html={product.short_description} className="text-[14px] leading-relaxed text-[#cbb18a]" />
+              <RichText html={product.short_description} className="text-[14px] leading-relaxed text-neutral-700" />
             )}
 
-            <div className="h-px bg-[#5c0f0d]" />
+            <div className="h-px bg-neutral-200" />
 
             {/* Size */}
             {product.sizes.length > 0 && (
               <div>
                 <div className="mb-2.5 flex items-center justify-between">
-                  <span className="text-[14px] font-bold text-[#E1B76F]">
-                    Size{size && <span className="ml-2 font-normal text-[#cbb18a]">— {size}</span>}
+                  <span className="text-[14px] font-bold text-black">
+                    Size{size && <span className="ml-2 font-normal text-neutral-500">— {size}</span>}
                   </span>
-                  <button type="button" onClick={() => setActiveTab("Additional Information")} className="text-[12px] font-medium text-[#E1B76F] hover:underline transition">
+                  <button type="button" onClick={() => setActiveTab("Additional Information")} className="text-[12px] font-medium text-black underline underline-offset-2 hover:opacity-75 transition">
                     Size Guide
                   </button>
                 </div>
@@ -826,35 +826,35 @@ export function ProductDetailsView({
 
             {/* Quantity */}
             <div>
-              <span className="mb-2.5 block text-[14px] font-bold text-[#E1B76F]">Quantity</span>
+              <span className="mb-2.5 block text-[14px] font-bold text-black">Quantity</span>
               <QuantitySelector value={quantity} onChange={setQuantity} />
             </div>
 
             {/* Delivery Info Card (Bangladeshi Shipping Estimator) */}
             {deliveryFee && (deliveryFee.inside > 0 || deliveryFee.outside > 0) && (
-              <div className="flex items-center gap-3.5 rounded-[12px] border border-[#5c0f0d] bg-[#2b0403] p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#E1B76F] text-[#400604] shadow-sm">
+              <div className="flex items-center gap-3.5 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#ffd800] text-black shadow-sm">
                   <Truck className="h-5 w-5" />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-heading text-[13px] font-bold text-[#E1B76F] uppercase tracking-wider">Estimated Delivery</span>
-                  <div className="flex items-center gap-2 text-[12px] text-[#cbb18a] flex-wrap">
-                    <span>Inside Dhaka (2-3 Days): <strong className="font-bold text-[#E1B76F]">৳{deliveryFee.inside.toLocaleString()}</strong></span>
-                    <span className="text-[#5c0f0d]">•</span>
-                    <span>Outside Dhaka (3-5 Days): <strong className="font-bold text-[#E1B76F]">৳{deliveryFee.outside.toLocaleString()}</strong></span>
+                  <span className="font-heading text-[13px] font-bold text-black uppercase tracking-wider">Estimated Delivery</span>
+                  <div className="flex items-center gap-2 text-[12px] text-neutral-600 flex-wrap">
+                    <span>Inside Dhaka (2-3 Days): <strong className="font-bold text-black">Tk{deliveryFee.inside.toLocaleString()}</strong></span>
+                    <span className="text-neutral-300">•</span>
+                    <span>Outside Dhaka (3-5 Days): <strong className="font-bold text-black">Tk{deliveryFee.outside.toLocaleString()}</strong></span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* CTAs (Dual CTA Buttons) */}
+            {/* CTAs (Gorur Ghash Yellow Add to Cart Pill Button) */}
             <div className="flex flex-col gap-3 sm:flex-row pt-2">
               <button
                 type="button"
                 onClick={onAddToCart}
                 disabled={product.stock_status !== "instock"}
-                className={`relative flex h-[52px] flex-1 items-center justify-center gap-2.5 rounded-[12px] border-2 border-[#E1B76F] text-[14px] font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
-                  added ? "bg-[#2b0403] text-[#E1B76F]" : "bg-transparent text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604]"
+                className={`relative flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full px-8 text-[14px] font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                  added ? "bg-black text-[#ffd800]" : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
                 }`}
               >
                 <AnimatePresence mode="wait" initial={false}>
@@ -872,44 +872,44 @@ export function ProductDetailsView({
               <Link
                 href="/checkout"
                 onClick={onAddToCart}
-                className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-[12px] border-2 border-[#E1B76F] bg-[#E1B76F] text-[14px] font-black text-[#400604] shadow-sm transition hover:bg-[#f3cb87] hover:border-[#f3cb87] active:scale-[0.98]"
+                className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full border-2 border-black bg-black text-[14px] font-bold text-white shadow-sm transition hover:bg-neutral-800 active:scale-[0.98]"
               >
                 <Zap className="h-4 w-4" /> Buy It Now
               </Link>
             </div>
 
             {/* Share */}
-            <div className="border-t border-[#5c0f0d] pt-4">
+            <div className="border-t border-neutral-200 pt-4">
               <ShareStrip title={product.name} />
             </div>
           </div>
         </div>
 
         {/* ── Tabbed Panel ─────────────────────────────────────────────── */}
-        <div className="mt-16 border-t border-[#5c0f0d] pt-10">
+        <div className="mt-16 border-t border-neutral-200 pt-10">
           {/* Tab bar */}
-          <div className="flex gap-0 border-b border-[#5c0f0d] overflow-x-auto">
+          <div className="flex gap-0 border-b border-neutral-200 overflow-x-auto">
             {TABS.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
                 className={`relative shrink-0 px-6 py-3.5 text-[14px] font-semibold transition whitespace-nowrap ${
-                  activeTab === tab ? "text-[#E1B76F]" : "text-[#cbb18a] hover:text-[#f3cb87]"
+                  activeTab === tab ? "text-black" : "text-neutral-500 hover:text-black"
                 }`}
               >
                 {tab === "Reviews" ? (
                   <span className="flex items-center gap-2">
                     Reviews
                     {reviews.length > 0 && (
-                      <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full border border-[#5c0f0d] bg-[#2b0403] text-[#E1B76F] text-[10px] font-bold">
+                      <span className="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full border border-neutral-200 bg-neutral-100 text-black text-[10px] font-bold">
                         {reviews.length}
                       </span>
                     )}
                   </span>
                 ) : tab}
                 {activeTab === tab && (
-                  <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#E1B76F] rounded-full" />
+                  <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-black rounded-full" />
                 )}
               </button>
             ))}
@@ -931,7 +931,7 @@ export function ProductDetailsView({
                   {product.description ? (
                     <RichText html={product.description} />
                   ) : (
-                    <p className="text-[#cbb18a] text-sm">No description available.</p>
+                    <p className="text-neutral-500 text-sm">No description available.</p>
                   )}
                 </div>
               )}
@@ -941,21 +941,21 @@ export function ProductDetailsView({
                 <div className="max-w-2xl space-y-8">
                   {product.sizes.length > 0 && (
                     <div>
-                      <h3 className="font-heading text-[15px] font-bold uppercase text-[#E1B76F] mb-4">Size Guide</h3>
-                      <div className="overflow-x-auto rounded-xl border border-[#5c0f0d] bg-[#2b0403]">
+                      <h3 className="font-heading text-[15px] font-bold uppercase text-black mb-4">Size Guide</h3>
+                      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
                         <table className="w-full text-[13px]">
                           <thead>
-                            <tr className="bg-[#4a0705] border-b border-[#5c0f0d]">
+                            <tr className="bg-neutral-50 border-b border-neutral-200">
                               {["Size", "Chest (cm)", "Length (cm)", "Shoulder (cm)"].map((h) => (
-                                <th key={h} className="px-5 py-3 text-left font-semibold text-[#E1B76F]">{h}</th>
+                                <th key={h} className="px-5 py-3 text-left font-semibold text-neutral-900">{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
                             {SIZE_TABLE.filter((r) => product.sizes.includes(r[0])).map((row) => (
-                              <tr key={row[0]} className="border-b border-[#5c0f0d]/50 last:border-0 hover:bg-[#4a0705]/50 transition">
+                              <tr key={row[0]} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
                                 {row.map((cell, ci) => (
-                                  <td key={ci} className={`px-5 py-3 ${ci === 0 ? "font-semibold text-[#E1B76F]" : "text-[#cbb18a]"}`}>{cell}</td>
+                                  <td key={ci} className={`px-5 py-3 ${ci === 0 ? "font-semibold text-black" : "text-neutral-700"}`}>{cell}</td>
                                 ))}
                               </tr>
                             ))}
@@ -967,29 +967,29 @@ export function ProductDetailsView({
 
                   {(infoAttributes.length > 0 || product.sku || product.categories.length > 0 || product.tags.length > 0) && (
                     <div>
-                      <h3 className="font-heading text-[15px] font-bold uppercase text-[#E1B76F] mb-4">Product Specifications</h3>
-                      <div className="overflow-x-auto rounded-xl border border-[#5c0f0d] bg-[#2b0403]">
+                      <h3 className="font-heading text-[15px] font-bold uppercase text-black mb-4">Product Specifications</h3>
+                      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
                         <table className="w-full text-[13px]">
                           <tbody>
                             {infoAttributes.map((attr) => (
-                              <tr key={attr.id} className="border-b border-[#5c0f0d]/50 last:border-0 hover:bg-[#4a0705]/50 transition">
-                                <td className="px-5 py-3 font-semibold text-[#E1B76F] w-40 bg-[#4a0705]">{attr.name}</td>
-                                <td className="px-5 py-3 text-[#cbb18a]">{attr.options.join(", ")}</td>
+                              <tr key={attr.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
+                                <td className="px-5 py-3 font-semibold text-neutral-900 w-40 bg-neutral-50">{attr.name}</td>
+                                <td className="px-5 py-3 text-neutral-700">{attr.options.join(", ")}</td>
                               </tr>
                             ))}
                             {product.sku && (
-                              <tr className="border-b border-[#5c0f0d]/50 last:border-0 hover:bg-[#4a0705]/50 transition">
-                                <td className="px-5 py-3 font-semibold text-[#E1B76F] bg-[#4a0705]">SKU</td>
-                                <td className="px-5 py-3 text-[#cbb18a]">{product.sku}</td>
+                              <tr className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
+                                <td className="px-5 py-3 font-semibold text-neutral-900 bg-neutral-50">SKU</td>
+                                <td className="px-5 py-3 text-neutral-700">{product.sku}</td>
                               </tr>
                             )}
                             {product.categories.length > 0 && (
-                              <tr className="border-b border-[#5c0f0d]/50 last:border-0 hover:bg-[#4a0705]/50 transition">
-                                <td className="px-5 py-3 font-semibold text-[#E1B76F] bg-[#4a0705]">{product.categories.length > 1 ? "Categories" : "Category"}</td>
-                                <td className="px-5 py-3 text-[#cbb18a]">
+                              <tr className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50/50 transition">
+                                <td className="px-5 py-3 font-semibold text-neutral-900 bg-neutral-50">{product.categories.length > 1 ? "Categories" : "Category"}</td>
+                                <td className="px-5 py-3 text-neutral-700">
                                   <div className="flex flex-wrap gap-1.5">
                                     {product.categories.map((c) => (
-                                      <Link key={c.id} href={`/${c.slug}`} className="inline-flex items-center rounded-full border border-[#5c0f0d] bg-[#4a0705] px-2.5 py-0.5 text-[12px] font-medium text-[#E1B76F] hover:bg-[#5c0f0d] transition">
+                                      <Link key={c.id} href={`/${c.slug}`} className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-[12px] font-medium text-neutral-700 hover:bg-neutral-200 transition">
                                         {c.name}
                                       </Link>
                                     ))}
@@ -998,12 +998,12 @@ export function ProductDetailsView({
                               </tr>
                             )}
                             {product.tags.length > 0 && (
-                              <tr className="hover:bg-[#4a0705]/50 transition">
-                                <td className="px-5 py-3 font-semibold text-[#E1B76F] bg-[#4a0705]">Tags</td>
-                                <td className="px-5 py-3 text-[#cbb18a]">
+                              <tr className="hover:bg-neutral-50/50 transition">
+                                <td className="px-5 py-3 font-semibold text-neutral-900 bg-neutral-50">Tags</td>
+                                <td className="px-5 py-3 text-neutral-700">
                                   <div className="flex flex-wrap gap-1.5">
                                     {product.tags.map((t) => (
-                                      <span key={t.id} className="inline-flex items-center rounded-full border border-[#5c0f0d] bg-[#4a0705] px-2.5 py-0.5 text-[12px] text-[#cbb18a]">#{t.name}</span>
+                                      <span key={t.id} className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-[12px] text-neutral-600">#{t.name}</span>
                                     ))}
                                   </div>
                                 </td>
@@ -1016,7 +1016,7 @@ export function ProductDetailsView({
                   )}
 
                   {infoAttributes.length === 0 && !product.sku && product.categories.length === 0 && product.tags.length === 0 && (
-                    <p className="text-sm text-[#cbb18a]">No additional information available.</p>
+                    <p className="text-sm text-neutral-500">No additional information available.</p>
                   )}
                 </div>
               )}
@@ -1028,18 +1028,18 @@ export function ProductDetailsView({
                     /* Loading skeleton while fetching from WC */
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-[#5c0f0d] bg-[#4a0705] p-5 space-y-3 animate-pulse">
+                        <div key={i} className="rounded-2xl border border-neutral-200 bg-white p-5 space-y-3 animate-pulse">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-[#2b0403]" />
+                            <div className="h-10 w-10 rounded-full bg-neutral-100" />
                             <div className="space-y-1.5 flex-1">
-                              <div className="h-3 w-24 rounded bg-[#2b0403]" />
-                              <div className="h-3 w-16 rounded bg-[#2b0403]/60" />
+                              <div className="h-3 w-24 rounded bg-neutral-100" />
+                              <div className="h-3 w-16 rounded bg-neutral-100" />
                             </div>
                           </div>
-                          <div className="h-3 w-20 rounded bg-[#2b0403]" />
+                          <div className="h-3 w-20 rounded bg-neutral-100" />
                           <div className="space-y-2">
-                            <div className="h-3 w-full rounded bg-[#2b0403]/60" />
-                            <div className="h-3 w-3/4 rounded bg-[#2b0403]/60" />
+                            <div className="h-3 w-full rounded bg-neutral-100" />
+                            <div className="h-3 w-3/4 rounded bg-neutral-100" />
                           </div>
                         </div>
                       ))}
@@ -1055,11 +1055,11 @@ export function ProductDetailsView({
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <div className="h-16 w-16 rounded-full border border-[#5c0f0d] bg-[#2b0403] flex items-center justify-center mb-4">
-                        <MessageSquare className="h-7 w-7 text-[#cbb18a]" />
+                      <div className="h-16 w-16 rounded-full border border-neutral-200 bg-neutral-50 flex items-center justify-center mb-4">
+                        <MessageSquare className="h-7 w-7 text-neutral-400" />
                       </div>
-                      <h3 className="font-heading text-[16px] font-bold uppercase text-[#E1B76F] mb-1">No reviews yet</h3>
-                      <p className="text-[14px] text-[#cbb18a] max-w-xs">
+                      <h3 className="font-heading text-[16px] font-bold uppercase text-black mb-1">No reviews yet</h3>
+                      <p className="text-[14px] text-neutral-500 max-w-xs">
                         Be the first to share your experience with this product.
                       </p>
                     </div>
@@ -1067,7 +1067,7 @@ export function ProductDetailsView({
 
                   {/* ── Write a Review form ────────────────────────────── */}
                   {!reviewsLoading && (
-                    <div className="border-t border-[#5c0f0d] pt-8">
+                    <div className="border-t border-neutral-200 pt-8">
                       <ReviewForm
                         productId={product.id}
                         onSuccess={handleReviewSuccess}
@@ -1083,10 +1083,10 @@ export function ProductDetailsView({
 
       {/* ── Sticky Bottom Action Bar matching Gorur Ghash ── */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#5c0f0d] bg-[#2b0403]/95 backdrop-blur-md px-4 py-2.5 shadow-2xl animate-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-md px-4 py-2.5 shadow-xl animate-in slide-in-from-bottom-2 duration-300">
           <div className="container mx-auto max-w-[1400px] flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[#5c0f0d] bg-white">
+              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded border border-neutral-200 bg-white">
                 <Image
                   src={activeImg}
                   alt={product.name}
@@ -1095,11 +1095,11 @@ export function ProductDetailsView({
                 />
               </div>
               <div className="min-w-0">
-                <h4 className="truncate text-xs sm:text-sm font-bold text-[#E1B76F]">
+                <h4 className="truncate text-xs sm:text-sm font-bold text-black">
                   {product.name}
                 </h4>
-                <span className="font-heading text-xs sm:text-sm font-black text-[#f3cb87]">
-                  {formatPrice(pricing.current)}
+                <span className="font-heading text-xs sm:text-sm font-bold text-black">
+                  Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
@@ -1109,10 +1109,10 @@ export function ProductDetailsView({
                 type="button"
                 onClick={onAddToCart}
                 disabled={product.stock_status !== "instock"}
-                className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs font-black uppercase tracking-wider transition shadow-lg ${
+                className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs font-bold uppercase tracking-wider transition shadow-sm ${
                   added
-                    ? "bg-[#2b0403] text-[#E1B76F] border border-[#E1B76F]"
-                    : "bg-[#fbdd02] text-black hover:bg-yellow-400"
+                    ? "bg-black text-[#ffd800]"
+                    : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {added ? "Added to Cart" : "Select options"}

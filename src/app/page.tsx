@@ -171,34 +171,36 @@ export default function HomePage() {
 
       {/* ── 4. Products: 8-Column WooCommerce Loop Grid (Full Width Edge to Edge) ── */}
       <section className="w-full px-2 sm:px-3 md:px-4 lg:px-6 py-6 sm:py-8">
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 sm:gap-3">
+        <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 md:gap-x-5 gap-y-8 sm:gap-y-10 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8">
           {isLoading
             ? Array.from({ length: 16 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="animate-pulse bg-white p-1"
+                  className="animate-pulse bg-white p-0"
                 >
-                  <div className="mb-2 aspect-square rounded bg-neutral-100" />
+                  <div className="mb-2 aspect-square rounded-none bg-neutral-100" />
                   <div className="mb-1 h-3 w-3/4 rounded bg-neutral-100" />
+                  <div className="mb-1 h-2.5 w-1/3 rounded bg-neutral-100" />
                   <div className="mb-2 h-3 w-1/2 rounded bg-neutral-100" />
-                  <div className="h-7 w-full rounded-full bg-neutral-100" />
+                  <div className="h-6 w-24 rounded-full bg-neutral-100" />
                 </div>
               ))
-            : products.slice(0, 24).map((product) => (
+            : products.slice(0, 16).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
         </div>
       </section>
 
-      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Full Width) ── */}
-      <section className="w-full px-4 py-8 border-t border-neutral-100">
-        <div className="w-full max-w-[1200px] mx-auto text-center">
-          <div className="relative w-full aspect-[1000/120] sm:aspect-[1200/90] overflow-hidden rounded-lg bg-white p-2 shadow-sm border border-neutral-200">
+      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Seamless matching Gorur Ghash) ── */}
+      <section className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-10 bg-white">
+        <div className="w-full max-w-[1400px] mx-auto text-center">
+          <div className="relative w-full aspect-[1200/110] sm:aspect-[1300/90] overflow-hidden">
             <Image
               src="/banners/sslcommerz.png"
               alt="SSLCOMMERZ Payment Partners — bKash, Nagad, Rocket, VISA, Mastercard, Amex"
               fill
-              className="object-contain p-2"
+              sizes="(max-width: 1400px) 100vw, 1400px"
+              className="object-contain"
             />
           </div>
         </div>

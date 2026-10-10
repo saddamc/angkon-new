@@ -18,16 +18,16 @@ export function SizeSelector({
     : ALL_SIZES;
 
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div className="flex flex-wrap gap-2">
       {sizes.map((size) => (
         <button
           key={size}
           type="button"
           className={cn(
-            "flex h-11 min-w-[3rem] items-center justify-center rounded-[12px] border px-4 text-sm font-bold uppercase transition-all duration-200",
+            "flex h-9 min-w-[2.75rem] items-center justify-center rounded border px-3 text-xs font-semibold uppercase transition-all duration-200",
             value === size
-              ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] shadow-md"
-              : "border-[#5c0f0d] bg-[#2b0403] text-[#cbb18a] hover:border-[#E1B76F] hover:text-[#E1B76F]",
+              ? "border-2 border-black bg-black text-white"
+              : "border-neutral-300 bg-white text-neutral-800 hover:border-black",
           )}
           onClick={() => onChange(size)}
         >

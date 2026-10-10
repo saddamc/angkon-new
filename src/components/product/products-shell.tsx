@@ -68,21 +68,21 @@ function DualRangeSlider({
   return (
     <div className="relative pt-1 pb-2">
       {/* Track */}
-      <div className="relative h-1.5 w-full rounded-full bg-[#5c0f0d]">
+      <div className="relative h-1.5 w-full rounded-full bg-neutral-200">
         <div
-          className="absolute h-full rounded-full bg-[#E1B76F]"
+          className="absolute h-full rounded-full bg-[#ffd800]"
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         />
       </div>
 
       {/* Visual thumb — min */}
       <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#E1B76F] bg-[#2b0403] shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
+        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black bg-[#ffd800] shadow-sm"
         style={{ left: `${minPercent}%` }}
       />
       {/* Visual thumb — max */}
       <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#E1B76F] bg-[#2b0403] shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
+        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black bg-[#ffd800] shadow-sm"
         style={{ left: `${maxPercent}%` }}
       />
 
@@ -127,16 +127,16 @@ function SidebarSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-[#5c0f0d] py-5">
+    <div className="border-b border-neutral-200 py-4">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between text-sm font-semibold uppercase tracking-widest text-[#E1B76F]"
+        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-black transition hover:text-neutral-600"
       >
         {title}
-        {open ? <ChevronUp className="h-4 w-4 text-[#cbb18a]" /> : <ChevronDown className="h-4 w-4 text-[#cbb18a]" />}
+        {open ? <ChevronUp className="h-4 w-4 text-neutral-500" /> : <ChevronDown className="h-4 w-4 text-neutral-500" />}
       </button>
-      {open && <div className="mt-4">{children}</div>}
+      {open && <div className="mt-3.5">{children}</div>}
     </div>
   );
 }
@@ -180,13 +180,13 @@ function Sidebar({
   return (
     <aside className="flex flex-col">
       {/* Heading row */}
-      <div className="mb-1 flex items-center justify-between pb-4 border-b border-[#5c0f0d]">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-[#E1B76F]">Filters</h2>
+      <div className="mb-1 flex items-center justify-between pb-3 border-b border-neutral-200">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-black">Filters</h2>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={onClear}
-            className="text-[11px] font-semibold uppercase tracking-wider text-[#cbb18a] underline underline-offset-2 transition hover:text-[#E1B76F]"
+            className="text-[11px] font-semibold uppercase tracking-wider text-[#7a7a7a] underline underline-offset-2 transition hover:text-black"
           >
             Clear All
           </button>
@@ -207,14 +207,14 @@ function Sidebar({
                   <div
                     className={`flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded border transition ${
                       checked
-                        ? "border-[#E1B76F] bg-[#E1B76F]"
-                        : "border-[#5c0f0d] bg-[#2b0403] group-hover:border-[#E1B76F]/50"
+                        ? "border-black bg-black text-white"
+                        : "border-neutral-300 bg-white group-hover:border-black"
                     }`}
                     style={{ width: 18, height: 18 }}
                   >
                     {checked && (
                       <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4L3.5 6.5L9 1" stroke="#400604" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     )}
                   </div>
@@ -223,7 +223,7 @@ function Sidebar({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={cat.image.src} alt={cat.name} className="h-5 w-5 object-contain" />
                     ) : null}
-                    <span className="text-sm text-[#cbb18a] group-hover:text-[#E1B76F] transition capitalize">
+                    <span className="text-sm text-neutral-700 group-hover:text-black transition capitalize">
                       {cat.image
                         ? decodeEntities(cat.name)
                         : decodeHtmlCharCodes(cat.description)
@@ -232,7 +232,7 @@ function Sidebar({
                     </span>
                   </div>
                 </div>
-                <span className="text-[11px] text-[#cbb18a]/60">{cat.count}</span>
+                <span className="text-[11px] text-neutral-400">{cat.count}</span>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -247,7 +247,7 @@ function Sidebar({
           <button
             type="button"
             onClick={() => setShowAllCategories((v) => !v)}
-            className="mt-4 text-[11px] font-bold uppercase tracking-wider text-[#E1B76F] underline underline-offset-4 hover:text-white"
+            className="mt-4 text-[11px] font-bold uppercase tracking-wider text-black underline underline-offset-4 hover:text-neutral-600"
           >
             {showAllCategories ? "Show less" : `Show all (${usableCategories.length})`}
           </button>
@@ -257,7 +257,7 @@ function Sidebar({
       {/* Price Range */}
       <SidebarSection title="Price Range">
         <div className="px-1">
-          <div className="mb-4 flex items-center justify-between text-sm font-semibold text-[#E1B76F]">
+          <div className="mb-4 flex items-center justify-between text-sm font-semibold text-black">
             <span>{formatPrice(filters.priceRange[0])}</span>
             <span>{formatPrice(filters.priceRange[1])}{filters.priceRange[1] >= PRICE_MAX ? "+" : ""}</span>
           </div>
@@ -268,8 +268,8 @@ function Sidebar({
             onChange={(v) => onFiltersChange({ priceRange: v })}
           />
           <div className="mt-3 flex gap-2">
-            <div className="flex-1 rounded-lg border border-[#5c0f0d] bg-[#2b0403] px-2.5 py-1.5">
-              <p className="text-[10px] text-[#cbb18a] uppercase tracking-wider">Min</p>
+            <div className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5">
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Min</p>
               <input
                 type="number"
                 min={0}
@@ -279,11 +279,11 @@ function Sidebar({
                 onChange={(e) =>
                   onFiltersChange({ priceRange: [Math.max(0, Number(e.target.value)), filters.priceRange[1]] })
                 }
-                className="w-full bg-transparent text-sm font-semibold text-[#E1B76F] outline-none"
+                className="w-full bg-transparent text-sm font-semibold text-black outline-none"
               />
             </div>
-            <div className="flex-1 rounded-lg border border-[#5c0f0d] bg-[#2b0403] px-2.5 py-1.5">
-              <p className="text-[10px] text-[#cbb18a] uppercase tracking-wider">Max</p>
+            <div className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5">
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Max</p>
               <input
                 type="number"
                 min={filters.priceRange[0] + PRICE_STEP}
@@ -293,7 +293,7 @@ function Sidebar({
                 onChange={(e) =>
                   onFiltersChange({ priceRange: [filters.priceRange[0], Math.min(PRICE_MAX, Number(e.target.value))] })
                 }
-                className="w-full bg-transparent text-sm font-semibold text-[#E1B76F] outline-none"
+                className="w-full bg-transparent text-sm font-semibold text-black outline-none"
               />
             </div>
           </div>
@@ -305,16 +305,16 @@ function Sidebar({
         <label className="flex cursor-pointer items-center gap-3">
           <div
             className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${
-              filters.inStockOnly ? "bg-[#E1B76F]" : "bg-[#5c0f0d]"
+              filters.inStockOnly ? "bg-black" : "bg-neutral-200"
             }`}
           >
             <div
               className={`absolute top-0.5 h-4 w-4 rounded-full shadow transition-transform ${
-                filters.inStockOnly ? "translate-x-4 bg-[#400604]" : "translate-x-0.5 bg-[#cbb18a]"
+                filters.inStockOnly ? "translate-x-4 bg-[#ffd800]" : "translate-x-0.5 bg-white"
               }`}
             />
           </div>
-          <span className="text-sm text-[#cbb18a]">In stock only</span>
+          <span className="text-sm text-neutral-700">In stock only</span>
           <input
             type="checkbox"
             checked={filters.inStockOnly}
@@ -355,15 +355,15 @@ function MobileDrawer({
       />
       {/* Drawer */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] lg:hidden overflow-y-auto rounded-t-3xl border-t border-[#5c0f0d] bg-[#400604] px-5 pb-8 pt-4 shadow-2xl transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] lg:hidden overflow-y-auto rounded-t-3xl border-t border-neutral-200 bg-white px-5 pb-8 pt-4 shadow-2xl transition-transform duration-300 ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >
         {/* Handle */}
-        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#5c0f0d]" />
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-neutral-300" />
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-[#E1B76F]">Filters</h3>
-          <button type="button" onClick={onClose} className="rounded-full p-1 text-[#cbb18a] transition hover:bg-[#4a0705]">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-black">Filters</h3>
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-neutral-500 transition hover:bg-neutral-100">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -376,7 +376,7 @@ function MobileDrawer({
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-[12px] bg-[#E1B76F] py-3.5 text-sm font-bold text-[#400604] transition hover:bg-[#f3cb87]"
+          className="mt-6 w-full rounded-full bg-[#ffd800] py-3.5 text-sm font-bold text-black transition hover:bg-black hover:text-white"
         >
           Show Results
         </button>
@@ -528,19 +528,19 @@ export function ProductsShell({
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Search */}
             <div className="relative flex-1 max-w-sm">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#cbb18a]" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => patchFilters({ search: e.target.value })}
                 placeholder="Search products…"
-                className="h-10 w-full rounded-full border border-[#5c0f0d] bg-[#2b0403] pl-10 pr-4 text-sm text-[#E1B76F] shadow-md outline-none transition placeholder:text-[#cbb18a]/40 focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F]"
+                className="h-10 w-full rounded-full border border-neutral-200 bg-neutral-50 pl-10 pr-4 text-sm text-black shadow-none outline-none transition placeholder:text-neutral-400 focus:border-black focus:bg-white"
               />
             </div>
 
             <div className="flex items-center gap-3">
               {/* Result count */}
-              <span className="hidden text-sm text-[#cbb18a] sm:block">
+              <span className="hidden text-sm text-neutral-500 sm:block">
                 Showing {Math.min((currentPage - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} 
               </span>
 
@@ -548,10 +548,10 @@ export function ProductsShell({
               <select
                 value={filters.sort}
                 onChange={(e) => patchFilters({ sort: e.target.value })}
-                className="h-10 rounded-full border border-[#5c0f0d] bg-[#2b0403] px-4 pr-8 text-sm text-[#E1B76F] shadow-md outline-none transition focus:border-[#E1B76F] appearance-none cursor-pointer"
+                className="h-10 rounded-full border border-neutral-200 bg-white px-4 pr-8 text-sm text-black shadow-none outline-none transition focus:border-black appearance-none cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-[#2b0403] text-[#E1B76F]">
+                  <option key={opt.value} value={opt.value} className="bg-white text-black">
                     {opt.label}
                   </option>
                 ))}
@@ -561,12 +561,12 @@ export function ProductsShell({
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-[#5c0f0d] bg-[#2b0403] px-4 text-sm font-semibold text-[#E1B76F] shadow-md transition hover:bg-[#4a0705] lg:hidden"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-neutral-100 lg:hidden"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeChips.length > 0 && (
-                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-bold text-[#400604]"
+                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white"
                     style={{ width: 18, height: 18 }}>
                     {activeChips.length}
                   </span>
@@ -576,7 +576,7 @@ export function ProductsShell({
           </div>
 
           {/* Mobile result count */}
-          <p className="mb-3 text-sm text-[#cbb18a] sm:hidden">
+          <p className="mb-3 text-sm text-neutral-500 sm:hidden">
             Showing {Math.min((currentPage - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} 
           </p>
 
@@ -586,16 +586,16 @@ export function ProductsShell({
               {activeChips.map((chip) => (
                 <span
                   key={chip.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#5c0f0d] bg-[#2b0403] px-3 py-1 text-[12px] font-semibold text-[#E1B76F] shadow-md"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-[12px] font-semibold text-black shadow-none"
                 >
                   {chip.label}
                   <button
                     type="button"
                     onClick={chip.onRemove}
-                    className="rounded-full transition hover:text-[#f3cb87]"
+                    className="rounded-full transition hover:text-red-500"
                     aria-label={`Remove ${chip.label} filter`}
                   >
-                    <X className="h-3 w-3 text-[#cbb18a]" />
+                    <X className="h-3 w-3 text-neutral-400" />
                   </button>
                 </span>
               ))}
@@ -603,7 +603,7 @@ export function ProductsShell({
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="rounded-full px-3 py-1 text-[12px] font-semibold text-[#cbb18a] underline underline-offset-2 transition hover:text-[#E1B76F]"
+                  className="rounded-full px-3 py-1 text-[12px] font-semibold text-neutral-500 underline underline-offset-2 transition hover:text-black"
                 >
                   Clear all
                 </button>
@@ -613,21 +613,21 @@ export function ProductsShell({
 
           {/* Product grid */}
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#5c0f0d] bg-[#4a0705] py-20 text-center">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 py-20 text-center">
               <div className="mb-4 text-5xl">🔍</div>
-              <p className="font-heading text-lg font-bold uppercase text-[#E1B76F]">No products match your filters</p>
-              <p className="mt-1.5 text-sm text-[#cbb18a]">Try adjusting or clearing your filters</p>
+              <p className="font-heading text-lg font-bold uppercase text-black">No products match your filters</p>
+              <p className="mt-1.5 text-sm text-neutral-500">Try adjusting or clearing your filters</p>
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mt-5 rounded-[12px] bg-[#E1B76F] px-6 py-2.5 text-sm font-semibold text-[#400604] transition hover:bg-[#f3cb87]"
+                className="mt-5 rounded-full bg-[#ffd800] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-black hover:text-white"
               >
                 Clear Filters
               </button>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 md:gap-x-5 gap-y-8 sm:gap-y-10 sm:grid-cols-3 xl:grid-cols-4">
                 {paginatedProducts.map((product, index) => (
                   <ProductCard key={product.id} product={product} eager={index < 4} />
                 ))}
@@ -640,13 +640,13 @@ export function ProductsShell({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#5c0f0d] bg-[#2b0403] text-[#E1B76F] shadow-md transition hover:bg-[#4a0705] disabled:cursor-not-allowed disabled:opacity-35"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-black shadow-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
 
-                  <span className="min-w-[80px] text-center text-sm font-semibold text-[#E1B76F]">
+                  <span className="min-w-[80px] text-center text-sm font-semibold text-black">
                     Page {currentPage} of {totalPages}
                   </span>
 
@@ -654,7 +654,7 @@ export function ProductsShell({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#5c0f0d] bg-[#2b0403] text-[#E1B76F] shadow-md transition hover:bg-[#4a0705] disabled:cursor-not-allowed disabled:opacity-35"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-black shadow-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />

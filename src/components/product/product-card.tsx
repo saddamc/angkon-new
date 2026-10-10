@@ -67,12 +67,12 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
   return (
     <>
       <article 
-        className="group relative flex flex-col justify-between bg-white rounded-[2px] transition-all duration-200"
+        className="group relative flex flex-col justify-between bg-white rounded-none transition-all duration-200"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* ── 1. Image Container (Square 1:1 matching live store exactly) ── */}
-        <div className="relative aspect-square w-full overflow-hidden bg-[#f7f7f7] rounded-[2px]">
+        <div className="relative aspect-square w-full overflow-hidden bg-transparent rounded-none">
           {/* Top Badges (Sale % or Sold Out) */}
           {discountPct > 0 && (
             <div className="absolute left-2 top-2 z-10">
@@ -97,41 +97,55 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
             aria-label={product.name}
           >
             <Image
-              src={isHovered && product.images.length > 1 ? hoverImage : primaryImage}
+              src={primaryImage}
               alt={decodeEntities(product.name)}
               fill
               loading={eager ? "eager" : "lazy"}
               fetchPriority={eager ? "high" : "auto"}
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              className={`object-cover transition-opacity duration-300 ${
+                isHovered && product.images.length > 1 ? "opacity-0" : "opacity-100"
+              }`}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12.5vw"
             />
+            {product.images.length > 1 && (
+              <Image
+                src={hoverImage}
+                alt=""
+                fill
+                loading="lazy"
+                className={`object-cover transition-opacity duration-300 ${
+                  isHovered ? "opacity-100" : "opacity-0"
+                }`}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12.5vw"
+              />
+            )}
           </Link>
         </div>
 
         {/* ── 2. Product Information (Exact Gorur Ghash Layout) ── */}
-        <div className="flex flex-1 flex-col justify-between pt-2 pb-1 text-left bg-white">
+        <div className="flex flex-1 flex-col justify-between pt-2.5 pb-1 text-left bg-white">
           <div>
             {/* Product Title */}
             <Link href={`/products/${product.slug}`} className="block">
-              <h3 className="line-clamp-2 text-[12px] sm:text-[13px] font-normal leading-tight text-[#111111] transition hover:text-[#602bb7]">
+              <h3 className="line-clamp-3 text-[12px] sm:text-[12.5px] font-normal leading-[1.3] text-[#111111] transition-colors hover:text-black hover:opacity-80">
                 {decodeEntities(product.name)}
               </h3>
             </Link>
 
             {/* Category Subtitle */}
-            <span className="block mt-1 text-[11px] text-[#777777] line-clamp-1">
+            <span className="block mt-0.5 mb-1 text-[10.5px] sm:text-[11px] text-[#7a7a7a] font-normal line-clamp-1">
               {decodeEntities(product.categories?.[0]?.name || "Apparel")}
             </span>
           </div>
 
-          <div className="mt-1.5">
+          <div className="mt-1">
             {/* Price (Tk in Gorur Ghash format: Tk1,500.00) */}
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[13px] sm:text-[14px] font-bold text-black">
+              <span className="text-[12.5px] sm:text-[13px] font-bold text-black">
                 Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               {pricing.hasSale && (
-                <span className="text-[11px] text-[#888888] line-through">
+                <span className="text-[11px] text-[#888888] line-through font-normal">
                   Tk{pricing.regular.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               )}
@@ -142,18 +156,18 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               type="button"
               disabled={!inStock}
               onClick={handleAddToCart}
-              className={`w-full flex items-center justify-center gap-1 rounded-full py-1.5 px-3 text-[11px] sm:text-[12px] font-bold transition-all duration-200 shadow-sm active:scale-95 ${
+              className={`inline-flex w-fit items-center justify-center rounded-full px-3.5 py-1 text-[11px] font-bold transition-colors duration-200 active:scale-95 ${
                 added
                   ? "bg-black text-[#ffd800]"
-                  : "bg-[#ffd800] text-black hover:bg-[#fed700]"
+                  : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
               } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {added ? (
-                <>
-                  <Check className="w-3.5 h-3.5" /> Added
-                </>
+                <span className="flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Added
+                </span>
               ) : (
-                <>Select options</>
+                "Select options"
               )}
             </button>
           </div>

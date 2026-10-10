@@ -29,7 +29,7 @@ export function RootShell({
       <Footer />
       <WhatsAppButton />
       <BackToTop />
-      <PromoPopup />
+      {pathname === "/" && <PromoPopup />}
     </>
   );
 }

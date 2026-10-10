@@ -3,24 +3,31 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 
 export function PromoPopup() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Show popup on website load every time as requested
+    // Only show popup on home page reload / visit
+    if (pathname !== "/") {
+      setIsOpen(false);
+      return;
+    }
+
     const timer = setTimeout(() => {
       setIsOpen(true);
     }, 600);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   const handleClose = () => {
     setIsOpen(false);
   };
 
-  if (!isOpen) return null;
+  if (pathname !== "/" || !isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-300">

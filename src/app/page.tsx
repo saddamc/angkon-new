@@ -120,26 +120,27 @@ export default function HomePage() {
         )}
       </button>
 
-      {/* ── 1. Top Hero Banner (Mighto Activewear - Full Width) ── */}
-      <section className="w-full">
+      {/* ── 1. Top Hero Banner (Mighto Activewear - Full Width Edge to Edge) ── */}
+      <section className="w-full overflow-hidden">
         <Link
           href="/mighto"
-          className="group relative block w-full aspect-[2560/942] max-h-[540px] overflow-hidden bg-neutral-100"
+          className="group relative block w-full aspect-[2560/942] overflow-hidden bg-neutral-100"
         >
           <Image
             src="/banners/mighto-home-banner.png"
             alt="Mighto Performance Activewear"
             fill
             priority
+            sizes="100vw"
             className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
           />
         </Link>
       </section>
 
-      {/* ── 2. Pairs of 2-Column Banner Cards (Men/Women, Half/Full Sleeves, Pants/Tees, Polos/Tops, Accessories/Gift Card) ── */}
-      <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
+      {/* ── 2. Pairs of 2-Column Banner Cards (Full Width Grid Edge to Edge matching Gorur Ghash e-con-full) ── */}
+      <section className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3">
         {BANNER_PAIRS.map((pair, pIdx) => (
-          <div key={pIdx} className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div key={pIdx} className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
             {pair.map((item) => (
               <Link
                 key={item.title}
@@ -159,18 +160,18 @@ export default function HomePage() {
         ))}
       </section>
 
-      {/* ── 3. Yellow Cash On Delivery Band (Exact Gorur Ghash Styling) ── */}
-      <section className="w-full bg-[#ffd800] py-4 sm:py-5 text-center text-black my-4">
-        <div className="max-w-[1240px] mx-auto px-4">
-          <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl font-black text-black tracking-tight">
+      {/* ── 3. Yellow Cash On Delivery Band (Full Width Edge to Edge) ── */}
+      <section className="w-full bg-[#ffd800] py-4 sm:py-6 text-center text-black my-2 sm:my-3">
+        <div className="w-full px-4 text-center">
+          <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-black tracking-tight">
             Cash on Delivery in all 64 Districts
           </h2>
         </div>
       </section>
 
-      {/* ── 4. Products: 8-Column WooCommerce Loop Grid (24 Products) ── */}
-      <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-4 py-6 sm:py-8">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 sm:gap-3.5">
+      {/* ── 4. Products: 8-Column WooCommerce Loop Grid (Full Width Edge to Edge) ── */}
+      <section className="w-full px-2 sm:px-3 md:px-4 lg:px-6 py-6 sm:py-8">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 sm:gap-3">
           {isLoading
             ? Array.from({ length: 16 }).map((_, idx) => (
                 <div
@@ -189,10 +190,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Exact Image Banner) ── */}
-      <section className="w-full max-w-[1240px] mx-auto px-4 py-8 border-t border-neutral-100">
-        <div className="text-center">
-          <div className="relative w-full max-w-[960px] mx-auto aspect-[1000/120] sm:aspect-[1200/100] overflow-hidden rounded-lg bg-white p-2 shadow-sm border border-neutral-200">
+      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Full Width) ── */}
+      <section className="w-full px-4 py-8 border-t border-neutral-100">
+        <div className="w-full max-w-[1200px] mx-auto text-center">
+          <div className="relative w-full aspect-[1000/120] sm:aspect-[1200/90] overflow-hidden rounded-lg bg-white p-2 shadow-sm border border-neutral-200">
             <Image
               src="/banners/sslcommerz.png"
               alt="SSLCOMMERZ Payment Partners — bKash, Nagad, Rocket, VISA, Mastercard, Amex"

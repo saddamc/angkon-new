@@ -166,10 +166,10 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
   const navLinks = [
     { label: "Home", href: "/", isExact: true },
-    { label: "Women", href: "/women", isExact: false },
-    { label: "Men", href: "/men", isExact: false },
-    { label: "Mighto", href: "/mighto", isExact: false, hasSubmenu: true },
-    { label: "Accessories", href: "/accessories", isExact: false },
+    { label: "Women", href: "/product-category/women", isExact: false },
+    { label: "Men", href: "/product-category/men", isExact: false },
+    { label: "Mighto", href: "/product-category/mighto", isExact: false, hasSubmenu: true },
+    { label: "Accessories", href: "/product-category/accessories", isExact: false },
     { label: "Policies", href: "/policies", isExact: false },
     { label: "On Sale", href: "/sale", isExact: false },
     { label: "About Us", href: "/about", isExact: false },
@@ -177,7 +177,12 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
   const isLinkActive = (href: string, isExact: boolean) => {
     if (isExact) return pathname === href;
-    return pathname.startsWith(href);
+    if (pathname === href || pathname.startsWith(href + "/")) return true;
+    if (href.startsWith("/product-category/")) {
+      const short = href.replace("/product-category", "");
+      if (pathname === short || pathname.startsWith(short + "/")) return true;
+    }
+    return false;
   };
 
   return (
@@ -242,13 +247,13 @@ export function Navbar({ categoryTree }: NavbarProps) {
                         {/* Mighto Dropdown (clean Astra-style popover) */}
                         <div className="absolute left-1/2 -translate-x-1/2 top-full hidden group-hover:block w-48 rounded border border-neutral-200 bg-white p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                           <Link
-                            href="/mighto/mighto-men"
+                            href="/product-category/mighto/mighto-men"
                             className="block rounded px-3 py-2 text-xs font-bold text-[#4e4e4e] hover:bg-neutral-50 hover:text-[#602bb7] transition uppercase"
                           >
                             Mighto Men
                           </Link>
                           <Link
-                            href="/mighto/mighto-women"
+                            href="/product-category/mighto/mighto-women"
                             className="block rounded px-3 py-2 text-xs font-bold text-[#4e4e4e] hover:bg-neutral-50 hover:text-[#602bb7] transition uppercase"
                           >
                             Mighto Women

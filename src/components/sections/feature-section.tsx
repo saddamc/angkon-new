@@ -8,7 +8,7 @@ export function FeatureSection() {
         {/* Centered 2x2 Grid, Height Reduced via 16:9 Aspect Ratio */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           
-          <Link href="/women" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden shadow-xl block">
+          <Link href="/product-category/women" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden shadow-xl block">
             <img 
               src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop" 
               alt="Women's Collection" 
@@ -23,7 +23,7 @@ export function FeatureSection() {
             </div>
           </Link>
 
-          <Link href="/men" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden shadow-xl block">
+          <Link href="/product-category/men" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden shadow-xl block">
             <img 
               src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop" 
               alt="Men's Collection" 

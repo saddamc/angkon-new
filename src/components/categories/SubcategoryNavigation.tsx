@@ -20,31 +20,28 @@ const PREFERRED_ORDER: Record<string, string[]> = {
     "kimonos",
   ],
   men: [
-    "polos-men",
     "polos",
-    "tank-tops-men",
-    "tank-top",
-    "shirt-men",
-    "shirt",
-    "tshirt",
-    "pants",
-    "hoodie-blanket",
-    "overcoat-men",
+    "tank-tops",
+    "mens-shirt",
+    "t-shirts-men",
+    "men-pants",
+    "blanket-hoodies",
     "overcoat",
-    "turtleneck",
+    "turtleneck-men",
     "hoodie-men",
-    "hoodie",
     "jacket-men",
-    "jacket",
+    "co-ord-set-male",
   ],
 };
 
 export function SubcategoryNavigation({
   subcategories,
   parentSlug,
+  basePrefix = "",
 }: {
   subcategories: CategoryNode[];
   parentSlug: string;
+  basePrefix?: string;
 }) {
   if (subcategories.length === 0) return null;
 
@@ -62,11 +59,17 @@ export function SubcategoryNavigation({
     return a.name.localeCompare(b.name);
   });
 
+  const prefix = basePrefix ? basePrefix : "";
+
   return (
     <div className="mb-12">
       <div className="grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 lg:gap-7">
         {sorted.map((sub) => (
-          <CategoryCard key={sub.id} category={sub} href={`/${parentSlug}/${sub.slug}`} />
+          <CategoryCard
+            key={sub.id}
+            category={sub}
+            href={`${prefix}/${parentSlug}/${sub.slug}`}
+          />
         ))}
       </div>
     </div>

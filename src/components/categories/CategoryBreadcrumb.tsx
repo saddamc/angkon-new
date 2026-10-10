@@ -2,11 +2,19 @@ import Link from "next/link";
 import type { CategoryNode } from "@/types/woocommerce";
 import { categoryDisplayName } from "@/utils/category-display";
 
-export function CategoryBreadcrumb({ path }: { path: CategoryNode[] }) {
-  const href = (index: number) => "/" + path.slice(0, index + 1).map((c) => c.slug).join("/");
+export function CategoryBreadcrumb({
+  path,
+  basePrefix = "",
+}: {
+  path: CategoryNode[];
+  basePrefix?: string;
+}) {
+  const prefix = basePrefix ? basePrefix : "";
+  const href = (index: number) => prefix + "/" + path.slice(0, index + 1).map((c) => c.slug).join("/");
 
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] text-[#7a7a7a] flex-wrap font-normal">
+
       <Link href="/" className="transition hover:text-black">
         Home
       </Link>

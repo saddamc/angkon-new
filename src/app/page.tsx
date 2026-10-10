@@ -15,13 +15,13 @@ const BANNER_PAIRS = [
   [
     {
       title: "Men",
-      href: "/men",
+      href: "/product-category/men",
       image: "/banners/men-banner.png",
       alt: "Men Collection",
     },
     {
       title: "Women",
-      href: "/women",
+      href: "/product-category/women",
       image: "/banners/women-banner.png",
       alt: "Women Collection",
     },

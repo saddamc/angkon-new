@@ -88,22 +88,22 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
               </Link>
             </li>
             <li>
-              <Link href="/women" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
+              <Link href="/product-category/women" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
                 Women
               </Link>
             </li>
             <li>
-              <Link href="/men" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
+              <Link href="/product-category/men" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
                 Men
               </Link>
             </li>
             <li>
-              <Link href="/mighto" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
+              <Link href="/product-category/mighto" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
                 Mighto Activewear
               </Link>
             </li>
             <li>
-              <Link href="/accessories" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
+              <Link href="/product-category/accessories" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50">
                 Accessories
               </Link>
             </li>
@@ -134,7 +134,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
                 <span className="block px-6 py-2 text-[11px] text-neutral-400 font-bold uppercase tracking-wider">Categories</span>
                 <ul>
                   {categoryTree.map((cat) => (
-                    <CategoryAccordionItem key={cat.id} node={cat} parentPath="" onNavigate={onClose} />
+                    <CategoryAccordionItem key={cat.id} node={cat} parentPath="/product-category" onNavigate={onClose} />
                   ))}
                 </ul>
               </li>

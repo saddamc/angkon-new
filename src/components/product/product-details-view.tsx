@@ -614,24 +614,24 @@ export function ProductDetailsView({
         </div>
       </div>
 
-      {/* ── Sticky Bottom Action Bar matching Gorur Ghash ── */}
+      {/* ── Sticky Bottom Action Bar matching Gorur Ghash (Exact Match to Image 2) ── */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white/95 backdrop-blur-md px-4 py-2.5 shadow-xl animate-in slide-in-from-bottom-2 duration-300">
-          <div className="container mx-auto max-w-[1400px] flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded border border-neutral-200 bg-white">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white py-2 sm:py-2.5 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] animate-in slide-in-from-bottom-2 duration-300">
+          <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 overflow-hidden rounded border border-neutral-200 bg-white p-0.5">
                 <Image
                   src={activeImg}
                   alt={product.name}
                   fill
-                  className="object-cover"
+                  className="object-cover rounded-sm"
                 />
               </div>
-              <div className="min-w-0">
-                <h4 className="truncate text-xs sm:text-sm font-bold text-black">
+              <div className="flex flex-col justify-center min-w-0">
+                <h4 className="truncate text-xs sm:text-[13px] font-bold text-black leading-tight">
                   {product.name}
                 </h4>
-                <span className="font-heading text-xs sm:text-sm font-bold text-black">
+                <span className="text-xs sm:text-[13px] font-bold text-black leading-tight mt-0.5 sm:mt-1">
                   Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
@@ -649,13 +649,17 @@ export function ProductDetailsView({
                   onAddToCart();
                 }}
                 disabled={product.stock_status !== "instock"}
-                className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs font-bold uppercase tracking-wider transition shadow-sm ${
+                className={`rounded-full px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-[12px] font-bold uppercase tracking-wider transition shadow-sm ${
                   added
                     ? "bg-black text-[#ffd800]"
                     : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {added ? "Added to Cart" : size ? "Add to Cart" : "Select options"}
+                {added
+                  ? "ADDED TO CART"
+                  : size || variationAttrs.length === 0
+                  ? "ADD TO CART"
+                  : "SELECT OPTIONS"}
               </button>
             </div>
           </div>

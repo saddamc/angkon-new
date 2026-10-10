@@ -614,30 +614,30 @@ export function ProductDetailsView({
         </div>
       </div>
 
-      {/* ── Sticky Bottom Action Bar matching Gorur Ghash (Exact Match to Image 2) ── */}
+      {/* ── Sticky Bottom Action Bar (Exact Match to Astra / Gorur Ghash Reference) ── */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-neutral-200 bg-white py-2 sm:py-2.5 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] animate-in slide-in-from-bottom-2 duration-300">
-          <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-              <div className="relative h-10 w-10 sm:h-11 sm:w-11 shrink-0 overflow-hidden rounded border border-neutral-200 bg-white p-0.5">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#e2e2e2] bg-white shadow-[0px_-1px_10px_rgba(0,0,0,0.08),0px_-1px_6px_rgba(0,0,0,0.04)] animate-in slide-in-from-bottom-2 duration-300">
+          <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 min-h-[58px] sm:min-h-[64px] py-2 flex items-center justify-between gap-3 sm:gap-4">
+            {/* Left: Thumbnail + Product Title */}
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+              <div className="relative h-10 w-10 sm:h-12 sm:w-12 shrink-0 overflow-hidden bg-white">
                 <Image
                   src={activeImg}
                   alt={product.name}
                   fill
-                  className="object-cover rounded-sm"
+                  className="object-cover"
                 />
               </div>
-              <div className="flex flex-col justify-center min-w-0">
-                <h4 className="truncate text-xs sm:text-[13px] font-bold text-black leading-tight">
-                  {product.name}
-                </h4>
-                <span className="text-xs sm:text-[13px] font-bold text-black leading-tight mt-0.5 sm:mt-1">
-                  Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
+              <span className="truncate text-[13px] sm:text-[15px] font-normal text-[#555555] leading-normal min-w-0">
+                {product.name}
+              </span>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            {/* Right: Price + Action Button */}
+            <div className="flex items-center gap-3 sm:gap-5 shrink-0">
+              <span className="font-bold text-[14px] sm:text-[15px] text-[#222222] whitespace-nowrap">
+                Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
               <button
                 type="button"
                 onClick={() => {
@@ -649,17 +649,17 @@ export function ProductDetailsView({
                   onAddToCart();
                 }}
                 disabled={product.stock_status !== "instock"}
-                className={`rounded-full px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-[12px] font-bold uppercase tracking-wider transition shadow-sm ${
+                className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs sm:text-[14px] font-bold transition shadow-sm whitespace-nowrap ${
                   added
                     ? "bg-black text-[#ffd800]"
                     : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {added
-                  ? "ADDED TO CART"
+                  ? "Added to cart"
                   : size || variationAttrs.length === 0
-                  ? "ADD TO CART"
-                  : "SELECT OPTIONS"}
+                  ? "Add to cart"
+                  : "Select options"}
               </button>
             </div>
           </div>

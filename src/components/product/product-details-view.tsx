@@ -30,6 +30,7 @@ import { useWishlistStore } from "@/store/wishlist-store";
 import type { WooProduct, WooReview } from "@/types/product";
 import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
+import { saveRecentlyViewed } from "@/utils/recently-viewed";
 
 /* ── ShareStrip ─────────────────────────────────────────────────────── */
 
@@ -555,6 +556,18 @@ export function ProductDetailsView({
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (product?.id) {
+      saveRecentlyViewed({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        price: product.price || product.regular_price || "0",
+        image: product.images?.[0]?.src,
+      });
+    }
+  }, [product]);
 
   const insideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_inside")?.value || "60");
   const outsideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_outside")?.value || "120");

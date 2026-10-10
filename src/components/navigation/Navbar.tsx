@@ -190,12 +190,12 @@ export function Navbar({ categoryTree }: NavbarProps) {
     <header
       className={`top-0 z-50 w-full bg-white text-[#4e4e4e] transition-all ${
         openMobile
-          ? "max-lg:relative max-lg:shadow-none lg:sticky lg:shadow-[0_1px_3px_rgba(0,0,0,0.03)]"
-          : "sticky shadow-[0_1px_3px_rgba(0,0,0,0.03)]"
+          ? "max-lg:relative max-lg:shadow-none lg:sticky"
+          : "sticky"
       }`}
     >
       {/* ── Main Navigation Header (Border directly under navbar) ── */}
-      <div className="w-full border-b border-neutral-100">
+      <div className="w-full border-b border-[#e7e7e7]">
         <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5">
           
           {/* Left: Brand Logo (Exact Gorur Ghash Header Logo) */}

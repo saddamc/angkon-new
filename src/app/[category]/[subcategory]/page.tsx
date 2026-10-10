@@ -6,6 +6,7 @@ import { CategoryBreadcrumb } from "@/components/categories/CategoryBreadcrumb";
 import { CategoryHero } from "@/components/categories/CategoryHero";
 import { SubcategoryNavigation } from "@/components/categories/SubcategoryNavigation";
 import { CategoryGrid } from "@/components/categories/CategoryGrid";
+import { CategorySidebar } from "@/components/categories/CategorySidebar";
 import { categoryDisplayName } from "@/utils/category-display";
 
 export const dynamic = "force-dynamic";
@@ -70,22 +71,43 @@ export default async function SubcategoryPage({ params, searchParams }: Props) {
   const showSubcategories = hasSubcategories && page === 1;
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="container mx-auto max-w-[1500px] space-y-6 px-4 py-6 sm:py-8 lg:px-8">
-        <CategoryBreadcrumb path={path} />
-        <CategoryHero category={node} productCount={total} />
-        {showSubcategories ? (
-          <SubcategoryNavigation subcategories={node.children} parentSlug={`${category}/${subcategory}`} />
-        ) : (
-          <CategoryGrid
-            products={products}
-            total={total}
-            page={page}
-            totalPages={totalPages}
-            sort={sort}
-            baseHref={`/${category}/${subcategory}`}
-          />
-        )}
+    <div className="min-h-screen bg-white text-[#333333]">
+      <div className="mx-auto max-w-[1440px] px-4 sm:px-5 lg:px-6 pt-4 sm:pt-6 pb-12">
+        <div className="lg:grid lg:grid-cols-[250px_1fr] xl:grid-cols-[270px_1fr] lg:gap-8 xl:gap-10">
+          
+          {/* Desktop Left Sidebar: Search + Recently Viewed Products */}
+          <aside className="hidden lg:block border-r border-[#e7e7e7] pr-6 xl:pr-8">
+            <CategorySidebar />
+          </aside>
+
+          {/* Main Category Content Area */}
+          <main className="min-w-0">
+            <div className="mb-2 sm:mb-2.5">
+              <CategoryBreadcrumb path={path} />
+            </div>
+            <div className="mb-5 sm:mb-6">
+              <CategoryHero category={node} productCount={total} />
+            </div>
+            {showSubcategories ? (
+              <SubcategoryNavigation subcategories={node.children} parentSlug={`${category}/${subcategory}`} />
+            ) : (
+              <CategoryGrid
+                products={products}
+                total={total}
+                page={page}
+                totalPages={totalPages}
+                sort={sort}
+                baseHref={`/${category}/${subcategory}`}
+              />
+            )}
+
+            {/* Mobile / Small Screen: Sidebar placed UNDER Category */}
+            <div className="lg:hidden mt-10 sm:mt-12 pt-8 sm:pt-10 border-t border-[#e7e7e7]">
+              <CategorySidebar isMobile />
+            </div>
+          </main>
+
+        </div>
       </div>
     </div>
   );

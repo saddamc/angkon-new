@@ -191,18 +191,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Seamless matching Gorur Ghash) ── */}
-      <section className="w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-10 bg-white">
-        <div className="w-full max-w-[1400px] mx-auto text-center">
-          <div className="relative w-full aspect-[1200/110] sm:aspect-[1300/90] overflow-hidden">
-            <Image
-              src="/banners/sslcommerz.png"
-              alt="SSLCOMMERZ Payment Partners — bKash, Nagad, Rocket, VISA, Mastercard, Amex"
-              fill
-              sizes="(max-width: 1400px) 100vw, 1400px"
-              className="object-contain"
-            />
-          </div>
+      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Exact Gorur Ghash elementor-section-full_width) ── */}
+      <section className="w-full bg-white py-6 sm:py-8 md:py-10">
+        <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6">
+          <Image
+            src="/banners/sslcommerz.png"
+            alt="Pay With SSLCOMMERZ — VISA, Mastercard, AMEX, bKash, Nagad, Rocket, DBBL Nexus, Upay"
+            width={5011}
+            height={587}
+            sizes="(max-width: 1440px) 100vw, 1440px"
+            className="w-full h-auto object-contain mx-auto"
+          />
         </div>
       </section>
 

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { fullName, email, phone, address, city, district, postalCode, items } = body;
+    const { fullName, email, phone, address, city, district, postalCode, items, paymentMethod } = body;
     // district takes priority (sent from checkout); fall back to plain city string
     const resolvedCity = district ?? city ?? "";
 
@@ -76,9 +76,10 @@ export async function POST(request: NextRequest) {
       shippingFee = 120; // Fallback
     }
 
+    const isOnlinePayment = paymentMethod === "sslcommerz" || paymentMethod === "online";
     const wcPayload = {
-      payment_method: "bacs",
-      payment_method_title: "Bank Transfer / Cash on Delivery",
+      payment_method: isOnlinePayment ? "sslcommerz" : "cod",
+      payment_method_title: isOnlinePayment ? "Online Payment (SSLCOMMERZ / bKash / Nagad / Cards)" : "Cash on Delivery",
       set_paid: false,
       status: "pending",
       billing,

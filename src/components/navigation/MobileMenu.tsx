@@ -81,7 +81,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto py-2">
-          <ul className="flex flex-col text-[14px] font-bold uppercase tracking-wider text-black">
+          <ul className="flex flex-col text-[14px] font-bold uppercase tracking-wider text-[#4e4e4e]">
             <li>
               <Link href="/" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50 text-[#602bb7]">
                 Home

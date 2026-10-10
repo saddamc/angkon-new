@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, EyeOff, ShieldCheck, ShoppingCart } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, ShoppingCart, KeyRound } from "lucide-react";
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
@@ -9,6 +9,17 @@ export default function AdminLoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // If already logged in, redirect straight to dashboard
+  useEffect(() => {
+    fetch("/api/admin/login")
+      .then((res) => {
+        if (res.ok) {
+          window.location.href = "/admin/dashboard";
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +83,7 @@ export default function AdminLoginPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
-                placeholder="Enter your username"
+                placeholder="admin"
                 className="w-full rounded-xl bg-purple-50/50 border border-purple-100 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
                 required
               />
@@ -89,7 +100,7 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
-                  placeholder="Enter your password"
+                  placeholder="••••••••"
                   className="w-full rounded-xl bg-purple-50/50 border border-purple-100 px-4 py-3 pr-11 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
                   required
                 />
@@ -119,7 +130,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(147,51,234,0.3)] hover:shadow-[0_4px_24px_rgba(147,51,234,0.5)] hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 disabled:shadow-none transition-all duration-200 mt-2"
+              className="w-full rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 py-3 text-sm font-bold text-white shadow-[0_4px_20px_rgba(147,51,234,0.3)] hover:shadow-[0_4px_24px_rgba(147,51,234,0.5)] hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 disabled:shadow-none transition-all duration-200 mt-2 cursor-pointer"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -131,6 +142,17 @@ export default function AdminLoginPage() {
               )}
             </button>
           </form>
+
+          {/* Default Credentials Helper */}
+          <div className="mt-5 pt-4 border-t border-purple-50 flex items-center justify-between text-[11px] text-gray-400">
+            <span className="flex items-center gap-1.5">
+              <KeyRound className="h-3.5 w-3.5 text-purple-400" />
+              Default credentials:
+            </span>
+            <span className="font-mono text-purple-600 font-semibold bg-purple-50 px-2 py-0.5 rounded">
+              admin / admin
+            </span>
+          </div>
         </div>
 
         <p className="mt-6 text-center text-[11px] text-gray-400">

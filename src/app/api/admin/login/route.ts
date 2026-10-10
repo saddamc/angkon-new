@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? "";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
-const JWT_SECRET = process.env.JWT_SECRET ?? "changeme";
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
+const JWT_SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
 
 // ── Minimal HMAC-SHA256 token (no external package needed) ──────────────────
 async function sign(payload: Record<string, unknown>, secret: string): Promise<string> {
@@ -21,6 +21,44 @@ async function sign(payload: Record<string, unknown>, secret: string): Promise<s
   return `${data}.${sigB64}`;
 }
 
+async function verify(token: string, secret: string): Promise<Record<string, unknown> | null> {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const [header, body, sig] = parts;
+    const data = `${header}.${body}`;
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const expectedSig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
+    const expectedSigB64 = btoa(String.fromCharCode(...new Uint8Array(expectedSig)));
+    if (sig !== expectedSigB64) return null;
+    const payload = JSON.parse(atob(body));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+// GET /api/admin/login — check auth status
+export async function GET(request: NextRequest) {
+  const token = request.cookies.get("nb_admin_token")?.value;
+  if (!token) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+  const payload = await verify(token, JWT_SECRET);
+  if (!payload) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+  return NextResponse.json({ authenticated: true, user: payload.sub });
+}
+
+// POST /api/admin/login — authenticate
 export async function POST(request: NextRequest) {
   try {
     const { username, password } = await request.json();
@@ -29,17 +67,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
     }
 
-    // Constant-time-ish comparison to avoid timing attacks
+    // Comparison against configured credentials or default admin/admin
     const userMatch = username === ADMIN_USERNAME;
     const passMatch = password === ADMIN_PASSWORD;
     if (!userMatch || !passMatch) {
-      // Same delay regardless of which field failed
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 400));
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     const token = await sign(
-      { sub: username, role: "admin", iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8 },
+      {
+        sub: username,
+        role: "admin",
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8,
+      },
       JWT_SECRET,
     );
 
@@ -58,8 +100,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// DELETE /api/admin/login — logout
 export async function DELETE() {
-  // Logout — clear the cookie
   const response = NextResponse.json({ ok: true });
   response.cookies.set("nb_admin_token", "", { httpOnly: true, maxAge: 0, path: "/" });
   return response;

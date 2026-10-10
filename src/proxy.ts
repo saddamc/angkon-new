@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "changeme";
+const JWT_SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
 
 // ── Verify HMAC-SHA256 token ──────────────────────────────────────────────────
 async function verifyToken(token: string): Promise<boolean> {

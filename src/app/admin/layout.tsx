@@ -59,6 +59,20 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (pathname === "/admin") return;
+    fetch("/api/admin/login")
+      .then((res) => {
+        if (!res.ok) {
+          window.location.href = "/admin";
+        }
+      })
+      .catch(() => {
+        window.location.href = "/admin";
+      });
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname === "/admin") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- polling / reset on route change
     void fetchPendingCount();
     // Refresh every 60 seconds
     const timer = setInterval(() => void fetchPendingCount(), 60_000);
@@ -78,6 +92,7 @@ export default function AdminLayout({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- polling / reset on route change
     setProfileMenuOpen(false);
   }, [pathname]);
 

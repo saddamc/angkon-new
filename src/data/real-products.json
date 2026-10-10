@@ -4,7 +4,7 @@
     "name": "Tawakkal Wada – Midnight Black",
     "slug": "tawakkal-wada-midnight-black",
     "permalink": "/products/tawakkal-wada-midnight-black",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Midnight Black ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Midnight Black & Silver Grey</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Black long kameez featuring intricate floral embroidery and elegant sleeve detailing</li><li><strong>Trouser:</strong> Black-and-white geometric printed wide-leg trousers</li><li><strong>Dupatta:</strong> Beautiful off-white to smoky-grey gradient dupatta with floral and geometric motifs</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of classic black, delicate embroidery, and contemporary monochrome prints.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Midnight Black ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Midnight Black & Silver Grey</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Black long kameez featuring intricate floral embroidery and elegant sleeve detailing</li><li><strong>Trouser:</strong> Black-and-white geometric printed wide-leg trousers</li><li><strong>Dupatta:</strong> Beautiful off-white to smoky-grey gradient dupatta with floral and geometric motifs</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of classic black, delicate embroidery, and contemporary monochrome prints.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Midnight Black ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -19,44 +19,51 @@
     ],
     "images": [
       {
-        "id": 300001,
-        "src": "/products/tawakkal-wada/midnight-black/1.jpeg",
+        "id": 300011,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652408/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/1",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       },
       {
-        "id": 300002,
-        "src": "/products/tawakkal-wada/midnight-black/2.jpeg",
+        "id": 300012,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652409/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/2",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       },
       {
-        "id": 300003,
-        "src": "/products/tawakkal-wada/midnight-black/3.jpeg",
+        "id": 300013,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652410/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/3.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/3",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       },
       {
-        "id": 300004,
-        "src": "/products/tawakkal-wada/midnight-black/4.jpeg",
+        "id": 300014,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652411/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/4.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/4",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       },
       {
-        "id": 300005,
-        "src": "/products/tawakkal-wada/midnight-black/5.jpeg",
+        "id": 300015,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652412/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/5.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/5",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       },
       {
-        "id": 300006,
-        "src": "/products/tawakkal-wada/midnight-black/6.jpeg",
+        "id": 300016,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652413/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/6.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/6",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       },
       {
-        "id": 300007,
-        "src": "/products/tawakkal-wada/midnight-black/7.jpeg",
+        "id": 300017,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652414/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/7.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/7",
         "name": "Tawakkal Wada – Midnight Black",
         "alt": "Tawakkal Wada – Midnight Black"
       }
@@ -181,7 +188,7 @@
     "name": "Tawakkal Wada – Deep Emerald Green",
     "slug": "tawakkal-wada-deep-emerald-green",
     "permalink": "/products/tawakkal-wada-deep-emerald-green",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Emerald Green ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Emerald Green & Mist Grey</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Deep emerald-green long kameez featuring intricate floral embroidery, elegant neckline detailing, embroidered motifs throughout, and beautifully designed sleeves and hemline.</li><li><strong>Trouser:</strong> Matching deep-green trousers featuring coordinated floral and traditional printed patterns.</li><li><strong>Dupatta:</strong> Elegant mist-grey and sage-green gradient dupatta featuring delicate floral motifs, decorative printed borders, and deep forest-green accents.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich emerald-green tones, delicate antique-gold embroidery, and a beautifully contrasting mist-grey dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Emerald Green ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Emerald Green & Mist Grey</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Deep emerald-green long kameez featuring intricate floral embroidery, elegant neckline detailing, embroidered motifs throughout, and beautifully designed sleeves and hemline.</li><li><strong>Trouser:</strong> Matching deep-green trousers featuring coordinated floral and traditional printed patterns.</li><li><strong>Dupatta:</strong> Elegant mist-grey and sage-green gradient dupatta featuring delicate floral motifs, decorative printed borders, and deep forest-green accents.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich emerald-green tones, delicate antique-gold embroidery, and a beautifully contrasting mist-grey dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Emerald Green ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -196,32 +203,37 @@
     ],
     "images": [
       {
-        "id": 300011,
-        "src": "/products/tawakkal-wada/deep-emerald-green/1.jpeg",
+        "id": 300021,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652415/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/1",
         "name": "Tawakkal Wada – Deep Emerald Green",
         "alt": "Tawakkal Wada – Deep Emerald Green"
       },
       {
-        "id": 300012,
-        "src": "/products/tawakkal-wada/deep-emerald-green/2.jpeg",
+        "id": 300022,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652416/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/2",
         "name": "Tawakkal Wada – Deep Emerald Green",
         "alt": "Tawakkal Wada – Deep Emerald Green"
       },
       {
-        "id": 300013,
-        "src": "/products/tawakkal-wada/deep-emerald-green/3.jpeg",
+        "id": 300023,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652417/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/3.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/3",
         "name": "Tawakkal Wada – Deep Emerald Green",
         "alt": "Tawakkal Wada – Deep Emerald Green"
       },
       {
-        "id": 300014,
-        "src": "/products/tawakkal-wada/deep-emerald-green/4.jpeg",
+        "id": 300024,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652418/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/4.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/4",
         "name": "Tawakkal Wada – Deep Emerald Green",
         "alt": "Tawakkal Wada – Deep Emerald Green"
       },
       {
-        "id": 300015,
-        "src": "/products/tawakkal-wada/deep-emerald-green/5.jpeg",
+        "id": 300025,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652419/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/5.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/5",
         "name": "Tawakkal Wada – Deep Emerald Green",
         "alt": "Tawakkal Wada – Deep Emerald Green"
       }
@@ -346,7 +358,7 @@
     "name": "Tawakkal Wada – Dark Coffee Brown",
     "slug": "tawakkal-wada-dark-coffee-brown",
     "permalink": "/products/tawakkal-wada-dark-coffee-brown",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Dark Coffee Brown ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Dark Coffee Brown & Dusty Rose</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich dark coffee-brown long kameez featuring intricate embroidery along the neckline, delicate floral motifs throughout, beautifully detailed sleeves, and an elegant embroidered hemline.</li><li><strong>Trouser:</strong> Coordinated beige and coffee-brown trousers featuring traditional geometric and ornamental printed patterns.</li><li><strong>Dupatta:</strong> Beautiful dusty-rose pink and soft-grey gradient dupatta featuring delicate floral prints, ornamental borders, and deep plum-brown lace-style edging.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich coffee-brown tones, delicate champagne-beige embroidery, and a beautifully contrasting dusty-rose dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Dark Coffee Brown ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Dark Coffee Brown & Dusty Rose</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich dark coffee-brown long kameez featuring intricate embroidery along the neckline, delicate floral motifs throughout, beautifully detailed sleeves, and an elegant embroidered hemline.</li><li><strong>Trouser:</strong> Coordinated beige and coffee-brown trousers featuring traditional geometric and ornamental printed patterns.</li><li><strong>Dupatta:</strong> Beautiful dusty-rose pink and soft-grey gradient dupatta featuring delicate floral prints, ornamental borders, and deep plum-brown lace-style edging.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich coffee-brown tones, delicate champagne-beige embroidery, and a beautifully contrasting dusty-rose dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Dark Coffee Brown ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -361,32 +373,37 @@
     ],
     "images": [
       {
-        "id": 300021,
-        "src": "/products/tawakkal-wada/dark-coffee-brown/1.jpeg",
+        "id": 300031,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652420/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/1",
         "name": "Tawakkal Wada – Dark Coffee Brown",
         "alt": "Tawakkal Wada – Dark Coffee Brown"
       },
       {
-        "id": 300022,
-        "src": "/products/tawakkal-wada/dark-coffee-brown/2.jpeg",
+        "id": 300032,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652421/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/2",
         "name": "Tawakkal Wada – Dark Coffee Brown",
         "alt": "Tawakkal Wada – Dark Coffee Brown"
       },
       {
-        "id": 300023,
-        "src": "/products/tawakkal-wada/dark-coffee-brown/3.jpeg",
+        "id": 300033,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652421/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/3.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/3",
         "name": "Tawakkal Wada – Dark Coffee Brown",
         "alt": "Tawakkal Wada – Dark Coffee Brown"
       },
       {
-        "id": 300024,
-        "src": "/products/tawakkal-wada/dark-coffee-brown/4.jpeg",
+        "id": 300034,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652422/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/4.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/4",
         "name": "Tawakkal Wada – Dark Coffee Brown",
         "alt": "Tawakkal Wada – Dark Coffee Brown"
       },
       {
-        "id": 300025,
-        "src": "/products/tawakkal-wada/dark-coffee-brown/5.jpeg",
+        "id": 300035,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652423/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/5.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/5",
         "name": "Tawakkal Wada – Dark Coffee Brown",
         "alt": "Tawakkal Wada – Dark Coffee Brown"
       }
@@ -511,7 +528,7 @@
     "name": "Tawakkal Wada – Royal Navy Blue",
     "slug": "tawakkal-wada-royal-navy-blue",
     "permalink": "/products/tawakkal-wada-royal-navy-blue",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Royal Navy Blue ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Royal Navy Blue & Powder Blue</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich royal navy-blue long kameez featuring intricate ivory-white floral embroidery along the front panels, an elegantly detailed neckline, delicate multicolored floral motifs throughout, beautifully embroidered sleeves, and an ornamental hemline.</li><li><strong>Trouser:</strong> Coordinated navy-blue and ivory-white wide-leg trousers featuring striking traditional geometric and ornamental printed patterns.</li><li><strong>Dupatta:</strong> Beautiful powder-blue and soft sky-blue gradient dupatta featuring delicate floral motifs, subtle multicolored accents, and a decorative deep-blue border with intricate floral patterns.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich royal navy-blue tones, intricate ivory-white embroidery, and a beautifully contrasting powder-blue dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Royal Navy Blue ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Royal Navy Blue & Powder Blue</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich royal navy-blue long kameez featuring intricate ivory-white floral embroidery along the front panels, an elegantly detailed neckline, delicate multicolored floral motifs throughout, beautifully embroidered sleeves, and an ornamental hemline.</li><li><strong>Trouser:</strong> Coordinated navy-blue and ivory-white wide-leg trousers featuring striking traditional geometric and ornamental printed patterns.</li><li><strong>Dupatta:</strong> Beautiful powder-blue and soft sky-blue gradient dupatta featuring delicate floral motifs, subtle multicolored accents, and a decorative deep-blue border with intricate floral patterns.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich royal navy-blue tones, intricate ivory-white embroidery, and a beautifully contrasting powder-blue dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Royal Navy Blue ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -526,32 +543,37 @@
     ],
     "images": [
       {
-        "id": 300031,
-        "src": "/products/tawakkal-wada/royal-navy-blue/1.jpeg",
+        "id": 300041,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652424/ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/1",
         "name": "Tawakkal Wada – Royal Navy Blue",
         "alt": "Tawakkal Wada – Royal Navy Blue"
       },
       {
-        "id": 300032,
-        "src": "/products/tawakkal-wada/royal-navy-blue/2.jpeg",
+        "id": 300042,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652425/ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/2",
         "name": "Tawakkal Wada – Royal Navy Blue",
         "alt": "Tawakkal Wada – Royal Navy Blue"
       },
       {
-        "id": 300033,
-        "src": "/products/tawakkal-wada/royal-navy-blue/3.jpeg",
+        "id": 300043,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652426/ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/3.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/3",
         "name": "Tawakkal Wada – Royal Navy Blue",
         "alt": "Tawakkal Wada – Royal Navy Blue"
       },
       {
-        "id": 300034,
-        "src": "/products/tawakkal-wada/royal-navy-blue/4.jpeg",
+        "id": 300044,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652427/ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/4.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/4",
         "name": "Tawakkal Wada – Royal Navy Blue",
         "alt": "Tawakkal Wada – Royal Navy Blue"
       },
       {
-        "id": 300035,
-        "src": "/products/tawakkal-wada/royal-navy-blue/5.jpeg",
+        "id": 300045,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652428/ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/5.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-royal-navy-blue/5",
         "name": "Tawakkal Wada – Royal Navy Blue",
         "alt": "Tawakkal Wada – Royal Navy Blue"
       }
@@ -676,7 +698,7 @@
     "name": "Tawakkal Wada – Deep Plum Purple",
     "slug": "tawakkal-wada-deep-plum-purple",
     "permalink": "/products/tawakkal-wada-deep-plum-purple",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Plum Purple ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Plum Purple & Silver Grey</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich deep plum-purple long kameez featuring intricate floral embroidery along the neckline, delicately scattered ornamental motifs throughout, beautifully detailed sleeves, and an elegant floral-patterned hemline with traditional decorative accents.</li><li><strong>Trouser:</strong> Coordinated light ivory-grey trousers featuring intricate multicolored floral and botanical printed patterns with plum-purple, dusty-pink, and earthy-toned accents.</li><li><strong>Dupatta:</strong> Beautiful soft silver-grey and dusty-mauve gradient dupatta featuring delicate floral prints, ornamental motifs, rich plum-purple accents, and an intricately patterned dark-plum border with lace-style edging.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich plum-purple tones, delicate champagne-beige embroidery, and a beautifully contrasting silver-grey floral dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Plum Purple ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Plum Purple & Silver Grey</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich deep plum-purple long kameez featuring intricate floral embroidery along the neckline, delicately scattered ornamental motifs throughout, beautifully detailed sleeves, and an elegant floral-patterned hemline with traditional decorative accents.</li><li><strong>Trouser:</strong> Coordinated light ivory-grey trousers featuring intricate multicolored floral and botanical printed patterns with plum-purple, dusty-pink, and earthy-toned accents.</li><li><strong>Dupatta:</strong> Beautiful soft silver-grey and dusty-mauve gradient dupatta featuring delicate floral prints, ornamental motifs, rich plum-purple accents, and an intricately patterned dark-plum border with lace-style edging.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich plum-purple tones, delicate champagne-beige embroidery, and a beautifully contrasting silver-grey floral dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Plum Purple ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -691,44 +713,51 @@
     ],
     "images": [
       {
-        "id": 300041,
-        "src": "/products/tawakkal-wada/deep-plum-purple/1.jpeg",
+        "id": 300051,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652429/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/1",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       },
       {
-        "id": 300042,
-        "src": "/products/tawakkal-wada/deep-plum-purple/2.jpeg",
+        "id": 300052,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652430/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/2",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       },
       {
-        "id": 300043,
-        "src": "/products/tawakkal-wada/deep-plum-purple/3.jpeg",
+        "id": 300053,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652431/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/3.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/3",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       },
       {
-        "id": 300044,
-        "src": "/products/tawakkal-wada/deep-plum-purple/4.jpeg",
+        "id": 300054,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652432/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/4.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/4",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       },
       {
-        "id": 300045,
-        "src": "/products/tawakkal-wada/deep-plum-purple/5.jpeg",
+        "id": 300055,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652433/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/5.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/5",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       },
       {
-        "id": 300046,
-        "src": "/products/tawakkal-wada/deep-plum-purple/6.jpeg",
+        "id": 300056,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652434/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/6.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/6",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       },
       {
-        "id": 300047,
-        "src": "/products/tawakkal-wada/deep-plum-purple/7.jpeg",
+        "id": 300057,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652434/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/7.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-plum-purple/7",
         "name": "Tawakkal Wada – Deep Plum Purple",
         "alt": "Tawakkal Wada – Deep Plum Purple"
       }
@@ -853,7 +882,7 @@
     "name": "Tawakkal Wada – Deep Teal Blue",
     "slug": "tawakkal-wada-deep-teal-blue",
     "permalink": "/products/tawakkal-wada-deep-teal-blue",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Teal Blue ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Teal Blue & Aqua Blue</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich deep teal-blue long kameez featuring delicate floral appliqué-style embellishments throughout the front and sleeves, intricate ivory-white embroidered accents, subtle tonal botanical prints, and an elegantly designed notched neckline with decorative floral detailing.</li><li><strong>Trouser:</strong> Coordinated trousers completing the elegant three-piece ensemble.</li><li><strong>Dupatta:</strong> Soft ivory-colored dupatta with delicate pastel-green floral accents visible in the photograph, creating a graceful contrast with the rich teal-blue kameez.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich teal-blue tones, delicate aqua-blue floral embellishments, and intricate ivory-white detailing, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Teal Blue ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Teal Blue & Aqua Blue</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich deep teal-blue long kameez featuring delicate floral appliqué-style embellishments throughout the front and sleeves, intricate ivory-white embroidered accents, subtle tonal botanical prints, and an elegantly designed notched neckline with decorative floral detailing.</li><li><strong>Trouser:</strong> Coordinated trousers completing the elegant three-piece ensemble.</li><li><strong>Dupatta:</strong> Soft ivory-colored dupatta with delicate pastel-green floral accents visible in the photograph, creating a graceful contrast with the rich teal-blue kameez.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich teal-blue tones, delicate aqua-blue floral embellishments, and intricate ivory-white detailing, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Teal Blue ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -868,38 +897,44 @@
     ],
     "images": [
       {
-        "id": 300051,
-        "src": "/products/tawakkal-wada/deep-teal-blue/1.jpeg",
+        "id": 300061,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652435/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/1",
         "name": "Tawakkal Wada – Deep Teal Blue",
         "alt": "Tawakkal Wada – Deep Teal Blue"
       },
       {
-        "id": 300052,
-        "src": "/products/tawakkal-wada/deep-teal-blue/2.jpeg",
+        "id": 300062,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652436/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/2",
         "name": "Tawakkal Wada – Deep Teal Blue",
         "alt": "Tawakkal Wada – Deep Teal Blue"
       },
       {
-        "id": 300053,
-        "src": "/products/tawakkal-wada/deep-teal-blue/3.jpeg",
+        "id": 300063,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652437/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/3.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/3",
         "name": "Tawakkal Wada – Deep Teal Blue",
         "alt": "Tawakkal Wada – Deep Teal Blue"
       },
       {
-        "id": 300054,
-        "src": "/products/tawakkal-wada/deep-teal-blue/4.jpeg",
+        "id": 300064,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652438/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/4.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/4",
         "name": "Tawakkal Wada – Deep Teal Blue",
         "alt": "Tawakkal Wada – Deep Teal Blue"
       },
       {
-        "id": 300055,
-        "src": "/products/tawakkal-wada/deep-teal-blue/5.jpeg",
+        "id": 300065,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652439/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/5.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/5",
         "name": "Tawakkal Wada – Deep Teal Blue",
         "alt": "Tawakkal Wada – Deep Teal Blue"
       },
       {
-        "id": 300056,
-        "src": "/products/tawakkal-wada/deep-teal-blue/6.jpeg",
+        "id": 300066,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652440/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/6.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-teal-blue/6",
         "name": "Tawakkal Wada – Deep Teal Blue",
         "alt": "Tawakkal Wada – Deep Teal Blue"
       }
@@ -1024,7 +1059,7 @@
     "name": "Tawakkal Wada – Deep Raspberry Magenta",
     "slug": "tawakkal-wada-deep-raspberry-magenta",
     "permalink": "/products/tawakkal-wada-deep-raspberry-magenta",
-    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Raspberry Magenta ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Raspberry Magenta & Soft Ivory</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich deep raspberry-magenta long kameez featuring intricate sage-green and ivory floral embroidery around the neckline, delicate tonal printed motifs throughout, beautifully embroidered sleeve cuffs, elegant botanical detailing along the side panels, and a decorative floral embroidered hemline.</li><li><strong>Trouser:</strong> Coordinated soft ivory-white wide-leg trousers featuring beautiful botanical and floral printed patterns in deep magenta, charcoal grey, and muted sage-green tones.</li><li><strong>Dupatta:</strong> Elegant soft-ivory dupatta featuring delicate pink floral motifs, subtle ornamental prints, and a beautiful gradient border blending dusty mauve, raspberry-magenta, and soft-grey tones.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich raspberry-magenta tones, delicate sage-green floral embroidery, and a beautifully contrasting ivory dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"/products/tawakkal-wada/size-chart.jpeg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
+    "description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Raspberry Magenta ensemble with delicate floral embroidery and striking monochrome patterns.</p><h3>Product Details</h3><ul><li><strong>Brand:</strong> Tawakkal</li><li><strong>Collection:</strong> Wada</li><li><strong>Color:</strong> Deep Raspberry Magenta & Soft Ivory</li><li><strong>Outfit:</strong> 3-Piece Suit</li><li><strong>Kameez:</strong> Rich deep raspberry-magenta long kameez featuring intricate sage-green and ivory floral embroidery around the neckline, delicate tonal printed motifs throughout, beautifully embroidered sleeve cuffs, elegant botanical detailing along the side panels, and a decorative floral embroidered hemline.</li><li><strong>Trouser:</strong> Coordinated soft ivory-white wide-leg trousers featuring beautiful botanical and floral printed patterns in deep magenta, charcoal grey, and muted sage-green tones.</li><li><strong>Dupatta:</strong> Elegant soft-ivory dupatta featuring delicate pink floral motifs, subtle ornamental prints, and a beautiful gradient border blending dusty mauve, raspberry-magenta, and soft-grey tones.</li><li><strong>Style:</strong> Elegant Ethnic / Semi-Formal Wear</li><li><strong>Occasion:</strong> Festive Gatherings, Parties &amp; Special Occasions</li></ul><p>A graceful combination of rich raspberry-magenta tones, delicate sage-green floral embroidery, and a beautifully contrasting ivory dupatta, creating a timeless and sophisticated ethnic look.</p><div class=\"mt-6\"><p><strong>Ready-to-Wear Size Chart:</strong></p><p><img src=\"https://res.cloudinary.com/drtzgyetn/image/upload/v1791652407/ANGKON/WOMEN/ETHNIC/size-chart.jpg\" alt=\"Tawakkal Ready-to-Wear Size Chart\" style=\"max-width:100%; height:auto; border-radius:8px; border:1px solid #e5e5e5;\" /></p></div>",
     "short_description": "<p>Discover timeless elegance with the Tawakkal Wada 3-Piece Collection, featuring a sophisticated Deep Raspberry Magenta ensemble.</p><p><strong>Ready-to-Wear Size Guide (in inches):</strong><br /><strong>S :</strong> Shoulder 14 | Chest 19 | Waist 18 | Hip 21 | Length 37 | Trouser 38<br /><strong>M :</strong> Shoulder 14.5 | Chest 21 | Waist 20 | Hip 23 | Length 37/38 | Trouser 38/39<br /><strong>L :</strong> Shoulder 15 | Chest 23 | Waist 22 | Hip 24.5 | Length 38/39 | Trouser 39<br /><strong>XL:</strong> Shoulder 15.5 | Chest 25 | Waist 24 | Hip 26 | Length 40 | Trouser 40</p>",
     "price": "7990",
     "regular_price": "7990",
@@ -1039,14 +1074,16 @@
     ],
     "images": [
       {
-        "id": 300061,
-        "src": "/products/tawakkal-wada/deep-raspberry-magenta/1.jpeg",
+        "id": 300071,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652441/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-raspberry-magenta/1.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-raspberry-magenta/1",
         "name": "Tawakkal Wada – Deep Raspberry Magenta",
         "alt": "Tawakkal Wada – Deep Raspberry Magenta"
       },
       {
-        "id": 300062,
-        "src": "/products/tawakkal-wada/deep-raspberry-magenta/2.jpeg",
+        "id": 300072,
+        "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652442/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-raspberry-magenta/2.jpg",
+        "public_id": "ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-raspberry-magenta/2",
         "name": "Tawakkal Wada – Deep Raspberry Magenta",
         "alt": "Tawakkal Wada – Deep Raspberry Magenta"
       }

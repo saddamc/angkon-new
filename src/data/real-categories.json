@@ -1803,7 +1803,7 @@
     "count": 7,
     "image": {
       "id": 300001,
-      "src": "/products/tawakkal-wada/midnight-black/1.jpeg",
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652408/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/1.jpg",
       "alt": "Tawakkal"
     }
   },
@@ -1816,7 +1816,7 @@
     "count": 7,
     "image": {
       "id": 300002,
-      "src": "/products/tawakkal-wada/deep-emerald-green/1.jpeg",
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652415/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/1.jpg",
       "alt": "3-Piece Suit"
     }
   },
@@ -1829,7 +1829,7 @@
     "count": 7,
     "image": {
       "id": 300003,
-      "src": "/products/tawakkal-wada/dark-coffee-brown/1.jpeg",
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652420/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/1.jpg",
       "alt": "Wada Collection"
     }
   }

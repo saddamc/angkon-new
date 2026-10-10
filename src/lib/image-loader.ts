@@ -23,6 +23,14 @@ export default function imageLoader({ src, width, quality }: LoaderArgs): string
   const isRemote = /^https?:\/\//i.test(src);
   const isLocalhost = /localhost|127\.0\.0\.1|192\.168\.|10\.\d+\./.test(src);
 
+  // Cloudinary images: use native Cloudinary on-the-fly resizing and auto-format (WebP/AVIF)
+  if (src.includes("res.cloudinary.com")) {
+    if (!src.includes("/w_") && src.includes("/upload/")) {
+      return src.replace("/upload/", `/upload/w_${width},q_${q},f_auto/`);
+    }
+    return src;
+  }
+
   if (isRemote && !isLocalhost) {
     // wsrv.nl expects the target URL without its own protocol prefix.
     const target = src.replace(/^https?:\/\//i, "");

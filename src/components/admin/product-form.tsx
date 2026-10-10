@@ -24,6 +24,7 @@ interface ImageItem {
   src: string;
   alt: string;
   wpId?: number;
+  public_id?: string;
 }
 interface ProductFormData {
   name: string;
@@ -169,17 +170,29 @@ export function ProductForm({ initialData, onSuccess }: Props) {
     for (const file of Array.from(files)) {
       const form = new FormData();
       form.append("image", file);
+      if (categoryName || categorySlug) {
+        form.append("category", categoryName || categorySlug);
+      }
+      if (name) {
+        form.append("product", name);
+      }
       const res = await authFetch("/api/admin/upload", {
         method: "POST",
         body: form,
         headers: {},
       });
       if (res.ok) {
-        const { url, id: wpId } = (await res.json()) as {
+        const data = (await res.json()) as {
           url: string;
           id: number;
+          public_id?: string;
         };
-        newImgs.push({ src: url, alt: name || file.name, wpId });
+        newImgs.push({
+          src: data.url,
+          alt: name || file.name,
+          wpId: data.id,
+          public_id: data.public_id,
+        });
         continue;
       }
 
@@ -195,11 +208,15 @@ export function ProductForm({ initialData, onSuccess }: Props) {
     const img = images[i];
     // Remove from UI immediately
     setImages((prev) => prev.filter((_, idx) => idx !== i));
-    // Immediately delete from WordPress media library
-    if (img?.wpId) {
+    // Immediately delete from Cloudinary / storage
+    if (img?.public_id || img?.src || img?.wpId) {
       void authFetch("/api/admin/upload", {
         method: "DELETE",
-        body: JSON.stringify({ id: img.wpId }),
+        body: JSON.stringify({
+          public_id: img.public_id,
+          url: img.src,
+          id: img.wpId,
+        }),
       });
     }
   };

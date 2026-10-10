@@ -67,24 +67,23 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
   return (
     <div className="fixed inset-0 z-[100] flex bg-black/60 backdrop-blur-sm">
       <div className="animate-in slide-in-from-left flex h-full w-[85%] max-w-[380px] flex-col bg-white border-r border-neutral-200 shadow-2xl duration-300">
-        <div className="flex items-center justify-between border-b border-neutral-100 p-5">
-          <div className="flex flex-col">
-            <span className="font-heading text-xl font-black uppercase tracking-tight text-black">
-              ANGKON<span className="text-[#990000]">.</span>
-            </span>
-            <span className="text-[8px] uppercase tracking-[0.2em] font-semibold text-neutral-500">
-              HOUSE OF MODERN HERITAGE
-            </span>
-          </div>
+        <div className="flex items-center justify-between border-b border-neutral-100 p-4">
+          <Link href="/" onClick={onClose} className="inline-block">
+            <img
+              src="/logo-gg.png"
+              alt="Logo"
+              className="h-9 w-auto object-contain"
+            />
+          </Link>
           <button onClick={onClose} className="-mr-2 p-2 text-black hover:text-neutral-600 transition">
             <X className="h-6 w-6" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-2">
-          <ul className="flex flex-col text-[14px] font-semibold uppercase tracking-wider text-black">
+          <ul className="flex flex-col text-[14px] font-bold uppercase tracking-wider text-black">
             <li>
-              <Link href="/" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50 text-[#512da8]">
+              <Link href="/" onClick={onClose} className="block border-b border-neutral-100 px-6 py-3.5 hover:bg-neutral-50 text-[#602bb7]">
                 Home
               </Link>
             </li>

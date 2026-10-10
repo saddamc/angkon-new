@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Search, ShoppingBag, Heart, Menu, ChevronDown, User } from "lucide-react";
+import { ShoppingCart, Menu, User } from "lucide-react";
 import { CartDrawer } from "@/components/layout/cart-drawer";
 import { SearchModal } from "@/components/layout/search-modal";
 import { useCartStore } from "@/store/cart-store";
-import { useWishlistStore } from "@/store/wishlist-store";
 import type { CategoryNode } from "@/types/woocommerce";
 import { MobileMenu } from "@/components/navigation/MobileMenu";
 
@@ -16,6 +16,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ categoryTree }: NavbarProps) {
+  const pathname = usePathname();
   const isCartOpen = useCartStore((state) => state.isOpen);
   const openCart = useCartStore((state) => state.openCart);
   const closeCart = useCartStore((state) => state.closeCart);
@@ -23,23 +24,38 @@ export function Navbar({ categoryTree }: NavbarProps) {
   const [mounted, setMounted] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount());
   const subtotal = useCartStore((state) => state.subtotal());
-  const wishlistCount = useWishlistStore((state) => state.itemCount());
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const navLinks = [
+    { label: "Home", href: "/", isExact: true },
+    { label: "Women", href: "/women", isExact: false },
+    { label: "Men", href: "/men", isExact: false },
+    { label: "Mighto", href: "/mighto", isExact: false, hasSubmenu: true },
+    { label: "Accessories", href: "/accessories", isExact: false },
+    { label: "Policies", href: "/policies", isExact: false },
+    { label: "On Sale", href: "/sale", isExact: false },
+    { label: "About Us", href: "/about", isExact: false },
+  ];
+
+  const isLinkActive = (href: string, isExact: boolean) => {
+    if (isExact) return pathname === href;
+    return pathname.startsWith(href);
+  };
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-white text-black shadow-sm transition-all border-b border-neutral-200">
-      {/* ── Main Navigation Header (Centered Menu Layout) ── */}
+    <header className="sticky top-0 z-50 w-full bg-white text-black transition-all border-b border-neutral-100 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      {/* ── Main Navigation Header (100% Gorur Ghash Astra Parity) ── */}
       <div className="w-full">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-[1240px] items-center justify-between px-4 py-3 sm:py-3.5">
           
-          {/* Left: Mobile Menu Trigger + Mobile Search */}
+          {/* Left: Mobile Menu Trigger + Search on Mobile */}
           <div className="flex items-center gap-2 lg:hidden">
             <button
               onClick={() => setOpenMobile(true)}
-              className="p-1.5 text-black hover:text-neutral-600 transition"
+              className="p-1 text-black hover:text-[#602bb7] transition"
               aria-label="Open navigation menu"
             >
               <Menu className="h-6 w-6" />
@@ -47,137 +63,107 @@ export function Navbar({ categoryTree }: NavbarProps) {
             <SearchModal />
           </div>
 
-          {/* Left: Brand Logo & Tagline */}
+          {/* Left: Brand Logo (Exact Gorur Ghash Header Logo) */}
           <div className="flex-shrink-0">
-            <Link href="/" className="flex flex-col group leading-none">
-              <span className="font-heading text-2xl sm:text-[28px] font-black tracking-tight text-black group-hover:text-neutral-700 transition">
-                ANGKON<span className="text-[#990000]">.</span>
-              </span>
-              <span className="text-[8px] sm:text-[9px] uppercase tracking-[0.22em] font-bold text-neutral-500 mt-0.5">
-                HOUSE OF MODERN HERITAGE
-              </span>
+            <Link href="/" className="inline-block" aria-label="Gorur Ghash">
+              <Image
+                src="/logo-gg.png"
+                alt="Gorur Ghash"
+                width={85}
+                height={51}
+                className="h-10 sm:h-12 w-auto object-contain transition-transform duration-200 hover:scale-[1.02]"
+                priority
+              />
             </Link>
           </div>
 
-          {/* Center: Desktop Navigation Links (EXACT MIDDLE) */}
-          <nav className="hidden lg:flex items-center justify-center flex-1 mx-4 xl:mx-8 gap-5 xl:gap-7 text-[13px] font-bold tracking-wider uppercase text-black">
-            <Link
-              href="/"
-              className="text-[#512da8] hover:text-[#512da8] py-2 transition font-bold"
-            >
-              Home
-            </Link>
-            <Link
-              href="/women"
-              className="text-black hover:text-[#512da8] py-2 transition"
-            >
-              Women
-            </Link>
-            <Link
-              href="/men"
-              className="text-black hover:text-[#512da8] py-2 transition"
-            >
-              Men
-            </Link>
-            {/* Mighto with Dropdown */}
-            <div className="relative group py-2">
-              <Link
-                href="/mighto"
-                className="inline-flex items-center gap-1 text-black hover:text-[#512da8] transition"
-              >
-                Mighto
-                <ChevronDown className="w-3.5 h-3.5 text-black group-hover:text-[#512da8] group-hover:rotate-180 transition-transform" />
-              </Link>
-              <div className="absolute left-0 top-full hidden group-hover:block w-48 rounded-lg border border-neutral-200 bg-white p-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+          {/* Center: Desktop Navigation Links (EXACT MIDDLE - NO ARROWS, UPPERCASE BOLD) */}
+          <nav className="hidden lg:flex items-center justify-center flex-1 mx-4 xl:mx-8 gap-6 xl:gap-8 text-[13px] xl:text-[14px] font-bold tracking-normal uppercase">
+            {navLinks.map((link) => {
+              const active = isLinkActive(link.href, link.isExact);
+
+              if (link.hasSubmenu) {
+                return (
+                  <div key={link.label} className="relative group py-2">
+                    <Link
+                      href={link.href}
+                      className={`transition ${
+                        active
+                          ? "text-[#602bb7]"
+                          : "text-black hover:text-[#602bb7]"
+                      }`}
+                    >
+                      {link.label}
+                    </Link>
+                    {/* Mighto Dropdown (clean Astra-style popover without arrow) */}
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full hidden group-hover:block w-48 rounded border border-neutral-200 bg-white p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <Link
+                        href="/mighto/mighto-men"
+                        className="block rounded px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-50 hover:text-[#602bb7] transition uppercase"
+                      >
+                        Mighto Men
+                      </Link>
+                      <Link
+                        href="/mighto/mighto-women"
+                        className="block rounded px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-50 hover:text-[#602bb7] transition uppercase"
+                      >
+                        Mighto Women
+                      </Link>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
                 <Link
-                  href="/mighto/mighto-men"
-                  className="block rounded-md px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 hover:text-black transition"
+                  key={link.label}
+                  href={link.href}
+                  className={`py-2 transition ${
+                    active
+                      ? "text-[#602bb7]"
+                      : "text-black hover:text-[#602bb7]"
+                  }`}
                 >
-                  Mighto Men
+                  {link.label}
                 </Link>
-                <Link
-                  href="/mighto/mighto-women"
-                  className="block rounded-md px-3 py-2 text-xs font-semibold text-neutral-800 hover:bg-neutral-100 hover:text-black transition"
-                >
-                  Mighto Women
-                </Link>
-              </div>
-            </div>
-            <Link
-              href="/accessories"
-              className="text-black hover:text-[#512da8] py-2 transition"
-            >
-              Accessories
-            </Link>
-            <Link
-              href="/policies"
-              className="text-black hover:text-[#512da8] py-2 transition"
-            >
-              Policies
-            </Link>
-            <Link
-              href="/sale"
-              className="text-black hover:text-[#512da8] py-2 transition font-semibold"
-            >
-              On Sale
-            </Link>
-            <Link
-              href="/about"
-              className="text-black hover:text-[#512da8] py-2 transition"
-            >
-              About Us
-            </Link>
+              );
+            })}
           </nav>
 
-          {/* Right: Actions (Search, Woo Cart, My Account, Wishlist) */}
-          <div className="flex-shrink-0 flex items-center gap-2 sm:gap-4">
-            {/* Desktop Search */}
-            <div className="hidden lg:block text-black hover:text-[#512da8] transition">
+          {/* Right: Actions (Search, Woo Cart, My Account - 3 Items Exactly) */}
+          <div className="flex-shrink-0 flex items-center gap-4 sm:gap-5">
+            {/* 1. Desktop Search Icon */}
+            <div className="text-black hover:text-[#602bb7] transition">
               <SearchModal />
             </div>
 
-            {/* Woo Cart (Astra Header Cart Style: Tk amount + Shopping Bag Icon) */}
+            {/* 2. Woo Cart (Plain Tk amount + Shopping Cart Icon - NO Pill Border) */}
             <button
               onClick={openCart}
-              className="group flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 transition hover:border-black hover:shadow-sm"
+              className="group flex items-center gap-1.5 p-1 text-black hover:text-[#602bb7] transition"
               aria-label="View shopping cart"
             >
-              <span className="text-[12px] sm:text-[13px] font-bold text-black transition">
+              <span className="text-[13px] sm:text-[14px] font-bold text-black transition group-hover:text-[#602bb7]">
                 {mounted ? `Tk${subtotal.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Tk0.00"}
               </span>
               <div className="relative flex items-center justify-center">
-                <ShoppingBag className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-black transition group-hover:scale-105" />
+                <ShoppingCart className="h-5 w-5 text-black group-hover:text-[#602bb7] transition" />
                 {mounted && itemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#ffd800] px-1 text-[9px] font-black text-black shadow-sm">
+                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#602bb7] px-1 text-[9px] font-bold text-white shadow-sm">
                     {itemCount}
                   </span>
                 )}
               </div>
             </button>
 
-            {/* My Account */}
+            {/* 3. My Account Icon (Solid User Silhouette) */}
             <Link
               href="/my-account"
-              className="p-1.5 text-black hover:text-[#512da8] transition"
+              className="p-1 text-black hover:text-[#602bb7] transition"
               title="My Account"
               aria-label="My Account"
             >
-              <User className="h-5 w-5" />
-            </Link>
-
-            {/* Wishlist */}
-            <Link
-              href="/wishlist"
-              className="relative p-1.5 text-black hover:text-[#512da8] transition"
-              aria-label="Wishlist"
-              title="Wishlist"
-            >
-              <Heart className="h-5 w-5" />
-              {mounted && wishlistCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#ffd800] text-[9px] font-bold text-black">
-                  {wishlistCount}
-                </span>
-              )}
+              <User className="h-5 w-5 fill-current" />
             </Link>
           </div>
         </div>

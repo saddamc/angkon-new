@@ -140,7 +140,7 @@ export function SearchModal() {
       <button
         ref={triggerRef}
         onClick={() => setOpen(true)}
-        className="p-1.5 text-black hover:text-[#512da8] transition flex items-center justify-center"
+        className="p-1.5 text-black hover:text-[#602bb7] transition flex items-center justify-center"
         aria-label="Search products"
       >
         <Search className="h-5 w-5" />

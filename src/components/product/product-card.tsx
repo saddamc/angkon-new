@@ -113,7 +113,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           <div>
             {/* Product Title */}
             <Link href={`/products/${product.slug}`} className="block">
-              <h3 className="line-clamp-2 text-[12px] sm:text-[13px] font-normal leading-tight text-[#111111] transition hover:text-[#512da8]">
+              <h3 className="line-clamp-2 text-[12px] sm:text-[13px] font-normal leading-tight text-[#111111] transition hover:text-[#602bb7]">
                 {decodeEntities(product.name)}
               </h3>
             </Link>

@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { WhatsAppButton } from "@/components/layout/whatsapp-button";
 import { PromoPopup } from "@/components/common/promo-popup";
 import { BackToTop } from "@/components/common/back-to-top";
+import { FloatingCartButton } from "@/components/layout/floating-cart-button";
 import type { CategoryNode } from "@/types/woocommerce";
 
 export function RootShell({
@@ -28,6 +29,7 @@ export function RootShell({
       <main className="min-h-[70vh]">{children}</main>
       <Footer />
       <WhatsAppButton />
+      <FloatingCartButton />
       <BackToTop />
       {pathname === "/" && <PromoPopup />}
     </>

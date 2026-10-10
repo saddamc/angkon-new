@@ -4,11 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ShoppingCart, Menu, User, Search, X } from "lucide-react";
+import { ShoppingCart, Menu, User, Search, X, ChevronDown } from "lucide-react";
 import { CartDrawer } from "@/components/layout/cart-drawer";
 import { useCartStore } from "@/store/cart-store";
 import type { CategoryNode } from "@/types/woocommerce";
-import { MobileMenu } from "@/components/navigation/MobileMenu";
 import { getProducts } from "@/services/products.service";
 import { formatPrice } from "@/utils/price";
 import { decodeEntities } from "@/utils/html";
@@ -33,6 +32,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
   const openCart = useCartStore((state) => state.openCart);
   const closeCart = useCartStore((state) => state.closeCart);
   const [openMobile, setOpenMobile] = useState(false);
+  const [mightoExpanded, setMightoExpanded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const itemCount = useCartStore((state) => state.itemCount());
   const subtotal = useCartStore((state) => state.subtotal());
@@ -61,6 +61,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
   };
 
   const handleOpenSearch = () => {
+    setOpenMobile(false);
     setIsSearchClosing(false);
     setSearchOpen(true);
     setSearchLoading(false); // No fake loading on click!
@@ -191,24 +192,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
       <div className="w-full">
         <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5">
           
-          {/* Left: Mobile Menu Trigger */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <button
-              onClick={() => setOpenMobile(true)}
-              className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition"
-              aria-label="Open navigation menu"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-            <button
-              onClick={handleOpenSearch}
-              className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition"
-              aria-label="Open search"
-            >
-              <Search className="h-5 w-5" />
-            </button>
-          </div>
-
           {/* Left: Brand Logo (Exact Gorur Ghash Header Logo) */}
           <div className="flex-shrink-0">
             <Link href="/" className="inline-block" aria-label="Gorur Ghash">
@@ -486,12 +469,12 @@ export function Navbar({ categoryTree }: NavbarProps) {
             </div>
           )}
 
-          {/* Right: Actions (Cart & My Account ONLY - NO search icon here) */}
-          <div className="flex-shrink-0 flex items-center gap-4 sm:gap-5">
-            {/* 1. Woo Cart (Plain Tk amount + Shopping Cart Icon) */}
+          {/* Right: Actions */}
+          <div className="flex-shrink-0 flex items-center gap-2.5 sm:gap-3.5 lg:gap-5">
+            {/* Desktop-only: Cart (Plain Tk amount + Shopping Cart Icon) */}
             <button
               onClick={openCart}
-              className="group flex items-center gap-1.5 p-1 text-[#4e4e4e] hover:text-[#602bb7] transition"
+              className="hidden lg:flex group items-center gap-1.5 p-1 text-[#4e4e4e] hover:text-[#602bb7] transition cursor-pointer"
               aria-label="View shopping cart"
             >
               <span className="text-[13px] sm:text-[14px] font-bold text-[#4e4e4e] transition group-hover:text-[#602bb7]">
@@ -507,28 +490,194 @@ export function Navbar({ categoryTree }: NavbarProps) {
               </div>
             </button>
 
-            {/* 2. My Account Icon (Solid User Silhouette) */}
+            {/* My Account Icon (Solid User Silhouette - visible on mobile and desktop) */}
             <Link
               href="/my-account"
-              className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition"
+              className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition flex items-center justify-center"
               title="My Account"
               aria-label="My Account"
             >
               <User className="h-5 w-5 fill-current" />
             </Link>
+
+            {/* Mobile-only: Search Button (Matches Image 1 & 2) */}
+            <button
+              type="button"
+              onClick={handleOpenSearch}
+              className="lg:hidden p-1 text-[#4e4e4e] hover:text-[#602bb7] transition flex items-center justify-center cursor-pointer"
+              aria-label="Open search"
+              title="Search"
+            >
+              <Search className="h-5 w-5 stroke-[2]" />
+            </button>
+
+            {/* Mobile-only: Menu Toggle Button (Square box with thin border matching Image 1 & 2) */}
+            <button
+              type="button"
+              onClick={() => {
+                setOpenMobile(!openMobile);
+                if (searchOpen) handleCloseSearch();
+              }}
+              className="lg:hidden flex h-8.5 w-8.5 items-center justify-center border border-neutral-300 rounded-[2px] text-[#4e4e4e] hover:border-black transition cursor-pointer"
+              aria-label={openMobile ? "Close navigation menu" : "Open navigation menu"}
+            >
+              {openMobile ? (
+                <X className="h-4.5 w-4.5 stroke-[1.8]" />
+              ) : (
+                <Menu className="h-4.5 w-4.5 stroke-[1.8]" />
+              )}
+            </button>
           </div>
         </div>
+
+        {/* Mobile In-Header Dropdown Menu (Matches Image 2 exactly - in-flow so category content pushes down) */}
+        {openMobile && (
+          <div className="lg:hidden w-full border-t border-neutral-100 bg-white px-6 py-4 animate-in slide-in-from-top-1 duration-150">
+            <ul className="flex flex-col space-y-4 text-[15px] font-normal text-[#4e4e4e]">
+              <li>
+                <Link
+                  href="/"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname === "/" ? "text-[#602bb7] font-medium" : ""
+                  }`}
+                >
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/product-category/women"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname.startsWith("/product-category/women") || pathname.startsWith("/women")
+                      ? "text-[#602bb7] font-medium"
+                      : ""
+                  }`}
+                >
+                  Women
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/product-category/men"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname.startsWith("/product-category/men") || pathname.startsWith("/men")
+                      ? "text-[#602bb7] font-medium"
+                      : ""
+                  }`}
+                >
+                  Men
+                </Link>
+              </li>
+              <li>
+                <div>
+                  <div className="flex items-center justify-between py-1">
+                    <Link
+                      href="/product-category/mighto"
+                      onClick={() => setOpenMobile(false)}
+                      className={`flex-1 hover:text-black transition ${
+                        pathname.startsWith("/product-category/mighto") || pathname.startsWith("/mighto")
+                          ? "text-[#602bb7] font-medium"
+                          : ""
+                      }`}
+                    >
+                      Mighto
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setMightoExpanded(!mightoExpanded);
+                      }}
+                      className="p-1 text-neutral-500 hover:text-black cursor-pointer"
+                      aria-label="Toggle Mighto subcategories"
+                    >
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${
+                          mightoExpanded ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {mightoExpanded && (
+                    <ul className="pl-4 pt-2 pb-1 space-y-3 text-[14px] text-neutral-600 animate-in fade-in duration-150">
+                      <li>
+                        <Link
+                          href="/product-category/mighto/mighto-men"
+                          onClick={() => setOpenMobile(false)}
+                          className="block py-1 hover:text-[#602bb7]"
+                        >
+                          Mighto Men
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/product-category/mighto/mighto-women"
+                          onClick={() => setOpenMobile(false)}
+                          className="block py-1 hover:text-[#602bb7]"
+                        >
+                          Mighto Women
+                        </Link>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+              </li>
+              <li>
+                <Link
+                  href="/product-category/accessories"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname.startsWith("/product-category/accessories") || pathname.startsWith("/accessories")
+                      ? "text-[#602bb7] font-medium"
+                      : ""
+                  }`}
+                >
+                  Accessories
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/policies"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname.startsWith("/policies") ? "text-[#602bb7] font-medium" : ""
+                  }`}
+                >
+                  Policies
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/sale"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname.startsWith("/sale") ? "text-[#602bb7] font-medium" : ""
+                  }`}
+                >
+                  On Sale
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/about"
+                  onClick={() => setOpenMobile(false)}
+                  className={`block py-1 hover:text-black transition ${
+                    pathname.startsWith("/about") ? "text-[#602bb7] font-medium" : ""
+                  }`}
+                >
+                  About Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Cart Drawer */}
       <CartDrawer open={isCartOpen} onClose={closeCart} />
-
-      {/* Mobile Drawer */}
-      <MobileMenu
-        isOpen={openMobile}
-        onClose={() => setOpenMobile(false)}
-        categoryTree={categoryTree}
-      />
     </header>
   );
 }

@@ -11,10 +11,10 @@ const rootDir = path.resolve(__dirname, "..");
 // Load environment variables from .env
 dotenv.config({ path: path.join(rootDir, ".env") });
 
-const mongoUri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+const mongoUri = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
 
 if (!mongoUri) {
-  console.error("❌ MONGODB_URI or DATABASE_URL not found in .env");
+  console.error("❌ MONGODB_URI, MONGODB_URL, or DATABASE_URL not found in .env");
   process.exit(1);
 }
 

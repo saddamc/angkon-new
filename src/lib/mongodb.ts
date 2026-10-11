@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL;
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
 
 if (!MONGODB_URI) {
-  console.warn("MONGODB_URI / DATABASE_URL is not defined in environment variables.");
+  console.warn("MONGODB_URI, MONGODB_URL, or DATABASE_URL is not defined in environment variables.");
 }
 
 interface MongooseCache {
@@ -24,9 +24,9 @@ if (!global.mongooseCache) {
 }
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
-  const uri = process.env.MONGODB_URI || process.env.DATABASE_URL;
+  const uri = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
   if (!uri) {
-    throw new Error("Please define the MONGODB_URI or DATABASE_URL environment variable.");
+    throw new Error("Please define the MONGODB_URI, MONGODB_URL, or DATABASE_URL environment variable.");
   }
 
   if (cached.conn) {

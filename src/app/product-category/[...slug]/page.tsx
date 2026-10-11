@@ -105,22 +105,24 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
             <div className="mb-5 sm:mb-6">
               <CategoryHero category={node} productCount={total} />
             </div>
-            {showSubcategories ? (
-              <SubcategoryNavigation
-                subcategories={node.children}
-                parentSlug={slug.join("/")}
-                basePrefix="/product-category"
-              />
-            ) : (
-              <CategoryGrid
-                products={products}
-                total={total}
-                page={page}
-                totalPages={totalPages}
-                sort={sort}
-                baseHref={currentPathString}
-              />
+            {showSubcategories && (
+              <div className="mb-8 sm:mb-10">
+                <SubcategoryNavigation
+                  subcategories={node.children}
+                  parentSlug={slug.join("/")}
+                  basePrefix="/product-category"
+                />
+              </div>
             )}
+
+            <CategoryGrid
+              products={products}
+              total={total}
+              page={page}
+              totalPages={totalPages}
+              sort={sort}
+              baseHref={currentPathString}
+            />
 
             {/* Mobile / Small Screen: Sidebar placed UNDER Category */}
             <div className="lg:hidden mt-10 sm:mt-12 pt-8 sm:pt-10 border-t border-[#E1B76F]/20">

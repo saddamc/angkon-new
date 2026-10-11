@@ -287,14 +287,6 @@ export function ProductDetailsView({
     return nonSpecAttrs;
   }, [product.attributes, product.sizes]);
 
-  // Read-only specifications (Brand, Collection, Color, Outfit, Style, Occasion, etc.)
-  const specAttributes = useMemo(() => {
-    return (product.attributes || []).filter((a) => {
-      const name = a.name.toLowerCase().trim();
-      return name !== "size" && name !== "sizes" && a.visible;
-    });
-  }, [product.attributes]);
-
   const hasSizeGuide = useMemo(() => {
     const isApparel =
       product.categories?.some((c) =>
@@ -503,32 +495,6 @@ export function ProductDetailsView({
                   setOptionError(false);
                 }}
               />
-            )}
-
-            {/* Product Specifications Summary Card (Luxury Dark Surface) */}
-            {specAttributes.length > 0 && (
-              <div className="mb-5 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#E1B76F]/20">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#E1B76F]/80">
-                    Product Details & Specifications
-                  </span>
-                  <span className="text-[11px] font-semibold text-[#E1B76F]/60 uppercase tracking-wider">
-                    ANGKON
-                  </span>
-                </div>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs">
-                  {specAttributes.map((attr) => (
-                    <div key={attr.name} className="flex flex-col pb-2 border-b border-[#E1B76F]/15 last:border-b-0 sm:last:border-b-0">
-                      <dt className="text-[10px] font-bold uppercase tracking-wider text-[#E1B76F]/70">
-                        {attr.name}
-                      </dt>
-                      <dd className="mt-0.5 text-xs font-semibold text-white leading-normal">
-                        {attr.options.join(", ")}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
             )}
 
             {/* Variation Attribute Selection (Size & Selectable Options) */}
@@ -778,6 +744,7 @@ export function ProductDetailsView({
                   src={activeImg}
                   alt={product.name}
                   fill
+                  sizes="(max-width: 640px) 40px, 48px"
                   className="object-cover"
                 />
               </div>

@@ -101,7 +101,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                     selectedImage === i ? "border-[#E1B76F] ring-1 ring-[#E1B76F]" : "border-[#E1B76F]/20 opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={img.src} alt="" fill className="object-cover" />
+                  <Image src={img.src} alt="" fill sizes="56px" className="object-cover" />
                 </button>
               ))}
             </div>

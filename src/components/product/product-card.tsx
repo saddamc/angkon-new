@@ -100,12 +100,12 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               src={primaryImage}
               alt={decodeEntities(product.name)}
               fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12.5vw"
               loading={eager ? "eager" : "lazy"}
               fetchPriority={eager ? "high" : "auto"}
               className={`object-cover transition-opacity duration-300 ${
                 isHovered && product.images.length > 1 ? "opacity-0" : "opacity-100"
               }`}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12.5vw"
             />
             {product.images.length > 1 && (
               <Image

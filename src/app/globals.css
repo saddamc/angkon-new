@@ -105,37 +105,21 @@ h1, h2, h3, h4, h5, h6 {
   animation: slideSearchOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
-.product-prose {
-  color: #333333;
-  font-size: 14px;
-  line-height: 1.65;
-}
-.product-prose p {
-  margin-bottom: 0.75rem;
-}
-.product-prose p:last-child {
-  margin-bottom: 0;
-}
-.product-prose strong {
-  color: #111111;
-  font-weight: 600;
-}
+/* Product description tables (dark maroon theme — matches the prose block above) */
 .product-prose table {
-  width: 100%;
-  border-collapse: collapse;
   margin: 1rem 0;
   font-size: 13px;
 }
 .product-prose th {
   font-weight: 600;
-  color: #111111;
+  color: #E1B76F;
   padding: 0.5rem 0.75rem;
-  border-bottom: 2px solid #e5e5e5;
+  border-bottom: 1px solid rgba(225, 183, 111, 0.35);
   text-align: left;
-  background-color: #fafafa;
+  background-color: #400604;
 }
 .product-prose td {
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid #f0f0f0;
-  color: #444444;
+  border-bottom: 1px solid rgba(225, 183, 111, 0.15);
+  color: #f0d29d;
 }

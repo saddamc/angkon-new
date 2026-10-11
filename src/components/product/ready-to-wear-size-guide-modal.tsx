@@ -439,13 +439,13 @@ export function ReadyToWearSizeGuideMiniTable({
                       {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#E1B76F] inline-block" />}
                     </div>
                   </td>
-                  <td className="py-2 px-2">{row.shoulder}″</td>
-                  <td className="py-2 px-2">{row.chest}″</td>
-                  <td className="py-2 px-2">{row.waist}″</td>
-                  <td className="py-2 px-2">{row.hip}″</td>
-                  <td className="py-2 px-2">{row.daman}″</td>
-                  <td className="py-2 px-2">{row.length}″</td>
-                  <td className="py-2 px-2">{row.trouser}″</td>
+                  <td className="py-2 px-2">{row.shoulder}</td>
+                  <td className="py-2 px-2">{row.chest}</td>
+                  <td className="py-2 px-2">{row.waist}</td>
+                  <td className="py-2 px-2">{row.hip}</td>
+                  <td className="py-2 px-2">{row.daman}</td>
+                  <td className="py-2 px-2">{row.length}</td>
+                  <td className="py-2 px-2">{row.trouser}</td>
                 </tr>
               );
             })}

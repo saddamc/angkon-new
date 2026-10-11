@@ -67,3 +67,8 @@ sync-categories.mjs
 # typescript & build info
 *.tsbuildinfo
 next-env.d.ts
+
+# editor settings, local backups and scraped reference material (never commit)
+.vscode/
+backup-copy/
+follow/

@@ -20,7 +20,7 @@ export default function WishlistPage() {
     return (
       <div className="min-h-[60vh] bg-[#400604] py-16 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-3">
-          <Heart className="h-10 w-10 text-[#E1B76F]/40" />
+          <Heart className="h-10 w-10 text-white/40" />
           <div className="h-4 w-32 bg-[#4a0705] rounded" />
         </div>
       </div>
@@ -54,11 +54,11 @@ export default function WishlistPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4 border-b border-[#E1B76F]/20 pb-6">
           <div>
-            <h1 className="text-2xl font-black font-heading uppercase text-[#E1B76F] sm:text-3xl flex items-center gap-3">
-              <Heart className="h-7 w-7 text-[#E1B76F] fill-[#E1B76F]" />
+            <h1 className="text-2xl font-black font-heading uppercase text-white sm:text-3xl flex items-center gap-3">
+              <Heart className="h-7 w-7 text-white fill-[#E1B76F]" />
               My Wishlist
             </h1>
-            <p className="mt-1 text-sm text-[#f0d29d]">
+            <p className="mt-1 text-sm text-white/90">
               {items.length === 0
                 ? "Your wishlist is currently empty."
                 : `You have ${items.length} item${items.length > 1 ? "s" : ""} saved.`}
@@ -78,16 +78,16 @@ export default function WishlistPage() {
         {/* Empty state */}
         {items.length === 0 ? (
           <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-12 text-center shadow-xl max-w-md mx-auto my-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#2d0302] text-[#E1B76F]">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#2d0302] text-white">
               <Heart className="h-8 w-8" />
             </div>
-            <h2 className="text-lg font-heading font-black uppercase text-[#E1B76F] mb-2">No Items in Wishlist</h2>
-            <p className="text-sm text-[#f0d29d] mb-6 leading-relaxed">
+            <h2 className="text-lg font-heading font-black uppercase text-white mb-2">No Items in Wishlist</h2>
+            <p className="text-sm text-white/90 mb-6 leading-relaxed">
               Explore our latest modern heritage apparel and save your favorite styles to check them out later.
             </p>
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 rounded-[12px] bg-[#400604] border border-[#E1B76F]/50 px-6 py-3 text-sm font-bold text-[#E1B76F] transition hover:bg-[#520805]"
+              className="inline-flex items-center gap-2 rounded-[12px] bg-[#400604] border border-[#E1B76F]/50 px-6 py-3 text-sm font-bold text-white transition hover:bg-[#520805]"
             >
               Start Shopping <ArrowRight className="h-4 w-4" />
             </Link>
@@ -105,7 +105,7 @@ export default function WishlistPage() {
                   {/* Remove Button */}
                   <button
                     onClick={() => removeItem(item.productId)}
-                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#2d0302]/90 text-[#E1B76F]/70 shadow-sm backdrop-blur transition hover:bg-[#400604] hover:text-[#E1B76F]"
+                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#2d0302]/90 text-white/70 shadow-sm backdrop-blur transition hover:bg-[#400604] hover:text-[#E1B76F]"
                     title="Remove from wishlist"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -125,18 +125,18 @@ export default function WishlistPage() {
                   {/* Info */}
                   <div className="flex flex-1 flex-col p-4">
                     <Link href={`/products/${item.slug}`}>
-                      <h3 className="line-clamp-2 text-sm font-semibold text-[#E1B76F] hover:text-white transition mb-2">
+                      <h3 className="line-clamp-2 text-sm font-semibold text-white hover:text-white transition mb-2">
                         {item.name}
                       </h3>
                     </Link>
                     <div className="mb-4 mt-auto">
-                      <span className="text-lg font-bold text-[#E1B76F]">{formatPrice(item.price)}</span>
+                      <span className="text-lg font-bold text-white">{formatPrice(item.price)}</span>
                     </div>
 
                     <button
                       onClick={() => handleAddToCart(item)}
                       className={`flex w-full items-center justify-center gap-2 rounded-[12px] py-2.5 text-xs font-bold transition shadow-sm ${
-                        isAdded ? "bg-[#520805] text-[#E1B76F] border border-[#E1B76F]" : "bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F] hover:bg-[#520805] hover:border-[#E1B76F]"
+                        isAdded ? "bg-[#520805] text-white border border-[#E1B76F]" : "bg-[#400604] border border-[#E1B76F]/40 text-white hover:bg-[#520805] hover:border-[#E1B76F]"
                       }`}
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />

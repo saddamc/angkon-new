@@ -14,11 +14,20 @@ function escapeHtml(value: string): string {
 function layout({ heading, body, ctaLabel, ctaUrl, footnote }: {
   heading: string;
   body: string;
-  ctaLabel: string;
-  ctaUrl: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
   footnote: string;
 }): string {
-  const safeUrl = escapeHtml(ctaUrl);
+  const safeUrl = ctaUrl ? escapeHtml(ctaUrl) : "";
+  const cta = ctaLabel && ctaUrl
+    ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0;">
+            <tr><td style="border-radius:8px;background-color:#400604;">
+              <a href="${safeUrl}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:700;color:#E1B76F;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(ctaLabel)}</a>
+            </td></tr>
+          </table>
+          <p style="margin:0 0 6px;font-size:12px;color:#7a6f66;">If the button doesn't work, copy this link into your browser:</p>
+          <p style="margin:0;font-size:12px;word-break:break-all;"><a href="${safeUrl}" style="color:#400604;">${safeUrl}</a></p>`
+    : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${escapeHtml(heading)}</title></head>
@@ -33,13 +42,7 @@ function layout({ heading, body, ctaLabel, ctaUrl, footnote }: {
         <tr><td style="padding:32px 28px;">
           <h2 style="margin:0 0 14px;font-size:20px;color:#400604;">${escapeHtml(heading)}</h2>
           ${body}
-          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0;">
-            <tr><td style="border-radius:8px;background-color:#400604;">
-              <a href="${safeUrl}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:700;color:#E1B76F;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(ctaLabel)}</a>
-            </td></tr>
-          </table>
-          <p style="margin:0 0 6px;font-size:12px;color:#7a6f66;">If the button doesn't work, copy this link into your browser:</p>
-          <p style="margin:0;font-size:12px;word-break:break-all;"><a href="${safeUrl}" style="color:#400604;">${safeUrl}</a></p>
+          ${cta}
           <p style="margin:22px 0 0;font-size:12px;color:#7a6f66;">${footnote}</p>
         </td></tr>
         <tr><td style="background-color:#faf6f1;padding:18px 24px;text-align:center;font-size:11px;color:#9a8f86;border-top:1px solid #ebe2d8;">
@@ -93,6 +96,20 @@ export async function sendPasswordResetEmail(params: { to: string; name: string;
       ctaLabel: "Choose a new password",
       ctaUrl: params.resetUrl,
       footnote: "This link expires in 1 hour and can only be used once. If you didn't ask for this, you can ignore this email — your password won't change.",
+    }),
+  });
+}
+
+/** The 6-digit code emailed during checkout. */
+export async function sendVerificationCodeEmail(params: { to: string; name: string; code: string }) {
+  return sendEmail({
+    to: params.to,
+    subject: `${params.code} is your ANGKON verification code`,
+    html: layout({
+      heading: "Confirm your email",
+      body: `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;">Hi ${escapeHtml(params.name || "there")}, enter this code at checkout to confirm your email and place your order:</p>
+          <p style="margin:0;padding:18px 0;text-align:center;font-family:'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:10px;color:#400604;background-color:#faf6f1;border:1px solid #ebe2d8;border-radius:10px;">${escapeHtml(params.code)}</p>`,
+      footnote: "This code expires in 10 minutes and can be used once. If you didn't try to place an order on ANGKON, you can ignore this email.",
     }),
   });
 }

@@ -43,11 +43,11 @@ export function CategoryCard({
 
         {/* 2. Brand Overlay Banner */}
         <div className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-4 sm:bottom-5 rounded-lg bg-[#400604]/90 group-hover:bg-[#400604] border border-[#E1B76F]/30 backdrop-blur-sm text-center py-2 px-2 transition-colors duration-200 pointer-events-none shadow-md">
-          <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-[#E1B76F] leading-snug line-clamp-1">
+          <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-white leading-snug line-clamp-1">
             {name}
           </h2>
           {count > 0 && (
-            <span className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#f0d29d]/70 mt-0.5 leading-snug">
+            <span className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/70 mt-0.5 leading-snug">
               {countLabel}
             </span>
           )}

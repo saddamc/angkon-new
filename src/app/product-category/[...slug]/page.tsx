@@ -29,13 +29,22 @@ function parseSort(sort: string): { orderby: "date" | "price" | "popularity" | "
   return { orderby: "date", order: "desc" };
 }
 
+const SLUG_ALIASES: Record<string, string> = {
+  ethnic: "ethnic-wear",
+  cubans: "half-sleeves",
+  "oversized-full-sleeves": "full-sleeves",
+  "t-shirts-men": "tees",
+  "men-pants": "pants",
+};
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   if (!slug || slug.length === 0) return {};
 
   const currentSlug = slug[slug.length - 1];
+  const lookupSlug = SLUG_ALIASES[currentSlug] || currentSlug;
   const tree = await getCategoryTree();
-  const path = findCategoryPath(tree, currentSlug);
+  const path = findCategoryPath(tree, lookupSlug);
   if (!path) return { title: "Category not found" };
 
   const node = path[path.length - 1];
@@ -52,14 +61,14 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   if (!slug || slug.length === 0) notFound();
 
   const currentSlug = slug[slug.length - 1];
-  const parentSlug = slug[0];
   const sp = await searchParams;
 
   const tree = await getCategoryTree();
-  const path = findCategoryPath(tree, currentSlug);
+  const lookupSlug = SLUG_ALIASES[currentSlug] || currentSlug;
+  const path = findCategoryPath(tree, lookupSlug);
   if (!path) notFound();
 
-  // If accessed via a partial slug path (e.g. /product-category/polos instead of /product-category/men/polos), redirect to canonical
+  // If accessed via a legacy or partial slug path, redirect to canonical
   const canonicalPathSegments = path.map((node) => node.slug).join("/");
   if (slug.join("/") !== canonicalPathSegments) {
     const qParams = new URLSearchParams();
@@ -76,7 +85,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   const sort = typeof sp.sort === "string" ? sp.sort : "date-desc";
   const { orderby, order } = parseSort(sort);
 
-  const { products, total, totalPages } = await getProductsByCategorySlug(currentSlug, {
+  const { products, total, totalPages } = await getProductsByCategorySlug(node.slug, {
     page,
     perPage: 24,
     orderby,
@@ -88,7 +97,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   const currentPathString = `/product-category/${slug.join("/")}`;
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       <div className="mx-auto max-w-[1440px] px-4 sm:px-5 lg:px-6 pt-4 sm:pt-6 pb-12">
         <div className="lg:grid lg:grid-cols-[250px_1fr] xl:grid-cols-[270px_1fr] lg:gap-8 xl:gap-10">
           

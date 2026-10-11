@@ -55,7 +55,7 @@ const PASSWORD_HINT = "At least 8 characters, with a letter and a number";
 /* ── Small shared pieces ─────────────────────────────────────────────── */
 
 const inputClass =
-  "w-full rounded-xl border border-[#400604] bg-[#1A0302] px-4 py-3 text-sm text-[#f5ebd8] placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
+  "w-full rounded-xl border border-[#400604] bg-[#1A0302] px-4 py-3 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
 const primaryButton =
   "w-full rounded-xl bg-[#E1B76F] py-3.5 text-xs font-black uppercase tracking-wider text-[#400604] hover:bg-[#edd19b] transition shadow-md disabled:opacity-50";
 
@@ -64,7 +64,7 @@ function NoticeBanner({ notice }: { notice: Notice }) {
   const styles = {
     success: "border-green-500/50 bg-green-950/40 text-green-300",
     error: "border-red-500/50 bg-red-950/40 text-red-300",
-    info: "border-[#E1B76F]/40 bg-[#2b0403] text-[#f0d29d]",
+    info: "border-[#E1B76F]/40 bg-[#2b0403] text-white/90",
   }[notice.type];
   return (
     <div role="status" className={`rounded-xl border p-4 text-center text-sm font-semibold ${styles}`}>
@@ -110,7 +110,7 @@ function PasswordInput({
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label className="block text-xs font-bold uppercase tracking-wider text-[#f5ebd8] mb-1.5">
+    <label className="block text-xs font-bold uppercase tracking-wider text-white mb-1.5">
       {children} {required && <span className="text-red-400">*</span>}
     </label>
   );
@@ -282,10 +282,10 @@ export default function MyAccountPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A0302] text-[#E1B76F] flex items-center justify-center py-20">
+      <div className="min-h-screen bg-[#1A0302] text-white flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E1B76F] border-t-transparent" />
-          <p className="text-xs uppercase tracking-widest text-[#d8cec4]">Loading your account…</p>
+          <p className="text-xs uppercase tracking-widest text-white/80">Loading your account…</p>
         </div>
       </div>
     );
@@ -295,7 +295,7 @@ export default function MyAccountPage() {
   if (user) {
     const needsPassword = !user.hasPassword;
     return (
-      <div className="min-h-screen bg-[#1A0302] text-[#E1B76F] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#1A0302] text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1100px] space-y-6">
           <NoticeBanner notice={notice} />
 
@@ -303,11 +303,11 @@ export default function MyAccountPage() {
           {!user.emailVerified && (
             <div className="flex flex-col gap-4 rounded-2xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#E1B76F]" />
+                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-white" />
                 <div>
-                  <p className="text-sm font-bold text-[#f5ebd8]">Please verify your email</p>
-                  <p className="mt-1 text-xs text-[#d8cec4]">
-                    We sent a link to <strong className="text-[#E1B76F]">{user.email}</strong>. Verifying lets you
+                  <p className="text-sm font-bold text-white">Please verify your email</p>
+                  <p className="mt-1 text-xs text-white/80">
+                    We sent a link to <strong className="text-white">{user.email}</strong>. Verifying lets you
                     {needsPassword ? " set a password," : ""} see orders you placed earlier with this email, and
                     recover your account.
                   </p>
@@ -317,7 +317,7 @@ export default function MyAccountPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={submitting}
-                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/40 bg-[#400604] px-5 py-2.5 text-xs font-bold uppercase text-[#E1B76F] transition hover:bg-[#E1B76F] hover:text-[#400604] disabled:opacity-50"
+                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/40 bg-[#400604] px-5 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#400604] disabled:opacity-50"
               >
                 <MailCheck className="h-3.5 w-3.5" /> Resend link
               </button>
@@ -331,10 +331,10 @@ export default function MyAccountPage() {
               className="rounded-2xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 sm:p-6"
             >
               <div className="flex items-start gap-3">
-                <KeyRound className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#E1B76F]" />
+                <KeyRound className="mt-0.5 h-5 w-5 flex-shrink-0 text-white" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-[#f5ebd8]">Set a password for your account</p>
-                  <p className="mt-1 text-xs text-[#d8cec4]">
+                  <p className="text-sm font-bold text-white">Set a password for your account</p>
+                  <p className="mt-1 text-xs text-white/80">
                     Your account was created with your order. Add a password so you can sign in on any device.
                   </p>
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -358,18 +358,18 @@ export default function MyAccountPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#400604] pb-6 gap-4">
               <div>
-                <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E1B76F]/80">My account</span>
-                <h1 className="font-heading text-2xl sm:text-4xl font-black uppercase text-[#E1B76F] mt-1">
+                <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/80">My account</span>
+                <h1 className="font-heading text-2xl sm:text-4xl font-black uppercase text-white mt-1">
                   Welcome, {user.name}
                 </h1>
-                <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[#d8cec4]">
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/80">
                   <span className="font-mono">{user.email}</span>
                   {user.emailVerified ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-900/40 px-2 py-0.5 text-[10px] font-bold uppercase text-green-300">
                       <ShieldCheck className="h-3 w-3" /> Verified
                     </span>
                   ) : (
-                    <span className="rounded-full bg-[#400604] px-2 py-0.5 text-[10px] font-bold uppercase text-[#E1B76F]">
+                    <span className="rounded-full bg-[#400604] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                       Not verified
                     </span>
                   )}
@@ -379,7 +379,7 @@ export default function MyAccountPage() {
               <button
                 onClick={handleLogout}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[#E1B76F]/30 bg-[#400604] px-5 py-2.5 text-xs font-bold uppercase text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604] transition"
+                className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[#E1B76F]/30 bg-[#400604] px-5 py-2.5 text-xs font-bold uppercase text-white hover:bg-[#E1B76F] hover:text-[#400604] transition"
               >
                 <LogOut className="h-3.5 w-3.5" /> Sign out
               </button>
@@ -388,22 +388,22 @@ export default function MyAccountPage() {
             {/* Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
               <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-5">
-                <Package className="h-5 w-5 text-[#E1B76F]" />
-                <p className="mt-3 text-2xl font-black text-[#f5ebd8]">{orders.length}</p>
-                <p className="text-xs uppercase tracking-wider text-[#d8cec4]">{orders.length === 1 ? "Order" : "Orders"}</p>
+                <Package className="h-5 w-5 text-white" />
+                <p className="mt-3 text-2xl font-black text-white">{orders.length}</p>
+                <p className="text-xs uppercase tracking-wider text-white/80">{orders.length === 1 ? "Order" : "Orders"}</p>
               </div>
               <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-5">
-                <ShieldCheck className="h-5 w-5 text-[#E1B76F]" />
-                <p className="mt-3 text-sm font-bold text-[#f5ebd8]">Delivery address</p>
-                <p className="mt-1 text-xs text-[#d8cec4]">
+                <ShieldCheck className="h-5 w-5 text-white" />
+                <p className="mt-3 text-sm font-bold text-white">Delivery address</p>
+                <p className="mt-1 text-xs text-white/80">
                   {user.addresses && user.addresses.length > 0
                     ? `${user.addresses[0].address}, ${user.addresses[0].district}`
                     : "Saved with your first order."}
                 </p>
               </div>
               <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-5">
-                <KeyRound className="h-5 w-5 text-[#E1B76F]" />
-                <p className="mt-3 text-sm font-bold text-[#f5ebd8]">Password</p>
+                <KeyRound className="h-5 w-5 text-white" />
+                <p className="mt-3 text-sm font-bold text-white">Password</p>
                 {user.hasPassword ? (
                   <button
                     type="button"
@@ -413,7 +413,7 @@ export default function MyAccountPage() {
                     {showChangePassword ? "Cancel" : "Change password"}
                   </button>
                 ) : (
-                  <p className="mt-1 text-xs text-[#d8cec4]">
+                  <p className="mt-1 text-xs text-white/80">
                     {user.emailVerified ? "Not set yet — use the form above." : "Verify your email to set one."}
                   </p>
                 )}
@@ -436,15 +436,15 @@ export default function MyAccountPage() {
 
             {/* Orders */}
             <div className="mt-10">
-              <h2 className="font-heading text-xl font-bold uppercase text-[#E1B76F] mb-4 pb-2 border-b border-[#400604] flex items-center gap-2">
+              <h2 className="font-heading text-xl font-bold uppercase text-white mb-4 pb-2 border-b border-[#400604] flex items-center gap-2">
                 <Package className="h-5 w-5" /> Your orders
               </h2>
 
               {orders.length === 0 ? (
                 <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-8 text-center">
-                  <Clock className="h-10 w-10 text-[#E1B76F]/50 mx-auto mb-3" />
-                  <p className="text-sm font-semibold text-[#f5ebd8]">No orders yet.</p>
-                  <p className="text-xs text-[#d8cec4] mt-1 max-w-sm mx-auto">
+                  <Clock className="h-10 w-10 text-white/50 mx-auto mb-3" />
+                  <p className="text-sm font-semibold text-white">No orders yet.</p>
+                  <p className="text-xs text-white/80 mt-1 max-w-sm mx-auto">
                     {user.emailVerified
                       ? "Orders you place with this account or email will appear here."
                       : "Orders placed with this account appear here. Earlier orders using this email show up once it's verified."}
@@ -462,26 +462,26 @@ export default function MyAccountPage() {
                     <div key={ord.orderNumber} className="rounded-xl border border-[#400604] bg-[#1a0302] p-5 transition hover:border-[#E1B76F]/50">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#400604]/50 pb-3">
                         <div>
-                          <span className="font-mono text-sm font-bold text-[#E1B76F]">#{ord.orderNumber}</span>
-                          <span className="text-xs text-[#d8cec4] ml-3 inline-flex items-center gap-1">
+                          <span className="font-mono text-sm font-bold text-white">#{ord.orderNumber}</span>
+                          <span className="text-xs text-white/80 ml-3 inline-flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {new Date(ord.createdAt).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[#400604] px-3 py-0.5 text-xs font-semibold uppercase text-[#E1B76F]">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#400604] px-3 py-0.5 text-xs font-semibold uppercase text-white">
                             <CheckCircle2 className="h-3 w-3" /> {ord.orderStatus}
                           </span>
-                          <span className="text-sm font-black text-[#E1B76F]">৳{Number(ord.total).toLocaleString("en-BD")}</span>
+                          <span className="text-sm font-black text-white">৳{Number(ord.total).toLocaleString("en-BD")}</span>
                         </div>
                       </div>
                       <div className="pt-3">
-                        <p className="text-xs text-[#d8cec4]">
-                          <strong className="text-[#E1B76F]">Delivery to:</strong> {ord.customer.fullName} ({ord.customer.phone}) — {ord.customer.address}, {ord.customer.district}
+                        <p className="text-xs text-white/80">
+                          <strong className="text-white">Delivery to:</strong> {ord.customer.fullName} ({ord.customer.phone}) — {ord.customer.address}, {ord.customer.district}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {ord.items.map((it, idx) => (
-                            <span key={idx} className="text-xs bg-[#240403] border border-[#400604] text-[#f5ebd8] px-2.5 py-1 rounded-md">
+                            <span key={idx} className="text-xs bg-[#240403] border border-[#400604] text-white px-2.5 py-1 rounded-md">
                               {it.name} {it.size ? `(${it.size})` : ""} × {it.quantity}
                             </span>
                           ))}
@@ -500,11 +500,11 @@ export default function MyAccountPage() {
 
   /* ── Signed out ────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#1A0302] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#1A0302] text-white">
       <div className="border-b border-[#400604] bg-[#240403] py-12 px-4 text-center">
-        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E1B76F]/80">ANGKON</span>
-        <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-[#E1B76F]">My Account</h1>
-        <p className="mt-2 text-xs sm:text-sm text-[#f5ebd8]/80 max-w-md mx-auto">
+        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/80">ANGKON</span>
+        <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">My Account</h1>
+        <p className="mt-2 text-xs sm:text-sm text-white/80 max-w-md mx-auto">
           Sign in to track your orders and check out faster.
         </p>
       </div>
@@ -516,8 +516,8 @@ export default function MyAccountPage() {
       <div className="container mx-auto max-w-[1100px] px-4 py-10 lg:px-8">
         {mode === "forgot" ? (
           <form onSubmit={handleForgot} className="mx-auto max-w-md space-y-5 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl">
-            <h2 className="font-heading text-2xl font-black uppercase text-[#E1B76F] pb-2 border-b border-[#400604]">Reset password</h2>
-            <p className="text-xs text-[#d8cec4]">
+            <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#400604]">Reset password</h2>
+            <p className="text-xs text-white/80">
               Enter your email and we&apos;ll send a link to set a new password. This also works if your account was created
               with an order and has no password yet.
             </p>
@@ -539,7 +539,7 @@ export default function MyAccountPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Sign in */}
             <form onSubmit={handleLogin} className="space-y-5 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl">
-              <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-[#E1B76F] pb-2 border-b border-[#400604]">Sign in</h2>
+              <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Sign in</h2>
               <div>
                 <Label required>Email address</Label>
                 <div className="relative">
@@ -571,7 +571,7 @@ export default function MyAccountPage() {
 
             {/* Register */}
             <form onSubmit={handleRegister} className="space-y-4 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl">
-              <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-[#E1B76F] pb-2 border-b border-[#400604]">Create account</h2>
+              <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Create account</h2>
               <div>
                 <Label required>Full name</Label>
                 <div className="relative">
@@ -597,7 +597,7 @@ export default function MyAccountPage() {
                 <Label required>Password</Label>
                 <PasswordInput value={regPass} onChange={setRegPass} placeholder={PASSWORD_HINT} autoComplete="new-password" />
               </div>
-              <p className="text-[11px] text-[#d8cec4]/80 leading-relaxed">
+              <p className="text-[11px] text-white/80 leading-relaxed">
                 We&apos;ll email you a link to verify your address. By creating an account you agree to our{" "}
                 <Link href="/privacy-policy" className="text-[#E1B76F] underline">Privacy Policy</Link>.
               </p>

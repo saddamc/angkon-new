@@ -12,9 +12,11 @@ import {
   Shield,
   Palette,
   Truck,
+  ShoppingCart,
 } from "lucide-react";
 import { PromoSettings } from "./promo-settings";
 import { ShippingSettings } from "./shipping-settings";
+import { CheckoutSettings } from "./checkout-settings";
 
 const STORE_URL = "https://angkon.net";
 
@@ -29,6 +31,7 @@ export default function AdminSettingsPage() {
     { key: "general", label: "General", icon: Store },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "shipping", label: "Shipping", icon: Truck },
+    { key: "checkout", label: "Checkout", icon: ShoppingCart },
     { key: "appearance", label: "Appearance", icon: Palette },
     { key: "security", label: "Security", icon: Shield },
   ];
@@ -172,6 +175,8 @@ export default function AdminSettingsPage() {
           )}
 
           {activeTab === "shipping" && <ShippingSettings />}
+
+          {activeTab === "checkout" && <CheckoutSettings />}
 
           {activeTab === "appearance" && (
             <div className="space-y-6">

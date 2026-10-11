@@ -112,7 +112,7 @@ export function SlideSearch() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="p-1 text-[#E1B76F] hover:text-[#f3cb87] transition flex items-center justify-center"
+          className="p-1 text-white hover:text-[#f3cb87] transition flex items-center justify-center"
           aria-label="Open search"
           title="Search"
         >
@@ -130,15 +130,15 @@ export function SlideSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search..."
-              className="w-40 sm:w-56 text-[13px] text-[#E1B76F] placeholder:text-[#E1B76F]/50 bg-transparent outline-none pr-1.5 font-normal"
+              className="w-40 sm:w-56 text-[13px] text-white placeholder:text-[#E1B76F]/50 bg-transparent outline-none pr-1.5 font-normal"
             />
             <button
               type="submit"
-              className="p-0.5 text-[#E1B76F] hover:text-[#f3cb87] transition flex items-center justify-center"
+              className="p-0.5 text-white hover:text-[#f3cb87] transition flex items-center justify-center"
               aria-label="Submit search"
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-[#E1B76F]" />
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
               ) : (
                 <Search className="h-4 w-4" />
               )}
@@ -146,7 +146,7 @@ export function SlideSearch() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-0.5 text-[#E1B76F]/60 hover:text-[#E1B76F] transition ml-1"
+              className="p-0.5 text-white/60 hover:text-[#E1B76F] transition ml-1"
               aria-label="Close search"
             >
               <X className="h-3.5 w-3.5" />
@@ -157,17 +157,17 @@ export function SlideSearch() {
           {query.trim().length > 0 && (
             <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-[350px] bg-[#340402] border border-[#E1B76F]/30 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               {loading && results.length === 0 ? (
-                <div className="py-6 text-center text-xs text-[#f0d29d]/70 flex items-center justify-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E1B76F]" />
+                <div className="py-6 text-center text-xs text-white/70 flex items-center justify-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
                   Searching products...
                 </div>
               ) : results.length === 0 ? (
-                <div className="py-6 text-center text-xs text-[#f0d29d]/80">
+                <div className="py-6 text-center text-xs text-white/80">
                   No products found for &ldquo;{query}&rdquo;
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#E1B76F]/60 px-2 py-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-white/60 px-2 py-1">
                     Matching Products
                   </div>
                   {results.map((product) => (
@@ -187,14 +187,14 @@ export function SlideSearch() {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="line-clamp-1 text-xs font-semibold text-[#E1B76F] group-hover:text-[#f3cb87] transition">
+                        <h4 className="line-clamp-1 text-xs font-semibold text-white group-hover:text-[#f3cb87] transition">
                           {product.name}
                         </h4>
-                        <p className="text-[10px] text-[#cbb18a]">
+                        <p className="text-[10px] text-white/70">
                           {product.category}
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-[#E1B76F] flex-shrink-0">
+                      <span className="text-xs font-bold text-white flex-shrink-0">
                         {formatPrice(product.price)}
                       </span>
                     </Link>

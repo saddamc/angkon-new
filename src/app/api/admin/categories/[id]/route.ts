@@ -4,6 +4,7 @@ import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
+import { invalidateCategoriesCache } from "@/lib/db/categories";
 
 export async function PATCH(
   request: NextRequest,
@@ -61,9 +62,13 @@ export async function PATCH(
       console.warn("Failed to sync category update to real-categories.json:", syncErr);
     }
 
+    invalidateCategoriesCache();
+
     return NextResponse.json(updated, { status: 200 });
   } catch (err) {
     console.error("Update category failed:", err);
     return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
   }
 }
+
+export const PUT = PATCH;

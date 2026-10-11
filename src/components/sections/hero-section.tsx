@@ -107,7 +107,7 @@ export function HeroSection() {
                   </span>
                 )}
                 {cat.slug === "new-arrivals" && (
-                  <span className="absolute top-4 left-4 z-10 bg-[#2b0403] border border-[#5c0f0d] text-[#E1B76F] text-[12px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
+                  <span className="absolute top-4 left-4 z-10 bg-[#2b0403] border border-[#5c0f0d] text-white text-[12px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
                     NEW DROP
                   </span>
                 )}
@@ -116,12 +116,12 @@ export function HeroSection() {
                 <div className="relative z-10 p-5">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-2xl">{cat.icon}</span>
-                    <h2 className="text-[#E1B76F] font-heading font-black text-[22px] leading-tight">{cat.name}</h2>
+                    <h2 className="text-white font-heading font-black text-[22px] leading-tight">{cat.name}</h2>
                   </div>
                   {cat.count !== null && cat.count > 0 && (
-                    <p className="text-[#cbb18a] text-[13px] mb-3">{cat.count} items</p>
+                    <p className="text-white/70 text-[13px] mb-3">{cat.count} items</p>
                   )}
-                  <div className="flex items-center gap-1.5 text-[14px] font-bold text-[#E1B76F] group-hover:text-white transition-colors">
+                  <div className="flex items-center gap-1.5 text-[14px] font-bold text-white group-hover:text-white transition-colors">
                     Shop Collection <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </div>
                 </div>
@@ -135,7 +135,7 @@ export function HeroSection() {
               type="button"
               aria-label="Scroll left"
               onClick={() => scrollByAmount("left")}
-              className="absolute -left-1 lg:left-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#2b0403] border border-[#5c0f0d] text-[#E1B76F] shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#400604] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
+              className="absolute -left-1 lg:left-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#2b0403] border border-[#5c0f0d] text-white shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#400604] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -145,7 +145,7 @@ export function HeroSection() {
               type="button"
               aria-label="Scroll right"
               onClick={() => scrollByAmount("right")}
-              className="absolute -right-1 lg:right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#2b0403] border border-[#5c0f0d] text-[#E1B76F] shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#400604] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
+              className="absolute -right-1 lg:right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#2b0403] border border-[#5c0f0d] text-white shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#400604] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

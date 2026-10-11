@@ -105,11 +105,11 @@ export function formatMeasurement(value: string, unit: MeasurementUnit): string 
 /* ── Native Garment Silhouette Component (Angkon Heritage Gold on Burgundy) ── */
 function GarmentSilhouette() {
   return (
-    <div className="flex flex-col items-center justify-between h-full bg-[#340402] p-4 text-[#E1B76F] rounded-xl border border-[#E1B76F]/20 shadow-inner">
+    <div className="flex flex-col items-center justify-between h-full bg-[#340402] p-4 text-white rounded-xl border border-[#E1B76F]/20 shadow-inner">
       <div className="w-full flex flex-col items-center py-2">
         <svg
           viewBox="0 0 160 320"
-          className="w-28 sm:w-32 h-auto max-h-[280px] text-[#E1B76F] drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
+          className="w-28 sm:w-32 h-auto max-h-[280px] text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.4)]"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
@@ -131,17 +131,17 @@ function GarmentSilhouette() {
           />
         </svg>
 
-        <span className="text-[10px] tracking-widest uppercase font-semibold text-[#E1B76F]/70 mt-2">
+        <span className="text-[10px] tracking-widest uppercase font-semibold text-white/70 mt-2">
           Kameez & Trouser
         </span>
       </div>
 
       {/* Brand Monogram */}
       <div className="text-center pt-3 border-t border-[#E1B76F]/25 w-full">
-        <span className="font-heading tracking-[0.25em] text-[11px] font-bold uppercase text-[#E1B76F]">
+        <span className="font-heading tracking-[0.25em] text-[11px] font-bold uppercase text-white">
           ANGKON
         </span>
-        <p className="text-[9px] tracking-wider uppercase text-[#E1B76F]/70">
+        <p className="text-[9px] tracking-wider uppercase text-white/70">
           Royal Heritage
         </p>
       </div>
@@ -169,24 +169,24 @@ export function ReadyToWearSizeGuideContent({
   const normalizedSelectedSize = selectedSize?.toUpperCase().trim();
 
   return (
-    <div className="space-y-5 text-[#E1B76F]">
+    <div className="space-y-5 text-white">
       {/* ── Header Banner & Controls ── */}
       <div className="rounded-xl border border-[#E1B76F]/30 bg-[#340402] p-4 sm:p-5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#400604] px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase text-[#E1B76F] border border-[#E1B76F]/40">
-                <Sparkles className="h-3 w-3 text-[#E1B76F]" />
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#400604] px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white border border-[#E1B76F]/40">
+                <Sparkles className="h-3 w-3 text-white" />
                 Angkon Heritage
               </span>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#E1B76F]/80">
+              <span className="text-xs font-semibold uppercase tracking-wider text-white/80">
                 Ready-to-Wear (Stitched)
               </span>
             </div>
-            <h3 id="size-guide-modal-title" className="text-lg sm:text-xl font-bold text-[#E1B76F] tracking-tight">
+            <h3 id="size-guide-modal-title" className="text-lg sm:text-xl font-bold text-white tracking-tight">
               Ready-to-Wear Size Guide
             </h3>
-            <p className="mt-1 text-xs sm:text-[13px] text-[#f0d29d] leading-relaxed max-w-xl">
+            <p className="mt-1 text-xs sm:text-[13px] text-white/90 leading-relaxed max-w-xl">
               Standard garment measurements for Stitched Kurti, 2-Piece, and 3-Piece Pakistani & Bangladeshi suits.
             </p>
           </div>
@@ -207,7 +207,7 @@ export function ReadyToWearSizeGuideContent({
                 className={`rounded-md px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   unit === "in"
                     ? "bg-[#E1B76F] text-[#400604] shadow font-extrabold"
-                    : "text-[#E1B76F]/70 hover:text-[#E1B76F]"
+                    : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
                 Inches (in)
@@ -220,7 +220,7 @@ export function ReadyToWearSizeGuideContent({
                 className={`rounded-md px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   unit === "cm"
                     ? "bg-[#E1B76F] text-[#400604] shadow font-extrabold"
-                    : "text-[#E1B76F]/70 hover:text-[#E1B76F]"
+                    : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
                 Centimeters (cm)
@@ -234,8 +234,8 @@ export function ReadyToWearSizeGuideContent({
                 onClick={() => setActiveTab("table")}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   activeTab === "table"
-                    ? "bg-[#400604] text-[#E1B76F] shadow-sm border border-[#E1B76F]/50 font-bold"
-                    : "text-[#E1B76F]/70 hover:text-[#E1B76F]"
+                    ? "bg-[#400604] text-white shadow-sm border border-[#E1B76F]/50 font-bold"
+                    : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
                 Size Table
@@ -245,8 +245,8 @@ export function ReadyToWearSizeGuideContent({
                 onClick={() => setActiveTab("guide")}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   activeTab === "guide"
-                    ? "bg-[#400604] text-[#E1B76F] shadow-sm border border-[#E1B76F]/50 font-bold"
-                    : "text-[#E1B76F]/70 hover:text-[#E1B76F]"
+                    ? "bg-[#400604] text-white shadow-sm border border-[#E1B76F]/50 font-bold"
+                    : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
                 How to Measure
@@ -260,12 +260,12 @@ export function ReadyToWearSizeGuideContent({
       {activeTab === "table" && (
         <div className="space-y-3.5">
           {/* Mobile Horizontal Scroll Hint */}
-          <div className="flex items-center justify-between text-[11px] text-[#E1B76F]/80 md:hidden px-1">
+          <div className="flex items-center justify-between text-[11px] text-white/80 md:hidden px-1">
             <span className="flex items-center gap-1">
-              <Info className="h-3.5 w-3.5 text-[#E1B76F]" />
+              <Info className="h-3.5 w-3.5 text-white" />
               Swipe horizontally to see all size columns
             </span>
-            <span className="font-semibold uppercase tracking-wider text-[#E1B76F]">
+            <span className="font-semibold uppercase tracking-wider text-white">
               Unit: {unit === "in" ? "Inches" : "CM"}
             </span>
           </div>
@@ -280,7 +280,7 @@ export function ReadyToWearSizeGuideContent({
             <div className="flex-1 overflow-x-auto scrollbar-thin">
               <table className="w-full text-left text-sm border-collapse min-w-[500px]">
                 <thead>
-                  <tr className="border-b border-[#E1B76F]/25 bg-[#400604] text-[#E1B76F]">
+                  <tr className="border-b border-[#E1B76F]/25 bg-[#400604] text-white">
                     <th className="py-3.5 px-4 font-bold text-xs uppercase tracking-wider sticky left-0 z-10 bg-[#400604] shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
                       Area ({unit === "in" ? "Inches" : "cm"})
                     </th>
@@ -291,8 +291,8 @@ export function ReadyToWearSizeGuideContent({
                           key={s.key}
                           className={`py-3.5 px-3 text-center transition-all ${
                             isSelected
-                              ? "bg-[#E1B76F]/20 text-[#E1B76F] font-black border-x border-[#E1B76F]/40"
-                              : "text-[#E1B76F]"
+                              ? "bg-[#E1B76F]/20 text-white font-black border-x border-[#E1B76F]/40"
+                              : "text-white"
                           }`}
                         >
                           <div className="text-[11px] font-semibold tracking-wider uppercase opacity-80">
@@ -308,7 +308,7 @@ export function ReadyToWearSizeGuideContent({
                               className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold transition cursor-pointer ${
                                 isSelected
                                   ? "bg-[#E1B76F] text-[#400604] shadow font-extrabold ring-1 ring-[#E1B76F]"
-                                  : "bg-white/10 text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604]"
+                                  : "bg-white/10 text-white hover:bg-[#E1B76F] hover:text-[#400604]"
                               }`}
                               aria-pressed={isSelected}
                             >
@@ -326,7 +326,7 @@ export function ReadyToWearSizeGuideContent({
                     })}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-[#f0d29d]">
+                <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-white/90">
                   {READY_TO_WEAR_SIZE_DATA.map((row, idx) => (
                     <tr
                       key={row.area}
@@ -335,7 +335,7 @@ export function ReadyToWearSizeGuideContent({
                       }`}
                     >
                       {/* Area label */}
-                      <td className="py-3 px-4 font-bold text-xs tracking-wider text-[#E1B76F] border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
+                      <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
                         <div className="flex flex-col">
                           <span>{row.area}</span>
                         </div>
@@ -345,7 +345,7 @@ export function ReadyToWearSizeGuideContent({
                       <td
                         className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
                           normalizedSelectedSize === "S"
-                            ? "bg-[#E1B76F]/20 text-[#E1B76F] font-bold border-x border-[#E1B76F]/40"
+                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
                             : ""
                         }`}
                       >
@@ -356,7 +356,7 @@ export function ReadyToWearSizeGuideContent({
                       <td
                         className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
                           normalizedSelectedSize === "M"
-                            ? "bg-[#E1B76F]/20 text-[#E1B76F] font-bold border-x border-[#E1B76F]/40"
+                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
                             : ""
                         }`}
                       >
@@ -367,7 +367,7 @@ export function ReadyToWearSizeGuideContent({
                       <td
                         className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
                           normalizedSelectedSize === "L"
-                            ? "bg-[#E1B76F]/20 text-[#E1B76F] font-bold border-x border-[#E1B76F]/40"
+                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
                             : ""
                         }`}
                       >
@@ -378,7 +378,7 @@ export function ReadyToWearSizeGuideContent({
                       <td
                         className={`py-3 px-3 text-center text-sm font-semibold transition-colors ${
                           normalizedSelectedSize === "XL"
-                            ? "bg-[#E1B76F]/20 text-[#E1B76F] font-bold border-x border-[#E1B76F]/40"
+                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
                             : ""
                         }`}
                       >
@@ -392,14 +392,14 @@ export function ReadyToWearSizeGuideContent({
           </div>
 
           {/* Table Footer Reassurance */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs text-[#E1B76F]/75 pt-1 px-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 text-xs text-white/75 pt-1 px-1">
             <p className="flex items-center gap-1.5 leading-relaxed">
-              <Info className="h-3.5 w-3.5 text-[#E1B76F] shrink-0" />
+              <Info className="h-3.5 w-3.5 text-white shrink-0" />
               <span>
                 Measurements reflect the actual stitched garment laid flat. We recommend choosing a size that allows 1–2 inches of ease over your body measurements.
               </span>
             </p>
-            <span className="font-semibold text-[#E1B76F] tracking-wide shrink-0">
+            <span className="font-semibold text-white tracking-wide shrink-0">
               Angkon • Luxury RTW
             </span>
           </div>
@@ -415,14 +415,14 @@ export function ReadyToWearSizeGuideContent({
                 key={item.area}
                 className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-[#E1B76F] border border-[#E1B76F]/40 shadow-xs">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-white border border-[#E1B76F]/40 shadow-xs">
                   {item.area.slice(0, 2)}
                 </span>
                 <div>
-                  <h4 className="text-sm font-bold text-[#E1B76F] tracking-wide">
+                  <h4 className="text-sm font-bold text-white tracking-wide">
                     {item.area}
                   </h4>
-                  <p className="mt-1 text-xs text-[#f0d29d] leading-relaxed">
+                  <p className="mt-1 text-xs text-white/90 leading-relaxed">
                     {item.guide}
                   </p>
                 </div>
@@ -430,10 +430,10 @@ export function ReadyToWearSizeGuideContent({
             ))}
           </div>
 
-          <div className="rounded-xl border border-[#E1B76F]/20 bg-[#260302] p-4 text-xs text-[#f0d29d] flex items-start gap-3">
-            <Info className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-[#E1B76F]/20 bg-[#260302] p-4 text-xs text-white/90 flex items-start gap-3">
+            <Info className="h-4 w-4 text-white shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <strong className="text-[#E1B76F] block font-bold">Pro Sizing Advice:</strong>
+              <strong className="text-white block font-bold">Pro Sizing Advice:</strong>
               <p className="leading-relaxed">
                 For a flattering fit in Pakistani and Bangladeshi ready-to-wear ensembles, compare these measurements against a well-fitting kameez or kurta you already own. If your bust or hip measurement falls between two sizes, order the larger size.
               </p>
@@ -497,7 +497,7 @@ export function ReadyToWearSizeGuideModal({
       />
 
       {/* Modal Dialog (Desktop) / Full Drawer (Mobile) */}
-      <div className="relative z-10 w-full sm:max-w-3xl max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-[#E1B76F]/35 bg-[#400604] shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-[#E1B76F] overflow-hidden">
+      <div className="relative z-10 w-full sm:max-w-3xl max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-[#E1B76F]/35 bg-[#400604] shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-white overflow-hidden">
         
         {/* Mobile Drag Handle */}
         <div className="w-full flex justify-center pt-2 pb-1 sm:hidden">
@@ -507,8 +507,8 @@ export function ReadyToWearSizeGuideModal({
         {/* Modal Top Header Bar */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[#E1B76F]/20 shrink-0">
           <div className="flex items-center gap-2">
-            <Ruler className="h-5 w-5 text-[#E1B76F]" />
-            <h2 className="text-base sm:text-lg font-bold text-[#E1B76F] tracking-tight">
+            <Ruler className="h-5 w-5 text-white" />
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
               Garment Size Guide
             </h2>
           </div>
@@ -516,7 +516,7 @@ export function ReadyToWearSizeGuideModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#340402] text-[#E1B76F] border border-[#E1B76F]/40 hover:bg-[#E1B76F] hover:text-[#400604] transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
+            className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#340402] text-white border border-[#E1B76F]/40 hover:bg-[#E1B76F] hover:text-[#400604] transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
             aria-label="Close size guide"
           >
             <X className="h-5 w-5" />
@@ -557,10 +557,10 @@ export function ReadyToWearSizeGuideMiniTable({
   return (
     <div className="mb-4 overflow-hidden rounded-xl border border-[#E1B76F]/25 bg-[#340402] shadow-xs">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#400604] border-b border-[#E1B76F]/30 text-[#E1B76F]">
+      <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#400604] border-b border-[#E1B76F]/30 text-white">
         <div className="flex items-center gap-1.5">
-          <Ruler className="h-4 w-4 text-[#E1B76F]" />
-          <span className="text-xs font-bold text-[#E1B76F] uppercase tracking-wide">
+          <Ruler className="h-4 w-4 text-white" />
+          <span className="text-xs font-bold text-white uppercase tracking-wide">
             Ready-to-Wear Size Reference (in inches)
           </span>
         </div>
@@ -579,8 +579,8 @@ export function ReadyToWearSizeGuideMiniTable({
       <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full text-xs text-center border-collapse min-w-[420px]">
           <thead>
-            <tr className="bg-[#400604]/90 text-[#E1B76F] font-semibold border-b border-[#E1B76F]/20">
-              <th className="py-2.5 px-3 text-left font-bold text-[#E1B76F] w-16">Size</th>
+            <tr className="bg-[#400604]/90 text-white font-semibold border-b border-[#E1B76F]/20">
+              <th className="py-2.5 px-3 text-left font-bold text-white w-16">Size</th>
               <th className="py-2.5 px-2">Shoulder</th>
               <th className="py-2.5 px-2">Chest</th>
               <th className="py-2.5 px-2">Waist</th>
@@ -590,7 +590,7 @@ export function ReadyToWearSizeGuideMiniTable({
               <th className="py-2.5 px-2">Trouser</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-[#f0d29d] bg-[#340402]">
+          <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-white/90 bg-[#340402]">
             {SIZE_CHART_ROWS.map((row) => {
               const isSelected = selectedSize?.toUpperCase().trim() === row.size;
               return (
@@ -598,11 +598,11 @@ export function ReadyToWearSizeGuideMiniTable({
                   key={row.size}
                   onClick={() => onSelectSize && onSelectSize(row.size)}
                   className={`transition-colors cursor-pointer hover:bg-[#400604] ${
-                    isSelected ? "bg-[#E1B76F]/20 font-bold text-[#E1B76F]" : ""
+                    isSelected ? "bg-[#E1B76F]/20 font-bold text-white" : ""
                   }`}
                   title={`Click to select size ${row.size}`}
                 >
-                  <td className={`py-2 px-3 text-left font-bold text-[#E1B76F] border-r border-[#E1B76F]/15 ${isSelected ? "bg-[#E1B76F]/25 text-[#E1B76F]" : "bg-[#2b0403]"}`}>
+                  <td className={`py-2 px-3 text-left font-bold text-white border-r border-[#E1B76F]/15 ${isSelected ? "bg-[#E1B76F]/25 text-white" : "bg-[#2b0403]"}`}>
                     <div className="flex items-center gap-1.5">
                       <span>{row.size}</span>
                       {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-[#E1B76F] inline-block" />}

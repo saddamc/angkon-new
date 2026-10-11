@@ -16,9 +16,9 @@ export function FeatureSection() {
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <h3 className="text-[28px] md:text-[36px] font-black text-[#E1B76F] tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Women&apos;s</h3>
+              <h3 className="text-[28px] md:text-[36px] font-black text-white tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Women&apos;s</h3>
               <div className="flex items-center gap-2 text-white font-bold text-[14px] opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                Shop Collection <ArrowRight className="h-4 w-4 text-[#E1B76F]" />
+                Shop Collection <ArrowRight className="h-4 w-4 text-white" />
               </div>
             </div>
           </Link>
@@ -31,9 +31,9 @@ export function FeatureSection() {
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <h3 className="text-[28px] md:text-[36px] font-black text-[#E1B76F] tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Men&apos;s</h3>
+              <h3 className="text-[28px] md:text-[36px] font-black text-white tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Men&apos;s</h3>
               <div className="flex items-center gap-2 text-white font-bold text-[14px] opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                Shop Collection <ArrowRight className="h-4 w-4 text-[#E1B76F]" />
+                Shop Collection <ArrowRight className="h-4 w-4 text-white" />
               </div>
             </div>
           </Link>
@@ -46,9 +46,9 @@ export function FeatureSection() {
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <h3 className="text-[28px] md:text-[36px] font-black text-[#E1B76F] tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Accessories</h3>
+              <h3 className="text-[28px] md:text-[36px] font-black text-white tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Accessories</h3>
               <div className="flex items-center gap-2 text-white font-bold text-[14px] opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                Explore Styles <ArrowRight className="h-4 w-4 text-[#E1B76F]" />
+                Explore Styles <ArrowRight className="h-4 w-4 text-white" />
               </div>
             </div>
           </Link>
@@ -61,10 +61,10 @@ export function FeatureSection() {
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <span className="text-[#E1B76F] font-bold text-[12px] tracking-widest uppercase mb-1 drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Up to 50% Off</span>
-              <h3 className="text-[28px] md:text-[36px] font-black text-[#E1B76F] tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Clearance</h3>
+              <span className="text-white font-bold text-[12px] tracking-widest uppercase mb-1 drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Up to 50% Off</span>
+              <h3 className="text-[28px] md:text-[36px] font-black text-white tracking-wide drop-shadow-md transform transition-transform duration-500 group-hover:-translate-y-2">Clearance</h3>
               <div className="flex items-center gap-2 text-white font-bold text-[14px] opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
-                Shop Sale <ArrowRight className="h-4 w-4 text-[#E1B76F]" />
+                Shop Sale <ArrowRight className="h-4 w-4 text-white" />
               </div>
             </div>
           </Link>

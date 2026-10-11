@@ -17,20 +17,20 @@ const DELIVERY_TIMES = [
 
 export default function ThankYouPage() {
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       {/* Header */}
       <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-14 px-4 text-center">
         <div className="container mx-auto max-w-[800px]">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#E1B76F] text-[#400604] mb-4 shadow-xl">
             <CheckCircle2 className="h-10 w-10 stroke-[2.5]" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#cbb18a] block">
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/70 block">
             Order Confirmation
           </span>
-          <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-[#E1B76F]">
+          <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">
             Thank You For Shopping With Us
           </h1>
-          <p className="mt-3 text-sm sm:text-base text-[#f5ebd8] leading-relaxed">
+          <p className="mt-3 text-sm sm:text-base text-white leading-relaxed">
             We appreciate your support of homegrown craftsmanship. Our fulfillment team is preparing your package.
           </p>
         </div>
@@ -40,8 +40,8 @@ export default function ThankYouPage() {
         {/* Delivery Timings Section */}
         <div className="rounded-2xl border-2 border-[#5c0f0d] bg-[#2b0403] p-6 sm:p-8 shadow-xl">
           <div className="flex items-center gap-3 border-b border-[#5c0f0d] pb-4 mb-6">
-            <Clock className="h-6 w-6 text-[#E1B76F]" />
-            <h2 className="font-heading text-2xl font-black uppercase text-[#E1B76F]">
+            <Clock className="h-6 w-6 text-white" />
+            <h2 className="font-heading text-2xl font-black uppercase text-white">
               When Will I Get My Product?
             </h2>
           </div>
@@ -53,8 +53,8 @@ export default function ThankYouPage() {
                 className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 gap-2"
               >
                 <div>
-                  <h3 className="font-bold text-sm text-[#f5ebd8]">{item.area}</h3>
-                  <p className="text-xs text-[#cbb18a]">{item.note}</p>
+                  <h3 className="font-bold text-sm text-white">{item.area}</h3>
+                  <p className="text-xs text-white/70">{item.note}</p>
                 </div>
                 <div className="rounded-lg bg-[#E1B76F] px-3.5 py-1 text-xs font-black uppercase text-[#400604] self-start sm:self-auto">
                   {item.time}
@@ -63,7 +63,7 @@ export default function ThankYouPage() {
             ))}
           </div>
 
-          <p className="mt-6 text-xs text-[#cbb18a] border-t border-[#5c0f0d] pt-4 leading-relaxed">
+          <p className="mt-6 text-xs text-white/70 border-t border-[#5c0f0d] pt-4 leading-relaxed">
             * Please note: Orders placed after 4:00 PM are processed on the subsequent working day. Public holidays and extreme transit circumstances may incur slight variations.
           </p>
         </div>
@@ -71,8 +71,8 @@ export default function ThankYouPage() {
         {/* Our Policies Quick Links */}
         <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 sm:p-8 shadow-xl">
           <div className="flex items-center gap-3 border-b border-[#5c0f0d] pb-4 mb-6">
-            <ShieldCheck className="h-6 w-6 text-[#E1B76F]" />
-            <h2 className="font-heading text-2xl font-black uppercase text-[#E1B76F]">
+            <ShieldCheck className="h-6 w-6 text-white" />
+            <h2 className="font-heading text-2xl font-black uppercase text-white">
               Our Policies
             </h2>
           </div>
@@ -82,10 +82,10 @@ export default function ThankYouPage() {
               href="/returns"
               className="rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 hover:border-[#E1B76F] transition group"
             >
-              <h3 className="font-bold text-sm text-[#E1B76F] group-hover:text-white transition">
+              <h3 className="font-bold text-sm text-white group-hover:text-white transition">
                 Exchange Policy &rarr;
               </h3>
-              <p className="text-xs text-[#cbb18a] mt-1">
+              <p className="text-xs text-white/70 mt-1">
                 Hassle-free size and product exchanges within 7 calendar days.
               </p>
             </Link>
@@ -94,10 +94,10 @@ export default function ThankYouPage() {
               href="/returns"
               className="rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 hover:border-[#E1B76F] transition group"
             >
-              <h3 className="font-bold text-sm text-[#E1B76F] group-hover:text-white transition">
+              <h3 className="font-bold text-sm text-white group-hover:text-white transition">
                 Trial at Doorstep &rarr;
               </h3>
-              <p className="text-xs text-[#cbb18a] mt-1">
+              <p className="text-xs text-white/70 mt-1">
                 Inspect fits directly in front of the delivery agent.
               </p>
             </Link>
@@ -106,10 +106,10 @@ export default function ThankYouPage() {
               href="/refund-and-exchange-policies"
               className="rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 hover:border-[#E1B76F] transition group"
             >
-              <h3 className="font-bold text-sm text-[#E1B76F] group-hover:text-white transition">
+              <h3 className="font-bold text-sm text-white group-hover:text-white transition">
                 Refund Guidelines &rarr;
               </h3>
-              <p className="text-xs text-[#cbb18a] mt-1">
+              <p className="text-xs text-white/70 mt-1">
                 Transparent refunds issued via bKash, Nagad, or original payment.
               </p>
             </Link>
@@ -118,18 +118,18 @@ export default function ThankYouPage() {
 
         {/* Showroom & Helpline */}
         <div className="rounded-2xl border-2 border-[#E1B76F]/40 bg-[#2b0403] p-6 sm:p-8 text-center space-y-4">
-          <span className="text-xs font-bold uppercase tracking-widest text-[#cbb18a] block">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/70 block">
             Questions Regarding Your Order?
           </span>
-          <h3 className="font-heading text-2xl font-black uppercase text-[#E1B76F]">
+          <h3 className="font-heading text-2xl font-black uppercase text-white">
             ANGKON Flagship Showroom
           </h3>
-          <p className="text-sm text-[#f5ebd8] font-serif">
+          <p className="text-sm text-white font-serif">
             H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#cbb18a]">
-            <span>Hotline / WhatsApp: <strong className="text-[#E1B76F]">+880 1338-668899</strong></span>
-            <span>Email: <strong className="text-[#E1B76F]">angkonofficial08@gmail.com</strong></span>
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-white/70">
+            <span>Hotline / WhatsApp: <strong className="text-white">+880 1338-668899</strong></span>
+            <span>Email: <strong className="text-white">angkonofficial08@gmail.com</strong></span>
           </div>
 
           <div className="pt-4">

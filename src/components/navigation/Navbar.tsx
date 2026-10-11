@@ -168,6 +168,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
     { label: "Home", href: "/", isExact: true },
     { label: "Women", href: "/product-category/women", isExact: false },
     { label: "Men", href: "/product-category/men", isExact: false },
+    { label: "Ethnic Wear", href: "/product-category/ethnic-wear", isExact: false },
     { label: "Mighto", href: "/product-category/mighto", isExact: false, hasSubmenu: true },
     { label: "Accessories", href: "/product-category/accessories", isExact: false },
     { label: "Policies", href: "/policies", isExact: false },
@@ -491,7 +492,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
               <div className="relative flex items-center justify-center">
                 <ShoppingCart className="h-5 w-5 text-neutral-800 group-hover:text-[#400604] transition" />
                 {mounted && itemCount > 0 && (
-                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#400604] px-1 text-[9px] font-black text-[#E1B76F] shadow-xs">
+                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#400604] px-1 text-[9px] font-black text-white shadow-xs">
                     {itemCount}
                   </span>
                 )}
@@ -558,6 +559,15 @@ export function Navbar({ categoryTree }: NavbarProps) {
                   className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
                 >
                   Women
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/product-category/ethnic-wear"
+                  onClick={() => setOpenMobile(false)}
+                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                >
+                  Ethnic Wear
                 </Link>
               </li>
               <li>

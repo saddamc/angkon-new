@@ -39,18 +39,18 @@ export function SpeciallyForYouSection({
         {/* Section Header */}
         <div className="mb-8 flex items-end justify-between border-b border-[#5c0f0d] pb-4">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#cbb18a]">
-              CURATED COLLECTION <span className="text-[#E1B76F]">●</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-white/70">
+              CURATED COLLECTION <span className="text-white">●</span>
             </span>
-            <h2 className="font-heading text-2xl sm:text-3xl font-black text-[#E1B76F]">
+            <h2 className="font-heading text-2xl sm:text-3xl font-black text-white">
               Trending Heritage Apparel
             </h2>
           </div>
           <Link
             href="/products"
-            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#E1B76F] transition hover:bg-[#E1B76F] hover:text-[#400604]"
+            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-white transition hover:bg-[#E1B76F] hover:text-[#400604]"
           >
-            All Products <ArrowRight className="h-3.5 w-3.5 text-[#E1B76F]" />
+            All Products <ArrowRight className="h-3.5 w-3.5 text-white" />
           </Link>
         </div>
 

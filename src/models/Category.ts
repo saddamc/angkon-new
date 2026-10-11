@@ -11,6 +11,7 @@ export interface ICategory extends Document {
   name: string;
   slug: string;
   parent: number;
+  menu_order: number;
   description: string;
   count: number;
   image: ICategoryImage | null;
@@ -33,6 +34,7 @@ const CategorySchema = new Schema<ICategory>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, index: true, trim: true },
     parent: { type: Number, default: 0, index: true },
+    menu_order: { type: Number, default: 0, index: true },
     description: { type: String, default: "" },
     count: { type: Number, default: 0 },
     image: { type: CategoryImageSchema, default: null },

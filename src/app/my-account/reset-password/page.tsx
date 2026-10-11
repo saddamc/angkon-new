@@ -69,21 +69,21 @@ export default function ResetPasswordPage() {
   };
 
   const inputClass =
-    "w-full rounded-xl border border-[#400604] bg-[#1A0302] px-4 py-3 pr-10 text-sm text-[#f5ebd8] placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
+    "w-full rounded-xl border border-[#400604] bg-[#1A0302] px-4 py-3 pr-10 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
 
   return (
-    <div className="min-h-screen bg-[#1A0302] px-4 py-16 text-[#E1B76F]">
+    <div className="min-h-screen bg-[#1A0302] px-4 py-16 text-white">
       <div className="mx-auto max-w-md rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 shadow-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3 border-b border-[#400604] pb-3">
           <KeyRound className="h-6 w-6" />
           <h1 className="font-heading text-2xl font-black uppercase">Set a new password</h1>
         </div>
 
-        {status === "checking" && <p className="text-sm text-[#d8cec4]">Checking your link…</p>}
+        {status === "checking" && <p className="text-sm text-white/80">Checking your link…</p>}
 
         {status === "invalid" && (
           <div className="space-y-4">
-            <p className="text-sm text-[#f0d29d]">
+            <p className="text-sm text-white/90">
               This link has expired or was already used. Reset links work once and last 1 hour.
             </p>
             <Link href="/my-account" className="inline-block text-xs font-bold uppercase tracking-wider underline underline-offset-4 hover:text-white">
@@ -95,8 +95,8 @@ export default function ResetPasswordPage() {
         {status === "valid" && (
           <form onSubmit={onSubmit} className="space-y-4">
             {email && (
-              <p className="text-xs text-[#d8cec4]">
-                For <strong className="text-[#E1B76F]">{email}</strong>
+              <p className="text-xs text-white/80">
+                For <strong className="text-white">{email}</strong>
               </p>
             )}
             <div className="relative">

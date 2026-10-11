@@ -56,27 +56,27 @@ export function ProductSection({
         {/* Main Category Highlight Title (Optional) */}
         {subtitle && (
           <div className="text-center mb-8">
-            <h2 className="font-heading text-2xl font-bold uppercase text-[#E1B76F] flex items-center justify-center gap-4">
+            <h2 className="font-heading text-2xl font-bold uppercase text-white flex items-center justify-center gap-4">
               <span className="h-[2px] w-12 bg-[#5c0f0d] hidden sm:block"></span>
               {title}
               <span className="h-[2px] w-12 bg-[#5c0f0d] hidden sm:block"></span>
             </h2>
-            <p className="text-[13px] text-[#cbb18a] mt-2">{subtitle}</p>
+            <p className="text-[13px] text-white/70 mt-2">{subtitle}</p>
           </div>
         )}
 
         <div className="mb-4 flex items-center justify-between">
           {!subtitle ? (
-            <h2 className="font-heading text-[17px] font-bold uppercase text-[#E1B76F]">
+            <h2 className="font-heading text-[17px] font-bold uppercase text-white">
               {title}
             </h2>
           ) : (
-            <h3 className="font-heading text-[15px] font-bold uppercase text-[#E1B76F]">{title}</h3>
+            <h3 className="font-heading text-[15px] font-bold uppercase text-white">{title}</h3>
           )}
           {href && (
             <Link
               href={href}
-              className="text-[13px] font-semibold text-[#E1B76F] hover:text-[#f3cb87] transition flex items-center gap-1"
+              className="text-[13px] font-semibold text-white hover:text-[#f3cb87] transition flex items-center gap-1"
             >
               See More →
             </Link>
@@ -107,7 +107,7 @@ export function ProductSection({
               type="button"
               onClick={() => scrollByAmount("left")}
               disabled={!canScrollLeft}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-[#E1B76F] shadow-lg border border-[#5c0f0d] hover:bg-[#4a0705] hover:text-[#f3cb87] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#4a0705] hover:text-[#f3cb87] transition disabled:opacity-0"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -117,7 +117,7 @@ export function ProductSection({
               type="button"
               onClick={() => scrollByAmount("right")}
               disabled={!canScrollRight}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-[#E1B76F] shadow-lg border border-[#5c0f0d] hover:bg-[#4a0705] hover:text-[#f3cb87] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#4a0705] hover:text-[#f3cb87] transition disabled:opacity-0"
             >
               <ChevronRight className="h-5 w-5" />
             </button>

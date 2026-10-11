@@ -1,120 +1,102 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag } from "lucide-react";
 import { getProducts } from "@/services/products.service";
-import type { WooProduct } from "@/types/product";
+import type { WooProduct, WooCategory } from "@/types/product";
 import { ProductCard } from "@/components/product/product-card";
 import { useCartStore } from "@/store/cart-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { getCategoryImage } from "@/config/category-images";
+import REAL_CATEGORIES from "@/data/real-categories.json";
 
-// Pairs of 2-Column Banner Cards matching ANGKON Homepage layout
-const BANNER_PAIRS = [
-  // Pair 1: Men & Women
-  [
-    {
-      title: "Men",
-      href: "/product-category/men",
-      image: "/banners/men-banner.webp",
-      alt: "Men Collection",
-    },
-    {
-      title: "Women",
-      href: "/product-category/women",
-      image: "/banners/women-banner.webp",
-      alt: "Women Collection",
-    },
-  ],
-  // Pair 2: Half-sleeves & Full-Sleeves
-  [
-    {
-      title: "Half Sleeves",
-      href: "/product-category/men/mens-shirt/cubans",
-      image: "/banners/half-sleeves.webp",
-      alt: "Half Sleeves Shirts",
-    },
-    {
-      title: "Full Sleeves",
-      href: "/product-category/men/mens-shirt/oversized-full-sleeves",
-      image: "/banners/full-sleeves.webp",
-      alt: "Full Sleeves Shirts",
-    },
-  ],
-  // Pair 3: Pants & Tees
-  [
-    {
-      title: "Pants",
-      href: "/product-category/men/men-pants",
-      image: "/banners/pants.webp",
-      alt: "Pants & Trousers",
-    },
-    {
-      title: "Tees",
-      href: "/product-category/men/t-shirts-men",
-      image: "/banners/tees.webp",
-      alt: "T-Shirts & Drop Tees",
-    },
-  ],
-  // Pair 4: Polos & Tops
-  [
-    {
-      title: "Polos",
-      href: "/product-category/men/polos",
-      image: "/banners/polos.webp",
-      alt: "Polos & Knits",
-    },
-    {
-      title: "Tops",
-      href: "/product-category/women/tops",
-      image: "/banners/tops.webp",
-      alt: "Women Tops & Kimonos",
-    },
-  ],
-  // Pair 5: Accessories & Ethnic Wear
-  [
-    {
-      title: "Accessories",
-      href: "/product-category/accessories",
-      image: "/banners/accessories.webp",
-      alt: "Accessories",
-    },
-    {
-      title: "Ethnic Wear",
-      href: "/product-category/women/ethnic",
-      image: "/banners/ethnic-wear.webp",
-      alt: "Ethnic Wear — Luxury Collection",
-    },
-  ],
-];
+const EXCLUDED_GRID_SLUGS = new Set(["mighto", "kids", "unisex"]);
 
+function filterHomepageCategories(cats: WooCategory[]): WooCategory[] {
+  const seen = new Set<string>();
+  return cats
+    .filter((c) => (!c.parent || c.parent === 0) && !EXCLUDED_GRID_SLUGS.has((c.slug || "").toLowerCase()))
+    .filter((c) => {
+      const key = (c.slug || "").toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0));
+}
+
+// Initial root categories fallback to prevent SSR layout shift
+const initialRootCats: WooCategory[] = filterHomepageCategories(
+  REAL_CATEGORIES as unknown as WooCategory[]
+);
 
 export default function HomePage() {
   const [products, setProducts] = useState<WooProduct[]>([]);
+  const [categories, setCategories] = useState<WooCategory[]>(initialRootCats);
   const [isLoading, setIsLoading] = useState(true);
   const openCart = useCartStore((s) => s.openCart);
   const mounted = useMounted();
   const itemCount = useCartStore((s) => s.itemCount());
 
   useEffect(() => {
+    // 1. Fetch live products
     getProducts({ perPage: 24 })
       .then((data) => {
         if (Array.isArray(data)) setProducts(data);
       })
       .catch((err) => console.error("Failed to fetch products:", err))
       .finally(() => setIsLoading(false));
+
+    // 2. Fetch live categories synced with Admin Panel
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const roots = filterHomepageCategories(data);
+          if (roots.length > 0) {
+            setCategories(roots);
+          }
+        }
+      })
+      .catch((err) => console.error("Failed to fetch categories:", err));
   }, []);
 
+  // Dynamically pair categories into 2-column banner cards matching Admin Panel order
+  const bannerPairs = useMemo(() => {
+    const pairs: Array<Array<{ title: string; href: string; image: string; alt: string }>> = [];
+    for (let i = 0; i < categories.length; i += 2) {
+      const pair = [
+        {
+          title: categories[i].name,
+          href: `/product-category/${categories[i].slug}`,
+          image: getCategoryImage(categories[i]),
+          alt: `${categories[i].name} Collection`,
+        },
+      ];
+      if (i + 1 < categories.length) {
+        pair.push({
+          title: categories[i + 1].name,
+          href: `/product-category/${categories[i + 1].slug}`,
+          image: getCategoryImage(categories[i + 1]),
+          alt: `${categories[i + 1].name} Collection`,
+        });
+      }
+      pairs.push(pair);
+    }
+    return pairs;
+  }, [categories]);
+
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       {/* Floating cart shortcut */}
       <button
         onClick={openCart}
-        className="group fixed bottom-6 left-3 sm:left-4 z-40 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#400604] text-[#E1B76F] border border-[#E1B76F]/40 shadow-2xl transition-all hover:scale-110 cursor-pointer"
+        className="group fixed bottom-6 left-3 sm:left-4 z-40 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#400604] text-white border border-[#E1B76F]/40 shadow-2xl transition-all hover:scale-110 cursor-pointer"
         aria-label="Open cart"
       >
-        <ShoppingBag className="h-5 w-5 text-[#E1B76F] transition group-hover:scale-105" />
+        <ShoppingBag className="h-5 w-5 text-white transition group-hover:scale-105" />
         {mounted && itemCount > 0 && (
           <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-black text-[#400604] shadow">
             {itemCount}
@@ -133,19 +115,25 @@ export default function HomePage() {
             alt="Mighto Performance Activewear"
             fill
             priority
+            loading="eager"
             sizes="100vw"
             className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
           />
         </Link>
       </section>
 
-      {/* ── 2. Pairs of 2-Column Banner Cards (Full Width Grid Edge to Edge) ── */}
+      {/* ── 2. Pairs of 2-Column Banner Cards (Full Width Grid Edge to Edge - Dynamic from Admin Panel) ── */}
       <section className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3">
-        {BANNER_PAIRS.map((pair, pIdx) => (
-          <div key={pIdx} className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
+        {bannerPairs.map((pair, pIdx) => (
+          <div
+            key={pIdx}
+            className={`grid gap-2 sm:gap-3 ${
+              pair.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
+            }`}
+          >
             {pair.map((item) => (
               <Link
-                key={item.title}
+                key={item.href}
                 href={item.href}
                 className="group relative block w-full aspect-[1700/700] overflow-hidden bg-[#340402] border border-[#E1B76F]/15 shadow-sm transition hover:opacity-95"
               >
@@ -165,9 +153,9 @@ export default function HomePage() {
       </section>
 
       {/* ── 3. Luxury Cash On Delivery Band (Full Width Edge to Edge) ── */}
-      <section className="w-full bg-[#300302] border-y border-[#E1B76F]/30 py-4 sm:py-6 text-center text-[#E1B76F] my-2 sm:my-3 shadow-inner">
+      <section className="w-full bg-[#300302] border-y border-[#E1B76F]/30 py-4 sm:py-6 text-center text-white my-2 sm:my-3 shadow-inner">
         <div className="w-full px-4 text-center">
-          <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#E1B76F] tracking-tight">
+          <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">
             Cash on Delivery in all 64 Districts
           </h2>
         </div>

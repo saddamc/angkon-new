@@ -4,6 +4,7 @@ import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary, deleteCloudinaryFolder } from "@/lib/cloudinary";
+import { invalidateCategoriesCache } from "@/lib/db/categories";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export async function GET() {
   try {
     await connectToDatabase();
     const categories = await Category.find({})
-      .sort({ parent: 1, name: 1 })
+      .sort({ parent: 1, menu_order: 1, name: 1 })
       .lean();
 
     if (categories && categories.length > 0) {
@@ -68,12 +69,15 @@ export async function POST(request: NextRequest) {
         }
       : null;
 
+    const menuOrder = Number(body.menu_order ?? body.sortOrder ?? 0);
+
     const newCategory = await Category.create({
       id: catId,
       name,
       slug,
       description: body.description ?? "",
       parent: Number(body.parent ?? 0),
+      menu_order: menuOrder,
       count: Number(body.count ?? 0),
       image: imageObj,
     });
@@ -86,6 +90,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         parent: Number(body.parent ?? 0),
+        menu_order: menuOrder,
         description: body.description ?? "",
         count: Number(body.count ?? 0),
         image: imageObj,
@@ -97,6 +102,8 @@ export async function POST(request: NextRequest) {
       }
       return cats;
     });
+
+    invalidateCategoriesCache();
 
     return NextResponse.json(newCategory, { status: 201 });
   } catch (err) {
@@ -202,6 +209,8 @@ export async function DELETE(request: NextRequest) {
     } catch {
       // ignore folder deletion if already empty or not a folder
     }
+
+    invalidateCategoriesCache();
 
     return NextResponse.json(
       {

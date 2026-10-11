@@ -9,13 +9,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ShoppingBag, Trash2, X, ArrowRight, Truck } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
+import { useShippingQuote } from "@/hooks/use-shipping-quote";
 
 interface Props {
   open: boolean;
   onClose: () => void;
 }
-
-const FREE_SHIPPING_THRESHOLD = 3000;
 
 export function CartDrawer({ open, onClose }: Props) {
   const items = useCartStore((s) => s.items);
@@ -25,6 +24,10 @@ export function CartDrawer({ open, onClose }: Props) {
   const subtotal = useCartStore((s) => s.subtotal());
 
   const mounted = useMounted();
+
+  // Free-delivery goal comes from Admin → Settings → Shipping (0 = no free-delivery goal).
+  const { quote } = useShippingQuote(items);
+  const freeDeliveryThreshold = quote?.freeDeliveryThreshold ?? 0;
 
 
   // Lock body scroll when drawer is open
@@ -48,8 +51,9 @@ export function CartDrawer({ open, onClose }: Props) {
 
   if (!mounted) return null;
 
-  const freeShippingProgress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
-  const amountNeeded = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const freeShippingProgress =
+    freeDeliveryThreshold > 0 ? Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100)) : 0;
+  const amountNeeded = quote?.amountToFreeDelivery ?? 0;
 
   return createPortal(
     <AnimatePresence>
@@ -72,7 +76,7 @@ export function CartDrawer({ open, onClose }: Props) {
           {/* Cart Drawer Panel — Right side */}
           <motion.aside
             aria-label="Shopping Cart Drawer"
-            className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col bg-[#1A0302] border-l border-[#E1B76F]/30 shadow-2xl text-[#E1B76F]"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col bg-[#1A0302] border-l border-[#E1B76F]/30 shadow-2xl text-white"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -81,19 +85,19 @@ export function CartDrawer({ open, onClose }: Props) {
             {/* ── 1. Drawer Header ── */}
             <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E1B76F]/20 px-6 py-4 bg-[#100101]">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-[#E1B76F]" />
-                <h2 className="font-heading text-[16px] font-bold uppercase tracking-wider text-[#E1B76F]">
+                <ShoppingBag className="h-5 w-5 text-white" />
+                <h2 className="font-heading text-[16px] font-bold uppercase tracking-wider text-white">
                   Shopping Cart
                 </h2>
                 {itemCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1A0302] px-1.5 text-[11px] font-black text-[#E1B76F] border border-[#E1B76F]/30 shadow-xs">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1A0302] px-1.5 text-[11px] font-black text-white border border-[#E1B76F]/30 shadow-xs">
                     {itemCount}
                   </span>
                 )}
               </div>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-[#E1B76F] hover:bg-white/10 transition cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-white hover:bg-white/10 transition cursor-pointer"
                 aria-label="Close cart"
               >
                 <X className="h-5 w-5" />
@@ -101,16 +105,16 @@ export function CartDrawer({ open, onClose }: Props) {
             </div>
 
             {/* ── 2. Free Shipping Bar ── */}
-            {items.length > 0 && (
+            {items.length > 0 && freeDeliveryThreshold > 0 && (
               <div className="border-b border-[#E1B76F]/20 bg-[#240403] px-6 py-3">
-                <div className="flex items-center gap-2 text-[12px] font-semibold text-[#E1B76F]">
-                  <Truck className="h-4 w-4 text-[#E1B76F]" />
+                <div className="flex items-center gap-2 text-[12px] font-semibold text-white">
+                  <Truck className="h-4 w-4 text-white" />
                   {amountNeeded === 0 ? (
-                    <span className="text-[#f3cb87] font-bold">🎉 You qualify for FREE shipping!</span>
+                    <span className="text-white font-bold">🎉 You qualify for FREE shipping!</span>
                   ) : (
                     <span>
-                      Add <strong className="text-[#f3cb87] font-bold">{formatPrice(amountNeeded)}</strong> more to get{" "}
-                      <strong className="text-[#f3cb87] font-bold">FREE Shipping</strong>
+                      Add <strong className="text-white font-bold">{formatPrice(amountNeeded)}</strong> more to get{" "}
+                      <strong className="text-white font-bold">FREE Shipping</strong>
                     </span>
                   )}
                 </div>
@@ -127,15 +131,15 @@ export function CartDrawer({ open, onClose }: Props) {
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/25">
-                  <ShoppingBag className="h-10 w-10 text-[#E1B76F]/60" />
+                  <ShoppingBag className="h-10 w-10 text-white/60" />
                 </div>
                 <div>
-                  <p className="font-heading text-lg font-bold text-[#E1B76F]">No products in the cart.</p>
-                  <p className="mt-1 text-sm text-[#E1B76F]/70">Discover our latest drops and heritage designs!</p>
+                  <p className="font-heading text-lg font-bold text-white">No products in the cart.</p>
+                  <p className="mt-1 text-sm text-white/70">Discover our latest drops and heritage designs!</p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="mt-3 inline-flex items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/50 hover:bg-[#E1B76F] hover:text-[#400604] px-8 py-3 text-sm font-bold text-[#E1B76F] transition shadow-sm uppercase tracking-wide cursor-pointer"
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/50 hover:bg-[#E1B76F] hover:text-[#400604] px-8 py-3 text-sm font-bold text-white transition shadow-sm uppercase tracking-wide cursor-pointer"
                 >
                   Continue Shopping
                 </button>
@@ -161,18 +165,18 @@ export function CartDrawer({ open, onClose }: Props) {
                     <div className="flex flex-1 flex-col justify-between min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="line-clamp-2 text-[13px] font-semibold text-[#E1B76F] leading-snug">
+                          <p className="line-clamp-2 text-[13px] font-semibold text-white leading-snug">
                             {item.name}
                           </p>
                           {item.size && (
-                            <p className="mt-1 text-[11px] font-medium text-[#E1B76F]/70 uppercase">
-                              Size: <span className="font-bold text-[#f3cb87]">{item.size}</span>
+                            <p className="mt-1 text-[11px] font-medium text-white/70 uppercase">
+                              Size: <span className="font-bold text-white">{item.size}</span>
                             </p>
                           )}
                         </div>
                         <button
                           onClick={() => removeItem(item.productId, item.size)}
-                          className="text-[#E1B76F]/70 hover:text-[#f3cb87] transition p-1 cursor-pointer"
+                          className="text-white/70 hover:text-[#f3cb87] transition p-1 cursor-pointer"
                           aria-label="Remove item"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -185,17 +189,17 @@ export function CartDrawer({ open, onClose }: Props) {
                           <button
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
                             disabled={item.quantity <= 1}
-                            className="p-1 text-[#E1B76F] hover:text-[#f3cb87] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                            className="p-1 text-white hover:text-[#f3cb87] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             aria-label="Decrease quantity"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
-                          <span className="w-8 text-center text-[12px] font-bold text-[#E1B76F]">
+                          <span className="w-8 text-center text-[12px] font-bold text-white">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
-                            className="p-1 text-[#E1B76F] hover:text-[#f3cb87] cursor-pointer"
+                            className="p-1 text-white hover:text-[#f3cb87] cursor-pointer"
                             aria-label="Increase quantity"
                           >
                             <Plus className="h-3 w-3" />
@@ -217,7 +221,7 @@ export function CartDrawer({ open, onClose }: Props) {
               <div className="flex-shrink-0 border-t border-[#E1B76F]/20 bg-[#100101] p-6 space-y-4">
                 {/* Subtotal */}
                 <div className="flex items-center justify-between">
-                  <span className="font-heading text-sm font-bold uppercase tracking-wider text-[#E1B76F]/70">
+                  <span className="font-heading text-sm font-bold uppercase tracking-wider text-white/70">
                     Subtotal:
                   </span>
                   <span className="font-heading text-xl font-black text-[#E1B76F]">
@@ -225,7 +229,7 @@ export function CartDrawer({ open, onClose }: Props) {
                   </span>
                 </div>
 
-                <p className="text-[12px] text-[#E1B76F]/60">
+                <p className="text-[12px] text-white/60">
                   Taxes and shipping calculated at checkout
                 </p>
 
@@ -234,7 +238,7 @@ export function CartDrawer({ open, onClose }: Props) {
                   <Link
                     href="/cart"
                     onClick={onClose}
-                    className="flex items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#1A0302] py-3 text-[13px] font-bold text-[#E1B76F] transition hover:bg-[#240403] hover:text-[#f3cb87] hover:border-[#E1B76F]"
+                    className="flex items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#1A0302] py-3 text-[13px] font-bold text-white transition hover:bg-[#240403] hover:text-[#f3cb87] hover:border-[#E1B76F]"
                   >
                     View Cart
                   </Link>

@@ -33,8 +33,8 @@ export function FAQSection() {
     <section className="bg-[#400604] py-12 border-t border-[#5c0f0d]">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1000px]">
         <div className="text-center mb-8">
-          <h2 className="font-heading text-2xl font-black uppercase text-[#E1B76F]">Frequently Asked Questions</h2>
-          <p className="text-[#cbb18a] mt-2 text-sm">Find answers to common questions about shopping with us.</p>
+          <h2 className="font-heading text-2xl font-black uppercase text-white">Frequently Asked Questions</h2>
+          <p className="text-white/70 mt-2 text-sm">Find answers to common questions about shopping with us.</p>
         </div>
 
         <div className="space-y-4">
@@ -50,16 +50,16 @@ export function FAQSection() {
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   className="w-full flex items-center justify-between p-4 text-left bg-[#4a0705] hover:bg-[#2b0403] transition"
                 >
-                  <span className={`font-semibold text-[15px] ${isOpen ? 'text-[#E1B76F]' : 'text-[#cbb18a]'}`}>
+                  <span className={`font-semibold text-[15px] ${isOpen ? 'text-white' : 'text-white/70'}`}>
                     {faq.question}
                   </span>
-                  <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#E1B76F]' : 'text-[#cbb18a]'}`} />
+                  <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isOpen ? 'rotate-180 text-white' : 'text-white/70'}`} />
                 </button>
                 
                 <div 
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
                 >
-                  <div className="p-4 text-[14px] text-[#cbb18a] leading-relaxed border-t border-[#5c0f0d] bg-[#2b0403]">
+                  <div className="p-4 text-[14px] text-white/70 leading-relaxed border-t border-[#5c0f0d] bg-[#2b0403]">
                     {faq.answer}
                   </div>
                 </div>

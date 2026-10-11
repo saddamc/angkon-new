@@ -37,7 +37,7 @@ export function SizeSelector({
               "flex min-h-[42px] min-w-[44px] items-center justify-center rounded-lg border px-3.5 text-xs font-bold uppercase transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#400604]",
               isSelected
                 ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-extrabold shadow-md ring-1 ring-[#E1B76F]"
-                : "border-[#E1B76F]/30 bg-[#340402] text-[#f0d29d] hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]",
+                : "border-[#E1B76F]/30 bg-[#340402] text-white/90 hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]",
               isDisabled && "opacity-40 cursor-not-allowed border-white/10 bg-black/20 text-white/40 line-through hover:border-white/10 hover:bg-black/20 hover:text-white/40"
             )}
             onClick={() => !isDisabled && onChange(size)}

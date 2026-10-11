@@ -13,7 +13,7 @@ export function CategoryBreadcrumb({
   const href = (index: number) => prefix + "/" + path.slice(0, index + 1).map((c) => c.slug).join("/");
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] sm:text-[14px] text-[#E1B76F]/70 flex-wrap font-normal">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] sm:text-[14px] text-white/70 flex-wrap font-normal">
       <Link href="/" className="transition hover:text-white">
         Home
       </Link>
@@ -21,9 +21,9 @@ export function CategoryBreadcrumb({
         const isLast = index === path.length - 1;
         return (
           <span key={node.id} className="flex items-center gap-1.5">
-            <span className="text-[#E1B76F]/40 font-light">/</span>
+            <span className="text-white/40 font-light">/</span>
             {isLast ? (
-              <span className="text-[#E1B76F] font-bold">{categoryDisplayName(node.name)}</span>
+              <span className="text-white font-bold">{categoryDisplayName(node.name)}</span>
             ) : (
               <Link href={href(index)} className="transition hover:text-white">
                 {categoryDisplayName(node.name)}

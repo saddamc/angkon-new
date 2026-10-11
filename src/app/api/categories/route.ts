@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { getDbCategories } from "@/lib/db/categories";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const categories = await getDbCategories();
     return NextResponse.json(categories, {
       headers: {
-        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     });
   } catch (error) {

@@ -67,12 +67,12 @@ export function MegaMenu({ categoryTree }: MegaMenuProps) {
         >
           <span className="text-2xl">{staticCat?.icon}</span>
           <div>
-            <p className="text-[16px] font-black text-[#E1B76F]">{staticCat?.name}</p>
-            <p className="text-[12px] text-[#f0d29d]">Browse all {staticCat?.name} collections</p>
+            <p className="text-[16px] font-black text-white">{staticCat?.name}</p>
+            <p className="text-[12px] text-white/90">Browse all {staticCat?.name} collections</p>
           </div>
           <Link
             href={`/${slug}`}
-            className="ml-auto flex items-center gap-1.5 text-[12px] font-bold text-[#E1B76F] hover:text-[#f3cb87] transition whitespace-nowrap"
+            className="ml-auto flex items-center gap-1.5 text-[12px] font-bold text-white hover:text-[#f3cb87] transition whitespace-nowrap"
           >
             Shop All <ChevronRight className="h-3.5 w-3.5" />
           </Link>
@@ -85,9 +85,9 @@ export function MegaMenu({ categoryTree }: MegaMenuProps) {
               <li key={sub.slug}>
                 <Link
                   href={`/${slug}/${sub.slug}`}
-                  className="group flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-[#f0d29d] transition hover:bg-[#400604] hover:text-[#E1B76F]"
+                  className="group flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13.5px] font-medium text-white/90 transition hover:bg-[#400604] hover:text-[#E1B76F]"
                 >
-                  <ChevronRight className="h-3.5 w-3.5 text-[#E1B76F]/40 transition-all group-hover:translate-x-0.5 group-hover:text-[#E1B76F]" />
+                  <ChevronRight className="h-3.5 w-3.5 text-white/40 transition-all group-hover:translate-x-0.5 group-hover:text-[#E1B76F]" />
                   {sub.name}
                 </Link>
               </li>
@@ -104,9 +104,9 @@ export function MegaMenu({ categoryTree }: MegaMenuProps) {
       <div ref={dropdownRef} className="relative flex h-full items-center shrink-0">
         <div
           onClick={() => setIsAllCategoriesOpen(!isAllCategoriesOpen)}
-          className="flex min-w-[220px] items-center gap-3 bg-[#400604] border-r border-[#E1B76F]/30 px-5 py-4 text-[13.5px] font-bold uppercase tracking-widest text-[#E1B76F] transition-colors hover:bg-[#340402] cursor-pointer select-none"
+          className="flex min-w-[220px] items-center gap-3 bg-[#400604] border-r border-[#E1B76F]/30 px-5 py-4 text-[13.5px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-[#340402] cursor-pointer select-none"
         >
-          <MenuIcon className="h-4.5 w-4.5 opacity-90 text-[#E1B76F]" />
+          <MenuIcon className="h-4.5 w-4.5 opacity-90 text-white" />
           <span>All Categories</span>
           <ChevronDown
             className={`ml-auto h-4 w-4 opacity-70 transition-transform duration-300 ${isAllCategoriesOpen ? "rotate-180" : ""}`}
@@ -128,12 +128,12 @@ export function MegaMenu({ categoryTree }: MegaMenuProps) {
                       href={`/${cat.slug}`}
                       className="flex items-center justify-between border-b border-[#E1B76F]/10 px-4 py-3 text-[13px] font-medium transition last:border-0 hover:bg-[#400604]"
                     >
-                      <span className="flex items-center gap-3 text-[#f0d29d] group-hover/item:text-[#E1B76F] transition-colors">
+                      <span className="flex items-center gap-3 text-white/90 group-hover/item:text-[#E1B76F] transition-colors">
                         <span className="text-lg w-6 text-center">{cat.icon}</span>
                         {cat.name}
                       </span>
                       {subs.length > 0 && (
-                        <ChevronRight className="h-4 w-4 text-[#E1B76F]/40 transition-all group-hover/item:translate-x-1 group-hover/item:text-[#E1B76F]" />
+                        <ChevronRight className="h-4 w-4 text-white/40 transition-all group-hover/item:translate-x-1 group-hover/item:text-[#E1B76F]" />
                       )}
                     </Link>
 
@@ -145,12 +145,12 @@ export function MegaMenu({ categoryTree }: MegaMenuProps) {
                             <Link
                               key={sub.slug}
                               href={`/${cat.slug}/${sub.slug}`}
-                              className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-[#f0d29d] hover:bg-[#400604] hover:text-[#E1B76F] transition-colors"
+                              className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-white/90 hover:bg-[#400604] hover:text-[#E1B76F] transition-colors"
                             >
                               {sub.image ? (
                                 <img src={sub.image} alt={sub.name} className="h-7 w-7 rounded-lg object-cover bg-[#2b0403] shadow-sm shrink-0 border border-[#E1B76F]/20" />
                               ) : (
-                                <div className="h-7 w-7 rounded-lg bg-[#2b0403] border border-[#E1B76F]/20 flex items-center justify-center text-[#E1B76F]/50 shrink-0">
+                                <div className="h-7 w-7 rounded-lg bg-[#2b0403] border border-[#E1B76F]/20 flex items-center justify-center text-white/50 shrink-0">
                                   <FolderOpen className="h-3.5 w-3.5" />
                                 </div>
                               )}

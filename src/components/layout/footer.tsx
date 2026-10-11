@@ -98,7 +98,7 @@ const CLIENT_CARE_LINKS = [
 
 export function Footer() {
   return (
-    <footer className="bg-[#1A0302] text-[#E1B76F] border-t-2 border-[#E1B76F]/35 selection:bg-[#E1B76F] selection:text-[#1A0302]">
+    <footer className="bg-[#1A0302] text-white border-t-2 border-[#E1B76F]/35 selection:bg-[#E1B76F] selection:text-[#1A0302]">
 
       {/* ── 2. Main 4-Column Luxury Footer Grid ── */}
       <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] py-12 md:py-16">
@@ -112,19 +112,19 @@ export function Footer() {
                 className="h-12 w-12 rounded-lg border border-[#E1B76F]/40 shadow-lg object-contain group-hover:border-[#E1B76F] transition"
               />
               <div>
-                <span className="block font-serif text-2xl font-black uppercase tracking-[0.2em] text-[#E1B76F] leading-none">
+                <span className="block font-serif text-2xl font-black uppercase tracking-[0.2em] text-white leading-none">
                   ANGKON
                 </span>
               </div>
             </Link>
 
-            <p className="text-[13px] text-[#f0d29d] leading-relaxed max-w-sm">
+            <p className="text-[13px] text-white/90 leading-relaxed max-w-sm">
               Discover Bangladesh&apos;s premier ethnic fashion house. Handcrafted luxury lawn ensembles, exquisite artisanal embroidery, and contemporary festive elegance crafted for the discerning wardrobe.
             </p>
 
             {/* Official Social Media Channels */}
             <div className="pt-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-[#E1B76F] mb-3">
+              <span className="block text-xs font-bold uppercase tracking-wider text-white mb-3">
                 Follow Our Official Channels
               </span>
               <div className="flex items-center gap-3">
@@ -137,7 +137,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={item.label}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#280504] text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#1A0302] hover:border-[#E1B76F] hover:scale-110 active:scale-95 transition-all duration-200 shadow-md cursor-pointer"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#280504] text-white hover:bg-[#E1B76F] hover:text-[#1A0302] hover:border-[#E1B76F] hover:scale-110 active:scale-95 transition-all duration-200 shadow-md cursor-pointer"
                     >
                       <Icon className="h-4 w-4" />
                     </a>
@@ -149,10 +149,10 @@ export function Footer() {
 
           {/* Column 2: Collections & Shop (2.5 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#E1B76F] font-heading border-b border-[#E1B76F]/25 pb-2">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-white font-heading border-b border-[#E1B76F]/25 pb-2">
               Collections
             </h3>
-            <ul className="space-y-2.5 text-[13px] text-[#f0d29d]">
+            <ul className="space-y-2.5 text-[13px] text-white/90">
               {SHOP_LINKS.map((link) => (
                 <li key={link.label}>
                   <Link
@@ -168,10 +168,10 @@ export function Footer() {
 
           {/* Column 3: Client Experience & Help (2.5 cols on lg) */}
           <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#E1B76F] font-heading border-b border-[#E1B76F]/25 pb-2">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-white font-heading border-b border-[#E1B76F]/25 pb-2">
               Client Care
             </h3>
-            <ul className="space-y-2.5 text-[13px] text-[#f0d29d]">
+            <ul className="space-y-2.5 text-[13px] text-white/90">
               {CLIENT_CARE_LINKS.map((link) => (
                 <li key={link.label}>
                   <Link
@@ -187,16 +187,16 @@ export function Footer() {
 
           {/* Column 4: Showroom & Inquiries (3 cols on lg) */}
           <div className="lg:col-span-4 space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-widest text-[#E1B76F] font-heading border-b border-[#E1B76F]/25 pb-2">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-white font-heading border-b border-[#E1B76F]/25 pb-2">
               Flagship Showroom & Inquiries
             </h3>
 
-            <div className="space-y-3.5 text-[13px] text-[#f0d29d]">
+            <div className="space-y-3.5 text-[13px] text-white/90">
               {/* Showroom Address */}
               <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
+                <MapPin className="h-4 w-4 text-white shrink-0 mt-0.5" />
                 <div>
-                  <p className="leading-snug text-[#f0d29d]">
+                  <p className="leading-snug text-white/90">
                     H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
                   </p>
                   <a
@@ -212,14 +212,14 @@ export function Footer() {
 
               {/* Phone & WhatsApp */}
               <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-[#E1B76F] shrink-0" />
+                <Phone className="h-4 w-4 text-white shrink-0" />
                 <div>
-                  <span className="text-[11px] text-[#E1B76F]/70 block uppercase">Hotline & WhatsApp</span>
+                  <span className="text-[11px] text-white/70 block uppercase">Hotline & WhatsApp</span>
                   <a
                     href="https://wa.me/8801338668899"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-bold text-[#E1B76F] hover:text-[#f3cb87] transition"
+                    className="font-bold text-white hover:text-[#f3cb87] transition"
                   >
                     +880 1338-668899
                   </a>
@@ -228,12 +228,12 @@ export function Footer() {
 
               {/* Official Email */}
               <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-[#E1B76F] shrink-0" />
+                <Mail className="h-4 w-4 text-white shrink-0" />
                 <div>
-                  <span className="text-[11px] text-[#E1B76F]/70 block uppercase">Official Email Inquiries</span>
+                  <span className="text-[11px] text-white/70 block uppercase">Official Email Inquiries</span>
                   <a
                     href="mailto:angkonofficial08@gmail.com"
-                    className="font-semibold text-[#E1B76F] hover:text-[#f3cb87] transition"
+                    className="font-semibold text-white hover:text-[#f3cb87] transition"
                   >
                     angkonofficial08@gmail.com
                   </a>
@@ -242,10 +242,10 @@ export function Footer() {
 
               {/* Showroom Timing */}
               <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-[#E1B76F] shrink-0" />
+                <Clock className="h-4 w-4 text-white shrink-0" />
                 <div>
-                  <span className="text-[11px] text-[#E1B76F]/70 block uppercase">Showroom Schedule</span>
-                  <span className="text-xs text-[#f0d29d]">
+                  <span className="text-[11px] text-white/70 block uppercase">Showroom Schedule</span>
+                  <span className="text-xs text-white/90">
                     Open 7 Days a Week: 10:00 AM – 10:00 PM
                   </span>
                 </div>
@@ -257,7 +257,7 @@ export function Footer() {
                   href="https://wa.me/8801338668899"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-[#280504] border border-[#E1B76F]/50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#1A0302] hover:border-[#E1B76F] transition-all shadow-md group"
+                  className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-[#280504] border border-[#E1B76F]/50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#E1B76F] hover:text-[#1A0302] hover:border-[#E1B76F] transition-all shadow-md group"
                 >
                   <WhatsAppIcon className="h-4 w-4" />
                   <span>Chat with Style Specialist</span>
@@ -271,14 +271,14 @@ export function Footer() {
 
       {/* ── 3. Bottom Sub-Footer Bar ── */}
       <div className="bg-[#100101] py-6 border-t border-[#E1B76F]/20">
-        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#E1B76F]/80">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/80">
           <p className="text-center md:text-left">
             Copyright © {new Date().getFullYear()}{" "}
-            <strong className="text-[#E1B76F]">ANGKON</strong>. All Rights Reserved.
+            <strong className="text-white">ANGKON</strong>. All Rights Reserved.
           </p>
 
           {/* Secure Payment & Delivery Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-wider text-[#E1B76F]">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-wider text-white">
             <span className="rounded-md border border-[#E1B76F]/30 bg-[#1A0302] px-2.5 py-1">
               Cash on Delivery
             </span>

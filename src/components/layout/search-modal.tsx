@@ -138,7 +138,7 @@ export function SearchModal() {
       <button
         ref={triggerRef}
         onClick={() => setOpen(true)}
-        className="p-1.5 text-[#E1B76F] hover:text-white transition flex items-center justify-center"
+        className="p-1.5 text-white hover:text-white transition flex items-center justify-center"
         aria-label="Search products"
       >
         <Search className="h-5 w-5" />
@@ -172,26 +172,26 @@ export function SearchModal() {
                   role="dialog"
                   aria-modal="true"
                   aria-label="Search products"
-                  className="w-full max-w-[700px] overflow-hidden rounded-2xl border border-[#E1B76F]/30 bg-[#400604] shadow-2xl text-[#E1B76F]"
+                  className="w-full max-w-[700px] overflow-hidden rounded-2xl border border-[#E1B76F]/30 bg-[#400604] shadow-2xl text-white"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="border-b border-[#E1B76F]/20 px-6 py-4">
                     <div className="flex items-center gap-2">
                       <div className="relative flex-1">
-                        <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#E1B76F]/60" />
+                        <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-white/60" />
                         <input
                           ref={inputRef}
                           type="text"
                           placeholder="Search shirts, polos, drops..."
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
-                          className="h-12 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] py-2 pl-11 pr-4 text-base text-[#E1B76F] placeholder-[#E1B76F]/40 outline-none transition focus:border-[#E1B76F] focus:bg-[#2d0302]"
+                          className="h-12 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] py-2 pl-11 pr-4 text-base text-white placeholder-[#E1B76F]/40 outline-none transition focus:border-[#E1B76F] focus:bg-[#2d0302]"
                         />
                       </div>
                       <button
                         type="button"
                         onClick={closeModal}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#E1B76F]/70 transition hover:bg-[#340402] hover:text-white"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-white/70 transition hover:bg-[#340402] hover:text-white"
                         aria-label="Close search"
                       >
                         <X className="h-5 w-5 stroke-[2.5]" />
@@ -201,11 +201,11 @@ export function SearchModal() {
 
                   <div ref={resultsRef} className="max-h-[60vh] overflow-y-auto p-4">
                     {loading ? (
-                      <div className="py-8 text-center text-[#E1B76F]/60 text-sm">
+                      <div className="py-8 text-center text-white/60 text-sm">
                         Loading products...
                       </div>
                     ) : displayResults.length === 0 ? (
-                      <div className="py-10 text-center text-[#E1B76F]/60 text-sm">
+                      <div className="py-10 text-center text-white/60 text-sm">
                         {search.trim() ? "No products found" : "No products available"}
                       </div>
                     ) : (
@@ -223,15 +223,15 @@ export function SearchModal() {
                               className="h-12 w-12 rounded object-cover border border-[#E1B76F]/20"
                             />
                             <div className="min-w-0 flex-1">
-                              <h4 className="line-clamp-1 text-sm font-semibold text-[#E1B76F] group-hover:text-white">
+                              <h4 className="line-clamp-1 text-sm font-semibold text-white group-hover:text-white">
                                 {product.name}
                               </h4>
-                              <p className="text-xs text-[#E1B76F]/60">
+                              <p className="text-xs text-white/60">
                                 {product.category}
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-sm text-[#E1B76F]">
+                              <p className="font-bold text-sm text-white">
                                 {product.price}
                               </p>
                             </div>
@@ -241,7 +241,7 @@ export function SearchModal() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-[#E1B76F]/20 px-4 py-3 text-xs text-[#E1B76F]/70 bg-[#340402]">
+                  <div className="flex items-center justify-between border-t border-[#E1B76F]/20 px-4 py-3 text-xs text-white/70 bg-[#340402]">
                     <div className="flex items-center gap-3">
                       <span>Enter to open</span>
                       <span>Esc to close</span>
@@ -250,7 +250,7 @@ export function SearchModal() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-2.5 py-1 text-xs text-[#E1B76F] transition hover:bg-[#400604] hover:text-white"
+                          className="inline-flex items-center gap-1 rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-2.5 py-1 text-xs text-white transition hover:bg-[#400604] hover:text-white"
                           onClick={() => resultsRef.current?.scrollBy({ top: -220, behavior: "smooth" })}
                         >
                           <ChevronUp className="h-3.5 w-3.5" />
@@ -258,7 +258,7 @@ export function SearchModal() {
                         </button>
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-2.5 py-1 text-xs text-[#E1B76F] transition hover:bg-[#400604] hover:text-white"
+                          className="inline-flex items-center gap-1 rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-2.5 py-1 text-xs text-white transition hover:bg-[#400604] hover:text-white"
                           onClick={() => resultsRef.current?.scrollBy({ top: 220, behavior: "smooth" })}
                         >
                           <ChevronDown className="h-3.5 w-3.5" />

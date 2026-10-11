@@ -65,7 +65,7 @@ function ShareStrip({ title }: { title: string }) {
 
   return (
     <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#E1B76F]/70">Share</p>
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-white/70">Share</p>
       <div className="flex items-center gap-2">
         {/* Facebook */}
         <button type="button" onClick={() => share("facebook")} aria-label="Share on Facebook" className={`${BTN_BASE} bg-[#1877F2]`}>
@@ -91,14 +91,14 @@ function ShareStrip({ title }: { title: string }) {
           className={`${BTN_BASE} border transition ${
             copied
               ? "border-emerald-500 bg-emerald-500 text-white shadow-emerald-200"
-              : "border-[#E1B76F]/30 bg-[#340402] text-[#f0d29d] hover:border-[#E1B76F] hover:text-[#E1B76F]"
+              : "border-[#E1B76F]/30 bg-[#340402] text-white/90 hover:border-[#E1B76F] hover:text-[#E1B76F]"
           }`}
           title={copied ? "Link Copied!" : "Copy Link"}
         >
           {copied ? (
             <Check className="h-4 w-4 text-white" />
           ) : (
-            <Copy className="h-4 w-4 text-[#f0d29d]" />
+            <Copy className="h-4 w-4 text-white/90" />
           )}
         </button>
       </div>
@@ -340,7 +340,7 @@ export function ProductDetailsView({
   };
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       {/* Main product grid */}
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 xl:gap-14 items-start">
@@ -382,7 +382,7 @@ export function ProductDetailsView({
               {/* Sale badge */}
               {pricing.hasSale && (
                 <div className="absolute left-3 top-3 z-10 pointer-events-none">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#400604] text-[9px] font-black uppercase text-[#E1B76F] border border-[#E1B76F]/40 shadow-sm">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#400604] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow-sm">
                     Sale!
                   </span>
                 </div>
@@ -392,7 +392,7 @@ export function ProductDetailsView({
               <button
                 type="button"
                 onClick={() => openLightbox(activeImage)}
-                className="absolute right-3.5 top-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#400604] text-[#E1B76F] border border-[#E1B76F]/40 shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:text-white hover:scale-105 transition cursor-pointer"
+                className="absolute right-3.5 top-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#400604] text-white border border-[#E1B76F]/40 shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:text-white hover:scale-105 transition cursor-pointer"
                 title="Click to enlarge"
                 aria-label="Enlarge image"
               >
@@ -431,7 +431,7 @@ export function ProductDetailsView({
           <div className="flex flex-col">
 
             {/* Breadcrumb */}
-            <nav className="text-[13px] text-[#E1B76F]/70 font-normal leading-relaxed mb-2.5 flex flex-wrap items-center gap-1.5">
+            <nav className="text-[13px] text-white/70 font-normal leading-relaxed mb-2.5 flex flex-wrap items-center gap-1.5">
               <Link href="/" className="hover:text-white transition">Home</Link>
               <span>/</span>
               {product.categories.map((c) => (
@@ -442,11 +442,11 @@ export function ProductDetailsView({
                   <span>/</span>
                 </span>
               ))}
-              <span className="text-[#E1B76F] font-medium line-clamp-1">{product.name}</span>
+              <span className="text-white font-medium line-clamp-1">{product.name}</span>
             </nav>
 
             {/* Product Title */}
-            <h1 className="text-2xl sm:text-[28px] lg:text-[30px] font-normal text-[#E1B76F] leading-snug mb-2 tracking-tight">
+            <h1 className="text-2xl sm:text-[28px] lg:text-[30px] font-normal text-white leading-snug mb-2 tracking-tight">
               {product.name}
             </h1>
 
@@ -455,10 +455,10 @@ export function ProductDetailsView({
               <span>Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               {pricing.hasSale && (
                 <>
-                  <span className="text-[16px] text-[#E1B76F]/60 font-normal line-through">
+                  <span className="text-[16px] text-white/60 font-normal line-through">
                     Tk{pricing.regular.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[12px] font-bold text-[#E1B76F] bg-[#340402] px-2 py-0.5 rounded border border-[#E1B76F]/30">
+                  <span className="text-[12px] font-bold text-white bg-[#340402] px-2 py-0.5 rounded border border-[#E1B76F]/30">
                     -{discountPct}%
                   </span>
                 </>
@@ -466,8 +466,8 @@ export function ProductDetailsView({
             </div>
 
             {/* Shipping Delivery Reassurance Pill */}
-            <div className="inline-flex items-center gap-2 rounded-lg bg-[#340402] px-3.5 py-1.5 text-xs text-[#E1B76F] mb-4 border border-[#E1B76F]/25 max-w-fit shadow-xs">
-              <Truck className="h-4 w-4 text-[#E1B76F] shrink-0" />
+            <div className="inline-flex items-center gap-2 rounded-lg bg-[#340402] px-3.5 py-1.5 text-xs text-white mb-4 border border-[#E1B76F]/25 max-w-fit shadow-xs">
+              <Truck className="h-4 w-4 text-white shrink-0" />
               <span>
                 Order now & get it in <strong className="text-white font-bold">1–3 Days</strong> inside BD • <strong className="text-white font-bold">5–7 Days</strong> Intl.
               </span>
@@ -475,11 +475,11 @@ export function ProductDetailsView({
 
             {/* Short Description */}
             {product.short_description ? (
-              <div className="text-[14px] leading-relaxed text-[#f0d29d] mb-4">
+              <div className="text-[14px] leading-relaxed text-white/90 mb-4">
                 <RichText html={product.short_description} />
               </div>
             ) : product.description ? (
-              <div className="text-[14px] leading-relaxed text-[#f0d29d] mb-4">
+              <div className="text-[14px] leading-relaxed text-white/90 mb-4">
                 <RichText html={product.description} />
               </div>
             ) : null}
@@ -492,7 +492,7 @@ export function ProductDetailsView({
                   return (
                     <div key={attr.name} className="mt-4">
                       <div className="flex items-center justify-between mb-2.5">
-                        <label className="text-[14px] font-bold text-[#E1B76F] flex items-center gap-1.5">
+                        <label className="text-[14px] font-bold text-white flex items-center gap-1.5">
                           {attr.name}
                           {isSize && size ? <span className="font-semibold text-white">({size})</span> : null}
                         </label>
@@ -503,7 +503,7 @@ export function ProductDetailsView({
                             className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-bold text-[#E1B76F] hover:text-white underline underline-offset-4 decoration-[#E1B76F]/60 hover:decoration-white transition cursor-pointer rounded px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
                             aria-label="Open size guide"
                           >
-                            <Ruler className="h-4 w-4 text-[#E1B76F]" />
+                            <Ruler className="h-4 w-4 text-white" />
                             Size Guide
                           </button>
                         )}
@@ -528,7 +528,7 @@ export function ProductDetailsView({
                                 className={`flex min-h-[42px] min-w-[46px] items-center justify-center px-4 rounded-lg border text-xs uppercase transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#400604] ${
                                   isSelected
                                     ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-extrabold shadow-md ring-1 ring-[#E1B76F]"
-                                    : "border-[#E1B76F]/30 bg-[#340402] text-[#f0d29d] font-bold hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]"
+                                    : "border-[#E1B76F]/30 bg-[#340402] text-white/90 font-bold hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]"
                                 }`}
                               >
                                 {opt}
@@ -546,20 +546,20 @@ export function ProductDetailsView({
                             setSize(e.target.value);
                             setOptionError(false);
                           }}
-                          className={`w-full appearance-none rounded border bg-[#2d0302] px-3.5 py-2.5 pr-10 text-[14px] text-[#E1B76F] outline-none transition cursor-pointer ${
+                          className={`w-full appearance-none rounded border bg-[#2d0302] px-3.5 py-2.5 pr-10 text-[14px] text-white outline-none transition cursor-pointer ${
                             optionError && !size
                               ? "border-red-500 ring-1 ring-red-500"
                               : "border-[#E1B76F]/40 focus:border-[#E1B76F]"
                           }`}
                         >
-                          <option value="" className="bg-[#2d0302] text-[#E1B76F]">Choose an option</option>
+                          <option value="" className="bg-[#2d0302] text-white">Choose an option</option>
                           {attr.options.map((opt) => (
-                            <option key={opt} value={opt} className="bg-[#2d0302] text-[#E1B76F]">
+                            <option key={opt} value={opt} className="bg-[#2d0302] text-white">
                               {opt}
                             </option>
                           ))}
                         </select>
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]" />
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white" />
                       </div>
 
                       {optionError && !size && (
@@ -589,14 +589,14 @@ export function ProductDetailsView({
                 min={1}
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                className="h-10 w-12 rounded border border-[#E1B76F]/40 bg-[#2d0302] text-center text-sm font-medium text-[#E1B76F] outline-none focus:border-[#E1B76F] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="h-10 w-12 rounded border border-[#E1B76F]/40 bg-[#2d0302] text-center text-sm font-medium text-white outline-none focus:border-[#E1B76F] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
 
               <button
                 type="button"
                 onClick={onAddToCart}
                 disabled={product.stock_status !== "instock"}
-                className="h-10 rounded-md bg-[#400604] border border-[#E1B76F]/40 px-7 text-sm font-bold tracking-wide uppercase text-[#E1B76F] transition hover:bg-[#520805] hover:border-[#E1B76F] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
+                className="h-10 rounded-md bg-[#400604] border border-[#E1B76F]/40 px-7 text-sm font-bold tracking-wide uppercase text-white transition hover:bg-[#520805] hover:border-[#E1B76F] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
               >
                 {added ? "Added to cart" : "Add to cart"}
               </button>
@@ -605,17 +605,17 @@ export function ProductDetailsView({
             <div className="my-5 border-t border-[#E1B76F]/20" />
 
             {/* Product Meta: SKU & Category */}
-            <div className="flex flex-wrap items-center gap-6 text-[13px] text-[#E1B76F]">
+            <div className="flex flex-wrap items-center gap-6 text-[13px] text-white">
               {product.sku && (
                 <div>
-                  <span className="text-[#E1B76F]/70">SKU:</span>{" "}
-                  <span className="font-normal text-[#E1B76F]">{product.sku}</span>
+                  <span className="text-white/70">SKU:</span>{" "}
+                  <span className="font-normal text-white">{product.sku}</span>
                 </div>
               )}
               {product.categories.length > 0 && (
                 <div>
-                  <span className="text-[#E1B76F]/70">{product.categories.length > 1 ? "Categories:" : "Category:"}</span>{" "}
-                  <span className="font-normal text-[#E1B76F]">
+                  <span className="text-white/70">{product.categories.length > 1 ? "Categories:" : "Category:"}</span>{" "}
+                  <span className="font-normal text-white">
                     {product.categories.map((c, i) => (
                       <span key={c.id}>
                         <Link href={`/${c.slug}`} className="hover:text-white transition">
@@ -647,8 +647,8 @@ export function ProductDetailsView({
                 onClick={() => setActiveTab(tab)}
                 className={`relative shrink-0 py-3 text-[15px] transition whitespace-nowrap ${
                   activeTab === tab
-                    ? "font-bold text-[#E1B76F] border-t-2 border-[#E1B76F] -mt-[1px]"
-                    : "font-normal text-[#E1B76F]/70 hover:text-white border-t-2 border-transparent -mt-[1px]"
+                    ? "font-bold text-white border-t-2 border-[#E1B76F] -mt-[1px]"
+                    : "font-normal text-white/70 hover:text-white border-t-2 border-transparent -mt-[1px]"
                 }`}
               >
                 {tab}
@@ -660,11 +660,11 @@ export function ProductDetailsView({
           <div className="pt-6">
             {/* DESCRIPTION */}
             {activeTab === "Description" && (
-              <div className="max-w-4xl text-[#f0d29d] leading-relaxed text-[15px]">
+              <div className="max-w-4xl text-white/90 leading-relaxed text-[15px]">
                 {product.description ? (
                   <RichText html={product.description} />
                 ) : (
-                  <p className="text-[#E1B76F]/70 text-sm">No description available.</p>
+                  <p className="text-white/70 text-sm">No description available.</p>
                 )}
               </div>
             )}
@@ -675,30 +675,30 @@ export function ProductDetailsView({
                 <table className="w-full border-collapse border border-[#E1B76F]/25 text-sm">
                   <tbody>
                     <tr className="border-b border-[#E1B76F]/20">
-                      <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-[#E1B76F] border-r border-[#E1B76F]/20 bg-[#340402]">
+                      <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#340402]">
                         Weight
                       </th>
-                      <td className="p-3 sm:p-4 text-[#f0d29d] bg-[#2d0302]">
+                      <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
                         {product.weight ? `${product.weight} kg` : "N/A"}
                       </td>
                     </tr>
                     {product.attributes && product.attributes.length > 0 ? (
                       product.attributes.map((attr) => (
                         <tr key={attr.id || attr.name} className="border-b border-[#E1B76F]/20 last:border-b-0">
-                          <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-[#E1B76F] border-r border-[#E1B76F]/20 bg-[#340402]">
+                          <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#340402]">
                             {attr.name}
                           </th>
-                          <td className="p-3 sm:p-4 text-[#f0d29d] bg-[#2d0302]">
+                          <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
                             {attr.options.join(", ")}
                           </td>
                         </tr>
                       ))
                     ) : product.sizes && product.sizes.length > 0 ? (
                       <tr className="border-b border-[#E1B76F]/20 last:border-b-0">
-                        <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-[#E1B76F] border-r border-[#E1B76F]/20 bg-[#340402]">
+                        <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#340402]">
                           Size
                         </th>
-                        <td className="p-3 sm:p-4 text-[#f0d29d] bg-[#2d0302]">
+                        <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
                           {product.sizes.join(", ")}
                         </td>
                       </tr>
@@ -726,7 +726,7 @@ export function ProductDetailsView({
 
       {/* ── Sticky Bottom Action Bar ── */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E1B76F]/30 bg-[#340402] text-[#E1B76F] shadow-[0px_-2px_16px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E1B76F]/30 bg-[#340402] text-white shadow-[0px_-2px_16px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2 duration-300">
           <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 min-h-[58px] sm:min-h-[64px] py-2 flex items-center justify-between gap-3 sm:gap-4">
             {/* Left: Thumbnail + Product Title */}
             <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
@@ -739,7 +739,7 @@ export function ProductDetailsView({
                   className="object-cover"
                 />
               </div>
-              <span className="truncate text-[13px] sm:text-[15px] font-normal text-[#E1B76F]/90 leading-normal min-w-0">
+              <span className="truncate text-[13px] sm:text-[15px] font-normal text-white/90 leading-normal min-w-0">
                 {product.name}
               </span>
             </div>
@@ -763,7 +763,7 @@ export function ProductDetailsView({
                 className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs sm:text-[14px] font-bold transition shadow-sm whitespace-nowrap ${
                   added
                     ? "bg-[#E1B76F] text-[#400604]"
-                    : "bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F] hover:bg-[#520805] hover:border-[#E1B76F]"
+                    : "bg-[#400604] border border-[#E1B76F]/40 text-white hover:bg-[#520805] hover:border-[#E1B76F]"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {added

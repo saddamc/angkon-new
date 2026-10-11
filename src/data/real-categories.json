@@ -4,13 +4,14 @@
     "name": "Accessories",
     "slug": "accessories",
     "parent": 0,
-    "description": "",
+    "description": "Caps, Jewelry, Wallets & Accessories",
     "count": 0,
     "image": {
-      "id": 116687,
+      "id": 341001,
       "src": "/banners/accessories.webp",
       "alt": "Accessories"
-    }
+    },
+    "menu_order": 9
   },
   {
     "id": 285,
@@ -456,16 +457,17 @@
   },
   {
     "id": 288,
-    "name": "Cubans",
-    "slug": "cubans",
-    "parent": 166,
-    "description": "Cubans by ANGKON\r\n\r\nImagine swinging on a hammock, sipping cocktails and listening to the waves hit the sandy shores.\r\nWe know it&#8217;s been too long since you had a relaxing vacation. Fret not, with our range of revere collared Cuban shirts you&#8217;ll feel transported to the nearest tropical island in no time!\r\n\r\nThe short sleeves and super soft viscose and cotton fabric are sure to uplift your mood. The floral patterns add a fun touch to these Hawaiian style shirts.\r\n\r\nHence, Cubans by ANGKON are a perfect addition to your &#8220;as soon as borders open, I&#8217;m taking a trip&#8221; suitcase.",
+    "name": "Half Sleeves",
+    "slug": "half-sleeves",
+    "parent": 0,
+    "description": "Cuban Collar & Casual Half Sleeves Shirts",
     "count": 0,
     "image": {
-      "id": 190815,
+      "id": 288001,
       "src": "/banners/half-sleeves.webp",
-      "alt": "Cubans"
-    }
+      "alt": "Half Sleeves Shirts"
+    },
+    "menu_order": 3
   },
   {
     "id": 289,
@@ -582,19 +584,6 @@
       "id": 60543,
       "src": "/banners/accessories.webp",
       "alt": "Earrings"
-    }
-  },
-  {
-    "id": 914,
-    "name": "Ethnic",
-    "slug": "ethnic",
-    "parent": 163,
-    "description": "",
-    "count": 7,
-    "image": {
-      "id": 206061,
-      "src": "/banners/ethnic-wear.webp",
-      "alt": "Ethnic"
     }
   },
   {
@@ -952,14 +941,15 @@
     "id": 203,
     "name": "Kids",
     "slug": "kids",
-    "parent": 0,
+    "parent": 162,
     "description": "",
     "count": 0,
     "image": {
       "id": 5248,
       "src": "/banners/tees.webp",
       "alt": "Kids"
-    }
+    },
+    "menu_order": 11
   },
   {
     "id": 174,
@@ -1005,13 +995,14 @@
     "name": "Men",
     "slug": "men",
     "parent": 0,
-    "description": "",
+    "description": "Men Collection — Casual & Formal Apparel",
     "count": 0,
     "image": {
-      "id": 116673,
+      "id": 162001,
       "src": "/banners/men-banner.webp",
-      "alt": "Men"
-    }
+      "alt": "Men Collection"
+    },
+    "menu_order": 0
   },
   {
     "id": 669,
@@ -1034,10 +1025,11 @@
     "description": "",
     "count": 0,
     "image": {
-      "id": 300963,
+      "id": 963001,
       "src": "/banners/mighto-home-banner.webp",
       "alt": "Mighto"
-    }
+    },
+    "menu_order": 10
   },
   {
     "id": 964,
@@ -1132,16 +1124,17 @@
   },
   {
     "id": 798,
-    "name": "Oversized Full Sleeves",
-    "slug": "oversized-full-sleeves",
-    "parent": 166,
-    "description": "",
+    "name": "Full Sleeves",
+    "slug": "full-sleeves",
+    "parent": 0,
+    "description": "Oversized & Classic Full Sleeves Shirts",
     "count": 0,
     "image": {
-      "id": 205351,
+      "id": 798001,
       "src": "/banners/full-sleeves.webp",
-      "alt": "Oversized Full Sleeves"
-    }
+      "alt": "Full Sleeves Shirts"
+    },
+    "menu_order": 4
   },
   {
     "id": 799,
@@ -1173,14 +1166,15 @@
     "id": 175,
     "name": "Pants",
     "slug": "pants",
-    "parent": 163,
-    "description": "A good old pair of pants goes a long way. But don&#8217;t go for the basic jeans, opt for a different material with fun colors. It will add a feminine flair to your basic wear upping your style game. And for you lazy girls who just want the bare minimum without being labelled as a homeless person, color coordinate your top and bottom and you&#8217;re set for the day!\r\n\r\nSay no to mainstream fashion. Pick from our curated range of casual Corduroy pants for a retro twist. Or, go for our Mono colored formal pants to add a bit of pizazz to your otherwise dreary office wear.",
+    "parent": 0,
+    "description": "Trousers, Corduroy & Denim Pants",
     "count": 0,
     "image": {
-      "id": 96071,
+      "id": 175001,
       "src": "/banners/pants.webp",
-      "alt": "Pants"
-    }
+      "alt": "Pants & Trousers"
+    },
+    "menu_order": 5
   },
   {
     "id": 892,
@@ -1264,14 +1258,15 @@
     "id": 519,
     "name": "Polos",
     "slug": "polos",
-    "parent": 162,
-    "description": "",
+    "parent": 0,
+    "description": "Polos & Fine Knits",
     "count": 0,
     "image": {
-      "id": 206607,
+      "id": 519001,
       "src": "/banners/polos.webp",
-      "alt": "Polos"
-    }
+      "alt": "Polos & Knits"
+    },
+    "menu_order": 7
   },
   {
     "id": 449,
@@ -1626,16 +1621,17 @@
   },
   {
     "id": 165,
-    "name": "T-shirts",
-    "slug": "t-shirts-men",
-    "parent": 162,
-    "description": "A T-shirt is perhaps one of the staple pieces in one&#8217;s wardrobe.  It&#8217;s super versatile with endless utility. You can wear a tee on its own or layer it under a shirt or jacket. Either way, it does wonders in elevating any basic look by acting as an accent piece.\r\n\r\nThis is why ANGKON has decided to reimagine an everyday essential and introduce its unique line of unisex T-shirts.\r\n\r\nOur locally designed T-shirts are made with ultra-soft premium Lycra cotton, making them extremely comfortable and durable. Plus, the T-shirts being unisex allows anybody to easily incorporate them into their wardrobe with ease.\r\n\r\nMoreover, the rounded crewneck collar with ribbed detail adds something extra to an otherwise simple tee.\r\n\r\nWe have solid colored half-sleeved T-shirts with amazing fit as well as oversized drop-shoulder statement tees. Check out our collection and grab one asap!",
+    "name": "Tees",
+    "slug": "tees",
+    "parent": 0,
+    "description": "Drop Shoulder & Heavyweight Cotton T-Shirts",
     "count": 0,
     "image": {
-      "id": 205906,
+      "id": 165001,
       "src": "/banners/tees.webp",
-      "alt": "T-shirts"
-    }
+      "alt": "T-Shirts & Drop Tees"
+    },
+    "menu_order": 6
   },
   {
     "id": 164,
@@ -1706,14 +1702,15 @@
     "id": 173,
     "name": "Tops",
     "slug": "tops",
-    "parent": 163,
-    "description": "Introducing our stylish and versatile women&#8217;s tops &#8211; the perfect addition to any wardrobe! Made with high-quality materials, these tops are designed to provide both comfort and style, making them ideal for a variety of occasions.\r\n\r\nThese tops feature a flattering and feminine design that is sure to turn heads. Crafted from a soft and breathable fabric, this top is perfect for both warm and cool weather. The fabrics are durable, ensuring that they will hold up to frequent wear and washing while remaining soft and comfortable against your skin.\r\n\r\nThese tops come in a range of beautiful colors &amp; styles, so you can choose the one that best suits your style and personality. Whether you prefer bold and bright hues or understated neutrals, we&#8217;ve got you covered.\r\n\r\nWith their timeless design and high-quality construction, these tops are sure to become a staple in your wardrobe for years to come. Perfect for dressing up or down, it&#8217;s the perfect choice for everything from a day at the office to a night out on the town. Order yours today and experience the perfect combination of comfort and style!",
+    "parent": 0,
+    "description": "Women Tops, Silk Blouses & Kimonos",
     "count": 0,
     "image": {
-      "id": 191561,
+      "id": 173001,
       "src": "/banners/tops.webp",
-      "alt": "Tops"
-    }
+      "alt": "Women Tops & Kimonos"
+    },
+    "menu_order": 8
   },
   {
     "id": 169,
@@ -1745,14 +1742,15 @@
     "id": 15,
     "name": "Unisex",
     "slug": "unisex",
-    "parent": 0,
+    "parent": 162,
     "description": "",
     "count": 0,
     "image": {
       "id": 1652,
       "src": "/banners/tees.webp",
       "alt": "Unisex"
-    }
+    },
+    "menu_order": 12
   },
   {
     "id": 773,
@@ -1785,13 +1783,14 @@
     "name": "Women",
     "slug": "women",
     "parent": 0,
-    "description": "",
+    "description": "Women Collection — Contemporary & Luxury Fashion",
     "count": 7,
     "image": {
-      "id": 116684,
+      "id": 163001,
       "src": "/banners/women-banner.webp",
-      "alt": "Women"
-    }
+      "alt": "Women Collection"
+    },
+    "menu_order": 1
   },
   {
     "id": 600,
@@ -1807,16 +1806,45 @@
     }
   },
   {
+    "id": 914,
+    "name": "Ethnic Wear",
+    "slug": "ethnic-wear",
+    "parent": 0,
+    "menu_order": 2,
+    "description": "Luxury Ethnic Wear Collection — 3-Piece Pakistani & Designer Suits",
+    "count": 7,
+    "image": {
+      "id": 914001,
+      "src": "/banners/ethnic-wear.webp",
+      "alt": "Ethnic Wear — Luxury Collection"
+    }
+  },
+  {
     "id": 990,
     "name": "Tawakkal",
     "slug": "tawakkal",
-    "parent": 163,
-    "description": "Tawakkal Designer Ethnic 3-Piece Suits",
+    "parent": 914,
+    "menu_order": 0,
+    "description": "Tawakkal Fabrics Luxury Collection",
     "count": 7,
     "image": {
-      "id": 300001,
-      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652408/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/1.jpg",
+      "id": 990001,
+      "src": "/banners/ethnic-wear.webp",
       "alt": "Tawakkal"
+    }
+  },
+  {
+    "id": 915,
+    "name": "3-Piece Suit",
+    "slug": "3-piece-suit",
+    "parent": 914,
+    "menu_order": 1,
+    "description": "Premium 3-Piece Stitched & Unstitched Suits",
+    "count": 7,
+    "image": {
+      "id": 915001,
+      "src": "/banners/ethnic-wear.webp",
+      "alt": "3-Piece Suit"
     }
   }
 ]

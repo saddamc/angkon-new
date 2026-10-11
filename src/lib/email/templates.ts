@@ -169,7 +169,7 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
                 </tr>
                 <tr>
                   <td style="padding: 4px 0; font-size: 14px; color: #666;">Delivery Fee (${order.customer.district}):</td>
-                  <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #1a0302; text-align: right;">${formatPrice(order.shippingFee)}</td>
+                  <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #1a0302; text-align: right;">${order.shippingFee === 0 ? "Free" : formatPrice(order.shippingFee)}</td>
                 </tr>
                 <tr>
                   <td style="padding: 12px 0 0; font-size: 16px; font-weight: 700; color: #400604;">Total Amount:</td>
@@ -317,7 +317,7 @@ export function getAdminOrderEmailHtml(order: EmailOrderData): string {
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
           <span>Shipping Fee:</span>
-          <strong>${formatPrice(order.shippingFee)}</strong>
+          <strong>${order.shippingFee === 0 ? "Free" : formatPrice(order.shippingFee)}</strong>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 16px; color: #400604; font-weight: 800; border-top: 1px solid #ddd; padding-top: 6px;">
           <span>Total To Collect:</span>

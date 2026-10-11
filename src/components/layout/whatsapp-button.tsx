@@ -62,11 +62,11 @@ export function WhatsAppButton() {
             {/* Body */}
             <div className="px-4 py-4 bg-[#400604]">
               <div className="space-y-2">
-                <div className="rounded-2xl bg-[#340402] border border-[#E1B76F]/25 px-3.5 py-2.5 text-[13px] text-[#E1B76F] leading-relaxed">
+                <div className="rounded-2xl bg-[#340402] border border-[#E1B76F]/25 px-3.5 py-2.5 text-[13px] text-white leading-relaxed">
                   👋 Hi there! Need help finding the perfect apparel or placing an order?
                 </div>
                 <div className="flex justify-end pr-2">
-                  <span className="text-[11px] text-[#f0d29d]">{time}</span>
+                  <span className="text-[11px] text-white/90">{time}</span>
                 </div>
               </div>
             </div>

@@ -5,7 +5,7 @@ import REAL_CATEGORIES from "@/data/real-categories.json";
 
 let cachedCategories: WooCategory[] | null = null;
 let lastCategoriesFetch = 0;
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds cache for instant response
+const CACHE_TTL_MS = 5 * 1000; // 5 seconds cache for fast response and instant admin updates
 
 export function invalidateCategoriesCache() {
   cachedCategories = null;
@@ -21,7 +21,7 @@ export async function getDbCategories(): Promise<WooCategory[]> {
   try {
     await connectToDatabase();
     const categories = await Category.find({})
-      .sort({ parent: 1, name: 1 })
+      .sort({ parent: 1, menu_order: 1, name: 1 })
       .lean();
 
     if (categories && categories.length > 0) {
@@ -30,6 +30,7 @@ export async function getDbCategories(): Promise<WooCategory[]> {
         name: c.name,
         slug: c.slug,
         parent: c.parent ?? 0,
+        menu_order: c.menu_order ?? 0,
         description: c.description ?? "",
         count: c.count ?? 0,
         image: c.image ? { id: c.image.id, src: c.image.src, alt: c.image.alt } : null,

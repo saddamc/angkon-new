@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import {
   CheckCircle,
@@ -17,6 +17,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
+import { useShippingQuote } from "@/hooks/use-shipping-quote";
+import { EmailVerifyDialog, requestEmailCode, type VerifiedUser } from "@/components/checkout/email-verify-dialog";
 import { formatPrice } from "@/utils/price";
 import { DIVISIONS } from "@/data/bangladesh-districts";
 
@@ -32,6 +34,29 @@ interface CheckoutFormValues {
   orderNotes?: string;
 }
 
+/** What the checkout needs from the server on load (see /api/checkout/config). */
+interface CheckoutConfig {
+  requireEmailVerification: boolean;
+  user: {
+    name: string;
+    email: string;
+    phone: string;
+    emailVerified: boolean;
+    address?: { address: string; city: string; district: string; postalCode?: string };
+  } | null;
+}
+
+/** Fresh config from the server. If it can't be read, assume verification is required (the server enforces it anyway). */
+async function loadCheckoutConfig(): Promise<CheckoutConfig> {
+  try {
+    const res = await fetch("/api/checkout/config", { cache: "no-store" });
+    if (res.ok) return (await res.json()) as CheckoutConfig;
+  } catch {
+    /* fall through */
+  }
+  return { requireEmailVerification: true, user: null };
+}
+
 export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -42,7 +67,6 @@ export default function CheckoutPage() {
   } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<number | null>(null);
-  const [shippingFee, setShippingFee] = useState<number>(60);
   const [confirmedShippingFee, setConfirmedShippingFee] = useState<number | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "sslcommerz">("cod");
 
@@ -65,35 +89,49 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutFormValues>();
 
   const watchedDistrict = watch("district");
 
-  // Calculate delivery fee synchronously based on chosen district & cart items
+  // Email verification state
+  const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null);
+  const [placing, setPlacing] = useState(false);
+  const [verifyDialog, setVerifyDialog] = useState<{ email: string; name: string; phone: string; resendAfter: number } | null>(null);
+  const pendingOrder = useRef<CheckoutFormValues | null>(null);
+
+  // Load the checkout config once, and pre-fill from the signed-in account (never overwriting what's typed).
   useEffect(() => {
-    if (subtotal >= 3000) {
-      setShippingFee(0);
-      return;
-    }
-    if (!watchedDistrict) {
-      setShippingFee(60);
-      return;
-    }
+    let cancelled = false;
+    void loadCheckoutConfig().then((cfg) => {
+      if (cancelled) return;
+      setCheckoutConfig(cfg);
+      const u = cfg.user;
+      if (!u) return;
+      const fill = (field: keyof CheckoutFormValues, value?: string) => {
+        if (value && !getValues(field)) setValue(field, value);
+      };
+      fill("name", u.name);
+      fill("phone", u.phone);
+      fill("streetAddress", u.address?.address);
+      fill("city", u.address?.city);
+      fill("district", u.address?.district);
+      fill("postcode", u.address?.postalCode);
+      if (u.emailVerified) setValue("email", u.email); // verified accounts always use their own email
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [getValues, setValue]);
 
-    const isInsideDhaka =
-      watchedDistrict.trim().toLowerCase() === "dhaka" ||
-      watchedDistrict.trim().toLowerCase() === "dhaka city";
+  const emailLocked = Boolean(checkoutConfig?.user?.emailVerified);
 
-    const fee = items.reduce((max, item) => {
-      const itemFee = isInsideDhaka ? (item.deliveryInside ?? 60) : (item.deliveryOutside ?? 100);
-      return Math.max(max, itemFee);
-    }, isInsideDhaka ? 60 : 100);
-
-    setShippingFee(fee);
-  }, [watchedDistrict, items, subtotal]);
-
-  const SHIPPING_FEE = shippingFee;
+  // Delivery fee comes from the server (admin Shipping settings + product fees),
+  // so what is shown here is exactly what the order is charged.
+  const { quote: shippingQuote, loading: shippingLoading } = useShippingQuote(items, watchedDistrict);
+  const SHIPPING_FEE = shippingQuote?.fee ?? 0;
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,10 +144,12 @@ export default function CheckoutPage() {
     }
   };
 
-  const onSubmit = async (data: CheckoutFormValues) => {
+  /** Send the order. The server re-checks the email verification and recalculates the delivery fee. */
+  const placeOrder = async (data: CheckoutFormValues) => {
+    setPlacing(true);
     setSubmitError(null);
     try {
-      const fullAddress = data.apartment ? `${data.streetAddress}, ${data.apartment}` : data.streetAddress;
+      const fullAddress = data.apartment ? data.streetAddress + ", " + data.apartment : data.streetAddress;
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,6 +179,11 @@ export default function CheckoutPage() {
       const result = await response.json();
 
       if (!response.ok) {
+        // The session may have expired between the check and the order — verify again instead of failing.
+        if (result.code === "EMAIL_VERIFICATION_REQUIRED") {
+          await startEmailVerification(data);
+          return;
+        }
         setSubmitError(result.error || "Failed to submit order. Please try again.");
         return;
       }
@@ -150,13 +195,62 @@ export default function CheckoutPage() {
       clearCart();
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  /** Email the customer a 6-digit code and open the verification dialog. */
+  const startEmailVerification = async (data: CheckoutFormValues) => {
+    const email = data.email.trim().toLowerCase();
+    const sent = await requestEmailCode(email, data.name);
+    if (!sent.ok) {
+      setSubmitError(sent.error);
+      return;
+    }
+    pendingOrder.current = data;
+    setVerifyDialog({ email, name: data.name, phone: data.phone, resendAfter: sent.resendAfter });
+  };
+
+  const onSubmit = async (data: CheckoutFormValues) => {
+    setSubmitError(null);
+    // Ask the server fresh: it knows whether verification is required and who is signed in.
+    const cfg = await loadCheckoutConfig();
+    setCheckoutConfig(cfg);
+
+    const email = data.email.trim().toLowerCase();
+    const alreadyVerified = Boolean(cfg.user?.emailVerified && cfg.user.email === email);
+    if (cfg.requireEmailVerification && !alreadyVerified) {
+      await startEmailVerification(data);
+      return;
+    }
+    await placeOrder(data);
+  };
+
+  /** Code accepted: the customer is now signed in with a verified email — place the order straight away. */
+  const handleVerified = async (user: VerifiedUser) => {
+    setVerifyDialog(null);
+    setCheckoutConfig((c) => ({
+      requireEmailVerification: c?.requireEmailVerification ?? true,
+      user: { ...(c?.user ?? { address: undefined }), name: user.name, email: user.email, phone: user.phone ?? "", emailVerified: true },
+    }));
+    const data = pendingOrder.current;
+    pendingOrder.current = null;
+    if (data) await placeOrder({ ...data, email: user.email });
+  };
+
+  const signOutOfCheckout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      setCheckoutConfig(await loadCheckoutConfig());
     }
   };
 
   // ── 1. Hydration loading skeleton ──────────────────────────────────────────
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+      <div className="min-h-screen bg-[#400604] text-white">
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-10 md:py-14">
           <div className="h-5 w-36 rounded bg-[#340402] animate-pulse mb-6" />
           <div className="h-12 w-full rounded bg-[#340402] animate-pulse mb-4" />
@@ -173,61 +267,68 @@ export default function CheckoutPage() {
   // ── 2. Order Success Screen ────────────────────────────────────────────────
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+      <div className="min-h-screen bg-[#400604] text-white">
         <div className="container mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center px-4 py-20 text-center">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/30 text-[#E1B76F] shadow-lg">
-            <CheckCircle className="h-10 w-10 text-[#E1B76F]" />
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/30 text-white shadow-lg">
+            <CheckCircle className="h-10 w-10 text-white" />
           </div>
-          <h1 className="font-heading text-3xl sm:text-4xl font-black uppercase text-[#E1B76F] tracking-wide">
+          <h1 className="font-heading text-3xl sm:text-4xl font-black uppercase text-white tracking-wide">
             Order Confirmed!
           </h1>
-          <p className="mt-3 text-base text-[#f0d29d]">
-            Thank you for shopping with <strong className="text-[#E1B76F]">ANGKON</strong>.{" "}
-            {orderId && <span className="font-bold text-[#E1B76F]">Order #{orderId}</span>}{" "}
+          <p className="mt-3 text-base text-white/90">
+            Thank you for shopping with <strong className="text-white">ANGKON</strong>.{" "}
+            {orderId && <span className="font-bold text-white">Order #{orderId}</span>}{" "}
             has been placed successfully.
           </p>
-          <div className="mt-4 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-5 text-left w-full space-y-2 text-sm text-[#f0d29d]">
+          <div className="mt-4 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-5 text-left w-full space-y-2 text-sm text-white/90">
             <p>
-              <span className="text-[#E1B76F]/70">Payment method:</span>{" "}
-              <strong className="text-[#E1B76F] uppercase">
+              <span className="text-white/70">Payment method:</span>{" "}
+              <strong className="text-white uppercase">
                 {paymentMethod === "cod" ? "Cash on Delivery" : "Online Payment (SSLCOMMERZ)"}
               </strong>
             </p>
             {confirmedShippingFee !== null && (
               <p>
-                <span className="text-[#E1B76F]/70">Shipment fee:</span>{" "}
-                <strong className="text-[#E1B76F]">
+                <span className="text-white/70">Shipment fee:</span>{" "}
+                <strong className="text-white">
                   {confirmedShippingFee === 0 ? "Free" : formatPrice(confirmedShippingFee)}
                 </strong>
               </p>
             )}
-            <p className="text-xs text-[#E1B76F]/70 pt-2 border-t border-[#E1B76F]/15">
+            <p className="text-xs text-white/70 pt-2 border-t border-[#E1B76F]/15">
               Our support team will contact you shortly to verify delivery details.
             </p>
           </div>
 
           {/* Account status for this order */}
           {accountInfo && accountInfo.status !== "none" && (
-            <div className="mt-4 w-full rounded-xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 text-left text-sm text-[#f0d29d]">
+            <div className="mt-4 w-full rounded-xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 text-left text-sm text-white/90">
               {accountInfo.status === "created" && (
                 <>
-                  <p className="font-bold text-[#E1B76F]">Your ANGKON account is ready, and you&apos;re signed in.</p>
+                  <p className="font-bold text-white">Your ANGKON account is ready, and you&apos;re signed in.</p>
                   <p className="mt-1.5">
-                    We sent a verification link to <strong className="text-[#E1B76F]">{accountInfo.email}</strong>. Open it to
+                    We sent a verification link to <strong className="text-white">{accountInfo.email}</strong>. Open it to
                     confirm your email and set a password, so you can sign in on any device and see all your orders.
                   </p>
                 </>
               )}
               {accountInfo.status === "existing" && (
                 <>
-                  <p className="font-bold text-[#E1B76F]">This order was added to your ANGKON account.</p>
+                  <p className="font-bold text-white">This order was added to your ANGKON account.</p>
                   <p className="mt-1.5">
-                    Sign in with <strong className="text-[#E1B76F]">{accountInfo.email}</strong> to track it.
+                    Sign in with <strong className="text-white">{accountInfo.email}</strong> to track it.
                   </p>
                 </>
               )}
               {accountInfo.status === "signed_in" && (
-                <p className="font-bold text-[#E1B76F]">This order is saved in your account.</p>
+                <>
+                  <p className="font-bold text-white">
+                    Email verified — you&apos;re signed in as <span className="break-all text-[#E1B76F]">{accountInfo.email}</span>.
+                  </p>
+                  <p className="mt-1.5">
+                    This order is saved in your account. Add a password in My Account to sign in faster next time.
+                  </p>
+                </>
               )}
               <Link
                 href="/my-account"
@@ -247,7 +348,7 @@ export default function CheckoutPage() {
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E1B76F]/40 bg-[#340402] px-8 py-3.5 text-sm font-bold text-[#E1B76F] transition hover:bg-[#520805]"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E1B76F]/40 bg-[#340402] px-8 py-3.5 text-sm font-bold text-white transition hover:bg-[#520805]"
             >
               Back to Home
             </Link>
@@ -260,32 +361,32 @@ export default function CheckoutPage() {
   // ── 3. Empty Bag Screen ────────────────────────────────────────────────────
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+      <div className="min-h-screen bg-[#400604] text-white">
         {/* Top Breadcrumb */}
         <div className="border-b border-[#E1B76F]/20 bg-[#340402]">
-          <div className="mx-auto max-w-[1240px] flex h-11 items-center gap-2 px-4 sm:px-6 lg:px-8 text-xs text-[#E1B76F]/70">
+          <div className="mx-auto max-w-[1240px] flex h-11 items-center gap-2 px-4 sm:px-6 lg:px-8 text-xs text-white/70">
             <Link href="/" className="transition hover:text-white">Home</Link>
             <ChevronRight className="h-3 w-3 opacity-60" />
             <Link href="/cart" className="transition hover:text-white">Bag</Link>
             <ChevronRight className="h-3 w-3 opacity-60" />
-            <span className="font-semibold text-[#E1B76F]">Checkout</span>
+            <span className="font-semibold text-white">Checkout</span>
           </div>
         </div>
 
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-10 md:py-16">
-          <h1 className="font-heading text-3xl font-black uppercase text-[#E1B76F] tracking-wide mb-6">
+          <h1 className="font-heading text-3xl font-black uppercase text-white tracking-wide mb-6">
             Checkout
           </h1>
 
           {/* WooCommerce notice format from checkout-2.png */}
           <div className="rounded-xl border border-[#E1B76F]/30 bg-[#340402] p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#400604] border border-[#E1B76F]/40 text-white">
                 <ShoppingBag className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-[#E1B76F]">Your cart is currently empty.</h2>
-                <p className="text-sm text-[#f0d29d] mt-1">
+                <h2 className="text-lg font-bold text-white">Your cart is currently empty.</h2>
+                <p className="text-sm text-white/90 mt-1">
                   Checkout is not available whilst your cart is empty.
                 </p>
               </div>
@@ -304,15 +405,15 @@ export default function CheckoutPage() {
 
   // ── 4. Main Checkout Flow (Matches user's exact uploaded image media_1791707266338_f9a5afd9.png) ──
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       {/* Top Breadcrumb */}
       <div className="border-b border-[#E1B76F]/20 bg-[#340402]">
-        <div className="mx-auto max-w-[1240px] flex h-11 items-center gap-2 px-4 sm:px-6 lg:px-8 text-xs text-[#E1B76F]/70">
+        <div className="mx-auto max-w-[1240px] flex h-11 items-center gap-2 px-4 sm:px-6 lg:px-8 text-xs text-white/70">
           <Link href="/" className="transition hover:text-white">Home</Link>
           <ChevronRight className="h-3 w-3 opacity-60" />
           <Link href="/cart" className="transition hover:text-white">Bag</Link>
           <ChevronRight className="h-3 w-3 opacity-60" />
-          <span className="font-semibold text-[#E1B76F]">Checkout</span>
+          <span className="font-semibold text-white">Checkout</span>
         </div>
       </div>
 
@@ -320,9 +421,9 @@ export default function CheckoutPage() {
 
         {/* ── Top Notice 1: Returning customer? Click here to login ── */}
         <div className="mb-4">
-          <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-[#f0d29d] flex items-center justify-between">
+          <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-white/90 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <span className="text-[#E1B76F] text-base leading-none">▢</span>
+              <span className="text-white text-base leading-none">▢</span>
               <span>
                 Returning customer?{" "}
                 <button
@@ -339,19 +440,19 @@ export default function CheckoutPage() {
           {/* Expandable login box */}
           {showLogin && (
             <div className="mt-2 p-5 rounded-xl border border-[#E1B76F]/25 bg-[#2d0302] animate-in fade-in slide-in-from-top-1 duration-150">
-              <p className="text-xs text-[#f0d29d] mb-4">
+              <p className="text-xs text-white/90 mb-4">
                 If you have shopped with us before, please enter your details below. If you are a new customer, please proceed to the Billing section.
               </p>
               <div className="grid gap-3 sm:grid-cols-2 max-w-lg mb-3">
                 <input
                   type="text"
                   placeholder="Username or email *"
-                  className="h-10 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-[#E1B76F] outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
+                  className="h-10 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-white outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
                 />
                 <input
                   type="password"
                   placeholder="Password *"
-                  className="h-10 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-[#E1B76F] outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
+                  className="h-10 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-white outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
                 />
               </div>
               <div className="flex items-center gap-4">
@@ -371,9 +472,9 @@ export default function CheckoutPage() {
 
         {/* ── Top Notice 2: Have a coupon? Click here to enter your code ── */}
         <div className="mb-6">
-          <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-[#f0d29d] flex items-center justify-between">
+          <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-white/90 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <span className="text-[#E1B76F] text-base leading-none">▢</span>
+              <span className="text-white text-base leading-none">▢</span>
               <span>
                 Have a coupon?{" "}
                 <button
@@ -390,14 +491,14 @@ export default function CheckoutPage() {
           {/* Expandable coupon input */}
           {showCoupon && (
             <form onSubmit={handleApplyCoupon} className="mt-2 p-5 rounded-xl border border-[#E1B76F]/25 bg-[#2d0302] animate-in fade-in slide-in-from-top-1 duration-150">
-              <p className="text-xs text-[#f0d29d] mb-3">If you have a coupon code, please apply it below.</p>
+              <p className="text-xs text-white/90 mb-3">If you have a coupon code, please apply it below.</p>
               <div className="flex flex-col sm:flex-row items-stretch gap-2.5 max-w-md">
                 <input
                   type="text"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value)}
                   placeholder="Coupon code"
-                  className="h-10 flex-1 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-[#E1B76F] outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] uppercase"
+                  className="h-10 flex-1 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-white outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] uppercase"
                 />
                 <button
                   type="submit"
@@ -417,7 +518,7 @@ export default function CheckoutPage() {
 
         {/* ── Social Login Row (from screenshot) ── */}
         <div className="mb-8">
-          <p className="text-xs sm:text-sm text-[#f0d29d] mb-2.5">Login with your Facebook or Google account</p>
+          <p className="text-xs sm:text-sm text-white/90 mb-2.5">Login with your Facebook or Google account</p>
           <div className="flex items-center gap-2">
             {/* Facebook button */}
             <button
@@ -464,7 +565,7 @@ export default function CheckoutPage() {
             {/* ── Left Column: Billing details ── */}
             <div>
               <div className="border-b border-[#E1B76F]/20 pb-2 mb-6">
-                <h2 className="text-xl sm:text-2xl font-heading font-bold text-[#E1B76F]">
+                <h2 className="text-xl sm:text-2xl font-heading font-bold text-white">
                   Billing details
                 </h2>
               </div>
@@ -472,12 +573,12 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 {/* Name * */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Name <span className="text-red-400">*</span>
                   </label>
                   <input
                     placeholder=""
-                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
+                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
                       errors.name ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
                     }`}
                     {...register("name", { required: "Name is required" })}
@@ -487,19 +588,19 @@ export default function CheckoutPage() {
 
                 {/* Country / Region */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Country / Region <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <select
                       disabled
                       defaultValue="BD"
-                      className="h-11 w-full appearance-none rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 pr-9 text-sm text-[#E1B76F] outline-none cursor-not-allowed opacity-90"
+                      className="h-11 w-full appearance-none rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 pr-9 text-sm text-white outline-none cursor-not-allowed opacity-90"
                     >
                       <option value="BD">Bangladesh</option>
                     </select>
                     <svg
-                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E1B76F]/60"
+                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -511,12 +612,12 @@ export default function CheckoutPage() {
 
                 {/* Street address * */}
                 <div className="space-y-2.5">
-                  <label className="block text-xs font-semibold text-[#E1B76F]">
+                  <label className="block text-xs font-semibold text-white">
                     Street address <span className="text-red-400">*</span>
                   </label>
                   <input
                     placeholder="House number and street name"
-                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
+                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
                       errors.streetAddress ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
                     }`}
                     {...register("streetAddress", { required: "Street address is required" })}
@@ -526,19 +627,19 @@ export default function CheckoutPage() {
                   )}
                   <input
                     placeholder="Apartment, suite, unit, etc. (optional)"
-                    className="h-11 w-full rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
+                    className="h-11 w-full rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
                     {...register("apartment")}
                   />
                 </div>
 
                 {/* Town / City * */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Town / City <span className="text-red-400">*</span>
                   </label>
                   <input
                     placeholder=""
-                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
+                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
                       errors.city ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
                     }`}
                     {...register("city", { required: "Town / City is required" })}
@@ -548,28 +649,28 @@ export default function CheckoutPage() {
 
                 {/* District * */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     District <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <select
-                      className={`h-11 w-full appearance-none rounded-md border bg-[#2d0302] px-3.5 pr-9 text-sm text-[#E1B76F] outline-none transition focus:border-[#E1B76F] ${
+                      className={`h-11 w-full appearance-none rounded-md border bg-[#2d0302] px-3.5 pr-9 text-sm text-white outline-none transition focus:border-[#E1B76F] ${
                         errors.district ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
                       }`}
                       defaultValue=""
                       {...register("district", { required: "District is required" })}
                     >
-                      <option value="" disabled className="text-[#E1B76F]/40 bg-[#2d0302]">
+                      <option value="" disabled className="text-white/40 bg-[#2d0302]">
                         Select an option…
                       </option>
                       {DIVISIONS.map((div) => (
                         <optgroup
                           key={div.name}
                           label={`── ${div.name} Division`}
-                          className="font-bold text-[#E1B76F] bg-[#340402]"
+                          className="font-bold text-white bg-[#340402]"
                         >
                           {div.districts.map((d) => (
-                            <option key={d} value={d} className="text-[#E1B76F] bg-[#2d0302]">
+                            <option key={d} value={d} className="text-white bg-[#2d0302]">
                               {d}
                             </option>
                           ))}
@@ -577,7 +678,7 @@ export default function CheckoutPage() {
                       ))}
                     </select>
                     <svg
-                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E1B76F]/60"
+                      className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -590,24 +691,24 @@ export default function CheckoutPage() {
 
                 {/* Postcode / ZIP (optional) */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Postcode / ZIP (optional)
                   </label>
                   <input
                     placeholder="1234"
-                    className="h-11 w-full rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
+                    className="h-11 w-full rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
                     {...register("postcode")}
                   />
                 </div>
 
                 {/* Phone * */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Phone <span className="text-red-400">*</span>
                   </label>
                   <input
                     placeholder="01XXXXXXXXX"
-                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
+                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
                       errors.phone ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
                     }`}
                     {...register("phone", {
@@ -623,13 +724,15 @@ export default function CheckoutPage() {
 
                 {/* Email address * */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Email address <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="email"
                     placeholder=""
-                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
+                    readOnly={emailLocked}
+                    autoComplete="email"
+                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
                       errors.email ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
                     }`}
                     {...register("email", {
@@ -638,20 +741,36 @@ export default function CheckoutPage() {
                     })}
                   />
                   {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>}
+                  {emailLocked ? (
+                    <p className="mt-1.5 text-xs text-emerald-300">
+                      ✓ Verified — you&apos;re signed in.{" "}
+                      <button
+                        type="button"
+                        onClick={signOutOfCheckout}
+                        className="font-semibold text-[#E1B76F] underline underline-offset-4 hover:text-white"
+                      >
+                        Not you? Sign out
+                      </button>
+                    </p>
+                  ) : checkoutConfig?.requireEmailVerification !== false ? (
+                    <p className="mt-1.5 text-xs text-white/60">
+                      We&apos;ll email a 6-digit code to confirm this address before your order is placed.
+                    </p>
+                  ) : null}
                 </div>
 
                 {/* Additional information */}
                 <div className="pt-4 border-t border-[#E1B76F]/15">
-                  <h3 className="text-base font-heading font-bold text-[#E1B76F] mb-3">
+                  <h3 className="text-base font-heading font-bold text-white mb-3">
                     Additional information
                   </h3>
-                  <label className="mb-1.5 block text-xs font-semibold text-[#E1B76F]">
+                  <label className="mb-1.5 block text-xs font-semibold text-white">
                     Order notes (optional)
                   </label>
                   <textarea
                     rows={3}
                     placeholder="Notes about your order, e.g. special notes for delivery."
-                    className="w-full resize-none rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 py-2.5 text-sm text-[#E1B76F] outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
+                    className="w-full resize-none rounded-md border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F]"
                     {...register("orderNotes")}
                   />
                 </div>
@@ -661,12 +780,12 @@ export default function CheckoutPage() {
             {/* ── Right Column: "Your order" (Matches exact card from screenshot) ── */}
             <div>
               <div className="rounded-xl border border-[#E1B76F]/30 bg-[#340402] p-6 sm:p-7 shadow-sm sticky top-24">
-                <h3 className="text-xl font-heading font-bold text-[#E1B76F] mb-4">
+                <h3 className="text-xl font-heading font-bold text-white mb-4">
                   Your order
                 </h3>
 
                 {/* Table Header: Product | Subtotal */}
-                <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-[#E1B76F] pb-3 border-b border-[#E1B76F]/20">
+                <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-white pb-3 border-b border-[#E1B76F]/20">
                   <span>Product</span>
                   <span>Subtotal</span>
                 </div>
@@ -690,11 +809,11 @@ export default function CheckoutPage() {
                             />
                           </div>
                         )}
-                        <span className="text-[13px] text-[#f0d29d] font-normal leading-snug">
-                          {item.name} - {item.size} <strong className="text-[#E1B76F] whitespace-nowrap">× {item.quantity}</strong>
+                        <span className="text-[13px] text-white/90 font-normal leading-snug">
+                          {item.name} - {item.size} <strong className="text-white whitespace-nowrap">× {item.quantity}</strong>
                         </span>
                       </div>
-                      <span className="text-[13px] font-semibold text-[#E1B76F] shrink-0 whitespace-nowrap">
+                      <span className="text-[13px] font-semibold text-white shrink-0 whitespace-nowrap">
                         {formatPrice(item.price * item.quantity)}
                       </span>
                     </div>
@@ -703,22 +822,51 @@ export default function CheckoutPage() {
 
                 {/* Subtotal Row */}
                 <div className="flex justify-between items-center py-3.5 border-t border-b border-[#E1B76F]/20 text-sm">
-                  <span className="font-medium text-[#E1B76F]">Subtotal</span>
-                  <span className="font-semibold text-[#E1B76F]">{formatPrice(subtotal)}</span>
+                  <span className="font-medium text-white">Subtotal</span>
+                  <span className="font-semibold text-white">{formatPrice(subtotal)}</span>
                 </div>
 
                 {/* Shipment Row */}
-                <div className="flex justify-between items-center py-3.5 border-b border-[#E1B76F]/20 text-sm">
-                  <span className="font-medium text-[#E1B76F]">Shipment</span>
-                  <span className="text-right text-[#f0d29d]">
-                    Flat rate: <strong className="text-[#E1B76F]">{SHIPPING_FEE === 0 ? "Free" : formatPrice(SHIPPING_FEE)}</strong>
-                  </span>
+                <div className="flex justify-between items-start gap-4 py-3.5 border-b border-[#E1B76F]/20 text-sm">
+                  <span className="font-medium text-white">Shipment</span>
+                  <div className="text-right text-white/90" aria-live="polite">
+                    {!shippingQuote ? (
+                      shippingLoading ? (
+                        <span className="inline-block h-4 w-24 animate-pulse rounded bg-[#2d0302]" />
+                      ) : (
+                        <span className="text-white/70">Calculated when you place the order</span>
+                      )
+                    ) : (
+                      <>
+                        <div>
+                          Flat rate:{" "}
+                          <strong className="text-white">{shippingQuote.isFree ? "Free" : formatPrice(shippingQuote.fee)}</strong>
+                        </div>
+                        <div className="mt-0.5 text-xs text-white/60">
+                          {!shippingQuote.zoneKnown
+                            ? "Inside Dhaka rate — updates when you choose your district"
+                            : shippingQuote.freeByThreshold
+                              ? `Free delivery on orders of ${formatPrice(shippingQuote.freeDeliveryThreshold)} or more`
+                              : shippingQuote.isFree
+                                ? "Free delivery for this order"
+                                : shippingQuote.zone === "inside"
+                                  ? "Inside Dhaka"
+                                  : "Outside Dhaka"}
+                        </div>
+                        {shippingQuote.amountToFreeDelivery !== null && (
+                          <div className="mt-0.5 text-xs font-semibold text-[#E1B76F]">
+                            Add {formatPrice(shippingQuote.amountToFreeDelivery)} more for free delivery
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Total Row */}
-                <div className="flex justify-between items-center py-4 border-b border-[#E1B76F]/25 text-base font-bold text-[#E1B76F]">
+                <div className="flex justify-between items-center py-4 border-b border-[#E1B76F]/25 text-base font-bold text-white">
                   <span>Total</span>
-                  <span className="text-xl text-[#E1B76F]">{formatPrice(subtotal + SHIPPING_FEE)}</span>
+                  <span className="text-xl text-white">{formatPrice(subtotal + SHIPPING_FEE)}</span>
                 </div>
 
                 {/* ── Payment Options (inside "Your order" card) ── */}
@@ -741,11 +889,11 @@ export default function CheckoutPage() {
                         onChange={() => setPaymentMethod("cod")}
                         className="h-4 w-4 accent-[#E1B76F]"
                       />
-                      <Truck className="h-4 w-4 text-[#E1B76F]" />
-                      <span className="text-sm font-bold text-[#E1B76F]">Cash on Delivery (COD)</span>
+                      <Truck className="h-4 w-4 text-white" />
+                      <span className="text-sm font-bold text-white">Cash on Delivery (COD)</span>
                     </div>
                     {paymentMethod === "cod" && (
-                      <p className="mt-2 text-xs text-[#f0d29d] pl-6 leading-relaxed">
+                      <p className="mt-2 text-xs text-white/90 pl-6 leading-relaxed">
                         Pay with cash upon delivery to your doorstep across all 64 districts in Bangladesh.
                       </p>
                     )}
@@ -770,8 +918,8 @@ export default function CheckoutPage() {
                           onChange={() => setPaymentMethod("sslcommerz")}
                           className="h-4 w-4 accent-[#E1B76F]"
                         />
-                        <CreditCard className="h-4 w-4 text-[#E1B76F]" />
-                        <span className="text-sm font-bold text-[#E1B76F]">Online Payment (SSLCOMMERZ)</span>
+                        <CreditCard className="h-4 w-4 text-white" />
+                        <span className="text-sm font-bold text-white">Online Payment (SSLCOMMERZ)</span>
                       </div>
                       <span className="text-[10px] bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded font-bold uppercase">
                         Instant
@@ -779,14 +927,14 @@ export default function CheckoutPage() {
                     </div>
                     {paymentMethod === "sslcommerz" && (
                       <div className="mt-2.5 pl-6 space-y-2">
-                        <p className="text-xs text-[#f0d29d] leading-relaxed">
+                        <p className="text-xs text-white/90 leading-relaxed">
                           Pay securely with bKash, Nagad, Rocket, VISA, Mastercard, Amex, Upay, or Internet Banking.
                         </p>
                         <div className="flex flex-wrap items-center gap-1 pt-1">
                           {["bKash", "Nagad", "Rocket", "VISA", "Mastercard", "Amex"].map((brand) => (
                             <span
                               key={brand}
-                              className="rounded border border-[#E1B76F]/30 bg-[#340402] px-2 py-0.5 text-[10px] font-bold text-[#E1B76F]"
+                              className="rounded border border-[#E1B76F]/30 bg-[#340402] px-2 py-0.5 text-[10px] font-bold text-white"
                             >
                               {brand}
                             </span>
@@ -798,7 +946,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* Privacy policy agreement statement */}
-                <p className="mt-5 text-[11px] text-[#f0d29d]/75 leading-relaxed">
+                <p className="mt-5 text-[11px] text-white/75 leading-relaxed">
                   Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our{" "}
                   <Link href="/privacy-policy" className="text-[#E1B76F] underline hover:text-white">
                     privacy policy
@@ -816,11 +964,11 @@ export default function CheckoutPage() {
                 {/* Place Order Button (matches screenshot style) */}
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || placing}
                   className="w-full mt-4 rounded-xl bg-[#E1B76F] text-[#400604] py-3.5 px-6 font-bold text-sm sm:text-base uppercase tracking-wider hover:bg-[#f3cb87] transition shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Lock className="h-4 w-4 text-[#400604]" />
-                  {isSubmitting ? "Processing…" : "Place order"}
+                  {isSubmitting || placing ? "Processing…" : "Place order"}
                 </button>
               </div>
             </div>
@@ -829,6 +977,21 @@ export default function CheckoutPage() {
         </form>
 
       </div>
+
+      {/* Outside the <form> so pressing Enter in the code box can't submit the checkout again. */}
+      {verifyDialog && (
+        <EmailVerifyDialog
+          email={verifyDialog.email}
+          name={verifyDialog.name}
+          phone={verifyDialog.phone}
+          initialResendAfter={verifyDialog.resendAfter}
+          onVerified={handleVerified}
+          onClose={() => {
+            pendingOrder.current = null;
+            setVerifyDialog(null);
+          }}
+        />
+      )}
     </div>
   );
 }

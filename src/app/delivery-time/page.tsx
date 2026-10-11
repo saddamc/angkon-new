@@ -2,44 +2,51 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Truck, Clock, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { getShippingSettings } from "@/server/shipping";
 
 export const metadata: Metadata = {
   title: "Delivery Timing — ANGKON",
   description: "Estimated delivery timelines for Cash on Delivery (COD) orders across Dhaka and all 64 districts in Bangladesh.",
 };
 
-export default function DeliveryTimePage() {
+// Delivery prices come from Admin → Settings → Shipping; refresh at most once a minute.
+export const revalidate = 60;
+
+export default async function DeliveryTimePage() {
+  const settings = await getShippingSettings();
+  const taka = (n: number) => (n === 0 ? "Free" : `৳${n.toLocaleString("en-US")}`);
+  // Dhaka uses the inside-Dhaka rate; every other district uses the outside-Dhaka rate.
   const deliveryEstimates = [
-    { area: "Dhaka Metro", time: "1 - 2 Days", fee: "৳60" },
-    { area: "Gazipur, Narayanganj, Savar", time: "1 - 2 Days", fee: "৳100" },
-    { area: "Chittagong, Sylhet, Rajshahi", time: "3 - 4 Days", fee: "৳100" },
-    { area: "Other Major Cities (All 64 Districts)", time: "4 - 5 Days", fee: "৳100" },
+    { area: "Dhaka Metro", time: "1 - 2 Days", fee: taka(settings.insideDhaka) },
+    { area: "Gazipur, Narayanganj, Savar", time: "1 - 2 Days", fee: taka(settings.outsideDhaka) },
+    { area: "Chittagong, Sylhet, Rajshahi", time: "3 - 4 Days", fee: taka(settings.outsideDhaka) },
+    { area: "Other Major Cities (All 64 Districts)", time: "4 - 5 Days", fee: taka(settings.outsideDhaka) },
   ];
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       {/* ── Breadcrumb & Top Bar ── */}
       <div className="w-full border-b border-[#E1B76F]/20 bg-[#340402] py-6 sm:py-8 px-4">
         <div className="max-w-[1000px] mx-auto">
-          <nav className="text-xs text-[#E1B76F]/70 mb-2 flex items-center gap-2">
+          <nav className="text-xs text-white/70 mb-2 flex items-center gap-2">
             <Link href="/" className="hover:text-white transition">Home</Link>
-            <span className="text-[#E1B76F]/40">/</span>
+            <span className="text-white/40">/</span>
             <Link href="/policies" className="hover:text-white transition">Policies</Link>
-            <span className="text-[#E1B76F]/40">/</span>
-            <span className="text-[#E1B76F] font-semibold">Delivery Timing</span>
+            <span className="text-white/40">/</span>
+            <span className="text-white font-semibold">Delivery Timing</span>
           </nav>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-[#E1B76F]">
+              <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-white">
                 Delivery Timing for COD
               </h1>
-              <p className="mt-1 text-xs sm:text-sm text-[#f0d29d]">
+              <p className="mt-1 text-xs sm:text-sm text-white/90">
                 Nationwide Cash on Delivery timelines and shipping details.
               </p>
             </div>
             <Link
               href="/policies"
-              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-[#E1B76F] hover:text-white border border-[#E1B76F]/30 rounded-full px-4 py-2 bg-[#2d0302] hover:bg-[#400604] transition shadow-sm"
+              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-white border border-[#E1B76F]/30 rounded-full px-4 py-2 bg-[#2d0302] hover:bg-[#400604] transition shadow-sm"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Policies
             </Link>
@@ -66,14 +73,14 @@ export default function DeliveryTimePage() {
         <div className="mt-12 max-w-[850px] mx-auto">
           <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#E1B76F]/20">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#400604] border border-[#E1B76F]/40 text-white">
                 <Truck className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="font-heading text-lg sm:text-xl font-bold uppercase text-[#E1B76F]">
+                <h2 className="font-heading text-lg sm:text-xl font-bold uppercase text-white">
                   Detailed Delivery Schedule
                 </h2>
-                <p className="text-xs text-[#f0d29d]">
+                <p className="text-xs text-white/90">
                   Timings are estimated after parcel dispatch
                 </p>
               </div>
@@ -82,7 +89,7 @@ export default function DeliveryTimePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs sm:text-sm">
                 <thead>
-                  <tr className="border-b border-[#E1B76F]/20 bg-[#2d0302] text-[#E1B76F] font-bold uppercase tracking-wider text-[11px]">
+                  <tr className="border-b border-[#E1B76F]/20 bg-[#2d0302] text-white font-bold uppercase tracking-wider text-[11px]">
                     <th className="py-3 px-4">Destination Area</th>
                     <th className="py-3 px-4">Estimated Transit</th>
                     <th className="py-3 px-4 text-right">Standard Rate</th>
@@ -91,24 +98,25 @@ export default function DeliveryTimePage() {
                 <tbody className="divide-y divide-[#E1B76F]/15 font-medium">
                   {deliveryEstimates.map((row) => (
                     <tr key={row.area} className="hover:bg-[#2d0302]/70 transition">
-                      <td className="py-3.5 px-4 text-[#E1B76F] font-semibold">{row.area}</td>
-                      <td className="py-3.5 px-4 text-[#f0d29d] flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-[#E1B76F]/60" />
+                      <td className="py-3.5 px-4 text-white font-semibold">{row.area}</td>
+                      <td className="py-3.5 px-4 text-white/90 flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-white/60" />
                         {row.time}
                       </td>
-                      <td className="py-3.5 px-4 text-right text-[#E1B76F] font-bold">{row.fee}</td>
+                      <td className="py-3.5 px-4 text-right text-white font-bold">{row.fee}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            {/* Free Delivery Banner */}
+            {/* Free Delivery Banner — only when a free-delivery threshold is set in the admin panel */}
+            {settings.freeDeliveryThreshold > 0 && (
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl bg-[#2d0302] border border-[#E1B76F]/30 p-4 text-xs">
               <div className="flex items-center gap-2.5">
-                <ShieldCheck className="h-5 w-5 text-[#E1B76F] shrink-0" />
-                <span className="text-[#E1B76F] font-bold">
-                  Orders over ৳3,000 qualify for FREE delivery across Bangladesh!
+                <ShieldCheck className="h-5 w-5 text-white shrink-0" />
+                <span className="text-white font-bold">
+                  Orders over {taka(settings.freeDeliveryThreshold)} qualify for FREE delivery across Bangladesh!
                 </span>
               </div>
               <Link
@@ -118,23 +126,24 @@ export default function DeliveryTimePage() {
                 Shop Now &rarr;
               </Link>
             </div>
+            )}
           </div>
 
           {/* Key Guidelines */}
-          <div className="mt-8 rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 space-y-3 text-xs sm:text-sm text-[#f0d29d]">
-            <h3 className="font-heading text-base font-bold uppercase text-[#E1B76F] mb-2">
+          <div className="mt-8 rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 space-y-3 text-xs sm:text-sm text-white/90">
+            <h3 className="font-heading text-base font-bold uppercase text-white mb-2">
               Important Delivery Notes
             </h3>
             <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
               <span>Mentioned timings are estimated business days after your package has been confirmed and dispatched.</span>
             </p>
             <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
               <span>ANGKON works with reliable 3rd-party express courier networks (Steadfast, Pathao, RedX).</span>
             </p>
             <p className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
+              <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
               <span>Deliveries may experience slight delays during national holidays or adverse weather conditions.</span>
             </p>
           </div>

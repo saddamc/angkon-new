@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   Plus, Pencil, Trash2, RefreshCw, ChevronRight, X, Loader2,
   FolderOpen, Tag, ImageIcon, Check, AlertCircle, UploadCloud,
-  Search, Filter, GripVertical, CheckCircle2, XCircle, SearchX, ChevronDown,
+  Search, Filter, GripVertical, CheckCircle2, XCircle, SearchX, ChevronDown, ChevronUp,
   ArrowRightLeft
 } from "lucide-react";
 import { decodeHtmlCharCodes } from "@/utils/category-display";
@@ -1632,28 +1632,50 @@ export default function AdminCategoriesPage() {
     if (!draggedItem || draggedItem.parent !== targetParent || draggedItem.index === targetIndex) { setDraggedItem(null); return; }
     
     // Optimistic UI update
-    const listToUpdate = flat.filter(c => c.parent === targetParent).sort((a,b) => a.menu_order - b.menu_order);
+    const listToUpdate = flat.filter(c => c.parent === targetParent).sort((a,b) => (a.menu_order ?? 0) - (b.menu_order ?? 0));
     const item = listToUpdate.splice(draggedItem.index, 1)[0];
     listToUpdate.splice(targetIndex, 0, item);
     
     setDraggedItem(null);
     showToast("Reordering...", true);
     
-    // Update menu_order in backend sequentially
+    // Update menu_order in backend atomically via /api/admin/categories/reorder
     try {
-      for (let i = 0; i < listToUpdate.length; i++) {
-        if (listToUpdate[i].menu_order !== i) {
-          await authFetch(`/api/admin/categories/${listToUpdate[i].id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ menu_order: i })
-          });
-        }
-      }
+      const items = listToUpdate.map((c, i) => ({ id: c.id, menu_order: i }));
+      await authFetch("/api/admin/categories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
       showToast("Order saved!");
       load();
     } catch {
       showToast("Failed to save order", false);
+    }
+  };
+
+  const moveCategory = async (catId: number, parentId: number, direction: "up" | "down") => {
+    const siblings = flat.filter(c => c.parent === parentId).sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0));
+    const curIdx = siblings.findIndex(c => c.id === catId);
+    if (curIdx === -1) return;
+    const targetIdx = direction === "up" ? curIdx - 1 : curIdx + 1;
+    if (targetIdx < 0 || targetIdx >= siblings.length) return;
+
+    const item = siblings.splice(curIdx, 1)[0];
+    siblings.splice(targetIdx, 0, item);
+
+    showToast("Updating category position...", true);
+    try {
+      const items = siblings.map((cat, idx) => ({ id: cat.id, menu_order: idx }));
+      await authFetch("/api/admin/categories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      showToast("Order updated successfully!");
+      load();
+    } catch {
+      showToast("Failed to update order", false);
     }
   };
 
@@ -1708,15 +1730,41 @@ export default function AdminCategoriesPage() {
             depth > 0 ? "bg-slate-50/80" : "bg-white"
           }`}
         >
-          {/* Drag + expand + indent */}
-          <div className="flex items-center shrink-0" style={{ paddingLeft: `${depth * 28}px` }}>
+          {/* Drag + order badge + expand + indent */}
+          <div className="flex items-center gap-1.5 shrink-0" style={{ paddingLeft: `${depth * 28}px` }}>
             <div
-              className="w-6 cursor-grab opacity-0 group-hover:opacity-40 hover:!opacity-100 transition"
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
+              className="w-5 cursor-grab text-gray-400 hover:text-gray-700 transition flex items-center justify-center"
+              title="Drag to reorder"
             >
               <GripVertical className="h-4 w-4" />
             </div>
+
+            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+              <span className={`text-[11px] font-mono font-bold rounded px-1.5 py-0.5 ${
+                depth === 0 ? "bg-blue-50 text-blue-700 border border-blue-200/60" : "bg-gray-100 text-gray-500"
+              }`} title={`Display Order: #${index + 1}`}>
+                #{index + 1}
+              </span>
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => moveCategory(cat.id, cat.parent, "up")}
+                  className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                  title="Move Up"
+                >
+                  <ChevronUp className="h-2.5 w-2.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveCategory(cat.id, cat.parent, "down")}
+                  className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition"
+                  title="Move Down"
+                >
+                  <ChevronDown className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            </div>
+
             {hasChildren ? (
               <button
                 type="button"

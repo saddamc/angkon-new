@@ -63,19 +63,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [
@@ -228,19 +237,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [
@@ -393,19 +411,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [
@@ -558,19 +585,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [
@@ -737,19 +773,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [
@@ -909,19 +954,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [
@@ -1053,19 +1107,28 @@
     ],
     "categories": [
       {
-        "id": 163,
-        "name": "Women",
-        "slug": "women"
-      },
-      {
         "id": 914,
-        "name": "Ethnic",
-        "slug": "ethnic"
+        "name": "Ethnic Wear",
+        "slug": "ethnic-wear",
+        "parent": 0
       },
       {
         "id": 990,
         "name": "Tawakkal",
-        "slug": "tawakkal"
+        "slug": "tawakkal",
+        "parent": 914
+      },
+      {
+        "id": 915,
+        "name": "3-Piece Suit",
+        "slug": "3-piece-suit",
+        "parent": 914
+      },
+      {
+        "id": 163,
+        "name": "Women",
+        "slug": "women",
+        "parent": 0
       }
     ],
     "tags": [

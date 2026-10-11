@@ -29,16 +29,16 @@ export default function MightoMenPage() {
   }).slice(0, 24);
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+    <div className="min-h-screen bg-[#400604] text-white">
       <div className="border-b border-[#E1B76F]/20 bg-[#340402] py-10 px-4 text-center">
         <div className="container mx-auto max-w-[1000px]">
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#E1B76F]/70">
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
             Mighto Activewear
           </span>
-          <h1 className="mt-2 font-heading text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-[#E1B76F]">
+          <h1 className="mt-2 font-heading text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
             Mighto Men
           </h1>
-          <p className="mt-2.5 text-xs sm:text-sm text-[#f0d29d] max-w-xl mx-auto">
+          <p className="mt-2.5 text-xs sm:text-sm text-white/90 max-w-xl mx-auto">
             High-tensile cotton, stretch utility shorts, breathable workout tees engineered for physical performance.
           </p>
         </div>
@@ -46,8 +46,8 @@ export default function MightoMenPage() {
 
       <div className="w-full px-2 sm:px-3 md:px-4 lg:px-6 py-8 sm:py-10">
         <div className="mb-6 flex items-center justify-between">
-          <span className="text-xs sm:text-sm text-[#E1B76F]/70">
-            Showing <strong className="text-[#E1B76F]">{menProducts.length}</strong> styles
+          <span className="text-xs sm:text-sm text-white/70">
+            Showing <strong className="text-white">{menProducts.length}</strong> styles
           </span>
           <Link
             href="/mighto"

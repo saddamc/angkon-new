@@ -4,8 +4,8 @@ export default function CategoryError({ reset }: { error: Error & { digest?: str
   return (
     <div className="container mx-auto max-w-[1500px] px-4 py-24 text-center bg-[#400604]">
       <div className="mb-4 text-5xl">⚠️</div>
-      <p className="text-base font-semibold text-[#E1B76F]">Unable to load categories</p>
-      <p className="mt-1.5 text-sm text-[#f0d29d]">Please try again.</p>
+      <p className="text-base font-semibold text-white">Unable to load categories</p>
+      <p className="mt-1.5 text-sm text-white/90">Please try again.</p>
       <button
         type="button"
         onClick={reset}

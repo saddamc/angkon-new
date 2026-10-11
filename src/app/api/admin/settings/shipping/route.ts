@@ -1,50 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
+import { getShippingSettings, SHIPPING_SETTINGS_KEY } from "@/server/shipping";
 
-const DEFAULT_SHIPPING = {
-  insideDhaka: 60,
-  outsideDhaka: 120,
-  freeDeliveryThreshold: 0,
-};
+const FIELDS = [
+  ["insideDhaka", "Inside Dhaka delivery"],
+  ["outsideDhaka", "Outside Dhaka delivery"],
+  ["freeDeliveryThreshold", "Free delivery threshold"],
+] as const;
+
+const MAX_AMOUNT = 1_000_000;
 
 export async function GET() {
-  try {
-    await connectToDatabase();
-    const setting = await Settings.findOne({ key: "shipping" }).lean();
-    if (!setting || !setting.value) {
-      return NextResponse.json(DEFAULT_SHIPPING);
-    }
-    return NextResponse.json(setting.value);
-  } catch (error) {
-    console.error("GET /api/admin/settings/shipping error:", error);
-    return NextResponse.json(DEFAULT_SHIPPING);
-  }
+  const settings = await getShippingSettings();
+  return NextResponse.json(settings, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const insideDhaka = Number(body.insideDhaka ?? 60);
-    const outsideDhaka = Number(body.outsideDhaka ?? 120);
-    const freeDeliveryThreshold = Number(body.freeDeliveryThreshold ?? 0);
+    const body = (await request.json()) as Record<string, unknown>;
 
-    const shipping = {
-      insideDhaka: isNaN(insideDhaka) ? 60 : insideDhaka,
-      outsideDhaka: isNaN(outsideDhaka) ? 120 : outsideDhaka,
-      freeDeliveryThreshold: isNaN(freeDeliveryThreshold) ? 0 : freeDeliveryThreshold,
-    };
+    // Validate strictly — a typo here would change what every customer is charged.
+    const values: Record<string, number> = {};
+    for (const [field, label] of FIELDS) {
+      const raw = body[field];
+      const n = typeof raw === "string" ? Number(raw.trim()) : Number(raw);
+      if (raw === undefined || raw === null || raw === "" || !Number.isFinite(n) || n < 0 || n > MAX_AMOUNT) {
+        return NextResponse.json(
+          { error: `${label} must be a number from 0 to ${MAX_AMOUNT.toLocaleString("en-US")}.` },
+          { status: 400 },
+        );
+      }
+      values[field] = Math.round(n);
+    }
 
     await connectToDatabase();
     await Settings.findOneAndUpdate(
-      { key: "shipping" },
-      { $set: { value: shipping } },
-      { upsert: true, new: true }
+      { key: SHIPPING_SETTINGS_KEY },
+      { $set: { value: values } },
+      { upsert: true, new: true },
     );
 
-    return NextResponse.json({ success: true, shipping });
+    return NextResponse.json({ success: true, shipping: values });
   } catch (error) {
     console.error("POST /api/admin/settings/shipping error:", error);
-    return NextResponse.json({ error: "Failed to update shipping settings" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to update shipping settings." }, { status: 500 });
   }
 }

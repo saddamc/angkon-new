@@ -1,35 +1,9 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { addFirstProductToCart, suppressPromoPopup } from "./helpers";
 
-// The home-page promo popup covers the screen; real visitors close it, tests skip it.
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    try {
-      sessionStorage.setItem("angkon_promo_seen", "true");
-    } catch {
-      /* storage unavailable */
-    }
-  });
+  await suppressPromoPopup(page);
 });
-
-/** Open the first product from the shop page and add it to the cart. */
-async function addFirstProductToCart(page: Page) {
-  await page.goto("/products");
-  const firstCard = page.locator("article").first();
-  await expect(firstCard).toBeVisible();
-
-  // Cards aren't one big link — open the product through its title.
-  await firstCard.locator('a[href^="/products/"]:has(h3)').first().click();
-  await expect(page).toHaveURL(/\/products\/.+/);
-
-  // Pick the first size if the product has sizes.
-  const sizeButtons = page.locator("button").filter({ hasText: /^(XS|S|M|L|XL|XXL)$/i });
-  if (await sizeButtons.count()) {
-    await sizeButtons.first().click();
-  }
-
-  await page.getByRole("button", { name: /add to (cart|bag)/i }).first().click();
-  await expect(page.getByLabel("Shopping Cart Drawer")).toBeVisible();
-}
 
 test.describe("ANGKON storefront", () => {
   test("home page shows the brand, navigation and cash-on-delivery band", async ({ page }) => {

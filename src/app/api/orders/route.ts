@@ -5,6 +5,9 @@ import { sendOrderConfirmationEmails } from "@/lib/email/resend";
 import { User, type IUser } from "@/models/User";
 import { EMAIL_REGEX, getSessionUserId, normalizeEmail, setSessionCookie } from "@/server/auth";
 import { issueVerificationEmail } from "@/server/account";
+import { calculateShipping } from "@/lib/shipping";
+import { getProductDeliveryRates, getShippingSettings } from "@/server/shipping";
+import { getCheckoutSettings } from "@/server/checkout-settings";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 
@@ -77,10 +80,36 @@ export async function POST(request: NextRequest) {
     }
 
     const resolvedDistrict = district || city || "Dhaka";
-    const isInsideDhaka =
-      resolvedDistrict.trim().toLowerCase() === "dhaka" ||
-      resolvedDistrict.trim().toLowerCase() === "dhaka city";
-    const shippingFee = isInsideDhaka ? 60 : 120;
+
+    // ── Email verification gate ──
+    // When enabled in Admin → Settings → Checkout, an order is only accepted from a
+    // signed-in customer whose email is verified and matches the email on the order.
+    let verifiedUser: IUser | null = null;
+    const checkoutSettings = await getCheckoutSettings();
+    if (checkoutSettings.requireEmailVerification) {
+      const orderEmail = normalizeEmail(email);
+      if (!orderEmail || !EMAIL_REGEX.test(orderEmail)) {
+        return NextResponse.json({ error: "A valid email address is required to place an order." }, { status: 400 });
+      }
+      let sessionUser: IUser | null = null;
+      try {
+        const sessionUserId = getSessionUserId(request);
+        if (sessionUserId) {
+          await connectToDatabase();
+          sessionUser = await User.findById(sessionUserId);
+        }
+      } catch (gateErr) {
+        console.error("Order email-verification check failed:", gateErr);
+        return NextResponse.json({ error: "We couldn't confirm your email just now. Please try again." }, { status: 503 });
+      }
+      if (!sessionUser || !sessionUser.emailVerified || sessionUser.email !== orderEmail) {
+        return NextResponse.json(
+          { error: "Please verify your email address to place your order.", code: "EMAIL_VERIFICATION_REQUIRED" },
+          { status: 403 },
+        );
+      }
+      verifiedUser = sessionUser;
+    }
 
     // Calculate subtotal
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,6 +119,20 @@ export async function POST(request: NextRequest) {
       return sum + (isNaN(price) ? 0 : price) * (isNaN(qty) ? 1 : qty);
     }, 0);
 
+    // Delivery is decided here on the server (admin settings + product fees), never trusted from the browser.
+    const [shippingSettings, productRates] = await Promise.all([
+      getShippingSettings(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      getProductDeliveryRates(items.map((item: any) => Number(item.productId || 0))),
+    ]);
+    const shippingQuote = calculateShipping({
+      subtotal,
+      district: resolvedDistrict,
+      settings: shippingSettings,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      itemRates: items.map((item: any) => productRates.get(Number(item.productId || 0)) ?? {}),
+    });
+    const shippingFee = shippingQuote.fee;
     const total = subtotal + shippingFee;
 
     // Generate unique ANGKON luxury order number
@@ -137,7 +180,9 @@ export async function POST(request: NextRequest) {
       // Account linking must never block the order itself.
       let account: { status: AccountStatus; user: IUser | null } = { status: "none", user: null };
       try {
-        account = await resolveOrderAccount(request, customerData.email, customerData);
+        account = verifiedUser
+          ? { status: "signed_in", user: verifiedUser }
+          : await resolveOrderAccount(request, customerData.email, customerData);
       } catch (accountErr) {
         console.warn("Order account linking failed (order still placed):", accountErr);
       }
@@ -156,6 +201,25 @@ export async function POST(request: NextRequest) {
         orderStatus: "pending",
         notes: orderNotes ? String(orderNotes).trim() : "",
       });
+
+      // First order on this account: remember the delivery address so the next checkout can pre-fill it.
+      // (Best effort — never allowed to fail the order.)
+      if (accountUser && account.status !== "existing" && (accountUser.addresses?.length ?? 0) === 0) {
+        try {
+          accountUser.addresses.push({
+            fullName: customerData.fullName,
+            phone: customerData.phone,
+            address: customerData.address,
+            city: customerData.city,
+            district: customerData.district,
+            postalCode: customerData.postalCode,
+            isDefault: true,
+          });
+          await accountUser.save();
+        } catch (addressErr) {
+          console.warn("Could not save the delivery address to the account:", addressErr);
+        }
+      }
 
       // Send emails after the response (Customer confirmation + Admin alert).
       // after() keeps the serverless function alive until they finish; a bare

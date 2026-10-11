@@ -70,18 +70,18 @@ export function NewArrivalsSection({
         {/* Header (Section header style) */}
         <div className="mb-8 flex items-end justify-between border-b border-[#5c0f0d] pb-4">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-widest text-[#cbb18a]">
-              FRESH RELEASE <span className="text-[#E1B76F]">●</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-white/70">
+              FRESH RELEASE <span className="text-white">●</span>
             </span>
-            <h2 className="font-heading text-2xl sm:text-3xl font-black text-[#E1B76F]">
+            <h2 className="font-heading text-2xl sm:text-3xl font-black text-white">
               New Drops
             </h2>
           </div>
           <Link
             href="/products"
-            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-[#E1B76F] transition hover:bg-[#E1B76F] hover:text-[#400604]"
+            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-white transition hover:bg-[#E1B76F] hover:text-[#400604]"
           >
-            View All <ArrowRight className="h-3.5 w-3.5 text-[#E1B76F]" />
+            View All <ArrowRight className="h-3.5 w-3.5 text-white" />
           </Link>
         </div>
 
@@ -108,7 +108,7 @@ export function NewArrivalsSection({
               type="button"
               onClick={() => scrollByAmount("left")}
               disabled={!canScrollLeft}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-[#E1B76F] shadow-lg border border-[#5c0f0d] hover:bg-[#E1B76F] hover:text-[#400604] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#E1B76F] hover:text-[#400604] transition disabled:opacity-0"
               aria-label="Scroll left"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -119,7 +119,7 @@ export function NewArrivalsSection({
               type="button"
               onClick={() => scrollByAmount("right")}
               disabled={!canScrollRight}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-[#E1B76F] shadow-lg border border-[#5c0f0d] hover:bg-[#E1B76F] hover:text-[#400604] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#E1B76F] hover:text-[#400604] transition disabled:opacity-0"
               aria-label="Scroll right"
             >
               <ChevronRight className="h-5 w-5" />

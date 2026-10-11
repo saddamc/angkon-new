@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function MightoPage() {
   return (
-    <div className="w-full min-h-screen bg-[#400604] text-[#E1B76F] overflow-hidden">
+    <div className="w-full min-h-screen bg-[#400604] text-white overflow-hidden">
       {/* ── 1. Top Hero Banner (Full Bleed Edge-to-Edge) ── */}
       <section className="w-full">
         <Link

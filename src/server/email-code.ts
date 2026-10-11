@@ -1,0 +1,88 @@
+import crypto from "crypto";
+import { connectToDatabase } from "@/lib/mongodb";
+import { EmailCode } from "@/models/EmailCode";
+
+/**
+ * One-time email codes used to verify an address during checkout.
+ * - 6 digits, valid for 10 minutes, at most 5 wrong guesses, then a new code is needed.
+ * - Only an HMAC of the code is stored, never the code itself.
+ */
+export const CODE_LENGTH = 6;
+export const CODE_TTL_MS = 10 * 60 * 1000;
+export const CODE_RESEND_COOLDOWN_MS = 60 * 1000;
+export const CODE_MAX_ATTEMPTS = 5;
+
+const SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
+
+export function generateCode(): string {
+  return String(crypto.randomInt(0, 10 ** CODE_LENGTH)).padStart(CODE_LENGTH, "0");
+}
+
+export function isWellFormedCode(value: unknown): value is string {
+  return typeof value === "string" && value.length === CODE_LENGTH && [...value].every((c) => c >= "0" && c <= "9");
+}
+
+export function hashCode(email: string, code: string): string {
+  return crypto.createHmac("sha256", SECRET).update(`${email}:${code}`).digest("hex");
+}
+
+/** Create (or replace) the pending code for an email. Returns the code, or the wait time if sent too recently. */
+export async function issueEmailCode(email: string): Promise<{ code: string } | { cooldownSeconds: number }> {
+  await connectToDatabase();
+  const now = Date.now();
+
+  const existing = await EmailCode.findOne({ email }).lean();
+  if (existing) {
+    const waitMs = CODE_RESEND_COOLDOWN_MS - (now - new Date(existing.lastSentAt).getTime());
+    if (waitMs > 0) return { cooldownSeconds: Math.ceil(waitMs / 1000) };
+  }
+
+  const code = generateCode();
+  await EmailCode.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        codeHash: hashCode(email, code),
+        attempts: 0,
+        expiresAt: new Date(now + CODE_TTL_MS),
+        lastSentAt: new Date(now),
+      },
+    },
+    { upsert: true, new: true },
+  );
+  return { code };
+}
+
+/** Forget a pending code (e.g. when the email could not be sent). */
+export async function discardEmailCode(email: string): Promise<void> {
+  await connectToDatabase();
+  await EmailCode.deleteOne({ email });
+}
+
+export type CodeCheck = { status: "ok" } | { status: "invalid"; attemptsLeft: number } | { status: "expired" } | { status: "locked" };
+
+/** Check a submitted code. A correct code is consumed and can't be used again. */
+export async function consumeEmailCode(email: string, code: string): Promise<CodeCheck> {
+  await connectToDatabase();
+
+  // Count this attempt first (atomically) so parallel guesses can't beat the limit.
+  const doc = await EmailCode.findOneAndUpdate(
+    { email, expiresAt: { $gt: new Date() } },
+    { $inc: { attempts: 1 } },
+    { new: true },
+  );
+  if (!doc) return { status: "expired" };
+  if (doc.attempts > CODE_MAX_ATTEMPTS) return { status: "locked" };
+
+  const expected = Buffer.from(doc.codeHash, "hex");
+  const actual = Buffer.from(hashCode(email, code), "hex");
+  const matches = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+
+  if (matches) {
+    await EmailCode.deleteOne({ email, codeHash: doc.codeHash });
+    return { status: "ok" };
+  }
+  return doc.attempts >= CODE_MAX_ATTEMPTS
+    ? { status: "locked" }
+    : { status: "invalid", attemptsLeft: CODE_MAX_ATTEMPTS - doc.attempts };
+}

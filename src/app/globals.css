@@ -4,17 +4,17 @@
 
 :root {
   --background: 2 96% 14%;
-  --foreground: 38 67% 66%;
+  --foreground: 0 0% 100%;
   --card: 2 86% 16%;
-  --card-foreground: 38 67% 66%;
+  --card-foreground: 0 0% 100%;
   --popover: 2 86% 16%;
-  --popover-foreground: 38 67% 66%;
+  --popover-foreground: 0 0% 100%;
   --primary: 38 67% 66%;
   --primary-foreground: 2 96% 14%;
   --secondary: 2 70% 21%;
-  --secondary-foreground: 38 67% 66%;
+  --secondary-foreground: 0 0% 100%;
   --muted: 2 70% 21%;
-  --muted-foreground: 37 40% 67%;
+  --muted-foreground: 0 0% 72%;
   --accent: 38 67% 66%;
   --accent-foreground: 2 96% 14%;
   --border: 2 74% 21%;
@@ -34,41 +34,41 @@
 }
 
 body {
-  @apply bg-[#400604] text-[#E1B76F] font-sans antialiased;
+  @apply bg-[#400604] text-white font-sans antialiased;
   font-size: 16px;
   line-height: 1.8em;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-lato), Lato, sans-serif;
-  color: #E1B76F;
+  color: #ffffff;
 }
 
 ::selection {
-  background-color: #5c0f0d;
-  color: #E1B76F;
+  background-color: #E1B76F;
+  color: #400604;
 }
 
-/* ── Product description HTML prose (Luxury Gold / Champagne) ──────── */
-.product-prose { color: #f0d29d; font-size: 0.9375rem; line-height: 1.7; }
-.product-prose p { margin-bottom: 0.875rem; line-height: 1.7; color: #f0d29d; }
+/* ── Product description HTML prose (white text, gold links) ───────── */
+.product-prose { color: rgba(255, 255, 255, 0.9); font-size: 0.9375rem; line-height: 1.7; }
+.product-prose p { margin-bottom: 0.875rem; line-height: 1.7; color: rgba(255, 255, 255, 0.9); }
 .product-prose p:last-child { margin-bottom: 0; }
 .product-prose ul, .product-prose ol { padding-left: 1.375rem; margin-bottom: 0.875rem; }
 .product-prose ul { list-style: disc; }
 .product-prose ol { list-style: decimal; }
-.product-prose li { margin-bottom: 0.35rem; line-height: 1.65; color: #f0d29d; }
+.product-prose li { margin-bottom: 0.35rem; line-height: 1.65; color: rgba(255, 255, 255, 0.9); }
 .product-prose h1, .product-prose h2, .product-prose h3, .product-prose h4 {
-  font-weight: 700; color: #E1B76F; margin-top: 1.25rem; margin-bottom: 0.5rem; line-height: 1.35;
+  font-weight: 700; color: #ffffff; margin-top: 1.25rem; margin-bottom: 0.5rem; line-height: 1.35;
 }
 .product-prose h2 { font-size: 1.125rem; }
 .product-prose h3 { font-size: 1rem; }
 .product-prose h4 { font-size: 0.9375rem; }
-.product-prose strong, .product-prose b { font-weight: 600; color: #E1B76F; }
-.product-prose em, .product-prose i { font-style: italic; color: #f0d29d; }
+.product-prose strong, .product-prose b { font-weight: 600; color: #ffffff; }
+.product-prose em, .product-prose i { font-style: italic; color: rgba(255, 255, 255, 0.9); }
 .product-prose a { color: #E1B76F; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
 .product-prose a:hover { color: #ffffff; }
 .product-prose hr { border: none; border-top: 1px solid rgba(225, 183, 111, 0.2); margin: 1.25rem 0; }
-.product-prose table { width: 100%; border-collapse: collapse; margin-bottom: 0.875rem; font-size: 0.875rem; color: #f0d29d; }
+.product-prose table { width: 100%; border-collapse: collapse; margin-bottom: 0.875rem; font-size: 0.875rem; color: rgba(255, 255, 255, 0.9); }
 
 /* ── Industry-level Right-to-Left Slide Search Animations ── */
 @keyframes slideSearchIn {
@@ -112,7 +112,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .product-prose th {
   font-weight: 600;
-  color: #E1B76F;
+  color: #ffffff;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid rgba(225, 183, 111, 0.35);
   text-align: left;
@@ -121,5 +121,5 @@ h1, h2, h3, h4, h5, h6 {
 .product-prose td {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid rgba(225, 183, 111, 0.15);
-  color: #f0d29d;
+  color: rgba(255, 255, 255, 0.9);
 }

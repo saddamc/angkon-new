@@ -11,9 +11,14 @@ import {
   Copy,
   Maximize,
   Minimize,
+  Ruler,
   Search,
   X,
 } from "lucide-react";
+import {
+  ReadyToWearSizeGuideModal,
+  ReadyToWearSizeGuideContent,
+} from "@/components/product/ready-to-wear-size-guide-modal";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { WooProduct } from "@/types/product";
@@ -104,15 +109,18 @@ function ShareStrip({ title }: { title: string }) {
 
 function RichText({ html, className = "" }: { html: string; className?: string }) {
   if (!html) return null;
-  if (/<[a-z][\s\S]*>/i.test(html)) {
+  const cleanHtml = html
+    .replace(/<div[^>]*class="[^"]*mt-6[^"]*"[^>]*>[\s\S]*?size-chart[\s\S]*?<\/div>/gi, "")
+    .replace(/<p[^>]*>[\s\S]*?size-chart[\s\S]*?<\/p>/gi, "");
+  if (/<[a-z][\s\S]*>/i.test(cleanHtml)) {
     return (
       <div
         className={`product-prose text-neutral-800 ${className}`}
-        dangerouslySetInnerHTML={{ __html: fixPlainTextTablesAndLists(html) }}
+        dangerouslySetInnerHTML={{ __html: fixPlainTextTablesAndLists(cleanHtml) }}
       />
     );
   }
-  const paragraphs = html.trim().split(/\n{2,}/);
+  const paragraphs = cleanHtml.trim().split(/\n{2,}/);
   return (
     <div className={`product-prose text-neutral-800 ${className}`}>
       {paragraphs.map((para, i) => (
@@ -131,8 +139,7 @@ function RichText({ html, className = "" }: { html: string; className?: string }
 
 /* ── Main Component ─────────────────────────────────────────────────── */
 
-type Tab = "Description" | "Additional information";
-const TABS: Tab[] = ["Description", "Additional information"];
+type Tab = "Description" | "Additional information" | "Size Guide";
 
 export function ProductDetailsView({
   product,
@@ -148,6 +155,7 @@ export function ProductDetailsView({
   const [activeTab, setActiveTab] = useState<Tab>("Description");
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -255,15 +263,53 @@ export function ProductDetailsView({
   const brandAttr = product.attributes.find((a) => a.name.toLowerCase() === "brand");
   const brand = brandAttr?.options?.[0];
 
+  // Genuine customer selectable variation attributes (e.g. Size)
   const variationAttrs = useMemo(() => {
-    if (product.attributes && product.attributes.length > 0) {
-      return product.attributes.filter((a) => a.options && a.options.length > 0);
+    const sizeAttr = product.attributes?.find(
+      (a) => a.name.toLowerCase() === "size" || a.name.toLowerCase() === "sizes"
+    );
+    if (sizeAttr && sizeAttr.options && sizeAttr.options.length > 0) {
+      return [sizeAttr];
     }
     if (product.sizes && product.sizes.length > 0) {
       return [{ id: 0, name: "Size", options: product.sizes, visible: true }];
     }
-    return [];
+    const nonSpecAttrs = (product.attributes || []).filter((a) => {
+      const name = a.name.toLowerCase().trim();
+      const staticSpecs = [
+        "brand", "collection", "outfit", "style", "occasion", "color",
+        "fabric", "material", "pattern", "type", "piece", "season", "kameez", "trouser", "dupatta"
+      ];
+      return !staticSpecs.includes(name) && a.options && a.options.length > 1;
+    });
+    return nonSpecAttrs;
   }, [product.attributes, product.sizes]);
+
+  // Read-only specifications (Brand, Collection, Color, Outfit, Style, Occasion, etc.)
+  const specAttributes = useMemo(() => {
+    return (product.attributes || []).filter((a) => {
+      const name = a.name.toLowerCase().trim();
+      return name !== "size" && name !== "sizes" && a.visible;
+    });
+  }, [product.attributes]);
+
+  const hasSizeGuide = useMemo(() => {
+    const isApparel =
+      product.categories?.some((c) =>
+        /women|men|ethnic|suit|dress|clothing|kameez|sharee|panjabi/i.test(c.name || c.slug)
+      ) ||
+      product.name.toLowerCase().includes("tawakkal") ||
+      product.name.toLowerCase().includes("wada") ||
+      (product.sizes && product.sizes.length > 0) ||
+      Boolean(product.attributes?.some((a) => a.name.toLowerCase() === "size"));
+    return Boolean(isApparel);
+  }, [product]);
+
+  const tabs: Tab[] = useMemo(() => {
+    return hasSizeGuide
+      ? ["Description", "Additional information", "Size Guide"]
+      : ["Description", "Additional information"];
+  }, [hasSizeGuide]);
 
   const addItem = useCartStore((state) => state.addItem);
   const onAddToCart = () => {
@@ -446,50 +492,113 @@ export function ProductDetailsView({
               </div>
             ) : null}
 
-            {/* Variation Attribute Dropdown (Matches Image 1 Exactly) */}
+            {/* Product Specifications Summary Card (Read-only, Clean) */}
+            {specAttributes.length > 0 && (
+              <div className="mb-5 rounded-lg border border-neutral-200/80 bg-neutral-50/70 p-3.5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                  {specAttributes.map((attr) => (
+                    <div key={attr.name} className="flex flex-col">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                        {attr.name}
+                      </span>
+                      <span className="font-semibold text-neutral-800 truncate" title={attr.options.join(", ")}>
+                        {attr.options.join(", ")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Variation Attribute Selection (Size & Selectable Options) */}
             {variationAttrs.length > 0 && (
               <div className="space-y-4">
-                {variationAttrs.map((attr) => (
-                  <div key={attr.name} className="mt-4">
-                    <label className="block text-[14px] font-semibold text-[#111111] mb-2">
-                      {attr.name}
-                    </label>
-                    <div className="relative max-w-[340px]">
-                      <select
-                        value={size}
-                        onChange={(e) => {
-                          setSize(e.target.value);
-                          setOptionError(false);
-                        }}
-                        className={`w-full appearance-none rounded border bg-white px-3.5 py-2.5 pr-10 text-[14px] text-neutral-800 outline-none transition cursor-pointer ${
-                          optionError && !size
-                            ? "border-red-500 ring-1 ring-red-500"
-                            : "border-neutral-300 focus:border-black"
-                        }`}
-                      >
-                        <option value="">Choose an option</option>
-                        {attr.options.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                {variationAttrs.map((attr) => {
+                  const isSize = attr.name.toLowerCase() === "size" || attr.name.toLowerCase() === "sizes";
+                  return (
+                    <div key={attr.name} className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[14px] font-semibold text-[#111111] flex items-center gap-1.5">
+                          {attr.name}
+                          {isSize && size ? <span className="font-normal text-neutral-500">({size})</span> : null}
+                        </label>
+                        {isSize && hasSizeGuide && (
+                          <button
+                            type="button"
+                            onClick={() => setSizeGuideOpen(true)}
+                            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-black hover:text-neutral-600 underline underline-offset-4 transition cursor-pointer"
+                          >
+                            <Ruler className="h-4 w-4" />
+                            Size Guide
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Instant Size Pill Buttons */}
+                      {isSize && attr.options.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2.5">
+                          {attr.options.map((opt) => {
+                            const isSelected = size === opt;
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => {
+                                  setSize(opt);
+                                  setOptionError(false);
+                                }}
+                                className={`h-9 min-w-[44px] px-3.5 rounded border text-xs font-bold uppercase transition cursor-pointer ${
+                                  isSelected
+                                    ? "border-black bg-black text-white shadow-sm"
+                                    : "border-neutral-300 bg-white text-neutral-800 hover:border-black"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Dropdown Selector */}
+                      <div className="relative max-w-[340px]">
+                        <select
+                          value={size}
+                          onChange={(e) => {
+                            setSize(e.target.value);
+                            setOptionError(false);
+                          }}
+                          className={`w-full appearance-none rounded border bg-white px-3.5 py-2.5 pr-10 text-[14px] text-neutral-800 outline-none transition cursor-pointer ${
+                            optionError && !size
+                              ? "border-red-500 ring-1 ring-red-500"
+                              : "border-neutral-300 focus:border-black"
+                          }`}
+                        >
+                          <option value="">Choose an option</option>
+                          {attr.options.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                      </div>
+
+                      {optionError && !size && (
+                        <p className="mt-1 text-xs text-red-500 font-medium">Please choose a size</p>
+                      )}
+                      {size && (
+                        <button
+                          type="button"
+                          onClick={() => setSize("")}
+                          className="mt-1.5 block text-xs text-neutral-500 hover:text-black underline underline-offset-2 transition"
+                        >
+                          Clear
+                        </button>
+                      )}
                     </div>
-                    {optionError && !size && (
-                      <p className="mt-1 text-xs text-red-500 font-medium">Please choose an option</p>
-                    )}
-                    {size && (
-                      <button
-                        type="button"
-                        onClick={() => setSize("")}
-                        className="mt-1.5 block text-xs text-neutral-500 hover:text-black underline underline-offset-2 transition"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -553,7 +662,7 @@ export function ProductDetailsView({
         <div className="mt-14 border-t border-neutral-200">
           {/* Tab bar */}
           <div className="flex gap-8 border-b border-neutral-200 overflow-x-auto">
-            {TABS.map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -618,6 +727,19 @@ export function ProductDetailsView({
                     ) : null}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* SIZE GUIDE (Exact Match to Image 2) */}
+            {activeTab === "Size Guide" && (
+              <div className="max-w-4xl">
+                <ReadyToWearSizeGuideContent
+                  selectedSize={size}
+                  onSelectSize={(newSize) => {
+                    setSize(newSize);
+                    setOptionError(false);
+                  }}
+                />
               </div>
             )}
           </div>
@@ -805,6 +927,17 @@ export function ProductDetailsView({
           )}
         </div>
       )}
+
+      {/* ── Ready-to-Wear Size Guide Modal ── */}
+      <ReadyToWearSizeGuideModal
+        isOpen={sizeGuideOpen}
+        onClose={() => setSizeGuideOpen(false)}
+        selectedSize={size}
+        onSelectSize={(newSize) => {
+          setSize(newSize);
+          setOptionError(false);
+        }}
+      />
     </div>
   );
 }

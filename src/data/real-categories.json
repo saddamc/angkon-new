@@ -1806,31 +1806,5 @@
       "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652408/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/1.jpg",
       "alt": "Tawakkal"
     }
-  },
-  {
-    "id": 991,
-    "name": "3-Piece Suit",
-    "slug": "3-piece-suit",
-    "parent": 163,
-    "description": "Ready to Wear 3-Piece Suits",
-    "count": 7,
-    "image": {
-      "id": 300002,
-      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652415/ANGKON/WOMEN/ETHNIC/tawakkal-wada-deep-emerald-green/1.jpg",
-      "alt": "3-Piece Suit"
-    }
-  },
-  {
-    "id": 992,
-    "name": "Wada Collection",
-    "slug": "wada-collection",
-    "parent": 990,
-    "description": "Tawakkal Wada Collection",
-    "count": 7,
-    "image": {
-      "id": 300003,
-      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652420/ANGKON/WOMEN/ETHNIC/tawakkal-wada-dark-coffee-brown/1.jpg",
-      "alt": "Wada Collection"
-    }
   }
 ]

@@ -3,8 +3,9 @@ import { CategoryCard } from "@/components/categories/CategoryCard";
 
 const PREFERRED_ORDER: Record<string, string[]> = {
   women: [
-    "co-rd-set",
     "ethnic",
+    "tawakkal",
+    "co-rd-set",
     "polos-women",
     "skirts",
     "womens-shirt",

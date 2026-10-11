@@ -1,80 +1,106 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { ShieldCheck, Truck, RefreshCw, FileText } from "lucide-react";
+import { MessageCircle, MapPin, Truck } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Store Policies — ANGKON",
-  description: "Comprehensive guide to ANGKON store policies: shipping, exchange, privacy, and terms of service.",
+  title: "Policies — ANGKON",
+  description: "Official store policies for ANGKON: Delivery timing, refund and exchange policy, and privacy policy.",
 };
 
 export default function PoliciesPage() {
-  const policies = [
+  const policyLinks = [
     {
-      title: "Delivery & Shipping Policy",
-      description: "Nationwide COD in all 64 districts. Inside Dhaka Tk70 (2-3 days), Outside Dhaka Tk130 (3-5 days). Free over Tk3,000.",
-      href: "/shipping",
-      icon: Truck,
+      title: "Delivery Timing",
+      href: "/delivery-time",
+      image: "/policies/delivery-timing-btn.png",
+      alt: "Delivery Timing for COD Orders",
     },
     {
-      title: "7-Day Exchange & Returns",
-      description: "Hassle-free size exchanges within 7 calendar days. Doorstep pickup or in-person showroom exchange.",
-      href: "/returns",
-      icon: RefreshCw,
-    },
-    {
-      title: "Terms & Conditions",
-      description: "Transparent conditions governing purchases, payments, warranties, and platform usage.",
-      href: "/terms",
-      icon: FileText,
+      title: "Refund and Exchange Policy",
+      href: "/refund-and-exchange-policies",
+      image: "/policies/refund-policy-btn.png",
+      alt: "Refund and Exchange Policy (For local orders)",
     },
     {
       title: "Privacy Policy",
-      description: "Our strict protocol on protecting your delivery information and contact privacy.",
-      href: "/privacy",
-      icon: ShieldCheck,
+      href: "/privacy-policy",
+      image: "/policies/privacy-policy-btn.png",
+      alt: "Privacy Policy",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-12 px-4 text-center">
-        <div className="container mx-auto max-w-[800px]">
-          <h1 className="font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-[#E1B76F]">
-            Store Policies
+    <div className="min-h-screen bg-white text-black">
+      {/* ── Breadcrumb & Page Header ── */}
+      <div className="w-full border-b border-neutral-100 bg-[#fafafa] py-6 sm:py-8 px-4">
+        <div className="max-w-[1100px] mx-auto">
+          <nav className="text-xs text-neutral-500 mb-2">
+            <Link href="/" className="hover:text-black transition">Home</Link>
+            <span className="mx-2 text-neutral-300">/</span>
+            <span className="text-black font-semibold">Policies</span>
+          </nav>
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight text-black">
+            Policies
           </h1>
-          <p className="mt-2 text-[14px] text-[#cbb18a]">
-            Everything you need to know about shopping with ANGKON — House of Modern Heritage.
+          <p className="mt-1.5 text-xs sm:text-sm text-neutral-600">
+            Please choose a policy below to read all guidelines and conditions.
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto max-w-[1000px] px-4 py-12 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {policies.map((p) => {
-            const Icon = p.icon;
-            return (
-              <Link
-                key={p.title}
-                href={p.href}
-                className="group rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 shadow-lg hover:border-[#E1B76F] hover:bg-[#4a0705] transition"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#400604] border border-[#5c0f0d] text-[#E1B76F] group-hover:bg-[#E1B76F] group-hover:text-[#400604] transition">
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <h2 className="font-heading text-xl font-bold uppercase text-[#E1B76F] group-hover:text-white transition">
-                    {p.title}
-                  </h2>
-                </div>
-                <p className="text-[14px] text-[#cbb18a] leading-relaxed mb-4">
-                  {p.description}
-                </p>
-                <span className="text-[13px] font-bold text-[#E1B76F] group-hover:text-white underline underline-offset-4">
-                  Read policy details &rarr;
-                </span>
-              </Link>
-            );
-          })}
+      {/* ── 3 Policy Banner Option Buttons ── */}
+      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4 sm:space-y-6">
+        {policyLinks.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group relative block w-full overflow-hidden rounded-xl sm:rounded-2xl border border-neutral-200/90 shadow-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.01] hover:border-black/30"
+          >
+            <div className="relative w-full aspect-[1920/250] bg-[#ffd800] overflow-hidden">
+              <Image
+                src={item.image}
+                alt={item.alt}
+                fill
+                priority
+                sizes="(max-width: 1100px) 100vw, 1100px"
+                className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
+              />
+            </div>
+          </Link>
+        ))}
+
+        {/* ── Helpful Support Strip ── */}
+        <div className="mt-12 pt-8 border-t border-neutral-200 grid grid-cols-1 md:grid-cols-3 gap-4 text-center sm:text-left">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ffd800] text-black">
+              <Truck className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wide text-black">All 64 Districts</h3>
+              <p className="text-[11px] text-neutral-600">Doorstep Cash on Delivery nationwide</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ffd800] text-black">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wide text-black">WhatsApp Helpdesk</h3>
+              <p className="text-[11px] text-neutral-600">+880 1338-668899 (Daily 10am - 10pm)</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#ffd800] text-black">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wide text-black">Flagship Showroom</h3>
+              <p className="text-[11px] text-neutral-600">Niketan, Gulshan, Dhaka</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

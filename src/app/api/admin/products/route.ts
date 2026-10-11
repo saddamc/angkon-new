@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
+import { invalidateProductsCache } from "@/lib/db/products";
 import REAL_PRODUCTS from "@/data/real-products.json";
 
 // GET /api/admin/products — list all products from MongoDB Atlas
@@ -92,6 +93,7 @@ export async function POST(request: NextRequest) {
       stock_status: body.stock_status || "instock",
     });
 
+    invalidateProductsCache();
     return NextResponse.json(newProduct, { status: 201 });
   } catch (err) {
     console.error("Create product failed:", err);

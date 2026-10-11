@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
+import { invalidateProductsCache } from "@/lib/db/products";
 
 // GET /api/admin/products/[id] — single product by numeric ID or slug from MongoDB
 export async function GET(
@@ -58,6 +59,7 @@ export async function PUT(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    invalidateProductsCache();
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
     console.error("Update product failed:", error);
@@ -81,6 +83,8 @@ export async function DELETE(
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
+
+    invalidateProductsCache();
 
     // Clean up Cloudinary images if present
     if (product.images && Array.isArray(product.images)) {

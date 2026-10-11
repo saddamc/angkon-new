@@ -13,11 +13,13 @@ import {
   Minimize,
   Ruler,
   Search,
+  Truck,
   X,
 } from "lucide-react";
 import {
   ReadyToWearSizeGuideModal,
   ReadyToWearSizeGuideContent,
+  ReadyToWearSizeGuideMiniTable,
 } from "@/components/product/ready-to-wear-size-guide-modal";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -457,16 +459,16 @@ export function ProductDetailsView({
             </nav>
 
             {/* Product Title */}
-            <h1 className="text-[26px] sm:text-[30px] lg:text-[32px] font-light text-[#333333] leading-[1.25] mb-2 tracking-normal">
+            <h1 className="text-2xl sm:text-[28px] lg:text-[30px] font-normal text-neutral-900 leading-snug mb-2 tracking-tight">
               {product.name}
             </h1>
 
             {/* Price */}
-            <div className="text-[22px] sm:text-[24px] font-bold text-[#111111] mb-2 flex items-baseline gap-2.5">
+            <div className="text-2xl sm:text-[26px] font-bold text-neutral-900 mb-3 flex items-baseline gap-2.5">
               <span>Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               {pricing.hasSale && (
                 <>
-                  <span className="text-[16px] text-[#888888] font-normal line-through">
+                  <span className="text-[16px] text-neutral-400 font-normal line-through">
                     Tk{pricing.regular.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                   <span className="text-[12px] font-bold text-red-600">
@@ -476,37 +478,60 @@ export function ProductDetailsView({
               )}
             </div>
 
-            {/* Shipping Delivery Time Text */}
-            <p className="text-[14px] text-[#4e4e4e] leading-relaxed mb-3">
-              Order now and get it in 1-3 Days inside BD and 5-7 Days Internationally
-            </p>
+            {/* Shipping Delivery Reassurance Pill */}
+            <div className="inline-flex items-center gap-2 rounded-lg bg-neutral-50 px-3.5 py-1.5 text-xs text-neutral-700 mb-4 border border-neutral-200/80 max-w-fit shadow-xs">
+              <Truck className="h-4 w-4 text-neutral-900 shrink-0" />
+              <span>
+                Order now & get it in <strong className="text-neutral-900 font-bold">1–3 Days</strong> inside BD • <strong className="text-neutral-900 font-bold">5–7 Days</strong> Intl.
+              </span>
+            </div>
 
-            {/* Short Description (Measurements & Key Info) */}
+            {/* Short Description */}
             {product.short_description ? (
-              <div className="text-[14px] leading-relaxed text-[#4e4e4e] mb-5">
+              <div className="text-[14px] leading-relaxed text-neutral-600 mb-4">
                 <RichText html={product.short_description} />
               </div>
             ) : product.description ? (
-              <div className="text-[14px] leading-relaxed text-[#4e4e4e] mb-5">
+              <div className="text-[14px] leading-relaxed text-neutral-600 mb-4">
                 <RichText html={product.description} />
               </div>
             ) : null}
 
-            {/* Product Specifications Summary Card (Read-only, Clean) */}
+            {/* Ready-to-Wear Size Guide Mini Table (Clean, structured, responsive) */}
+            {hasSizeGuide && (
+              <ReadyToWearSizeGuideMiniTable
+                selectedSize={size}
+                onOpenModal={() => setSizeGuideOpen(true)}
+                onSelectSize={(newSize) => {
+                  setSize(newSize);
+                  setOptionError(false);
+                }}
+              />
+            )}
+
+            {/* Product Specifications Summary Card (Spacious 2-column, no cut-off ellipses) */}
             {specAttributes.length > 0 && (
-              <div className="mb-5 rounded-lg border border-neutral-200/80 bg-neutral-50/70 p-3.5">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="mb-5 rounded-xl border border-neutral-200 bg-[#fafafa] p-4">
+                <div className="flex items-center justify-between mb-3 pb-2 border-b border-neutral-200/70">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                    Product Details & Specifications
+                  </span>
+                  <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                    ANGKON
+                  </span>
+                </div>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs">
                   {specAttributes.map((attr) => (
-                    <div key={attr.name} className="flex flex-col">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                    <div key={attr.name} className="flex flex-col pb-2 border-b border-neutral-100 last:border-b-0 sm:last:border-b-0">
+                      <dt className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                         {attr.name}
-                      </span>
-                      <span className="font-semibold text-neutral-800 truncate" title={attr.options.join(", ")}>
+                      </dt>
+                      <dd className="mt-0.5 text-xs font-semibold text-neutral-900 leading-normal">
                         {attr.options.join(", ")}
-                      </span>
+                      </dd>
                     </div>
                   ))}
-                </div>
+                </dl>
               </div>
             )}
 

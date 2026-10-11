@@ -368,3 +368,90 @@ export function ReadyToWearSizeGuideModal({
     </div>
   );
 }
+
+export const SIZE_CHART_ROWS = [
+  { size: "S", shoulder: "14", chest: "19", waist: "18", hip: "21", daman: "24", length: "37", trouser: "38" },
+  { size: "M", shoulder: "14.5", chest: "21", waist: "20", hip: "23", daman: "26", length: "37/38", trouser: "38/39" },
+  { size: "L", shoulder: "15", chest: "23", waist: "22", hip: "24.5", daman: "27.5", length: "38/39", trouser: "39" },
+  { size: "XL", shoulder: "15.5", chest: "25", waist: "24", hip: "26", daman: "29", length: "40", trouser: "40" },
+];
+
+export function ReadyToWearSizeGuideMiniTable({
+  selectedSize,
+  onOpenModal,
+  onSelectSize,
+}: {
+  selectedSize?: string;
+  onOpenModal?: () => void;
+  onSelectSize?: (size: string) => void;
+}) {
+  return (
+    <div className="mb-5 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xs">
+      {/* Header bar */}
+      <div className="flex items-center justify-between px-3.5 py-2.5 bg-neutral-50 border-b border-neutral-200">
+        <div className="flex items-center gap-1.5">
+          <Ruler className="h-4 w-4 text-neutral-800" />
+          <span className="text-xs font-bold text-neutral-900 uppercase tracking-wide">
+            Ready-to-Wear Size Guide (in inches)
+          </span>
+        </div>
+        {onOpenModal && (
+          <button
+            type="button"
+            onClick={onOpenModal}
+            className="text-xs font-semibold text-black hover:text-neutral-600 underline underline-offset-2 transition cursor-pointer"
+          >
+            Full Guide ↗
+          </button>
+        )}
+      </div>
+
+      {/* Responsive table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs text-center border-collapse min-w-[420px]">
+          <thead>
+            <tr className="bg-neutral-100/70 text-neutral-600 font-semibold border-b border-neutral-200">
+              <th className="py-2 px-3 text-left font-bold text-neutral-900 w-16">Size</th>
+              <th className="py-2 px-2">Shoulder</th>
+              <th className="py-2 px-2">Chest</th>
+              <th className="py-2 px-2">Waist</th>
+              <th className="py-2 px-2">Hip</th>
+              <th className="py-2 px-2">Daman</th>
+              <th className="py-2 px-2">Length</th>
+              <th className="py-2 px-2">Trouser</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-100 font-medium text-neutral-700">
+            {SIZE_CHART_ROWS.map((row) => {
+              const isSelected = selectedSize?.toUpperCase() === row.size;
+              return (
+                <tr
+                  key={row.size}
+                  onClick={() => onSelectSize && onSelectSize(row.size)}
+                  className={`transition-colors cursor-pointer hover:bg-neutral-50/80 ${
+                    isSelected ? "bg-[#ffd800]/15 font-bold text-black" : ""
+                  }`}
+                  title={`Click to select size ${row.size}`}
+                >
+                  <td className={`py-2 px-3 text-left font-bold text-neutral-900 border-r border-neutral-100 ${isSelected ? "bg-[#ffd800]/25" : "bg-neutral-50/50"}`}>
+                    <div className="flex items-center gap-1.5">
+                      <span>{row.size}</span>
+                      {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-black inline-block" />}
+                    </div>
+                  </td>
+                  <td className="py-2 px-2">{row.shoulder}″</td>
+                  <td className="py-2 px-2">{row.chest}″</td>
+                  <td className="py-2 px-2">{row.waist}″</td>
+                  <td className="py-2 px-2">{row.hip}″</td>
+                  <td className="py-2 px-2">{row.daman}″</td>
+                  <td className="py-2 px-2">{row.length}″</td>
+                  <td className="py-2 px-2">{row.trouser}″</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

@@ -1,50 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { verifyAuthToken, AUTH_COOKIE_NAME } from "@/server/auth";
-import { getUserOrders } from "@/server/orders";
+import { getSessionUserId } from "@/server/auth";
+import { getAccountOrders, publicUser } from "@/server/account";
+
+const NO_STORE = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-    if (!token) {
-      return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 401 });
-    }
-
-    const payload = verifyAuthToken(token);
-    if (!payload?.sub) {
-      return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 401 });
+    const userId = getSessionUserId(request);
+    if (!userId) {
+      return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 401, headers: NO_STORE });
     }
 
     await connectToDatabase();
-
-    const userDoc = await User.findById(payload.sub).select("-password").lean();
-    if (!userDoc) {
-      return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 401 });
+    const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 401, headers: NO_STORE });
     }
 
-    // Retrieve customer's real orders from MongoDB
-    const orders = await getUserOrders({ email: userDoc.email, phone: userDoc.phone });
+    const orders = await getAccountOrders(user);
 
     return NextResponse.json(
-      {
-        authenticated: true,
-        user: {
-          id: String(userDoc._id),
-          name: userDoc.name,
-          email: userDoc.email,
-          phone: userDoc.phone,
-          role: userDoc.role,
-          addresses: userDoc.addresses || [],
-        },
-        orders,
-      },
-      {
-        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-      }
+      { authenticated: true, user: publicUser(user), orders },
+      { headers: NO_STORE },
     );
   } catch (error) {
     console.error("Auth check error:", error);
-    return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 500 });
+    return NextResponse.json({ authenticated: false, user: null, orders: [] }, { status: 500, headers: NO_STORE });
   }
 }

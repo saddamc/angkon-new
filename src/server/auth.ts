@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import type { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User, IUser } from "@/models/User";
 
@@ -125,4 +126,72 @@ export async function getCurrentUser(): Promise<IUser | null> {
   } catch {
     return null;
   }
+}
+
+// ── 4. Session cookie helpers ────────────────────────────────────────────────
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
+
+export function setSessionCookie(
+  response: NextResponse,
+  user: { id: string; email: string; name: string; role: "customer" | "admin" },
+): void {
+  response.cookies.set(AUTH_COOKIE_NAME, createAuthToken(user), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    path: "/",
+  });
+}
+
+/** User id from the session cookie on an API request, or null. */
+export function getSessionUserId(request: NextRequest): string | null {
+  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) return null;
+  return verifyAuthToken(token)?.sub ?? null;
+}
+
+// ── 5. Passwords ─────────────────────────────────────────────────────────────
+export const PASSWORD_MIN_LENGTH = 8;
+
+/** Returns an error message, or null when the password is acceptable. */
+export function validatePassword(password: unknown): string | null {
+  if (typeof password !== "string" || password.length < PASSWORD_MIN_LENGTH) {
+    return `Password must be at least ${PASSWORD_MIN_LENGTH} characters long.`;
+  }
+  if (password.length > 128) return "Password is too long.";
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+    return "Password must contain at least one letter and one number.";
+  }
+  return null;
+}
+
+// ── 6. One-time email tokens (verification / password reset) ────────────────
+// Only the sha256 hash is stored, so a database leak can't be used to verify
+// or reset accounts. Tokens are single-use and expire.
+export const VERIFY_TOKEN_TTL_MS = 1000 * 60 * 60 * 48; // 48 hours
+export const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour
+export const EMAIL_RESEND_COOLDOWN_MS = 1000 * 60; // 1 minute between emails
+
+export function hashToken(raw: string): string {
+  return crypto.createHash("sha256").update(raw).digest("hex");
+}
+
+export function generateOneTimeToken(): { raw: string; hash: string } {
+  const raw = crypto.randomBytes(32).toString("base64url");
+  return { raw, hash: hashToken(raw) };
+}
+
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function normalizeEmail(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+/** Public base URL for links in emails. Prefer an explicit env var in production. */
+export function getSiteUrl(request?: NextRequest): string {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  if (request) return request.nextUrl.origin;
+  return "https://angkon.net";
 }

@@ -1,93 +1,64 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { hashPassword, createAuthToken, AUTH_COOKIE_NAME } from "@/server/auth";
+import {
+  EMAIL_REGEX,
+  hashPassword,
+  normalizeEmail,
+  setSessionCookie,
+  validatePassword,
+} from "@/server/auth";
+import { issueVerificationEmail, publicUser } from "@/server/account";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, password, phone } = body;
+    const email = normalizeEmail(body.email);
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const phone = typeof body.phone === "string" ? body.phone.trim() : "";
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required." },
-        { status: 400 }
-      );
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters long." },
-        { status: 400 }
-      );
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(normalizedEmail)) {
-      return NextResponse.json(
-        { error: "Please enter a valid email address." },
-        { status: 400 }
-      );
+    const passwordError = validatePassword(body.password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     await connectToDatabase();
 
-    const existingUser = await User.findOne({ email: normalizedEmail }).lean();
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "An account with this email address already exists. Please log in." },
-        { status: 409 }
-      );
+    const existing = await User.findOne({ email });
+    if (existing) {
+      // An account created automatically at checkout has no password yet —
+      // point the customer to the email link instead of "already exists".
+      const message = existing.password
+        ? "An account with this email already exists. Please sign in."
+        : "We already created an account for this email with your order. Check your inbox for the verification link, or use “Forgot password” to set a password.";
+      return NextResponse.json({ error: message }, { status: 409 });
     }
 
-    const hashedPassword = hashPassword(password);
-    const displayName = (name || normalizedEmail.split("@")[0]).trim();
-
-    const newUser = await User.create({
-      name: displayName,
-      email: normalizedEmail,
-      password: hashedPassword,
-      phone: (phone || "").trim(),
+    const user = await User.create({
+      name: name || email.split("@")[0],
+      email,
+      password: hashPassword(body.password),
+      phone,
       role: "customer",
+      emailVerified: false,
+      source: "register",
     });
 
-    const token = createAuthToken({
-      id: String(newUser._id),
-      email: newUser.email,
-      name: newUser.name,
-      role: newUser.role,
-    });
-
-    const response = NextResponse.json(
-      {
-        ok: true,
-        user: {
-          id: String(newUser._id),
-          name: newUser.name,
-          email: newUser.email,
-          phone: newUser.phone,
-          role: newUser.role,
-        },
-      },
-      { status: 201 }
+    // Send the verification email after responding (kept alive on Vercel by after()).
+    after(() =>
+      issueVerificationEmail(user, request, "register").catch((err) =>
+        console.warn("Verification email failed:", err),
+      ),
     );
 
-    // Set secure HttpOnly cookie
-    response.cookies.set(AUTH_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
-
+    const response = NextResponse.json({ ok: true, user: publicUser(user) }, { status: 201 });
+    setSessionCookie(response, { id: String(user._id), email: user.email, name: user.name, role: user.role });
     return response;
   } catch (error) {
     console.error("User registration error:", error);
-    return NextResponse.json(
-      { error: "Failed to register account. Please try again." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to register account. Please try again." }, { status: 500 });
   }
 }

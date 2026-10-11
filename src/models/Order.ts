@@ -22,6 +22,8 @@ export interface IOrderCustomer {
 
 export interface IOrder extends Document {
   orderNumber: string;
+  /** Customer account that owns this order (set at checkout) */
+  userId?: mongoose.Types.ObjectId | null;
   customer: IOrderCustomer;
   items: IOrderItem[];
   subtotal: number;
@@ -64,6 +66,7 @@ const OrderCustomerSchema = new Schema<IOrderCustomer>(
 const OrderSchema = new Schema<IOrder>(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
     customer: { type: OrderCustomerSchema, required: true },
     items: { type: [OrderItemSchema], required: true },
     subtotal: { type: Number, required: true, default: 0 },

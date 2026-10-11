@@ -75,12 +75,12 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
         {/* Left: Images */}
         <div className="w-full md:w-1/2 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#E1B76F]/20 bg-[#340402]">
-          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#2d0302] border border-[#E1B76F]/30">
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#2d0302] border border-[#E1B76F]/30">
             <Image
               src={primaryImage}
               alt={product.name}
               fill
-              className="object-cover"
+              className="object-cover object-top"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
             {discountPct > 0 && (
@@ -101,7 +101,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                     selectedImage === i ? "border-[#E1B76F] ring-1 ring-[#E1B76F]" : "border-[#E1B76F]/20 opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={img.src} alt="" fill sizes="56px" className="object-cover" />
+                  <Image src={img.src} alt="" fill sizes="56px" className="object-cover object-top" />
                 </button>
               ))}
             </div>

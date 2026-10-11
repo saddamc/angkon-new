@@ -35,6 +35,11 @@ interface CheckoutFormValues {
 export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [accountInfo, setAccountInfo] = useState<{
+    status: "signed_in" | "created" | "existing" | "none";
+    email: string;
+    emailVerified: boolean;
+  } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<number | null>(null);
   const [shippingFee, setShippingFee] = useState<number>(60);
@@ -124,6 +129,8 @@ export default function CheckoutPage() {
             size: item.size,
             quantity: item.quantity,
             price: item.price,
+            image: item.image,
+            slug: item.slug,
           })),
           productIds: items.map((item) => item.productId),
         }),
@@ -137,6 +144,7 @@ export default function CheckoutPage() {
       }
 
       setOrderId(result.orderId);
+      if (result.account) setAccountInfo(result.account);
       if (typeof result.shippingFee === "number") setConfirmedShippingFee(result.shippingFee);
       setSubmitted(true);
       clearCart();
@@ -197,6 +205,38 @@ export default function CheckoutPage() {
               Our support team will contact you shortly to verify delivery details.
             </p>
           </div>
+
+          {/* Account status for this order */}
+          {accountInfo && accountInfo.status !== "none" && (
+            <div className="mt-4 w-full rounded-xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 text-left text-sm text-[#f0d29d]">
+              {accountInfo.status === "created" && (
+                <>
+                  <p className="font-bold text-[#E1B76F]">Your ANGKON account is ready, and you&apos;re signed in.</p>
+                  <p className="mt-1.5">
+                    We sent a verification link to <strong className="text-[#E1B76F]">{accountInfo.email}</strong>. Open it to
+                    confirm your email and set a password, so you can sign in on any device and see all your orders.
+                  </p>
+                </>
+              )}
+              {accountInfo.status === "existing" && (
+                <>
+                  <p className="font-bold text-[#E1B76F]">This order was added to your ANGKON account.</p>
+                  <p className="mt-1.5">
+                    Sign in with <strong className="text-[#E1B76F]">{accountInfo.email}</strong> to track it.
+                  </p>
+                </>
+              )}
+              {accountInfo.status === "signed_in" && (
+                <p className="font-bold text-[#E1B76F]">This order is saved in your account.</p>
+              )}
+              <Link
+                href="/my-account"
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#E1B76F] underline underline-offset-4 hover:text-white"
+              >
+                {accountInfo.status === "existing" ? "Sign in to my account" : "View my account"}
+              </Link>
+            </div>
+          )}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/products"
@@ -645,7 +685,7 @@ export default function CheckoutPage() {
                               src={item.image}
                               alt={item.name}
                               fill
-                              className="object-cover"
+                              className="object-cover object-top"
                               sizes="48px"
                             />
                           </div>

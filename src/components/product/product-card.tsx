@@ -71,8 +71,8 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* ── 1. Image Container (Square 1:1 matching live store exactly) ── */}
-        <div className="relative aspect-square w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 rounded-none shadow-sm">
+        {/* ── 1. Image Container (Portrait 3:4 matching luxury fashion photography) ── */}
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 rounded-none shadow-sm">
           {/* Top Badges (Sale % or Sold Out) */}
           {discountPct > 0 && (
             <div className="absolute left-2 top-2 z-10">
@@ -103,7 +103,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12.5vw"
               loading={eager ? "eager" : "lazy"}
               fetchPriority={eager ? "high" : "auto"}
-              className={`object-cover transition-opacity duration-300 ${
+              className={`object-cover object-top transition-opacity duration-300 ${
                 isHovered && product.images.length > 1 ? "opacity-0" : "opacity-100"
               }`}
             />
@@ -113,7 +113,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                 alt=""
                 fill
                 loading="lazy"
-                className={`object-cover transition-opacity duration-300 ${
+                className={`object-cover object-top transition-opacity duration-300 ${
                   isHovered ? "opacity-100" : "opacity-0"
                 }`}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 12.5vw"
@@ -127,15 +127,10 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           <div>
             {/* Product Title */}
             <Link href={`/products/${product.slug}`} className="block">
-              <h3 className="line-clamp-3 text-[12px] sm:text-[12.5px] font-normal leading-[1.3] text-[#E1B76F] transition-colors hover:text-white">
+              <h3 className="line-clamp-2 text-[12px] sm:text-[12.5px] font-normal leading-[1.3] text-[#E1B76F] transition-colors hover:text-white">
                 {decodeEntities(product.name)}
               </h3>
             </Link>
-
-            {/* Category Subtitle */}
-            <span className="block mt-0.5 mb-1 text-[10.5px] sm:text-[11px] text-[#E1B76F]/70 font-normal line-clamp-1">
-              {decodeEntities(product.categories?.[0]?.name || "Apparel")}
-            </span>
           </div>
 
           <div className="mt-1">

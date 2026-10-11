@@ -5,30 +5,8 @@ import { Order, IOrder } from "@/models/Order";
  * Server-only Orders Data Access Layer
  */
 
-export async function getUserOrders(identifier: { email?: string; phone?: string }): Promise<IOrder[]> {
-  try {
-    await connectToDatabase();
-    const orConditions: Array<Record<string, unknown>> = [];
-
-    if (identifier.email && identifier.email.trim()) {
-      orConditions.push({ "customer.email": identifier.email.trim().toLowerCase() });
-    }
-    if (identifier.phone && identifier.phone.trim()) {
-      orConditions.push({ "customer.phone": identifier.phone.trim() });
-    }
-
-    if (orConditions.length === 0) return [];
-
-    const orders = await Order.find({ $or: orConditions })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    return (orders as unknown as IOrder[]) || [];
-  } catch (error) {
-    console.error("Failed to fetch user orders:", error);
-    return [];
-  }
-}
+// Customer order history lives in src/server/account.ts (getAccountOrders):
+// it matches by account, and by email only once that email is verified.
 
 export async function getOrderByNumber(orderNumber: string): Promise<IOrder | null> {
   try {

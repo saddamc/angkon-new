@@ -46,11 +46,11 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
     .map(
       (item) => `
     <tr>
-      <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle;">
+      <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle; width: 64px;">
         ${
           item.image
-            ? `<img src="${item.image}" alt="${item.name}" width="54" height="64" style="border-radius: 6px; object-fit: cover; display: block; border: 1px solid #e8dfd6;" />`
-            : `<div style="width: 54px; height: 64px; background: #340402; border-radius: 6px; display: inline-block;"></div>`
+            ? `<img src="${item.image}" alt="${item.name}" width="54" height="72" style="width: 54px; height: 72px; max-width: 54px; max-height: 72px; border-radius: 4px; object-fit: cover; object-position: top; display: block; border: 1px solid #e8dfd6;" />`
+            : `<div style="width: 54px; height: 72px; background: #400604; border-radius: 4px; display: inline-block; border: 1px solid #e8dfd6;"></div>`
         }
       </td>
       <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle;">
@@ -202,25 +202,25 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
               <p style="margin: 0 0 10px; font-size: 13px; color: #666;">
                 Need help or have questions regarding your order?
               </p>
-              <a href="https://wa.me/8801888662366" target="_blank" style="display: inline-block; background-color: #400604; color: #E1B76F; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 22px; border-radius: 6px; letter-spacing: 0.5px;">
-                💬 Contact WhatsApp Support (+880 1888-662366)
+              <a href="https://wa.me/8801338668899" target="_blank" style="display: inline-block; background-color: #400604; color: #E1B76F; text-decoration: none; font-size: 13px; font-weight: 600; padding: 11px 24px; border-radius: 6px; letter-spacing: 0.5px; border: 1px solid #E1B76F;">
+                💬 Contact WhatsApp Support (+880 1338-668899)
               </a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #1A0302; padding: 24px 20px; text-align: center; color: #d8cec4;">
-              <p style="margin: 0 0 8px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #E1B76F;">
-                ANGKON LUXURY APPAREL
+            <td style="background-color: #400604; border-top: 2px solid #E1B76F; padding: 26px 20px; text-align: center; color: #f5eedb;">
+              <p style="margin: 0 0 8px; font-family: Georgia, serif; font-size: 16px; letter-spacing: 3px; text-transform: uppercase; color: #E1B76F; font-weight: 700;">
+                ANGKON
               </p>
-              <p style="margin: 0 0 12px; font-size: 11px; color: #a89f95;">
-                House 12, Road 4, Sector 3, Uttara, Dhaka-1230, Bangladesh
+              <p style="margin: 0 0 14px; font-size: 12px; color: #f5eedb; opacity: 0.9; line-height: 1.5;">
+                H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
               </p>
               <div style="font-size: 12px;">
-                <a href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr" style="color: #E1B76F; text-decoration: none; margin: 0 8px;">Facebook</a> •
-                <a href="https://www.instagram.com/angkon.officiall" style="color: #E1B76F; text-decoration: none; margin: 0 8px;">Instagram</a> •
-                <a href="https://www.tiktok.com/@angkon.official" style="color: #E1B76F; text-decoration: none; margin: 0 8px;">TikTok</a>
+                <a href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">Facebook</a> •
+                <a href="https://www.instagram.com/angkon.officiall" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">Instagram</a> •
+                <a href="https://www.tiktok.com/@angkon.official" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">TikTok</a>
               </div>
             </td>
           </tr>
@@ -239,10 +239,23 @@ export function getAdminOrderEmailHtml(order: EmailOrderData): string {
     .map(
       (item) => `
     <tr>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: 600;">${item.name}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.size || "Standard"}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center; font-weight: 700;">${item.quantity}</td>
-      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${formatPrice(item.price * item.quantity)}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; vertical-align: middle;">
+        <table role="presentation" cellspacing="0" cellpadding="0" style="border: 0;">
+          <tr>
+            ${
+              item.image
+                ? `<td style="padding-right: 10px; vertical-align: middle;"><img src="${item.image}" alt="${item.name}" width="42" height="56" style="width: 42px; height: 56px; max-width: 42px; max-height: 56px; border-radius: 4px; object-fit: cover; object-position: top; display: block; border: 1px solid #ddd;" /></td>`
+                : ""
+            }
+            <td style="vertical-align: middle;">
+              <span style="font-weight: 600; font-size: 13px; color: #222;">${item.name}</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center; vertical-align: middle;">${item.size || "Standard"}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center; font-weight: 700; vertical-align: middle;">${item.quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: middle;">${formatPrice(item.price * item.quantity)}</td>
     </tr>
   `
     )

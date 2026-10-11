@@ -72,7 +72,7 @@ const BANNER_PAIRS = [
       alt: "Women Tops & Kimonos",
     },
   ],
-  // Pair 5: Accessories & Gift Card / Sale
+  // Pair 5: Accessories & Ethnic Wear
   [
     {
       title: "Accessories",
@@ -81,10 +81,10 @@ const BANNER_PAIRS = [
       alt: "Accessories",
     },
     {
-      title: "Gift Card & Sale",
-      href: "/sale",
-      image: "/banners/gift-card.png",
-      alt: "Gift Card & On Sale",
+      title: "Ethnic Wear",
+      href: "/product-category/women/ethnic",
+      image: "/banners/ethnic-wear.png",
+      alt: "Ethnic Wear — Luxury Collection",
     },
   ],
 ];

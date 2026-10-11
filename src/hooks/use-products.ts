@@ -28,6 +28,7 @@ export const useProducts = ({ search, category }: UseProductsOptions = {}) => {
   }, [search, category]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount
     void loadProducts();
   }, [loadProducts]);
 

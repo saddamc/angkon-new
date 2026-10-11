@@ -23,7 +23,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <section className="container py-10">
       <h1 className="font-heading text-4xl sm:text-5xl font-black uppercase text-[#E1B76F]">Search Results</h1>
-      <p className="mt-2 text-sm text-[#cbb18a]">
+      <p className="mt-2 text-sm text-[#f0d29d]">
         {q ? `Showing results for "${q}"` : "Showing all products"}
       </p>
 
@@ -31,7 +31,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {result.length ? (
           <ProductGrid products={result} />
         ) : (
-          <div className="rounded-2xl border border-[#5c0f0d] bg-[#4a0705] p-8 text-center text-[#cbb18a]">No matching products found.</div>
+          <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-8 text-center text-[#f0d29d]">No matching products found.</div>
         )}
       </div>
     </section>

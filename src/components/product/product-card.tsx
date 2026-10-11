@@ -67,23 +67,23 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
   return (
     <>
       <article 
-        className="group relative flex flex-col justify-between bg-white rounded-none transition-all duration-200"
+        className="group relative flex flex-col justify-between bg-transparent rounded-none transition-all duration-200"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* ── 1. Image Container (Square 1:1 matching live store exactly) ── */}
-        <div className="relative aspect-square w-full overflow-hidden bg-transparent rounded-none">
+        <div className="relative aspect-square w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 rounded-none shadow-sm">
           {/* Top Badges (Sale % or Sold Out) */}
           {discountPct > 0 && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-black text-[9px] font-black uppercase text-[#ffd800] shadow">
+              <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#400604] text-[9px] font-black uppercase text-[#E1B76F] border border-[#E1B76F]/40 shadow">
                 Sale!
               </span>
             </div>
           )}
           {!inStock && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="rounded bg-black/80 px-2 py-0.5 text-[9px] font-bold uppercase text-white shadow">
+              <span className="rounded bg-[#400604]/90 border border-[#E1B76F]/30 px-2 py-0.5 text-[9px] font-bold uppercase text-[#E1B76F] shadow">
                 Sold Out
               </span>
             </div>
@@ -122,44 +122,44 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           </Link>
         </div>
 
-        {/* ── 2. Product Information (Exact Gorur Ghash Layout) ── */}
-        <div className="flex flex-1 flex-col justify-between pt-2.5 pb-1 text-left bg-white">
+        {/* ── 2. Product Information ── */}
+        <div className="flex flex-1 flex-col justify-between pt-2.5 pb-1 text-left bg-transparent">
           <div>
             {/* Product Title */}
             <Link href={`/products/${product.slug}`} className="block">
-              <h3 className="line-clamp-3 text-[12px] sm:text-[12.5px] font-normal leading-[1.3] text-[#111111] transition-colors hover:text-black hover:opacity-80">
+              <h3 className="line-clamp-3 text-[12px] sm:text-[12.5px] font-normal leading-[1.3] text-[#E1B76F] transition-colors hover:text-white">
                 {decodeEntities(product.name)}
               </h3>
             </Link>
 
             {/* Category Subtitle */}
-            <span className="block mt-0.5 mb-1 text-[10.5px] sm:text-[11px] text-[#7a7a7a] font-normal line-clamp-1">
+            <span className="block mt-0.5 mb-1 text-[10.5px] sm:text-[11px] text-[#E1B76F]/70 font-normal line-clamp-1">
               {decodeEntities(product.categories?.[0]?.name || "Apparel")}
             </span>
           </div>
 
           <div className="mt-1">
-            {/* Price (Tk in Gorur Ghash format: Tk1,500.00) */}
+            {/* Price */}
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[12.5px] sm:text-[13px] font-bold text-black">
+              <span className="text-[12.5px] sm:text-[13px] font-bold text-[#E1B76F]">
                 Tk{pricing.current.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               {pricing.hasSale && (
-                <span className="text-[11px] text-[#888888] line-through font-normal">
+                <span className="text-[11px] text-[#E1B76F]/60 line-through font-normal">
                   Tk{pricing.regular.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               )}
             </div>
 
-            {/* Action Button: Bright Yellow Rounded Pill Button ("Select options") */}
+            {/* Action Button: Luxury Maroon & Gold Pill Button */}
             <button
               type="button"
               disabled={!inStock}
               onClick={handleAddToCart}
               className={`inline-flex w-fit items-center justify-center rounded-full px-3.5 py-1 text-[11px] font-bold transition-colors duration-200 active:scale-95 ${
                 added
-                  ? "bg-black text-[#ffd800]"
-                  : "bg-[#ffd800] text-black hover:bg-black hover:text-white"
+                  ? "bg-[#E1B76F] text-[#400604]"
+                  : "bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F] hover:bg-[#520805] hover:border-[#E1B76F]"
               } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {added ? (

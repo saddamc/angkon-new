@@ -11,9 +11,12 @@ export interface WooCategory {
   slug: string;
   count?: number;
   parent?: number;
+  menu_order?: number;
   description?: string;
   image?: { id?: number; src: string; alt?: string } | null;
+  meta_data?: Array<{ key: string; value?: unknown }>;
 }
+
 
 export interface WooAttribute {
   id: number;
@@ -56,7 +59,7 @@ export interface WooProduct {
   stock_quantity?: number | null;
   weight?: string;
   /** Custom metadata array for advanced options like delivery charges */
-  meta_data?: { id?: number; key: string; value: any }[];
+  meta_data?: { id?: number; key: string; value: string }[];
 }
 
 export interface CartItem {

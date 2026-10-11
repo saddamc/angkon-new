@@ -1,22 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import { Heart, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
 
 export default function WishlistPage() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const { items, removeItem, clearWishlist } = useWishlistStore();
   const addItemToCart = useCartStore((s) => s.addItem);
   const [addedIds, setAddedIds] = useState<number[]>([]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     return (
@@ -54,13 +52,13 @@ export default function WishlistPage() {
       <div className="container mx-auto max-w-[1200px] px-4 lg:px-8">
         
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between flex-wrap gap-4 border-b border-[#5c0f0d] pb-6">
+        <div className="mb-8 flex items-center justify-between flex-wrap gap-4 border-b border-[#E1B76F]/20 pb-6">
           <div>
             <h1 className="text-2xl font-black font-heading uppercase text-[#E1B76F] sm:text-3xl flex items-center gap-3">
               <Heart className="h-7 w-7 text-[#E1B76F] fill-[#E1B76F]" />
               My Wishlist
             </h1>
-            <p className="mt-1 text-sm text-[#cbb18a]">
+            <p className="mt-1 text-sm text-[#f0d29d]">
               {items.length === 0
                 ? "Your wishlist is currently empty."
                 : `You have ${items.length} item${items.length > 1 ? "s" : ""} saved.`}
@@ -70,7 +68,7 @@ export default function WishlistPage() {
           {items.length > 0 && (
             <button
               onClick={clearWishlist}
-              className="text-xs font-semibold text-[#cbb18a] hover:text-[#E1B76F] transition underline underline-offset-4"
+              className="text-xs font-semibold text-[#E1B76F]/70 hover:text-[#E1B76F] transition underline underline-offset-4"
             >
               Clear Wishlist
             </button>
@@ -79,17 +77,17 @@ export default function WishlistPage() {
 
         {/* Empty state */}
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-[#5c0f0d] bg-[#4a0705] p-12 text-center shadow-xl max-w-md mx-auto my-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#5c0f0d] bg-[#2b0403] text-[#E1B76F]">
+          <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-12 text-center shadow-xl max-w-md mx-auto my-8">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#2d0302] text-[#E1B76F]">
               <Heart className="h-8 w-8" />
             </div>
             <h2 className="text-lg font-heading font-black uppercase text-[#E1B76F] mb-2">No Items in Wishlist</h2>
-            <p className="text-sm text-[#cbb18a] mb-6 leading-relaxed">
+            <p className="text-sm text-[#f0d29d] mb-6 leading-relaxed">
               Explore our latest modern heritage apparel and save your favorite styles to check them out later.
             </p>
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 rounded-[12px] bg-[#E1B76F] px-6 py-3 text-sm font-bold text-[#400604] transition hover:bg-[#f3cb87]"
+              className="inline-flex items-center gap-2 rounded-[12px] bg-[#400604] border border-[#E1B76F]/50 px-6 py-3 text-sm font-bold text-[#E1B76F] transition hover:bg-[#520805]"
             >
               Start Shopping <ArrowRight className="h-4 w-4" />
             </Link>
@@ -102,19 +100,19 @@ export default function WishlistPage() {
               return (
                 <div
                   key={item.productId}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#5c0f0d] bg-[#4a0705] shadow-lg transition hover:border-[#E1B76F]/50"
+                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#E1B76F]/25 bg-[#340402] shadow-lg transition hover:border-[#E1B76F]/60"
                 >
                   {/* Remove Button */}
                   <button
                     onClick={() => removeItem(item.productId)}
-                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#5c0f0d] bg-[#2b0403]/90 text-[#cbb18a] shadow-sm backdrop-blur transition hover:bg-[#400604] hover:text-[#E1B76F]"
+                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#2d0302]/90 text-[#E1B76F]/70 shadow-sm backdrop-blur transition hover:bg-[#400604] hover:text-[#E1B76F]"
                     title="Remove from wishlist"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
 
                   {/* Image */}
-                  <Link href={`/products/${item.slug}`} className="relative aspect-[3/4] w-full overflow-hidden bg-[#2b0403]">
+                  <Link href={`/products/${item.slug}`} className="relative aspect-[3/4] w-full overflow-hidden bg-[#2d0302]">
                     <Image
                       src={item.image}
                       alt={item.name}
@@ -126,7 +124,7 @@ export default function WishlistPage() {
                   {/* Info */}
                   <div className="flex flex-1 flex-col p-4">
                     <Link href={`/products/${item.slug}`}>
-                      <h3 className="line-clamp-2 text-sm font-semibold text-[#E1B76F] hover:text-[#f3cb87] transition mb-2">
+                      <h3 className="line-clamp-2 text-sm font-semibold text-[#E1B76F] hover:text-white transition mb-2">
                         {item.name}
                       </h3>
                     </Link>
@@ -137,7 +135,7 @@ export default function WishlistPage() {
                     <button
                       onClick={() => handleAddToCart(item)}
                       className={`flex w-full items-center justify-center gap-2 rounded-[12px] py-2.5 text-xs font-bold transition shadow-sm ${
-                        isAdded ? "bg-emerald-600 text-white" : "bg-[#E1B76F] text-[#400604] hover:bg-[#f3cb87]"
+                        isAdded ? "bg-[#520805] text-[#E1B76F] border border-[#E1B76F]" : "bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F] hover:bg-[#520805] hover:border-[#E1B76F]"
                       }`}
                     >
                       <ShoppingBag className="h-3.5 w-3.5" />

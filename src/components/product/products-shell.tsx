@@ -68,21 +68,21 @@ function DualRangeSlider({
   return (
     <div className="relative pt-1 pb-2">
       {/* Track */}
-      <div className="relative h-1.5 w-full rounded-full bg-neutral-200">
+      <div className="relative h-1.5 w-full rounded-full bg-[#2d0302]">
         <div
-          className="absolute h-full rounded-full bg-[#ffd800]"
+          className="absolute h-full rounded-full bg-[#E1B76F]"
           style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
         />
       </div>
 
       {/* Visual thumb — min */}
       <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black bg-[#ffd800] shadow-sm"
+        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#400604] bg-[#E1B76F] shadow-sm"
         style={{ left: `${minPercent}%` }}
       />
       {/* Visual thumb — max */}
       <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black bg-[#ffd800] shadow-sm"
+        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#400604] bg-[#E1B76F] shadow-sm"
         style={{ left: `${maxPercent}%` }}
       />
 
@@ -127,14 +127,14 @@ function SidebarSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="border-b border-neutral-200 py-4">
+    <div className="border-b border-[#E1B76F]/20 py-4">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-black transition hover:text-neutral-600"
+        className="flex w-full items-center justify-between text-xs font-bold uppercase tracking-wider text-[#E1B76F] transition hover:text-white"
       >
         {title}
-        {open ? <ChevronUp className="h-4 w-4 text-neutral-500" /> : <ChevronDown className="h-4 w-4 text-neutral-500" />}
+        {open ? <ChevronUp className="h-4 w-4 text-[#E1B76F]/70" /> : <ChevronDown className="h-4 w-4 text-[#E1B76F]/70" />}
       </button>
       {open && <div className="mt-3.5">{children}</div>}
     </div>
@@ -180,13 +180,13 @@ function Sidebar({
   return (
     <aside className="flex flex-col">
       {/* Heading row */}
-      <div className="mb-1 flex items-center justify-between pb-3 border-b border-neutral-200">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-black">Filters</h2>
+      <div className="mb-1 flex items-center justify-between pb-3 border-b border-[#E1B76F]/20">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-[#E1B76F]">Filters</h2>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={onClear}
-            className="text-[11px] font-semibold uppercase tracking-wider text-[#7a7a7a] underline underline-offset-2 transition hover:text-black"
+            className="text-[11px] font-semibold uppercase tracking-wider text-[#E1B76F]/70 underline underline-offset-2 transition hover:text-[#E1B76F]"
           >
             Clear All
           </button>
@@ -207,8 +207,8 @@ function Sidebar({
                   <div
                     className={`flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded border transition ${
                       checked
-                        ? "border-black bg-black text-white"
-                        : "border-neutral-300 bg-white group-hover:border-black"
+                        ? "border-[#E1B76F] bg-[#E1B76F] text-[#400604]"
+                        : "border-[#E1B76F]/30 bg-[#340402] group-hover:border-[#E1B76F]"
                     }`}
                     style={{ width: 18, height: 18 }}
                   >
@@ -223,7 +223,7 @@ function Sidebar({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={cat.image.src} alt={cat.name} className="h-5 w-5 object-contain" />
                     ) : null}
-                    <span className="text-sm text-neutral-700 group-hover:text-black transition capitalize">
+                    <span className="text-sm text-[#f0d29d] group-hover:text-[#E1B76F] transition capitalize">
                       {cat.image
                         ? decodeEntities(cat.name)
                         : decodeHtmlCharCodes(cat.description)
@@ -232,7 +232,7 @@ function Sidebar({
                     </span>
                   </div>
                 </div>
-                <span className="text-[11px] text-neutral-400">{cat.count}</span>
+                <span className="text-[11px] text-[#E1B76F]/50">{cat.count}</span>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -247,7 +247,7 @@ function Sidebar({
           <button
             type="button"
             onClick={() => setShowAllCategories((v) => !v)}
-            className="mt-4 text-[11px] font-bold uppercase tracking-wider text-black underline underline-offset-4 hover:text-neutral-600"
+            className="mt-4 text-[11px] font-bold uppercase tracking-wider text-[#E1B76F] underline underline-offset-4 hover:text-white"
           >
             {showAllCategories ? "Show less" : `Show all (${usableCategories.length})`}
           </button>
@@ -257,7 +257,7 @@ function Sidebar({
       {/* Price Range */}
       <SidebarSection title="Price Range">
         <div className="px-1">
-          <div className="mb-4 flex items-center justify-between text-sm font-semibold text-black">
+          <div className="mb-4 flex items-center justify-between text-sm font-semibold text-[#E1B76F]">
             <span>{formatPrice(filters.priceRange[0])}</span>
             <span>{formatPrice(filters.priceRange[1])}{filters.priceRange[1] >= PRICE_MAX ? "+" : ""}</span>
           </div>
@@ -268,8 +268,8 @@ function Sidebar({
             onChange={(v) => onFiltersChange({ priceRange: v })}
           />
           <div className="mt-3 flex gap-2">
-            <div className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5">
-              <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Min</p>
+            <div className="flex-1 rounded-lg border border-[#E1B76F]/30 bg-[#2d0302] px-2.5 py-1.5">
+              <p className="text-[10px] text-[#E1B76F]/60 uppercase tracking-wider">Min</p>
               <input
                 type="number"
                 min={0}
@@ -279,11 +279,11 @@ function Sidebar({
                 onChange={(e) =>
                   onFiltersChange({ priceRange: [Math.max(0, Number(e.target.value)), filters.priceRange[1]] })
                 }
-                className="w-full bg-transparent text-sm font-semibold text-black outline-none"
+                className="w-full bg-transparent text-sm font-semibold text-[#E1B76F] outline-none"
               />
             </div>
-            <div className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1.5">
-              <p className="text-[10px] text-neutral-500 uppercase tracking-wider">Max</p>
+            <div className="flex-1 rounded-lg border border-[#E1B76F]/30 bg-[#2d0302] px-2.5 py-1.5">
+              <p className="text-[10px] text-[#E1B76F]/60 uppercase tracking-wider">Max</p>
               <input
                 type="number"
                 min={filters.priceRange[0] + PRICE_STEP}
@@ -293,7 +293,7 @@ function Sidebar({
                 onChange={(e) =>
                   onFiltersChange({ priceRange: [filters.priceRange[0], Math.min(PRICE_MAX, Number(e.target.value))] })
                 }
-                className="w-full bg-transparent text-sm font-semibold text-black outline-none"
+                className="w-full bg-transparent text-sm font-semibold text-[#E1B76F] outline-none"
               />
             </div>
           </div>
@@ -305,16 +305,16 @@ function Sidebar({
         <label className="flex cursor-pointer items-center gap-3">
           <div
             className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors ${
-              filters.inStockOnly ? "bg-black" : "bg-neutral-200"
+              filters.inStockOnly ? "bg-[#E1B76F]" : "bg-[#2d0302] border border-[#E1B76F]/30"
             }`}
           >
             <div
               className={`absolute top-0.5 h-4 w-4 rounded-full shadow transition-transform ${
-                filters.inStockOnly ? "translate-x-4 bg-[#ffd800]" : "translate-x-0.5 bg-white"
+                filters.inStockOnly ? "translate-x-4 bg-[#400604]" : "translate-x-0.5 bg-[#E1B76F]"
               }`}
             />
           </div>
-          <span className="text-sm text-neutral-700">In stock only</span>
+          <span className="text-sm text-[#f0d29d]">In stock only</span>
           <input
             type="checkbox"
             checked={filters.inStockOnly}
@@ -355,15 +355,15 @@ function MobileDrawer({
       />
       {/* Drawer */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] lg:hidden overflow-y-auto rounded-t-3xl border-t border-neutral-200 bg-white px-5 pb-8 pt-4 shadow-2xl transition-transform duration-300 ${
+        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] lg:hidden overflow-y-auto rounded-t-3xl border-t border-[#E1B76F]/30 bg-[#400604] px-5 pb-8 pt-4 shadow-2xl transition-transform duration-300 text-[#E1B76F] ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >
         {/* Handle */}
-        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-neutral-300" />
+        <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#E1B76F]/30" />
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-black">Filters</h3>
-          <button type="button" onClick={onClose} className="rounded-full p-1 text-neutral-500 transition hover:bg-neutral-100">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-[#E1B76F]">Filters</h3>
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-[#E1B76F]/70 transition hover:bg-[#340402]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -376,7 +376,7 @@ function MobileDrawer({
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-full bg-[#ffd800] py-3.5 text-sm font-bold text-black transition hover:bg-black hover:text-white"
+          className="mt-6 w-full rounded-full bg-[#400604] border border-[#E1B76F]/50 py-3.5 text-sm font-bold text-[#E1B76F] transition hover:bg-[#520805]"
         >
           Show Results
         </button>
@@ -460,10 +460,12 @@ export function ProductsShell({
     return result;
   }, [products, filters]);
 
-  // Reset to page 1 whenever filters change
-  useEffect(() => {
+  // Reset to page 1 whenever the filtered list changes (adjust state during render)
+  const [prevFiltered, setPrevFiltered] = useState(filtered);
+  if (prevFiltered !== filtered) {
+    setPrevFiltered(filtered);
     setCurrentPage(1);
-  }, [filtered]);
+  }
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
@@ -528,19 +530,19 @@ export function ProductsShell({
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Search */}
             <div className="relative flex-1 max-w-sm">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#E1B76F]/60" />
               <input
                 type="text"
                 value={filters.search}
                 onChange={(e) => patchFilters({ search: e.target.value })}
                 placeholder="Search products…"
-                className="h-10 w-full rounded-full border border-neutral-200 bg-neutral-50 pl-10 pr-4 text-sm text-black shadow-none outline-none transition placeholder:text-neutral-400 focus:border-black focus:bg-white"
+                className="h-10 w-full rounded-full border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-4 text-sm text-[#E1B76F] shadow-none outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] focus:bg-[#2d0302]"
               />
             </div>
 
             <div className="flex items-center gap-3">
               {/* Result count */}
-              <span className="hidden text-sm text-neutral-500 sm:block">
+              <span className="hidden text-sm text-[#E1B76F]/70 sm:block">
                 Showing {Math.min((currentPage - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} 
               </span>
 
@@ -548,10 +550,10 @@ export function ProductsShell({
               <select
                 value={filters.sort}
                 onChange={(e) => patchFilters({ sort: e.target.value })}
-                className="h-10 rounded-full border border-neutral-200 bg-white px-4 pr-8 text-sm text-black shadow-none outline-none transition focus:border-black appearance-none cursor-pointer"
+                className="h-10 rounded-full border border-[#E1B76F]/30 bg-[#340402] px-4 pr-8 text-sm text-[#E1B76F] shadow-none outline-none transition focus:border-[#E1B76F] appearance-none cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-white text-black">
+                  <option key={opt.value} value={opt.value} className="bg-[#340402] text-[#E1B76F]">
                     {opt.label}
                   </option>
                 ))}
@@ -561,12 +563,12 @@ export function ProductsShell({
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-sm font-semibold text-black shadow-sm transition hover:bg-neutral-100 lg:hidden"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-[#E1B76F]/30 bg-[#340402] px-4 text-sm font-semibold text-[#E1B76F] shadow-sm transition hover:bg-[#520805] lg:hidden"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeChips.length > 0 && (
-                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-black text-[10px] font-bold text-white"
+                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-bold text-[#400604]"
                     style={{ width: 18, height: 18 }}>
                     {activeChips.length}
                   </span>
@@ -576,7 +578,7 @@ export function ProductsShell({
           </div>
 
           {/* Mobile result count */}
-          <p className="mb-3 text-sm text-neutral-500 sm:hidden">
+          <p className="mb-3 text-sm text-[#E1B76F]/70 sm:hidden">
             Showing {Math.min((currentPage - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length} 
           </p>
 
@@ -586,16 +588,16 @@ export function ProductsShell({
               {activeChips.map((chip) => (
                 <span
                   key={chip.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-[12px] font-semibold text-black shadow-none"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#E1B76F]/30 bg-[#340402] px-3 py-1 text-[12px] font-semibold text-[#E1B76F] shadow-none"
                 >
                   {chip.label}
                   <button
                     type="button"
                     onClick={chip.onRemove}
-                    className="rounded-full transition hover:text-red-500"
+                    className="rounded-full transition hover:text-red-400"
                     aria-label={`Remove ${chip.label} filter`}
                   >
-                    <X className="h-3 w-3 text-neutral-400" />
+                    <X className="h-3 w-3 text-[#E1B76F]/60" />
                   </button>
                 </span>
               ))}
@@ -603,7 +605,7 @@ export function ProductsShell({
                 <button
                   type="button"
                   onClick={clearFilters}
-                  className="rounded-full px-3 py-1 text-[12px] font-semibold text-neutral-500 underline underline-offset-2 transition hover:text-black"
+                  className="rounded-full px-3 py-1 text-[12px] font-semibold text-[#E1B76F]/70 underline underline-offset-2 transition hover:text-[#E1B76F]"
                 >
                   Clear all
                 </button>
@@ -613,14 +615,14 @@ export function ProductsShell({
 
           {/* Product grid */}
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 py-20 text-center">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#E1B76F]/20 bg-[#340402] py-20 text-center">
               <div className="mb-4 text-5xl">🔍</div>
-              <p className="font-heading text-lg font-bold uppercase text-black">No products match your filters</p>
-              <p className="mt-1.5 text-sm text-neutral-500">Try adjusting or clearing your filters</p>
+              <p className="font-heading text-lg font-bold uppercase text-[#E1B76F]">No products match your filters</p>
+              <p className="mt-1.5 text-sm text-[#E1B76F]/70">Try adjusting or clearing your filters</p>
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mt-5 rounded-full bg-[#ffd800] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-black hover:text-white"
+                className="mt-5 rounded-full bg-[#400604] border border-[#E1B76F]/50 px-6 py-2.5 text-sm font-bold text-[#E1B76F] transition hover:bg-[#520805]"
               >
                 Clear Filters
               </button>
@@ -640,13 +642,13 @@ export function ProductsShell({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-black shadow-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-35"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#340402] text-[#E1B76F] shadow-sm transition hover:bg-[#520805] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
 
-                  <span className="min-w-[80px] text-center text-sm font-semibold text-black">
+                  <span className="min-w-[80px] text-center text-sm font-semibold text-[#E1B76F]">
                     Page {currentPage} of {totalPages}
                   </span>
 
@@ -654,7 +656,7 @@ export function ProductsShell({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-black shadow-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-35"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#340402] text-[#E1B76F] shadow-sm transition hover:bg-[#520805] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />

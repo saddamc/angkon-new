@@ -1,94 +1,92 @@
 import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Order } from "@/models/Order";
+import { Product } from "@/models/Product";
 
-const WC_BASE = (process.env.NEXT_PUBLIC_WC_API_URL ?? "https://netbazarbd.net").replace(/\/$/, "");
-const WC_CK = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY ?? "";
-const WC_CS = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET ?? "";
-const wcAuth = () => Buffer.from(`${WC_CK}:${WC_CS}`).toString("base64");
-const headers = () => ({ Authorization: `Basic ${wcAuth()}`, "Content-Type": "application/json" });
-const opts = () => ({ headers: headers(), cache: "no-store" as const });
-
-// GET /api/admin/reports — fetch WooCommerce native reports data
+// GET /api/admin/reports — fetch reports data from MongoDB Atlas
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const period = searchParams.get("period") ?? "month"; // "week", "month", "last_month", "year"
+  const period = searchParams.get("period") ?? "month";
 
   try {
-    // Map period to WC date_min/date_max
     const now = new Date();
-    let date_min = "";
-    let date_max = now.toISOString().split("T")[0];
+    let startDate = new Date();
 
     if (period === "today") {
-      date_min = date_max;
+      startDate.setHours(0, 0, 0, 0);
     } else if (period === "week") {
-      const w = new Date(now);
-      w.setDate(w.getDate() - 7);
-      date_min = w.toISOString().split("T")[0];
+      startDate.setDate(now.getDate() - 7);
     } else if (period === "month") {
-      date_min = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     } else if (period === "last_month") {
-      const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      date_min = lm.toISOString().split("T")[0];
-      const lme = new Date(now.getFullYear(), now.getMonth(), 0);
-      date_max = lme.toISOString().split("T")[0];
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     } else if (period === "year") {
-      date_min = `${now.getFullYear()}-01-01`;
+      startDate = new Date(now.getFullYear(), 0, 1);
     }
 
-    // Fetch WooCommerce native sales report
-    const salesUrl = new URL(`${WC_BASE}/wp-json/wc/v3/reports/sales`);
-    salesUrl.searchParams.set("date_min", date_min);
-    salesUrl.searchParams.set("date_max", date_max);
+    await connectToDatabase();
 
-    // Fetch order status totals
-    const statusUrl = `${WC_BASE}/wp-json/wc/v3/reports/orders/totals`;
+    const orders = await Order.find({ createdAt: { $gte: startDate } }).lean();
+    const allOrders = await Order.find({}).lean();
+    const totalProducts = await Product.countDocuments();
 
-    // Fetch top sellers
-    const topUrl = new URL(`${WC_BASE}/wp-json/wc/v3/reports/top_sellers`);
-    topUrl.searchParams.set("date_min", date_min);
-    topUrl.searchParams.set("date_max", date_max);
-    topUrl.searchParams.set("per_page", "10");
+    let totalSales = 0;
+    let totalItems = 0;
+    let totalShipping = 0;
 
-    // Fetch customers totals
-    const custUrl = `${WC_BASE}/wp-json/wc/v3/reports/customers/totals`;
+    for (const ord of orders) {
+      totalSales += ord.total || 0;
+      totalShipping += ord.shippingFee || 0;
+      if (Array.isArray(ord.items)) {
+        for (const it of ord.items) {
+          totalItems += it.quantity || 1;
+        }
+      }
+    }
 
-    const [salesRes, statusRes, topRes, custRes] = await Promise.all([
-      fetch(salesUrl.toString(), opts()),
-      fetch(statusUrl, opts()),
-      fetch(topUrl.toString(), opts()),
-      fetch(custUrl, opts()),
-    ]);
+    const netSales = Math.max(0, totalSales - totalShipping);
+    const avgSales = orders.length > 0 ? (totalSales / orders.length).toFixed(2) : "0.00";
 
-    const sales = salesRes.ok ? await salesRes.json() : [];
-    const statusTotals = statusRes.ok ? await statusRes.json() : [];
-    const topSellers = topRes.ok ? await topRes.json() : [];
-    const customerTotals = custRes.ok ? await custRes.json() : [];
+    const statusCounts: Record<string, number> = {
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      cancelled: 0,
+    };
+    for (const ord of allOrders) {
+      const st = ord.orderStatus || "pending";
+      statusCounts[st] = (statusCounts[st] || 0) + 1;
+    }
 
-    // WC sales report returns an array with one item containing totals
-    const report = Array.isArray(sales) && sales.length > 0 ? sales[0] : {};
+    const orderStatuses = Object.entries(statusCounts).map(([slug, total]) => ({
+      slug,
+      name: slug.charAt(0).toUpperCase() + slug.slice(1),
+      total,
+    }));
 
-    return NextResponse.json({
-      sales: {
-        total_sales: report.total_sales ?? "0.00",
-        net_sales: report.net_sales ?? "0.00",
-        average_sales: report.average_sales ?? "0.00",
-        total_orders: report.total_orders ?? 0,
-        total_items: report.total_items ?? 0,
-        total_tax: report.total_tax ?? "0.00",
-        total_shipping: report.total_shipping ?? "0.00",
-        total_refunds: report.total_refunds ?? 0,
-        total_discount: report.total_discount ?? "0.00",
-        total_customers: report.total_customers ?? 0,
+    return NextResponse.json(
+      {
+        sales: {
+          total_sales: totalSales.toFixed(2),
+          net_sales: netSales.toFixed(2),
+          average_sales: avgSales,
+          total_orders: orders.length,
+          total_items: totalItems,
+          total_tax: "0.00",
+          total_shipping: totalShipping.toFixed(2),
+          total_refunds: 0,
+          total_discount: "0.00",
+          total_customers: new Set(allOrders.map((o) => o.customer?.phone).filter(Boolean)).size,
+        },
+        order_statuses: orderStatuses,
+        top_sellers: [],
+        total_products: totalProducts,
+        period,
       },
-      order_statuses: statusTotals,
-      top_sellers: topSellers,
-      customer_totals: customerTotals,
-      period,
-      date_min,
-      date_max,
-    }, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-    });
+      {
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      }
+    );
   } catch (error) {
     console.error("Reports API error:", error);
     return NextResponse.json({ error: "Failed to fetch reports" }, { status: 500 });

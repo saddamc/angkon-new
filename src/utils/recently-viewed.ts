@@ -8,36 +8,10 @@ export interface RecentlyViewedProduct {
   timestamp: number;
 }
 
-export const DEFAULT_RECENTLY_VIEWED: RecentlyViewedProduct[] = [
-  {
-    id: 216931,
-    name: "AFC001 Dept. of Football Studies (Football Skull) T-Shirt Black – Plaantik",
-    slug: "afc001-dept-of-football-studies-football-skull-t-shirt-black-plaantik",
-    permalink: "/products/afc001-dept-of-football-studies-football-skull-t-shirt-black-plaantik",
-    price: "1250",
-    image: "https://gorurghash.com/wp-content/uploads/2026/08/Font.jpg",
-    timestamp: 1,
-  },
-  {
-    id: 227719,
-    name: "Sculpt Yoga Pants in Black",
-    slug: "sculpt-yoga-pants-in-black",
-    permalink: "/products/sculpt-yoga-pants-in-black",
-    price: "1500",
-    image: "https://gorurghash.com/wp-content/uploads/2026/09/hf_20260829_112819_319a04c9-244f-407b-b1fd-5e8a9eabc0cf.jpg",
-    timestamp: 2,
-  },
-  {
-    id: 227720,
-    name: "Baggy Fit Cargo Pants in Off White",
-    slug: "baggy-fit-cargo-pants-in-off-white",
-    permalink: "/products/baggy-fit-cargo-pants-in-off-white",
-    price: "1850",
-    image: "https://gorurghash.com/wp-content/uploads/2026/08/hf_20260827_073132_b17d6815-31ec-4d0c-a63b-2f11b0ad6c9d-copy.jpg",
-    timestamp: 3,
-  },
-];
+/** Nothing is pre-filled: the list only shows products this visitor has actually viewed. */
+export const DEFAULT_RECENTLY_VIEWED: RecentlyViewedProduct[] = [];
 
+const FALLBACK_IMAGE = "/angkon-logo-fb.jpg";
 const STORAGE_KEY = "recently_viewed_products";
 
 export function formatRecentlyViewedPrice(price: string | number): string {
@@ -65,7 +39,7 @@ export function saveRecentlyViewed(product: {
       slug: product.slug,
       permalink: `/products/${product.slug}`,
       price: product.price,
-      image: product.image || "https://gorurghash.com/wp-content/uploads/2026/08/Font.jpg",
+      image: product.image || FALLBACK_IMAGE,
       timestamp: Date.now(),
     };
 

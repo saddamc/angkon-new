@@ -7,6 +7,7 @@
     "dev": "next dev --webpack -H 0.0.0.0 -p 3001",
     "dev:turbo": "next dev --turbopack -H 0.0.0.0 -p 3000",
     "build": "next build",
+    "seed:mongo": "node scripts/seed-mongodb.mjs",
     "start": "next start -H 0.0.0.0 -p 3001",
     "lint": "eslint ."
   },
@@ -25,6 +26,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
+    "mongoose": "^9.11.1",
     "next": "16.3.8",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

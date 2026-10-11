@@ -9,12 +9,12 @@ export const metadata: Metadata = {
 
 export default function MightoPage() {
   return (
-    <div className="w-full min-h-screen bg-white text-black overflow-hidden">
+    <div className="w-full min-h-screen bg-[#400604] text-[#E1B76F] overflow-hidden">
       {/* ── 1. Top Hero Banner (Full Bleed Edge-to-Edge) ── */}
       <section className="w-full">
         <Link
           href="/mighto-men"
-          className="group block w-full overflow-hidden bg-neutral-100"
+          className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
             src="/banners/mighto-home-banner.png"
@@ -34,7 +34,7 @@ export default function MightoPage() {
           {/* MIGHTO MEN */}
           <Link
             href="/mighto-men"
-            className="group block w-full overflow-hidden bg-neutral-100 shadow-sm transition hover:opacity-95"
+            className="group block w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 shadow-sm transition hover:opacity-95"
           >
             <Image
               src="/banners/mighto-men-card.png"
@@ -49,7 +49,7 @@ export default function MightoPage() {
           {/* MIGHTO WOMEN */}
           <Link
             href="/mighto-women"
-            className="group block w-full overflow-hidden bg-neutral-100 shadow-sm transition hover:opacity-95"
+            className="group block w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 shadow-sm transition hover:opacity-95"
           >
             <Image
               src="/banners/mighto-women-card.png"
@@ -65,7 +65,7 @@ export default function MightoPage() {
 
       {/* ── 3. Middle Strip Full Bleed Banner ── */}
       <section className="w-full mb-2 sm:mb-3">
-        <div className="w-full overflow-hidden bg-neutral-100">
+        <div className="w-full overflow-hidden bg-[#340402]">
           <Image
             src="/banners/mighto-strip-1.png"
             alt="Mighto Performance Apparel"
@@ -81,7 +81,7 @@ export default function MightoPage() {
       <section className="w-full">
         <Link
           href="/mighto"
-          className="group block w-full overflow-hidden bg-neutral-100"
+          className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
             src="/banners/mighto-strip-2.png"

@@ -122,7 +122,7 @@ export default function ThankYouPage() {
             Questions Regarding Your Order?
           </span>
           <h3 className="font-heading text-2xl font-black uppercase text-[#E1B76F]">
-            HOUSE OF MODERN HERITAGE
+            ANGKON Flagship Showroom
           </h3>
           <p className="text-sm text-[#f5ebd8] font-serif">
             H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212

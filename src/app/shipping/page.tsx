@@ -25,39 +25,39 @@ export default function ShippingPage() {
       </div>
 
       <div className="container mx-auto max-w-[1000px] px-4 py-12 lg:px-8 space-y-8">
-        {/* Authentic Yellow Delivery Timing Poster Card (Gorur Ghash parity) */}
-        <div className="rounded-[16px] bg-[#fbdd02] text-black p-6 sm:p-10 shadow-2xl">
-          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black italic tracking-tight text-center uppercase mb-8">
+        {/* Authentic Luxury Delivery Timing Poster Card */}
+        <div className="rounded-[16px] bg-[#340402] border-2 border-[#E1B76F]/40 text-[#E1B76F] p-6 sm:p-10 shadow-2xl">
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black italic tracking-tight text-center uppercase mb-8 text-[#E1B76F]">
             Delivery Timing for COD
           </h2>
           
-          <div className="max-w-2xl mx-auto border-2 border-black rounded-xl overflow-hidden bg-white/20">
-            <div className="grid grid-cols-2 border-b-2 border-black bg-black text-white p-3 sm:p-4 text-center">
+          <div className="max-w-2xl mx-auto border-2 border-[#E1B76F]/40 rounded-xl overflow-hidden bg-[#2b0403]">
+            <div className="grid grid-cols-2 border-b-2 border-[#E1B76F]/40 bg-[#400604] text-[#E1B76F] p-3 sm:p-4 text-center">
               <span className="font-heading text-lg sm:text-2xl font-black italic uppercase">Area</span>
               <span className="font-heading text-lg sm:text-2xl font-black italic uppercase">Time Needed</span>
             </div>
             
-            <div className="divide-y-2 divide-black/30 text-center font-heading text-lg sm:text-2xl font-black italic">
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-white/30">
+            <div className="divide-y-2 divide-[#E1B76F]/20 text-center font-heading text-lg sm:text-2xl font-black italic text-[#f0d29d]">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#340402]">
                 <span>Dhaka</span>
-                <span>1-2 Days</span>
+                <span className="text-[#E1B76F]">1-2 Days</span>
               </div>
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-white/10">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#2b0403]">
                 <span>Gazipur, Narayanganj, Savar</span>
-                <span>1-2 Days</span>
+                <span className="text-[#E1B76F]">1-2 Days</span>
               </div>
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-white/30">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#340402]">
                 <span>Chittagong, Sylhet, Rajshahi</span>
-                <span>3-4 Days</span>
+                <span className="text-[#E1B76F]">3-4 Days</span>
               </div>
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-white/10">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#2b0403]">
                 <span>Other Major Cities</span>
-                <span>4-5 Days</span>
+                <span className="text-[#E1B76F]">4-5 Days</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider text-black/80 space-y-1">
+          <div className="mt-8 text-center text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#cbb18a] space-y-1">
             <p>*Mentioned timings are estimated time for delivery after package has been dispatched</p>
             <p>*ANGKON works with reliable 3rd party delivery couriers</p>
           </div>

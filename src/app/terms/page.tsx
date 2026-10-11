@@ -44,7 +44,7 @@ export default function TermsPage() {
         <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-[#E1B76F]">4. Showroom & Official Contact</h2>
           <p>
-            <strong>HOUSE OF MODERN HERITAGE</strong><br />
+            <strong>ANGKON Flagship Showroom</strong><br />
             H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212<br />
             WhatsApp: +880 1338-668899 | Email: angkonofficial08@gmail.com
           </p>

@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMounted } from "@/hooks/use-mounted";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ShoppingBag, Trash2, X, ArrowRight, Truck } from "lucide-react";
@@ -23,11 +24,8 @@ export function CartDrawer({ open, onClose }: Props) {
   const itemCount = useCartStore((s) => s.itemCount());
   const subtotal = useCartStore((s) => s.subtotal());
 
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -74,28 +72,28 @@ export function CartDrawer({ open, onClose }: Props) {
           {/* Cart Drawer Panel — Right side */}
           <motion.aside
             aria-label="Shopping Cart Drawer"
-            className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col bg-white border-l border-neutral-200 shadow-2xl text-black"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col bg-[#1A0302] border-l border-[#E1B76F]/30 shadow-2xl text-[#E1B76F]"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 350, damping: 35 }}
           >
             {/* ── 1. Drawer Header ── */}
-            <div className="flex flex-shrink-0 items-center justify-between border-b border-neutral-200 px-6 py-4 bg-white">
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-[#E1B76F]/20 px-6 py-4 bg-[#100101]">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-black" />
-                <h2 className="font-heading text-[16px] font-bold uppercase tracking-wider text-black">
+                <ShoppingBag className="h-5 w-5 text-[#E1B76F]" />
+                <h2 className="font-heading text-[16px] font-bold uppercase tracking-wider text-[#E1B76F]">
                   Shopping Cart
                 </h2>
                 {itemCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#ffd800] px-1.5 text-[11px] font-black text-black">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1A0302] px-1.5 text-[11px] font-black text-[#E1B76F] border border-[#E1B76F]/30 shadow-xs">
                     {itemCount}
                   </span>
                 )}
               </div>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-black hover:bg-neutral-100 transition"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[#E1B76F] hover:bg-white/10 transition cursor-pointer"
                 aria-label="Close cart"
               >
                 <X className="h-5 w-5" />
@@ -104,21 +102,21 @@ export function CartDrawer({ open, onClose }: Props) {
 
             {/* ── 2. Free Shipping Bar ── */}
             {items.length > 0 && (
-              <div className="border-b border-neutral-100 bg-neutral-50 px-6 py-3">
-                <div className="flex items-center gap-2 text-[12px] font-semibold text-neutral-700">
-                  <Truck className="h-4 w-4 text-black" />
+              <div className="border-b border-[#E1B76F]/20 bg-[#240403] px-6 py-3">
+                <div className="flex items-center gap-2 text-[12px] font-semibold text-[#E1B76F]">
+                  <Truck className="h-4 w-4 text-[#E1B76F]" />
                   {amountNeeded === 0 ? (
-                    <span className="text-black font-bold">🎉 You qualify for FREE shipping!</span>
+                    <span className="text-[#f3cb87] font-bold">🎉 You qualify for FREE shipping!</span>
                   ) : (
                     <span>
-                      Add <strong className="text-black">{formatPrice(amountNeeded)}</strong> more to get{" "}
-                      <strong className="text-black">FREE Shipping</strong>
+                      Add <strong className="text-[#f3cb87] font-bold">{formatPrice(amountNeeded)}</strong> more to get{" "}
+                      <strong className="text-[#f3cb87] font-bold">FREE Shipping</strong>
                     </span>
                   )}
                 </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200">
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#400604]">
                   <div
-                    className="h-full bg-[#ffd800] transition-all duration-300"
+                    className="h-full bg-[#E1B76F] transition-all duration-300"
                     style={{ width: `${freeShippingProgress}%` }}
                   />
                 </div>
@@ -128,26 +126,26 @@ export function CartDrawer({ open, onClose }: Props) {
             {/* ── 3. Drawer Body (Items) ── */}
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-neutral-100 border border-neutral-200">
-                  <ShoppingBag className="h-10 w-10 text-neutral-400" />
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/25">
+                  <ShoppingBag className="h-10 w-10 text-[#E1B76F]/60" />
                 </div>
                 <div>
-                  <p className="font-heading text-lg font-bold text-black">No products in the cart.</p>
-                  <p className="mt-1 text-sm text-neutral-500">Discover our latest drops and heritage designs!</p>
+                  <p className="font-heading text-lg font-bold text-[#E1B76F]">No products in the cart.</p>
+                  <p className="mt-1 text-sm text-[#E1B76F]/70">Discover our latest drops and heritage designs!</p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="mt-3 inline-flex items-center justify-center rounded-full bg-[#ffd800] hover:bg-[#fed700] px-8 py-3 text-sm font-bold text-black transition shadow-sm"
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/50 hover:bg-[#E1B76F] hover:text-[#400604] px-8 py-3 text-sm font-bold text-[#E1B76F] transition shadow-sm uppercase tracking-wide cursor-pointer"
                 >
                   Continue Shopping
                 </button>
               </div>
             ) : (
-              <div className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-neutral-100">
+              <div className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-[#E1B76F]/15">
                 {items.map((item) => (
                   <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     {/* Thumbnail */}
-                    <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded bg-neutral-50 border border-neutral-200">
+                    <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded bg-[#340402] border border-[#E1B76F]/20">
                       {item.image && (
                         <Image
                           src={item.image}
@@ -163,18 +161,18 @@ export function CartDrawer({ open, onClose }: Props) {
                     <div className="flex flex-1 flex-col justify-between min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="line-clamp-2 text-[13px] font-semibold text-black leading-snug">
+                          <p className="line-clamp-2 text-[13px] font-semibold text-[#E1B76F] leading-snug">
                             {item.name}
                           </p>
                           {item.size && (
-                            <p className="mt-1 text-[11px] font-medium text-neutral-500 uppercase">
-                              Size: <span className="font-bold text-black">{item.size}</span>
+                            <p className="mt-1 text-[11px] font-medium text-[#E1B76F]/70 uppercase">
+                              Size: <span className="font-bold text-[#f3cb87]">{item.size}</span>
                             </p>
                           )}
                         </div>
                         <button
                           onClick={() => removeItem(item.productId, item.size)}
-                          className="text-neutral-400 hover:text-black transition p-1"
+                          className="text-[#E1B76F]/70 hover:text-[#f3cb87] transition p-1 cursor-pointer"
                           aria-label="Remove item"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -183,28 +181,28 @@ export function CartDrawer({ open, onClose }: Props) {
 
                       {/* Quantity Stepper & Price */}
                       <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5">
+                        <div className="flex items-center rounded-full border border-[#E1B76F]/30 bg-[#340402] px-2 py-0.5">
                           <button
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
                             disabled={item.quantity <= 1}
-                            className="p-1 text-neutral-600 hover:text-black disabled:opacity-30 disabled:cursor-not-allowed"
+                            className="p-1 text-[#E1B76F] hover:text-[#f3cb87] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             aria-label="Decrease quantity"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
-                          <span className="w-8 text-center text-[12px] font-bold text-black">
+                          <span className="w-8 text-center text-[12px] font-bold text-[#E1B76F]">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
-                            className="p-1 text-neutral-600 hover:text-black"
+                            className="p-1 text-[#E1B76F] hover:text-[#f3cb87] cursor-pointer"
                             aria-label="Increase quantity"
                           >
                             <Plus className="h-3 w-3" />
                           </button>
                         </div>
 
-                        <span className="text-[14px] font-bold text-black">
+                        <span className="text-[14px] font-bold text-[#E1B76F]">
                           {formatPrice(item.price * item.quantity)}
                         </span>
                       </div>
@@ -216,18 +214,18 @@ export function CartDrawer({ open, onClose }: Props) {
 
             {/* ── 4. Drawer Footer ── */}
             {items.length > 0 && (
-              <div className="flex-shrink-0 border-t border-neutral-200 bg-neutral-50 p-6 space-y-4">
+              <div className="flex-shrink-0 border-t border-[#E1B76F]/20 bg-[#100101] p-6 space-y-4">
                 {/* Subtotal */}
                 <div className="flex items-center justify-between">
-                  <span className="font-heading text-sm font-bold uppercase tracking-wider text-neutral-600">
+                  <span className="font-heading text-sm font-bold uppercase tracking-wider text-[#E1B76F]/70">
                     Subtotal:
                   </span>
-                  <span className="font-heading text-xl font-black text-black">
+                  <span className="font-heading text-xl font-black text-[#E1B76F]">
                     {formatPrice(subtotal)}
                   </span>
                 </div>
 
-                <p className="text-[12px] text-neutral-500">
+                <p className="text-[12px] text-[#E1B76F]/60">
                   Taxes and shipping calculated at checkout
                 </p>
 
@@ -236,16 +234,16 @@ export function CartDrawer({ open, onClose }: Props) {
                   <Link
                     href="/cart"
                     onClick={onClose}
-                    className="flex items-center justify-center rounded-full border border-neutral-300 bg-white py-3 text-[13px] font-bold text-black transition hover:bg-neutral-100"
+                    className="flex items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#1A0302] py-3 text-[13px] font-bold text-[#E1B76F] transition hover:bg-[#240403] hover:text-[#f3cb87] hover:border-[#E1B76F]"
                   >
                     View Cart
                   </Link>
                   <Link
                     href="/checkout"
                     onClick={onClose}
-                    className="flex items-center justify-center gap-2 rounded-full bg-[#ffd800] hover:bg-[#fed700] py-3 text-[13px] font-black text-black transition shadow-sm"
+                    className="flex items-center justify-center gap-2 rounded-full bg-[#E1B76F] border border-[#E1B76F] hover:bg-[#f3cb87] py-3 text-[13px] font-black text-[#1A0302] transition shadow-md uppercase tracking-wide"
                   >
-                    Checkout <ArrowRight className="h-4 w-4" />
+                    Checkout <ArrowRight className="h-4 w-4 text-[#1A0302]" />
                   </Link>
                 </div>
               </div>

@@ -1,0 +1,3006 @@
+[
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/shop/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/thankyou-for-shopping/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/checkout/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/my-account/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/cart-2/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/privacy-policy-2/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/my-account-2/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/tops-dresses-and-kimonos/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/checkout-2/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/collabs/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/staples/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/plaantik-x-gg/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/tops-and-kimonos/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/promotions/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/balance/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/jobs/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/plaantik-x-gg-2025/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/legal/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/waffle-up-x-gg/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/privacy-policy/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/jackets/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/terms-conditions/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/bag-scan/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/tees/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/half-sleeves/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/pants/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/gorurghash-x-cheez/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/gorurghash-x-cheez/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/full-sleeves/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/office-wear/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/jewelry/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/on-sale/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/delivery-time/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/fresh-drops/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/policies-2/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/refund-and-exchange-policies/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/promotions-2/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/contact-us/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/scream-room-sale/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/travelling-abroad/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/mighto/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/mighto-men/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/mighto-women/",
+    "ok": true
+  },
+  {
+    "type": "page",
+    "url": "https://gorurghash.com/about/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/about/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/ribbed-for-velvet-vibes-unpacking-the-charm-of-corduroy-jackets/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/delicate-details-the-reimagined-allure-of-eyelet-shirts/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/step-up-your-style-unleash-your-inner-whimsy-with-funky-socks/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/wooly-wonders-the-boxy-jacket-making-waves-in-winter-fashion/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/knit-happens-polos-unexpected-fabric-twist/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/cargo-craze-your-new-wardrobe-hero/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/the-oversized-drop-shoulder-cotton-t-shirt-a-staple-for-effortless-style/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/the-rise-of-multiple-piercing-a-fashion-trend-worth-embracing/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/flannel-care-101-how-to-preserve-your-soft-and-snug-favorites/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/unpierced-chic-the-rise-of-ear-cuffs/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/cap-tivating-trends-how-headwear-is-making-a-comeback/",
+    "ok": true
+  },
+  {
+    "type": "post",
+    "url": "https://gorurghash.com/why-linen-rayon-shirts-are-your-wardrobes-best-kept-secret/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/caps/baseball-cap/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/boxy-jacket-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/boxy-jacket/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/mens-jewelry/bracelet/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/bracelets/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/cargo/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/caps/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/caps/bucket-hat/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/pants/cargo-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/carpenter-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/co-rd-set/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/chokers/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/co-ord-set-male/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/cord-pants-male/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/cord-shirts-womens-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/crochet-embroidered-shirts-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/crochet-embroidered-shirts/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/crop-shirts-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/denim-pants-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/crop-shirts-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/pants/denim-pants-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/caps/docker-cap/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/earrings/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/ear-cuffs/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/ethnic/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/finger-rings/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/flow-shirts-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/flannels-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/flannels-jacket/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/flow-shirts-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tops/flowy-top/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/formal-pants-men-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/t-shirt/gg-x-cheez/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/hoodies/gg-x-waffle-up-hoodies/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/t-shirt/gg-x-waffle-up-tees/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/half-sleeve/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/t-shirts-men/henley/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/half-sleeve-shirt-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tshirt/henley-tshirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/high-waisted-pants-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/leather-jackets/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/leather-jackets-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/mighto/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/mens-jewelry/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/mighto/mighto-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/necklace/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/mighto/mighto-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/caps/news-boy-hat/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/caps/military-cap/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/oversized-full-sleeves/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/oversized-full-sleeves-womens-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/party-shirts-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/party-shirts-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/polos/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/polos-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/t-shirts-men/premium/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tshirt/premium-tshirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/puffer-jacket-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/puffer-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/rayon-linen-blend-shirts-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/rayon-linen-blend-shirts-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/cubans/regular-cuban/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/relaxed-fit/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/retro-sports-jacket-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/retro-sports-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/mens-jewelry/ring-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tops/ruffle-top/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/safari-shirts/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/shorts/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/pants/sidekick-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/sling-bags/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/skirts/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/socks/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tops/string-tie-top/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/stud-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/tank-tops/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/textured-jacket/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/textured-jackets/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/kids/waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/wallets/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/womens-jewelry/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/accessories/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/kids/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/kids/hoodies-kids/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/kids/jackets/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/kids/shirts/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/kids/shirts/cubans-shirts/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/t-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/t-shirt/drop-tees-t-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/t-shirt/plaantik-apparel/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/t-shirt/basic-t-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/unisex/hoodies/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/button-down-shirt-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/band-collar/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/cubans/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/mens-shirt/flannels-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/t-shirts-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/t-shirts-men/basic/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/t-shirts-men/drop-tees/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/t-shirts-men/plaantik-apparel-t-shirts-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/men-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/blanket-hoodies/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/overcoat/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/turtleneck-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/hoodie-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/bombers/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/chore/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/cords-jacket/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/men/jacket-men/shackets/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/kimonos/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/band-collar-shirt-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/button-down/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/cuban-shirts-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/womens-shirt/flannels/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tshirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tshirt/basic-tees/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tshirt/drop-tees-tshirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tshirt/plaantik-apparel-tshirt/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tank-top/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tops/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/tops/silk-blouses-and-tops/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/pants/casual-cord-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/pants/formal-pants/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/turtleneck/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/hoodie-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/hoodie-blanket/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/overcoat-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/bombers-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/chore-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/cords/",
+    "ok": true
+  },
+  {
+    "type": "product_cat",
+    "url": "https://gorurghash.com/product-category/women/jacket-women/shackets-jacket-women/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/shop/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/sea-shell-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-orange/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/circular-foil-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-u-shaped-open-ring-in-silver/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-dainty-necklace-with-rectangular-blocks/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-u-shaped-open-ring-in-silver/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/elliptical-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/braided-net-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/bow-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/flannel-jacket/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/flannel-jacket/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/small-cube-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/square-is-the-new-heart-printed-kids-unisex-oversized-hoodie-in-pink-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/gift-cards/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/shooting-star-ear-cuffs-in-golden-no-piercing-needed/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/waffle-up-large-character-printed-kids-oversized-drop-shoulder-graphic-tees-in-pink-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/waffle-characters-printed-kids-oversized-drop-shoulder-graphic-tees-in-black-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/teardrop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/main-character-energy-printed-kids-unisex-oversized-hoodie-in-black-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-pastel-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/hollow-teardrop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/zipper-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-off-white-cuban-shirt-and-pants-2-piece-set-in-funky-print-co-ord-set/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-yellow/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/leafy-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/waffle-up-large-character-printed-unisex-oversized-drop-shoulder-graphic-tees-in-pink-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/circular-spring-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-emerald-green-shrug-and-wide-leg-pants-2-piece-set-in-watercolor-print/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/square-studs-with-multiple-colored-jewels-6-piece-stud-set/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/floral-printed-kaftan-top-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/rectangular-studs-with-silver-jewel-6-piece-stud-set/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/wave-ring-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/drop-roundball-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cluster-stud-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/swirling-ribbon-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/spiral-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-bold-wave-lock-cuff-bangle-in-golden/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oval-foil-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/star-shapped-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/rho-shaped-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/abstract-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/clamshell-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/snake-curve-earring/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/knot-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/macaroni-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-embroidered-shacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-embroidered-shacket-in-dark-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-embroidery-shacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-straight-fit-pleated-formal-pants-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boys-white-and-blue-printed-cuban-shirt-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-long-flannel-skirt-in-brown-and-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/red-silk-top-the-victoria/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-full-sleeve-button-down-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-plain-button-down-shirt-in-yellow/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-high-waisted-curve-pleated-formal-pants-in-muted-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-periwinkle-blue-cuban-shirt-and-pants-2-piece-set-in-tie-dye-print/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-dark-navy-blue-with-thin-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-white-green-long-shirt-and-wide-leg-pants-2-piece-set-in-leaf-print/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/double-square-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-white-mid-rise-corduroy-straight-leg-casual-pants-copy-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-embroidered-shacket-in-dark-green/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/mens-embroidered-shacket-in-dark-green/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/multi-knit-patterned-cuban-shirt-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-embroidered-cuban-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-flannel-shirt-in-black-and-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/embroidered-shacket-in-ochre/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-flannel-jacket-in-brown-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-eyelet-half-sleeve-knitted-cuban-shirt-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-eyelet-half-sleeve-knitted-cuban-shirt-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-solid-t-shirt-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-long-sleeve-shirt-in-dark-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-walnut-brown-with-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-twisted-cuff-bangle/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/tissue-rolls-premium-funky-unisex-socks-in-blue-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/aztec-weave-jacket-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/herringbone-patterned-thick-boxy-jacket-in-onix-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-classic-relaxed-fit-pants-in-khaki/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/abstract-patterned-textured-jacket-in-white-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-floral-printed-string-tie-top-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/corduroy-jacket-in-sweet-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-printed-party-shirt-in-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cropped-printed-cord-jacket-for-women/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-long-flannel-skirt-in-black-and-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-long-sleeve-flannel-shirt-in-maroon-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-corduroy-jacket-in-dark-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-flannel-jacket-in-brown-off-white/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/mens-flannel-jacket-in-brown-off-white/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-paisley-printed-string-tie-top-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-rhombus-patterned-knit-polo-in-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-rhombus-patterned-knit-polo-in-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/corduroy-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/short-silk-and-georgette-mix-floral-kimono-in-peach-with-lace/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/denim-bucket-hat/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/corduroy-jacket-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-brown-mid-rise-corduroy-straight-leg-casual-pants/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-violet/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/round-ball-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/abstract-long-hoop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/newsboy-hat-with-leather-bill/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/woolen-baseball-cap/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-white-with-thick-lines/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boxy-jacket-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/classic-faux-leather-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-half-sleeve-duo-tone-shirt-in-teal-and-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-sienna-brown-color-cuban-shirt-and-shorts-2-piece-set-in-waffle-pattern-co-ord-set/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-half-sleeve-duo-tone-shirt-in-teal-and-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-half-sleeve-party-cuban-collar-shirt-in-funky-colors/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/love-dogs-premium-funky-unisex-socks-in-black-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-half-sleeve-party-cuban-collar-shirt-in-funky-colors/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/hook-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/curvy-hoop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/waffle-characters-printed-unisex-oversized-drop-shoulder-graphic-tees-in-black-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/solid-faux-leather-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-denim-cuban-shirt-in-light-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-corduroy-jacket-in-bright-lavender/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-corduroy-jacket-in-bright-lavender/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/distressed-denim-baseball-cap/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-dainty-necklace-with-metal-beads/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-georgette-pleated-flowy-top-in-mauve/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-brown-drop-t-shirt-im-sick-sick-tired-of-office/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-brown-drop-t-shirt-im-sick-sick-tired-of-office/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/stainless-steel-flat-cuban-chain/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/stainless-steel-flat-cuban-chain/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/diamond-knit-polo-in-dark-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-diamond-knit-polo-in-dark-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/short-silk-and-georgette-mix-floral-kimono-in-green-with-lace/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-long-sleeve-shirt-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-georgette-pleated-flowy-top-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/velvet-bomber-jacket-in-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-pink-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/velvet-bomber-jacket-in-mustard-yellow/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-printed-party-shirt-in-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/abstract-patterned-textured-jacket-in-white-cyan/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-dusty-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/twill-military-cap/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-maroon-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-sidekick-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/crochet-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-leather-sling-bag/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-jet-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-straight-fit-carpenter-pants-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-grey-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-white-formal-pleated-pants/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-white-straight-fit-pleated-formal-gurkha-pants-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/pleated-summer-shorts-in-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/braided-cable-knit-polo-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-solid-t-shirt-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-long-sleeve-ruffle-top-in-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/endure-workout-t-shirt-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/see-ya-later-alligator-premium-funky-unisex-socks-in-pink-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/gorur-ghash-x-plaantik/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/gorur-ghash-x-plaantik/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-floral-printed-string-tie-top-in-violet/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-long-sleeve-ruffle-top-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-khaki-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-leather-bifold-duo-tone-classic-wallet/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-long-sleeve-oversized-button-down-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-long-sleeve-oversized-button-down-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/pink-silk-top-the-anastasia-romanov/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-olive-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-wool-blend-overcoat-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-wool-blend-overcoat-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-sidekick-pants-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-striped-cuff-bangles/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cropped-puffer-jacket-in-silver/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/swirl-printed-cuban-shirt-in-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/main-character-energy-printed-unisex-oversized-hoodie-in-black-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-lava-drop-necklace-in-silver/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/kids-cute-oversized-hoodie-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-flannel-shirt-in-teal-and-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/kids-cute-oversized-hoodie-in-brown-the-monkey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-ochre-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/corduroy-jacket-in-olive/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-brown-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-corduroy-jacket-in-caramel-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-corduroy-jacket-in-caramel-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/popcorn-box-premium-funky-unisex-socks-in-pink-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-georgette-pleated-flowy-top-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/pleated-summer-shorts-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-georgette-pleated-flowy-top-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/aztec-weave-jacket-in-dusty-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/white-bunny-premium-funky-unisex-socks-in-yellow-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-green-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-padded-racerback-ribbed-tank-top-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-leather-duo-tone-front-pocket-wallet/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oval-ridge-hoop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/carpet-textured-jacket-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/dainty-rose-hoop-earring/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-solid-t-shirt-in-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/dad-went-out-premium-funky-unisex-socks-in-black-pink-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-navy-blue-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-cropped-shirt-in-white-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-long-sleeve-oversized-shirt-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/corduroy-jacket-in-dark-slate-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/endure-workout-t-shirt-in-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-classic-relaxed-fit-pants-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/crochet-shirt-in-beige-with-brown-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boxy-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-long-sleeve-oversized-shirt-in-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-button-down-herringbone-patterned-shirt-in-iron-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/chase-running-t-shirt-in-mint-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-drop-shoulder-cord-color-block-shirts-in-blue-and-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-white-with-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-ribbed-tank-top-in-gray/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-cropped-shirt-in-white-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-bootcut-jeans-in-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cropped-puffer-jacket-in-deep-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-parrot-green-with-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-straight-fit-pleated-formal-pants-in-deep-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-long-sleeve-oversized-flannel-shirt-in-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/diamond-knit-polo-in-bottle-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/wavy-patterned-cuban-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-bootcut-jeans-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-black-with-thick-lines/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-baggy-cord-pants-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-solid-t-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/black-oversized-sherpa-hoodie-blanket/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-oversized-flow-shirt-in-cognac-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-pinstripe-high-waisted-relaxed-pants-in-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/baggy-fit-cargo-pants-in-deep-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cord-docker/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-baggy-jeans-in-navy/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-baggy-cord-pants-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/zip-up-loop-patterned-knit-polo-in-olive/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/scribble-embroidered-jacket-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/half-sleeve-embroidered-boxy-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/crochet-shirt-in-brown-with-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/half-sleeve-embroidered-boxy-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/wavy-patterned-cuban-shirt-in-baby-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/square-mesh-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/crochet-shirt-in-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/casual-long-sleeve-rayon-linen-blend-shirt-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/crochet-shirt-in-off-white-with-black-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-brown-with-thick-lines/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-payens-grey-with-thin-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-braided-cuff-bangle/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/abstract-printed-cuban-shirt-in-mint-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/omni-shorts-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-straight-fit-carpenter-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/square-is-the-new-heart-printed-unisex-oversized-hoodie-in-pink-waffle-up-x-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-horizontal-striped-knit-polo-in-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/aztec-weave-jacket-in-deep-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/casual-long-sleeve-rayon-linen-blend-shirt-in-moss-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/sculpt-yoga-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/kids-cute-velvet-bomber-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/kids-toddler-cute-velvet-bomber-jacket-in-burgundy/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/velvet-bomber-jacket-in-bottle-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/full-sleeve-band-collar-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/corduroy-jacket-in-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/scribble-embroidered-jacket-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-horizontal-striped-knit-polo-in-forest-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/wavy-patterned-cuban-shirt-in-sky-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/crochet-shirt-in-mint-with-navy-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cream-oversized-sherpa-hoodie-blankets-2/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/cream-oversized-sherpa-hoodie-blankets-2/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/endure-workout-t-shirt-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/carpet-textured-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-button-down-herringbone-patterned-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boxy-jacket-in-deep-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/endure-workout-t-shirt-in-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/twist-hoop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/zigzag-knit-polo-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-padded-racerback-ribbed-tank-top-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-high-waisted-curve-pleated-formal-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boxy-jacket-in-charcoal-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-racerback-ribbed-tank-top-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/embroidered-driftline-patterned-oversized-drop-shoulder-cuban-shirt-in-ochre/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/embroidered-driftline-patterned-oversized-drop-shoulder-cuban-shirt-in-olive/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-baggy-jeans-in-light-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-long-sleeve-flannel-shirt-in-navy-blue-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-dusty-sage-green-with-thick-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-white-with-thick-stripes-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/flannel-jacket-in-black-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/summer-shorts-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boys-white-and-green-printed-cuban-shirt-gorur-ghash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-blue-mid-rise-corduroy-straight-leg-casual-pants-copy/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-teal-drop-t-shirt-broke/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-scribble-printed-cuban-shirt-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-teal-drop-t-shirt-broke/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-scribble-printed-cuban-shirt-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-long-sleeve-oversized-shirt-in-navy/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/flannel-jacket-in-navy-blue-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-ribbed-tank-top-in-white-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/diamond-knit-polo-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-maroon-with-thin-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-pinstripe-high-waisted-relaxed-pants-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/cable-knit-patterned-cuban-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/baggy-fit-cargo-pants-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-mauve/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-heart-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/diamond-knit-polo-in-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/twill-chore-jacket-with-flannel-inner-in-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/diamond-knit-polo-in-light-pink/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/twill-chore-jacket-with-flannel-inner-in-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-black-with-thin-stripes-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-soft-textured-crewneck-t-shirt-in-dark-teal-with-stripes/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/minimalist-round-choker/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/zigzag-knit-polo-in-deep-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-espresso/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-midnight-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boys-half-sleeve-cuban-collar-shirt-in-red-and-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-full-sleeve-safari-shirt-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/endure-workout-t-shirt-in-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/endure-workout-t-shirt-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-half-sleeve-knitted-polo-in-navy-maroon-and-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-georgette-pleated-flowy-top-in-deep-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-ribbed-tank-top-in-dark-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-black-drop-t-shirt-motamoti-fit/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-button-down-herringbone-patterned-shirt-in-light-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/baggy-fit-cargo-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-baggy-cord-pants-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-flow-shirt-in-deep-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/boxy-jacket-in-light-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-half-sleeve-knitted-polo-in-green-navy-and-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-basic-white-crewneck-t-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-full-sleeve-safari-shirt-in-olive/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/twin-drop-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/swirl-wavy-earrings/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-light-grey-classic-pleated-gurkha-pants-with-new-belt/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/half-sleeve-embroidered-boxy-shirt-in-cream/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/chase-running-t-shirt-in-cornflower-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-dark-mauve/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-dark-ash/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/braided-cable-knit-polo-in-cornflower-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-drop-shoulder-denim-cuban-shirt-in-navy-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-baggy-cord-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-cream-classic-pleated-gurkha-pants-with-new-belt/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/premium-basic-black-crewneck-t-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/retro-sports-jacket-in-navy-blue-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-white-pleated-relaxed-gurkha-pants/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-snap-leather-wallet/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/sculpt-training-tank-top-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-pink-turtleneck-pullover-2/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/womens-purple-square-neck-top-and-wide-leg-pants-2-piece-set-in-marble-print/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-ribbed-black-turtleneck-pullover/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-oversized-cropped-shirt-in-white-sky-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-long-sleeve-shirt-in-bottle-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/retro-sports-jacket-in-green-purple/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-henley-full-sleeve-waffle-textured-t-shirt-in-washed-brown/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/textured-bomber-jacket-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-black-formal-pleated-pants/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/oversized-long-sleeve-shirt-in-light-grey/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-classic-relaxed-fit-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/unisex-long-sleeve-oversized-shirt-in-off-white/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-barrel-pants-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/full-sleeve-band-collar-shirt-in-bottle-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/printed-ethnic-top-in-maroon/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/graffiti-textured-jacket-in-blue/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-ribbed-tank-top-in-black/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/baggy-fit-cargo-pants-in-dark-jungle-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-black-classic-pleated-gurkha-pants-with-new-belt/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/long-sleeve-button-down-herringbone-patterned-shirt-in-hunter-green/",
+    "ok": true
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/printed-ethnic-top-in-green/",
+    "ok": false,
+    "error": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://gorurghash.com/product/printed-ethnic-top-in-green/\", waiting until \"networkidle\"\u001b[22m\n"
+  },
+  {
+    "type": "product",
+    "url": "https://gorurghash.com/product/mens-dark-brown-classic-pleated-gurkha-pants-with-new-belt/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/bootcut-jeans/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/blouse/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/bos/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/baggy-jeans/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/boys/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/button-down-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/burgundy/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/casual-wear/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/cheez/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/cubans/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/cuban/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/cuban-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/denim/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/drop-tee/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/drop-shoulder/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/full-sleeve-turtleneck/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/flannel/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/fullsleeved/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/half-sleeve/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/kids/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/male/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/maroon/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/motamoti-fit/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/mens/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/men/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/oversized/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/overszied/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/party-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/pullover/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/safari-shirts/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/revere-collar/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/semi-formal/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/silk/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/shirts/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/sweater/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/t-shirt/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/unisex/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/tops/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/turtleneck/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/winter/",
+    "ok": true
+  },
+  {
+    "type": "product_tag",
+    "url": "https://gorurghash.com/product-tag/women/",
+    "ok": true
+  },
+  {
+    "type": "category",
+    "url": "https://gorurghash.com/category/uncategorized/",
+    "ok": true
+  }
+]

@@ -13,7 +13,7 @@
  *    - Add an entry below in `CATEGORY_IMAGE_OVERRIDES` with the category slug.
  *    - You can use:
  *      a) A local static file placed in the `public/` directory (e.g. "/banners/custom-women.jpg")
- *      b) Any remote HTTPS image URL (e.g. "https://gorurghash.com/wp-content/uploads/...")
+ *      b) Any remote HTTPS image URL (e.g. "https://your-cdn.example.com/banners/women.jpg")
  *
  * 3. VIA STATIC JSON DATA (Offline/Fallback):
  *    - Edit `src/data/real-categories.json` and change the `"image": { "src": "..." }` URL for that category.
@@ -22,7 +22,7 @@
 export const CATEGORY_IMAGE_OVERRIDES: Record<string, string> = {
   // Example overrides (uncomment and replace with your desired URL or /public path):
   // "women": "/banners/women-hero.jpg",
-  // "co-rd-set": "https://gorurghash.com/wp-content/uploads/2024/05/605A1368-copy-scaled-e1716446723781.jpg",
+  // "co-rd-set": "https://your-cdn.example.com/banners/co-rd-set.jpg",
 };
 
 /**

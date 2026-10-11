@@ -16,25 +16,25 @@ import {
 
 /* ─── Types ───────────────────────────────────────────────────────── */
 interface WCOrder {
-  id: number;
+  id: string | number;
   number: string;
   status: string;
   date_created: string;
   total: string;
   billing: {
     first_name: string;
-    last_name: string;
-    email: string;
-    phone: string;
-    address_1: string;
-    city: string;
-    postcode: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+    address_1?: string;
+    city?: string;
+    postcode?: string;
   };
-  line_items: {
-    id: number;
+  line_items?: {
+    id?: number | string;
     name: string;
     quantity: number;
-    total: string;
+    total?: string | number;
   }[];
 }
 
@@ -58,50 +58,52 @@ export default function AdminCustomersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await authFetch("/api/admin/orders?per_page=100&status=any");
-        if (res.ok) {
-          const data = await res.json();
-          setOrders(Array.isArray(data) ? data : data.orders ?? []);
-        }
-      } finally {
-        setLoading(false);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await authFetch("/api/admin/orders?per_page=150&status=any");
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(Array.isArray(data) ? data : data.orders ?? []);
       }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     void load();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Derive customers from orders
+  // Derive customers from MongoDB orders
   const customers = useMemo(() => {
     const map = new Map<string, Customer>();
 
     orders.forEach((order) => {
-      const phone = order.billing.phone || "";
-      const email = order.billing.email || "";
-      // Key by phone or email
-      const key = phone || email || `${order.billing.first_name}-${order.billing.last_name}`;
+      const phone = order.billing?.phone || "";
+      const email = order.billing?.email || "";
+      const key = phone || email || `${order.billing?.first_name}-${order.billing?.last_name}`;
       if (!key) return;
 
       const existing = map.get(key);
+      const orderTotal = Number(order.total || 0);
+
       if (existing) {
         existing.totalOrders += 1;
-        existing.totalSpent += Number(order.total);
+        existing.totalSpent += orderTotal;
         if (new Date(order.date_created) > new Date(existing.lastOrderDate)) {
           existing.lastOrderDate = order.date_created;
         }
         existing.orders.push(order);
       } else {
         map.set(key, {
-          name: `${order.billing.first_name} ${order.billing.last_name}`.trim() || "Guest",
+          name: `${order.billing?.first_name || ""} ${order.billing?.last_name || ""}`.trim() || "Guest",
           email,
           phone,
-          city: order.billing.city || "",
-          address: order.billing.address_1 || "",
+          city: order.billing?.city || "",
+          address: order.billing?.address_1 || "",
           totalOrders: 1,
-          totalSpent: Number(order.total),
+          totalSpent: orderTotal,
           lastOrderDate: order.date_created,
           orders: [order],
         });
@@ -124,95 +126,105 @@ export default function AdminCustomersPage() {
   }, [customers, searchQuery]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center">
-            <Users className="h-5 w-5 text-purple-600" />
+          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
+            <Users className="h-5 w-5 text-[#400604]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Customers</h1>
-            <p className="text-[12px] text-gray-400">
-              {customers.length} total customers (derived from orders)
+            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Clientele Directory</h1>
+            <p className="text-[12px] text-stone-500">
+              Aggregated from MongoDB order activity — {customers.length} unique customers
             </p>
           </div>
         </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[13px] text-gray-500 hover:text-purple-600 hover:border-purple-300 transition"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 hover:text-[#400604] hover:border-[#400604] transition"
+            title="Refresh customers"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* ── Search ─────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-purple-100/60 p-4 shadow-sm">
+      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-4 shadow-sm">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
           <input
             type="text"
-            placeholder="Search by name, phone, email or city..."
+            placeholder="Search by name, phone, email, city..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+            className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#400604] focus:ring-1 focus:ring-[#400604]/20 transition"
           />
         </div>
       </div>
 
       {/* ── Customers Table ────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
-        {/* Header */}
-        <div className="hidden lg:grid grid-cols-[50px_1fr_150px_150px_120px_100px_50px] gap-3 px-5 py-3 bg-purple-50/70 text-[10px] font-bold uppercase tracking-widest text-purple-500">
+      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
+        {/* Table header */}
+        <div className="hidden lg:grid grid-cols-[50px_1fr_160px_140px_130px_110px_40px] gap-3 px-5 py-3.5 bg-[#FDFBF7] text-[10px] font-bold uppercase tracking-widest text-[#400604] border-b border-stone-100">
           <span>SL</span>
           <span>Customer</span>
           <span>Phone</span>
-          <span>City</span>
+          <span>City / District</span>
           <span>Total Spent</span>
-          <span>Orders</span>
-          <span></span>
+          <span>Total Orders</span>
+          <span />
         </div>
 
         {loading ? (
-          <div className="p-3 space-y-2">
+          <div className="space-y-1 p-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-purple-50/50 animate-pulse" />
+              <div
+                key={i}
+                className="h-16 rounded-xl bg-stone-100/60 animate-pulse"
+              />
             ))}
           </div>
         ) : filteredCustomers.length === 0 ? (
-          <div className="text-center py-16">
-            <Users className="h-12 w-12 text-purple-200 mx-auto mb-3" />
-            <p className="text-gray-400">No customers found.</p>
+          <div className="py-24 text-center">
+            <Users className="h-12 w-12 mx-auto text-stone-300 mb-3" />
+            <p className="text-[15px] font-bold text-stone-700">No customers found</p>
+            <p className="text-[12px] text-stone-400 mt-1">
+              Customers will automatically appear here once orders are placed.
+            </p>
           </div>
         ) : (
-          <div className="divide-y divide-purple-50">
+          <div className="divide-y divide-stone-100">
             {filteredCustomers.map((customer, idx) => {
-              const isOpen = expanded === customer.phone + customer.email;
+              const isOpen = expanded === customer.phone || expanded === customer.email || expanded === String(idx);
+              const toggleKey = customer.phone || customer.email || String(idx);
+
               return (
-                <div key={customer.phone + customer.email + idx}>
+                <div key={toggleKey}>
                   <button
-                    onClick={() =>
-                      setExpanded(
-                        isOpen ? null : customer.phone + customer.email
-                      )
-                    }
-                    className="w-full grid grid-cols-[auto_1fr_auto] lg:grid-cols-[50px_1fr_150px_150px_120px_100px_50px] items-center gap-3 px-5 py-3.5 text-left hover:bg-purple-50/30 transition"
+                    type="button"
+                    onClick={() => setExpanded(isOpen ? null : toggleKey)}
+                    className="w-full grid grid-cols-[1fr_auto] lg:grid-cols-[50px_1fr_160px_140px_130px_110px_40px] items-center gap-3 px-5 py-4 text-left hover:bg-stone-50/70 transition"
                   >
-                    <span className="hidden lg:block text-[12px] text-purple-500 font-bold">
+                    <span className="hidden lg:block text-[12px] text-stone-400 font-bold">
                       {idx + 1}
                     </span>
 
                     {/* Customer info */}
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#400604] to-[#1A0302] border border-[#E1B76F]/30 flex items-center justify-center text-[#E1B76F] text-xs font-serif font-bold flex-shrink-0 shadow-sm">
                         {customer.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-gray-700 truncate">
+                        <p className="text-[13px] font-semibold text-stone-900 truncate">
                           {customer.name}
                         </p>
                         {customer.email && (
-                          <p className="text-[11px] text-gray-400 truncate">
+                          <p className="text-[11px] text-stone-400 truncate">
                             {customer.email}
                           </p>
                         )}
@@ -220,28 +232,28 @@ export default function AdminCustomersPage() {
                     </div>
 
                     <div className="hidden lg:flex items-center gap-1.5">
-                      <Phone className="h-3 w-3 text-gray-400" />
-                      <span className="text-[12px] text-gray-600">
+                      <Phone className="h-3 w-3 text-stone-400" />
+                      <span className="text-[12px] text-stone-600 font-mono">
                         {customer.phone || "—"}
                       </span>
                     </div>
 
                     <div className="hidden lg:flex items-center gap-1.5">
-                      <MapPin className="h-3 w-3 text-gray-400" />
-                      <span className="text-[12px] text-gray-600">
+                      <MapPin className="h-3 w-3 text-stone-400" />
+                      <span className="text-[12px] text-stone-600 truncate">
                         {customer.city || "—"}
                       </span>
                     </div>
 
-                    <span className="hidden lg:block text-[13px] font-bold text-purple-600">
+                    <span className="hidden lg:block text-[13px] font-bold text-[#400604]">
                       ৳ {customer.totalSpent.toLocaleString()}
                     </span>
 
-                    <span className="hidden lg:inline-flex items-center justify-center h-7 min-w-[28px] rounded-full bg-purple-100 text-purple-700 text-[11px] font-bold px-2">
+                    <span className="hidden lg:inline-flex items-center justify-center h-7 min-w-[28px] rounded-full bg-stone-100 text-stone-700 text-[11px] font-bold px-2">
                       {customer.totalOrders}
                     </span>
 
-                    <span className="text-gray-400">
+                    <span className="text-stone-400 flex justify-end">
                       {isOpen ? (
                         <ChevronUp className="h-4 w-4" />
                       ) : (
@@ -252,86 +264,88 @@ export default function AdminCustomersPage() {
 
                   {/* Expanded details */}
                   {isOpen && (
-                    <div className="border-t border-purple-100 bg-purple-50/20 px-5 py-4">
+                    <div className="border-t border-stone-100 bg-[#FDFBF7] px-5 py-4">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                        <div className="bg-white rounded-xl p-3 border border-purple-100/60">
+                        <div className="bg-white rounded-xl p-3 border border-stone-200">
                           <div className="flex items-center gap-1.5 mb-1">
-                            <Mail className="h-3 w-3 text-purple-400" />
-                            <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">
+                            <Mail className="h-3 w-3 text-[#400604]" />
+                            <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold">
                               Email
                             </span>
                           </div>
-                          <span className="text-[12px] text-gray-700">
+                          <span className="text-[12px] text-stone-700 truncate block">
                             {customer.email || "—"}
                           </span>
                         </div>
-                        <div className="bg-white rounded-xl p-3 border border-purple-100/60">
+                        <div className="bg-white rounded-xl p-3 border border-stone-200">
                           <div className="flex items-center gap-1.5 mb-1">
-                            <Phone className="h-3 w-3 text-purple-400" />
-                            <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">
+                            <Phone className="h-3 w-3 text-[#400604]" />
+                            <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold">
                               Phone
                             </span>
                           </div>
-                          <span className="text-[12px] text-gray-700">
+                          <span className="text-[12px] text-stone-700 font-mono">
                             {customer.phone || "—"}
                           </span>
                         </div>
-                        <div className="bg-white rounded-xl p-3 border border-purple-100/60">
+                        <div className="bg-white rounded-xl p-3 border border-stone-200">
                           <div className="flex items-center gap-1.5 mb-1">
-                            <MapPin className="h-3 w-3 text-purple-400" />
-                            <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">
+                            <MapPin className="h-3 w-3 text-[#400604]" />
+                            <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold">
                               Address
                             </span>
                           </div>
-                          <span className="text-[12px] text-gray-700">
+                          <span className="text-[12px] text-stone-700 truncate block">
                             {customer.address || "—"}, {customer.city}
                           </span>
                         </div>
-                        <div className="bg-white rounded-xl p-3 border border-purple-100/60">
+                        <div className="bg-white rounded-xl p-3 border border-stone-200">
                           <div className="flex items-center gap-1.5 mb-1">
-                            <ShoppingBag className="h-3 w-3 text-purple-400" />
-                            <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">
+                            <ShoppingBag className="h-3 w-3 text-[#400604]" />
+                            <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold">
                               Last Order
                             </span>
                           </div>
-                          <span className="text-[12px] text-gray-700">
-                            {new Date(customer.lastOrderDate).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })}
+                          <span className="text-[12px] text-stone-700">
+                            {customer.lastOrderDate
+                              ? new Date(customer.lastOrderDate).toLocaleDateString("en-GB", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "—"}
                           </span>
                         </div>
                       </div>
 
                       {/* Recent orders */}
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#400604] mb-2">
                         Order History
                       </p>
                       <div className="space-y-1.5">
                         {customer.orders.slice(0, 5).map((order) => (
                           <div
                             key={order.id}
-                            className="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-purple-100/60 text-[12px]"
+                            className="flex items-center justify-between bg-white rounded-xl px-3.5 py-2.5 border border-stone-200 text-[12px]"
                           >
-                            <span className="font-bold text-purple-600">
-                              #{order.number}
+                            <span className="font-bold text-[#400604]">
+                              #{order.number || order.id}
                             </span>
-                            <span className="text-gray-400">
-                              {new Date(order.date_created).toLocaleDateString("en-GB")}
+                            <span className="text-stone-400">
+                              {order.date_created ? new Date(order.date_created).toLocaleDateString("en-GB") : "—"}
                             </span>
-                            <span className="font-bold text-gray-700">
-                              ৳ {Number(order.total).toLocaleString()}
+                            <span className="font-bold text-stone-800">
+                              ৳ {Number(order.total || 0).toLocaleString()}
                             </span>
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
+                              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold capitalize ${
                                 order.status === "completed"
-                                  ? "bg-emerald-50 text-emerald-600"
+                                  ? "bg-emerald-50 text-emerald-700"
                                   : order.status === "pending"
-                                  ? "bg-amber-50 text-amber-600"
+                                  ? "bg-amber-50 text-amber-700"
                                   : order.status === "cancelled"
-                                  ? "bg-red-50 text-red-600"
-                                  : "bg-blue-50 text-blue-600"
+                                  ? "bg-rose-50 text-rose-700"
+                                  : "bg-blue-50 text-blue-700"
                               }`}
                             >
                               {order.status.replace("-", " ")}

@@ -1,95 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Category } from "@/models/Category";
 import REAL_CATEGORIES from "@/data/real-categories.json";
-
-const WC_BASE = (process.env.NEXT_PUBLIC_WC_API_URL ?? "https://netbazarbd.net").replace(/\/$/, "");
-const WP_USERNAME = process.env.WP_ADMIN_USERNAME ?? "";
-const WP_APP_PASSWORD = (process.env.WP_APP_PASSWORD ?? "").replace(/\s+/g, "");
-const wcAuth = () => Buffer.from(`${WP_USERNAME}:${WP_APP_PASSWORD}`).toString("base64");
-const WC_HEADERS = () => ({
-  Authorization: `Basic ${wcAuth()}`,
-  "Content-Type": "application/json",
-});
-
-const isWpLive = Boolean(
-  process.env.NEXT_PUBLIC_WC_API_URL &&
-  !process.env.NEXT_PUBLIC_WC_API_URL.includes("netbazarbd.net") &&
-  WP_USERNAME &&
-  WP_APP_PASSWORD
-);
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  if (isWpLive) {
-    const perPage = 100;
-    const all: unknown[] = [];
-    let page = 1;
+  try {
+    await connectToDatabase();
+    const categories = await Category.find({})
+      .sort({ parent: 1, name: 1 })
+      .lean();
 
-    try {
-      while (true) {
-        const url = new URL(`${WC_BASE}/wp-json/wc/v3/products/categories`);
-        url.searchParams.set("per_page", String(perPage));
-        url.searchParams.set("page", String(page));
-        url.searchParams.set("hide_empty", "false");
-
-        const res = await fetch(url.toString(), {
-          headers: WC_HEADERS(),
-          signal: AbortSignal.timeout(3500),
-        });
-
-        if (!res.ok) {
-          if (page === 1) return NextResponse.json(REAL_CATEGORIES, { status: 200 });
-          break;
-        }
-
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) break;
-
-        all.push(...data);
-        if (data.length < perPage) break;
-        page += 1;
-      }
-
-      if (all.length > 0) {
-        return NextResponse.json(all, { status: 200 });
-      }
-    } catch (err) {
-      console.warn("WooCommerce categories fetch failed, using local fallback:", err);
+    if (categories && categories.length > 0) {
+      return NextResponse.json(categories, {
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      });
     }
+  } catch (err) {
+    console.warn("MongoDB admin categories fetch error, using local fallback:", err);
   }
 
-  // Instant local categories fallback
   return NextResponse.json(REAL_CATEGORIES, { status: 200 });
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-
-  const slug = (body.name as string)
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w-]/g, "");
-
   try {
-    const res = await fetch(`${WC_BASE}/wp-json/wc/v3/products/categories`, {
-      method: "POST",
-      headers: WC_HEADERS(),
-      body: JSON.stringify({
-        name: body.name,
-        slug,
-        description: body.description ?? "",
-        parent: body.parent ?? 0,
-        menu_order: body.menu_order ?? 0,
-        ...(body.meta_data ? { meta_data: body.meta_data } : {}),
-        ...(body.image ? { image: body.image } : {}),
-      }),
+    const body = await request.json();
+    await connectToDatabase();
+
+    const name = String(body.name || "Category").trim();
+    const slug =
+      body.slug ||
+      name
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]/g, "");
+
+    // Generate unique category ID
+    let catId = Number(body.id);
+    if (!catId || isNaN(catId)) {
+      const highest = await Category.findOne({}).sort({ id: -1 }).select("id").lean();
+      catId = (highest?.id || 1000) + 1;
+    }
+
+    const newCategory = await Category.create({
+      id: catId,
+      name,
+      slug,
+      description: body.description ?? "",
+      parent: Number(body.parent ?? 0),
+      count: Number(body.count ?? 0),
+      image: body.image ? { id: body.image.id || 0, src: body.image.src, alt: body.image.alt || name } : null,
     });
 
-    const data = await res.json();
-    if (res.ok) revalidateTag("categories", { expire: 0 });
-    return NextResponse.json(data, { status: res.status });
+    return NextResponse.json(newCategory, { status: 201 });
   } catch (err) {
     console.error("Create category failed:", err);
     return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
@@ -102,13 +67,16 @@ export async function DELETE(request: NextRequest) {
   if (!id) return NextResponse.json({ message: "ID required" }, { status: 400 });
 
   try {
-    const res = await fetch(`${WC_BASE}/wp-json/wc/v3/products/categories/${id}?force=true`, {
-      method: "DELETE",
-      headers: WC_HEADERS(),
-    });
-    const data = await res.json();
-    if (res.ok) revalidateTag("categories", { expire: 0 });
-    return NextResponse.json(data, { status: res.status });
+    await connectToDatabase();
+    const numericId = parseInt(id, 10);
+    const query = isNaN(numericId) ? { slug: id } : { id: numericId };
+
+    const deleted = await Category.findOneAndDelete(query);
+    if (!deleted) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: "Category deleted successfully" }, { status: 200 });
   } catch (err) {
     console.error("Delete category failed:", err);
     return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });

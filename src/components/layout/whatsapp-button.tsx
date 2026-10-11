@@ -5,26 +5,22 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, X } from "lucide-react";
 
 const WA_NUMBER = "8801338668899"; // user verified contact
-const WA_MESSAGE = encodeURIComponent("Hi! I'm interested in apparel from ANGKON - House of Modern Heritage. Can you help me?");
+const WA_MESSAGE = encodeURIComponent("Hi! I'm interested in apparel from ANGKON Ethnic Bangladeshi Fashion. Can you help me?");
 const WA_URL = `https://wa.me/${WA_NUMBER}?text=${WA_MESSAGE}`;
 
 export function WhatsAppButton() {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [time, setTime] = useState("");
+  // Current time in HH:MM; only rendered after the 2s delay, so no hydration mismatch
+  const [time] = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  });
 
   // Show after 2s so it doesn't distract on initial load
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 2000);
     return () => clearTimeout(t);
-  }, []);
-
-  // Get current time in HH:MM format
-  useEffect(() => {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, "0");
-    const minutes = String(now.getMinutes()).padStart(2, "0");
-    setTime(`${hours}:${minutes}`);
   }, []);
 
   if (!visible) return null;
@@ -40,7 +36,7 @@ export function WhatsAppButton() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 12 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="w-72 overflow-hidden rounded-2xl bg-[#400604] border border-[#5c0f0d] shadow-2xl"
+            className="w-72 overflow-hidden rounded-2xl bg-[#400604] border border-[#E1B76F]/30 shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center gap-3 bg-[#25D366] px-4 py-3">
@@ -66,17 +62,17 @@ export function WhatsAppButton() {
             {/* Body */}
             <div className="px-4 py-4 bg-[#400604]">
               <div className="space-y-2">
-                <div className="rounded-2xl bg-[#2b0403] border border-[#5c0f0d] px-3.5 py-2.5 text-[13px] text-[#E1B76F] leading-relaxed">
+                <div className="rounded-2xl bg-[#340402] border border-[#E1B76F]/25 px-3.5 py-2.5 text-[13px] text-[#E1B76F] leading-relaxed">
                   👋 Hi there! Need help finding the perfect apparel or placing an order?
                 </div>
                 <div className="flex justify-end pr-2">
-                  <span className="text-[11px] text-[#cbb18a]">{time}</span>
+                  <span className="text-[11px] text-[#f0d29d]">{time}</span>
                 </div>
               </div>
             </div>
 
             {/* CTA */}
-            <div className="border-t border-[#5c0f0d] bg-[#400604] px-4 pb-4 pt-2">
+            <div className="border-t border-[#E1B76F]/20 bg-[#400604] px-4 pb-4 pt-2">
               <a
                 href={WA_URL}
                 target="_blank"

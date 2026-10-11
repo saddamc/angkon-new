@@ -1,0 +1,47 @@
+[
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/flannel-jacket/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/gorurghash-x-cheez/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/about/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/stainless-steel-flat-cuban-chain/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/mens-embroidered-shacket-in-dark-green/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/mens-flannel-jacket-in-brown-off-white/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/cream-oversized-sherpa-hoodie-blankets-2/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/gorur-ghash-x-plaantik/",
+    "ok": true
+  },
+  {
+    "type": "retry",
+    "url": "https://gorurghash.com/product/printed-ethnic-top-in-green/",
+    "ok": true
+  }
+]

@@ -50,6 +50,7 @@ export function SlideSearch() {
       }, 50);
       return () => clearTimeout(timer);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset / debounced search request
       setQuery("");
       setResults([]);
     }
@@ -69,6 +70,7 @@ export function SlideSearch() {
   // Fetch search results on query change
   useEffect(() => {
     if (!query.trim()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset / debounced search request
       setResults([]);
       return;
     }
@@ -110,7 +112,7 @@ export function SlideSearch() {
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="p-1 text-[#4e4e4e] hover:text-[#602bb7] transition flex items-center justify-center"
+          className="p-1 text-[#E1B76F] hover:text-[#f3cb87] transition flex items-center justify-center"
           aria-label="Open search"
           title="Search"
         >
@@ -118,10 +120,9 @@ export function SlideSearch() {
         </button>
       ) : (
         <div className="relative flex items-center animate-in fade-in slide-in-from-right-3 duration-200">
-          {/* Exactly matches user image: dotted border rectangle with Search... and icon */}
           <form
             onSubmit={handleSubmit}
-            className="flex items-center border border-dotted border-[#4e4e4e] bg-white px-2.5 py-1 rounded-[2px] transition-all shadow-sm focus-within:border-solid focus-within:border-[#602bb7]"
+            className="flex items-center border border-[#E1B76F]/40 bg-[#340402] px-2.5 py-1 rounded-[4px] transition-all shadow-sm focus-within:border-[#E1B76F]"
           >
             <input
               ref={inputRef}
@@ -129,15 +130,15 @@ export function SlideSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search..."
-              className="w-40 sm:w-56 text-[13px] text-[#4e4e4e] placeholder:text-[#888888] bg-transparent outline-none pr-1.5 font-normal"
+              className="w-40 sm:w-56 text-[13px] text-[#E1B76F] placeholder:text-[#E1B76F]/50 bg-transparent outline-none pr-1.5 font-normal"
             />
             <button
               type="submit"
-              className="p-0.5 text-[#4e4e4e] hover:text-[#602bb7] transition flex items-center justify-center"
+              className="p-0.5 text-[#E1B76F] hover:text-[#f3cb87] transition flex items-center justify-center"
               aria-label="Submit search"
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-[#602bb7]" />
+                <Loader2 className="h-4 w-4 animate-spin text-[#E1B76F]" />
               ) : (
                 <Search className="h-4 w-4" />
               )}
@@ -145,7 +146,7 @@ export function SlideSearch() {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="p-0.5 text-neutral-400 hover:text-black transition ml-1"
+              className="p-0.5 text-[#E1B76F]/60 hover:text-[#E1B76F] transition ml-1"
               aria-label="Close search"
             >
               <X className="h-3.5 w-3.5" />
@@ -154,19 +155,19 @@ export function SlideSearch() {
 
           {/* Instant Dropdown Results (Professional & Seamless) */}
           {query.trim().length > 0 && (
-            <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-[350px] bg-white border border-neutral-200 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-[350px] bg-[#340402] border border-[#E1B76F]/30 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               {loading && results.length === 0 ? (
-                <div className="py-6 text-center text-xs text-neutral-400 flex items-center justify-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#602bb7]" />
+                <div className="py-6 text-center text-xs text-[#f0d29d]/70 flex items-center justify-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E1B76F]" />
                   Searching products...
                 </div>
               ) : results.length === 0 ? (
-                <div className="py-6 text-center text-xs text-neutral-500">
+                <div className="py-6 text-center text-xs text-[#f0d29d]/80">
                   No products found for &ldquo;{query}&rdquo;
                 </div>
               ) : (
                 <div className="space-y-1">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 px-2 py-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#E1B76F]/60 px-2 py-1">
                     Matching Products
                   </div>
                   {results.map((product) => (
@@ -174,9 +175,9 @@ export function SlideSearch() {
                       key={product.id}
                       href={`/products/${product.slug}`}
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-neutral-50 transition group"
+                      className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-[#400604] transition group"
                     >
-                      <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-neutral-100 border border-neutral-200">
+                      <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-[#2b0403] border border-[#E1B76F]/20">
                         <Image
                           src={product.image}
                           alt={product.name}
@@ -186,23 +187,23 @@ export function SlideSearch() {
                         />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#602bb7] transition">
+                        <h4 className="line-clamp-1 text-xs font-semibold text-[#E1B76F] group-hover:text-[#f3cb87] transition">
                           {product.name}
                         </h4>
-                        <p className="text-[10px] text-neutral-400">
+                        <p className="text-[10px] text-[#cbb18a]">
                           {product.category}
                         </p>
                       </div>
-                      <span className="text-xs font-bold text-black flex-shrink-0">
+                      <span className="text-xs font-bold text-[#E1B76F] flex-shrink-0">
                         {formatPrice(product.price)}
                       </span>
                     </Link>
                   ))}
-                  <div className="pt-2 mt-1 border-t border-neutral-100">
+                  <div className="pt-2 mt-1 border-t border-[#E1B76F]/20">
                     <button
                       type="button"
                       onClick={handleSubmit}
-                      className="w-full text-center py-1.5 text-xs font-bold text-[#602bb7] hover:underline"
+                      className="w-full text-center py-1.5 text-xs font-bold text-[#E1B76F] hover:text-[#f3cb87] hover:underline"
                     >
                       View all results for &ldquo;{query}&rdquo; &rarr;
                     </button>

@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { getAllCategories } from "@/lib/woocommerce/categories";
+import { getDbCategories } from "@/lib/db/categories";
 
-// Public, read-only, cached mirror of WooCommerce categories — used by the
-// storefront (navbar, homepage, products page). Backed by getAllCategories(),
-// which is revalidated every 5 minutes and on-demand after admin category CRUD.
 export async function GET() {
   try {
-    const categories = await getAllCategories();
-    return NextResponse.json(categories);
+    const categories = await getDbCategories();
+    return NextResponse.json(categories, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
   } catch (error) {
-    console.error("API /categories proxy error:", error);
+    console.error("API /categories error:", error);
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
 }

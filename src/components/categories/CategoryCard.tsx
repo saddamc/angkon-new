@@ -13,10 +13,10 @@ export function CategoryCard({ category, href }: { category: WooCategory; href: 
   return (
     <Link
       href={href}
-      className="group relative block w-full bg-white text-center"
+      className="group relative block w-full bg-transparent text-center"
     >
-      {/* 1. Category Image (Square 1:1 matching live store exactly) */}
-      <div className="relative aspect-square w-full overflow-hidden bg-neutral-100">
+      {/* 1. Category Image */}
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#340402] border border-[#E1B76F]/20">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -26,18 +26,18 @@ export function CategoryCard({ category, href }: { category: WooCategory; href: 
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-neutral-100">
+          <div className="flex h-full w-full items-center justify-center bg-[#340402]">
             <span className="text-4xl">{DEFAULT_CATEGORY_EMOJI}</span>
           </div>
         )}
 
-        {/* 2. White Overlay Banner (Matches Gorur Ghash Astra .woocommerce-loop-category__title) */}
-        <div className="absolute left-3.5 right-3.5 sm:left-4 sm:right-4 bottom-5 sm:bottom-6 bg-[rgba(255,255,255,0.88)] group-hover:bg-white text-center py-1.5 sm:py-2 px-1 transition-colors duration-200 pointer-events-none">
-          <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-[#333333] leading-snug line-clamp-1">
+        {/* 2. Brand Overlay Banner */}
+        <div className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-4 sm:bottom-5 rounded-lg bg-[#400604]/90 group-hover:bg-[#400604] border border-[#E1B76F]/30 backdrop-blur-sm text-center py-2 px-2 transition-colors duration-200 pointer-events-none shadow-md">
+          <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-[#E1B76F] leading-snug line-clamp-1">
             {name}
           </h2>
           {count > 0 && (
-            <span className="block text-[10px] sm:text-[11px] font-normal uppercase tracking-wider text-[#333333]/50 mt-0.5 leading-snug">
+            <span className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-[#f0d29d]/70 mt-0.5 leading-snug">
               {countLabel}
             </span>
           )}

@@ -49,26 +49,26 @@ h1, h2, h3, h4, h5, h6 {
   color: #E1B76F;
 }
 
-/* ── Product description HTML prose ─────────────────────────────────── */
-.product-prose { color: #374151; font-size: 0.9375rem; line-height: 1.7; }
-.product-prose p { margin-bottom: 0.875rem; line-height: 1.7; color: #4b5563; }
+/* ── Product description HTML prose (Luxury Gold / Champagne) ──────── */
+.product-prose { color: #f0d29d; font-size: 0.9375rem; line-height: 1.7; }
+.product-prose p { margin-bottom: 0.875rem; line-height: 1.7; color: #f0d29d; }
 .product-prose p:last-child { margin-bottom: 0; }
 .product-prose ul, .product-prose ol { padding-left: 1.375rem; margin-bottom: 0.875rem; }
 .product-prose ul { list-style: disc; }
 .product-prose ol { list-style: decimal; }
-.product-prose li { margin-bottom: 0.35rem; line-height: 1.65; color: #4b5563; }
+.product-prose li { margin-bottom: 0.35rem; line-height: 1.65; color: #f0d29d; }
 .product-prose h1, .product-prose h2, .product-prose h3, .product-prose h4 {
-  font-weight: 700; color: #111827; margin-top: 1.25rem; margin-bottom: 0.5rem; line-height: 1.35;
+  font-weight: 700; color: #E1B76F; margin-top: 1.25rem; margin-bottom: 0.5rem; line-height: 1.35;
 }
 .product-prose h2 { font-size: 1.125rem; }
 .product-prose h3 { font-size: 1rem; }
 .product-prose h4 { font-size: 0.9375rem; }
-.product-prose strong, .product-prose b { font-weight: 600; color: #111827; }
-.product-prose em, .product-prose i { font-style: italic; }
-.product-prose a { color: #111827; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
-.product-prose a:hover { color: #000000; }
-.product-prose hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.25rem 0; }
-.product-prose table { width: 100%; border-collapse: collapse; margin-bottom: 0.875rem; font-size: 0.875rem; }
+.product-prose strong, .product-prose b { font-weight: 600; color: #E1B76F; }
+.product-prose em, .product-prose i { font-style: italic; color: #f0d29d; }
+.product-prose a { color: #E1B76F; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+.product-prose a:hover { color: #ffffff; }
+.product-prose hr { border: none; border-top: 1px solid rgba(225, 183, 111, 0.2); margin: 1.25rem 0; }
+.product-prose table { width: 100%; border-collapse: collapse; margin-bottom: 0.875rem; font-size: 0.875rem; color: #f0d29d; }
 
 /* ── Industry-level Right-to-Left Slide Search Animations ── */
 @keyframes slideSearchIn {

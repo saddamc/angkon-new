@@ -6,8 +6,6 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   ArrowUpRight,
-  Package,
-  ShoppingCart,
   TrendingUp,
   Users,
   Clock,
@@ -16,6 +14,7 @@ import {
   Truck,
   RotateCcw,
   Phone,
+  ShoppingBag,
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────────────────── */
@@ -48,17 +47,6 @@ interface WCProduct {
   images: { src: string }[];
 }
 
-/* ─── Status colour map ───────────────────────────────────────────── */
-const STATUS_BADGE: Record<string, { bg: string; text: string; dot: string }> = {
-  pending:    { bg: "bg-amber-50",   text: "text-amber-600",   dot: "bg-amber-400" },
-  processing: { bg: "bg-blue-50",    text: "text-blue-600",    dot: "bg-blue-400" },
-  "on-hold":  { bg: "bg-yellow-50",  text: "text-yellow-600",  dot: "bg-yellow-400" },
-  completed:  { bg: "bg-emerald-50", text: "text-emerald-600", dot: "bg-emerald-400" },
-  cancelled:  { bg: "bg-red-50",     text: "text-red-600",     dot: "bg-red-400" },
-  refunded:   { bg: "bg-gray-50",    text: "text-gray-600",    dot: "bg-gray-400" },
-  failed:     { bg: "bg-rose-50",    text: "text-rose-600",    dot: "bg-rose-400" },
-};
-
 /* ─── Donut Chart SVG ─────────────────────────────────────────────── */
 function DonutChart({
   value,
@@ -84,7 +72,7 @@ function DonutChart({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="#f0ebff"
+          stroke="#F5EFE6"
           strokeWidth={10}
         />
         <circle
@@ -101,7 +89,7 @@ function DonutChart({
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-bold text-gray-700">
+        <span className="text-lg font-serif font-bold text-[#1A0302]">
           {pct.toFixed(0)}%
         </span>
       </div>
@@ -148,7 +136,7 @@ export default function AdminDashboard() {
   const stats = useMemo(() => {
     const totalRevenue = orders
       .filter((o) => !["cancelled", "failed", "refunded", "trash"].includes(o.status))
-      .reduce((sum, o) => sum + Number(o.total), 0);
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
     const pendingCount = orders.filter(
       (o) => o.status === "pending" || o.status === "on-hold"
     ).length;
@@ -170,7 +158,7 @@ export default function AdminDashboard() {
       (o) => new Date(o.date_created) >= today
     );
     const todayRevenue = todayOrders.reduce(
-      (sum, o) => sum + Number(o.total),
+      (sum, o) => sum + Number(o.total || 0),
       0
     );
 
@@ -180,7 +168,7 @@ export default function AdminDashboard() {
       (o) => new Date(o.date_created) >= thisMonth
     );
     const monthRevenue = monthOrders.reduce(
-      (sum, o) => sum + Number(o.total),
+      (sum, o) => sum + Number(o.total || 0),
       0
     );
 
@@ -199,7 +187,7 @@ export default function AdminDashboard() {
   }, [orders]);
 
   const topProducts = useMemo(
-    () => [...products].sort((a, b) => b.total_sales - a.total_sales).slice(0, 5),
+    () => [...products].sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0)).slice(0, 5),
     [products]
   );
 
@@ -217,15 +205,15 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-48 bg-purple-100 rounded-xl" />
+        <div className="h-8 w-48 bg-[#400604]/10 rounded-xl" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-52 bg-white rounded-2xl shadow-sm" />
+            <div key={i} className="h-52 bg-white rounded-2xl shadow-sm border border-[#E1B76F]/20" />
           ))}
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-2 h-80 bg-white rounded-2xl shadow-sm" />
-          <div className="h-80 bg-white rounded-2xl shadow-sm" />
+          <div className="xl:col-span-2 h-80 bg-white rounded-2xl shadow-sm border border-[#E1B76F]/20" />
+          <div className="h-80 bg-white rounded-2xl shadow-sm border border-[#E1B76F]/20" />
         </div>
       </div>
     );
@@ -235,9 +223,9 @@ export default function AdminDashboard() {
     <div className="space-y-7">
       {/* ── Page title ───────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Welcome back, here&apos;s your store overview.
+        <h1 className="text-2xl font-serif font-bold text-[#1A0302]">Store Overview</h1>
+        <p className="text-sm text-stone-500 mt-0.5">
+          Welcome to the ANGKON luxury administration dashboard. Real-time MongoDB intelligence.
         </p>
       </div>
 
@@ -248,29 +236,29 @@ export default function AdminDashboard() {
             title: "Today",
             value: stats.todayRevenue,
             max: stats.totalRevenue || 1,
-            color: "#9333ea",
+            color: "#E1B76F",
             orders: stats.todayOrders,
           },
           {
-            title: "Monthly",
+            title: "This Month",
             value: stats.monthRevenue,
             max: stats.totalRevenue || 1,
-            color: "#ef4444",
+            color: "#400604",
             orders: stats.monthOrders,
           },
           {
             title: "All Time",
             value: stats.totalRevenue,
             max: stats.totalRevenue || 1,
-            color: "#7c3aed",
+            color: "#1A0302",
             orders: orders.length,
           },
         ].map((item) => (
           <div
             key={item.title}
-            className="bg-white rounded-2xl border border-purple-100/60 p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300"
+            className="bg-white rounded-2xl border border-[#E1B76F]/25 p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300"
           >
-            <h3 className="text-sm font-semibold text-gray-500 mb-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-4">
               {item.title}
             </h3>
             <DonutChart
@@ -278,21 +266,21 @@ export default function AdminDashboard() {
               max={item.max}
               color={item.color}
             />
-            <div className="mt-4 space-y-1.5 w-full">
+            <div className="mt-5 space-y-2 w-full">
               <div className="flex items-center gap-2 text-[13px]">
                 <span
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ background: item.color }}
                 />
-                <span className="text-gray-500">Achievement</span>
-                <span className="ml-auto font-bold text-gray-700">
+                <span className="text-stone-500">Revenue</span>
+                <span className="ml-auto font-bold text-[#1A0302]">
                   {fmt(item.value)}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[13px]">
-                <span className="h-2.5 w-2.5 rounded-full bg-purple-100" />
-                <span className="text-gray-500">Orders</span>
-                <span className="ml-auto font-semibold text-gray-600">
+                <span className="h-2.5 w-2.5 rounded-full bg-stone-200" />
+                <span className="text-stone-500">Orders Placed</span>
+                <span className="ml-auto font-semibold text-stone-700">
                   {item.orders}
                 </span>
               </div>
@@ -308,41 +296,41 @@ export default function AdminDashboard() {
             label: "Total Revenue",
             value: fmt(stats.totalRevenue),
             icon: TrendingUp,
-            color: "text-purple-600",
-            bg: "bg-purple-50",
-            border: "border-purple-100",
+            color: "text-[#400604]",
+            bg: "bg-[#400604]/10",
+            border: "border-[#E1B76F]/30",
           },
           {
             label: "Total Orders",
             value: orders.length,
-            icon: ShoppingCart,
-            color: "text-blue-600",
-            bg: "bg-blue-50",
-            border: "border-blue-100",
+            icon: ShoppingBag,
+            color: "text-amber-700",
+            bg: "bg-amber-50",
+            border: "border-amber-200",
           },
           {
             label: "Pending",
             value: stats.pendingCount,
             icon: Clock,
-            color: "text-amber-600",
-            bg: "bg-amber-50",
-            border: "border-amber-100",
+            color: "text-orange-600",
+            bg: "bg-orange-50",
+            border: "border-orange-200",
           },
           {
             label: "Delivered",
             value: stats.deliveredCount,
             icon: CheckCircle2,
-            color: "text-emerald-600",
+            color: "text-emerald-700",
             bg: "bg-emerald-50",
-            border: "border-emerald-100",
+            border: "border-emerald-200",
           },
           {
             label: "Cancelled",
             value: stats.cancelledCount,
             icon: XCircle,
-            color: "text-red-600",
-            bg: "bg-red-50",
-            border: "border-red-100",
+            color: "text-rose-700",
+            bg: "bg-rose-50",
+            border: "border-rose-200",
           },
         ].map((s) => (
           <div
@@ -354,8 +342,8 @@ export default function AdminDashboard() {
             >
               <s.icon className={`h-5 w-5 ${s.color}`} />
             </div>
-            <p className="text-[22px] font-black text-gray-800">{s.value}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
+            <p className="text-[20px] font-bold text-[#1A0302]">{s.value}</p>
+            <p className="text-[11px] text-stone-400 mt-0.5 font-medium">
               {s.label}
             </p>
           </div>
@@ -364,64 +352,64 @@ export default function AdminDashboard() {
 
       {/* ── Order Analytics Section ─────────────────────── */}
       <div>
-        <h2 className="text-lg font-bold text-gray-800 mb-4">
-          Order Analytics
+        <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-4">
+          Order & Product Activity
         </h2>
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
           {/* ── Recent Orders ─────────────────────────────── */}
-          <div className="xl:col-span-3 bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
-              <h3 className="text-[15px] font-bold text-gray-700">
-                Recent Order
+          <div className="xl:col-span-3 bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+              <h3 className="text-[15px] font-serif font-bold text-[#1A0302]">
+                Recent Orders
               </h3>
               <Link
                 href="/admin/orders"
-                className="flex items-center gap-1 text-[12px] text-purple-600 hover:text-purple-500 font-medium transition"
+                className="flex items-center gap-1 text-[12px] text-[#400604] hover:text-[#E1B76F] font-semibold transition"
               >
                 View all <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {/* Table header */}
-            <div className="hidden md:grid grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3 bg-purple-50/50 text-[11px] font-bold uppercase tracking-wider text-purple-400">
+            <div className="hidden md:grid grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3 bg-[#FDFBF7] text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
               <span>Order No & Date</span>
               <span>Customer Info</span>
               <span>Product Info</span>
             </div>
 
-            <div className="divide-y divide-purple-50">
+            <div className="divide-y divide-stone-100">
               {recentOrders.length === 0 ? (
-                <p className="text-center py-12 text-gray-400 text-sm">
+                <p className="text-center py-12 text-stone-400 text-sm">
                   No orders yet
                 </p>
               ) : (
                 recentOrders.map((order) => {
                   const name =
-                    `${order.billing.first_name} ${order.billing.last_name}`.trim() ||
+                    `${order.billing?.first_name || ""} ${order.billing?.last_name || ""}`.trim() ||
                     "Guest";
-                  const thumb = order.line_items[0]?.image?.src;
+                  const thumb = order.line_items?.[0]?.image?.src;
                   const productName =
-                    order.line_items[0]?.name ?? "—";
+                    order.line_items?.[0]?.name ?? "—";
 
                   return (
                     <div
                       key={order.id}
-                      className="grid grid-cols-1 md:grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3.5 hover:bg-purple-50/30 transition items-center"
+                      className="grid grid-cols-1 md:grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3.5 hover:bg-stone-50/60 transition items-center"
                     >
                       {/* Order # & Date */}
                       <div>
-                        <p className="text-[13px] font-bold text-purple-600">
-                          #{order.number}
+                        <p className="text-[13px] font-bold text-[#400604]">
+                          #{order.number || order.id}
                         </p>
-                        <p className="text-[11px] text-gray-400">
-                          {new Date(order.date_created).toLocaleDateString(
+                        <p className="text-[11px] text-stone-400">
+                          {order.date_created ? new Date(order.date_created).toLocaleDateString(
                             "en-GB",
                             {
                               day: "2-digit",
-                              month: "long",
+                              month: "short",
                               year: "numeric",
                             }
-                          )}
+                          ) : "—"}
                         </p>
                       </div>
 
@@ -429,15 +417,15 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <Users className="h-3 w-3 text-gray-400" />
-                            <span className="text-[12px] font-semibold text-gray-700">
+                            <Users className="h-3 w-3 text-stone-400" />
+                            <span className="text-[12px] font-semibold text-stone-800">
                               {name}
                             </span>
                           </div>
-                          {order.billing.phone && (
+                          {order.billing?.phone && (
                             <div className="flex items-center gap-1.5">
-                              <Phone className="h-3 w-3 text-gray-400" />
-                              <span className="text-[11px] text-gray-500">
+                              <Phone className="h-3 w-3 text-stone-400" />
+                              <span className="text-[11px] text-stone-500 font-mono">
                                 {order.billing.phone}
                               </span>
                             </div>
@@ -446,9 +434,9 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Product */}
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         {thumb && (
-                          <div className="h-9 w-9 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-purple-100">
+                          <div className="h-9 w-9 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
                             <Image
                               src={thumb}
                               alt={productName}
@@ -458,7 +446,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                         )}
-                        <p className="text-[12px] text-gray-600 truncate">
+                        <p className="text-[12px] text-stone-700 truncate">
                           {productName}
                         </p>
                       </div>
@@ -470,38 +458,38 @@ export default function AdminDashboard() {
           </div>
 
           {/* ── Top Selling Products ──────────────────────── */}
-          <div className="xl:col-span-2 bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
-              <h3 className="text-[15px] font-bold text-gray-700">
-                Top Selling Products
+          <div className="xl:col-span-2 bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+              <h3 className="text-[15px] font-serif font-bold text-[#1A0302]">
+                Top Selling
               </h3>
               <Link
                 href="/admin/products"
-                className="flex items-center gap-1 text-[12px] text-purple-600 hover:text-purple-500 font-medium transition"
+                className="flex items-center gap-1 text-[12px] text-[#400604] hover:text-[#E1B76F] font-semibold transition"
               >
                 View all <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {/* Table header */}
-            <div className="hidden md:flex items-center justify-between px-5 py-3 bg-purple-50/50 text-[11px] font-bold uppercase tracking-wider text-purple-400">
+            <div className="hidden md:flex items-center justify-between px-5 py-3 bg-[#FDFBF7] text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
               <span>Product Info</span>
               <span>Total Sold</span>
             </div>
 
-            <div className="divide-y divide-purple-50">
+            <div className="divide-y divide-stone-100">
               {topProducts.length === 0 ? (
-                <p className="text-center py-12 text-gray-400 text-sm">
+                <p className="text-center py-12 text-stone-400 text-sm">
                   No products yet
                 </p>
               ) : (
                 topProducts.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-purple-50/30 transition"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-stone-50/60 transition"
                   >
-                    <div className="h-10 w-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-purple-100">
-                      {p.images[0]?.src ? (
+                    <div className="h-10 w-10 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
+                      {p.images?.[0]?.src ? (
                         <Image
                           src={p.images[0].src}
                           alt={p.name}
@@ -510,16 +498,16 @@ export default function AdminDashboard() {
                           className="object-cover w-full h-full"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-gray-400 text-[10px]">
-                          {p.name.charAt(0)}
+                        <div className="flex h-full items-center justify-center text-stone-400 text-[10px]">
+                          {p.name?.charAt(0) || "P"}
                         </div>
                       )}
                     </div>
-                    <p className="text-[12px] font-medium text-gray-600 flex-1 truncate">
+                    <p className="text-[12px] font-medium text-stone-700 flex-1 truncate">
                       {p.name}
                     </p>
-                    <span className="flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-purple-600 text-white text-[11px] font-bold">
-                      {p.total_sales}
+                    <span className="flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-[#400604] text-[#E1B76F] text-[11px] font-bold">
+                      {p.total_sales || 0}
                     </span>
                   </div>
                 ))
@@ -530,28 +518,24 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Order Status Overview ──────────────────────── */}
-      <div className="bg-white rounded-2xl border border-purple-100/60 p-6 shadow-sm">
-        <h3 className="text-[15px] font-bold text-gray-700 mb-4">
-          Order Status Overview
+      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-6 shadow-sm">
+        <h3 className="text-[15px] font-serif font-bold text-[#1A0302] mb-4">
+          Order Status Pipeline
         </h3>
         <div className="flex flex-wrap gap-3">
           {[
-            // NOTE: Tailwind only generates classes it can see as complete
-            // static strings, so the color classes must be written in full
-            // here — never built with `bg-${color}-50` style interpolation
-            // (those would silently render with no styling).
-            { key: "pending", label: "Pending", icon: Clock, wrap: "border-amber-200 bg-amber-50 text-amber-700", badge: "bg-amber-200 text-amber-800" },
-            { key: "processing", label: "Confirmed", icon: CheckCircle2, wrap: "border-blue-200 bg-blue-50 text-blue-700", badge: "bg-blue-200 text-blue-800" },
-            { key: "on-hold", label: "On Hold", icon: RotateCcw, wrap: "border-yellow-200 bg-yellow-50 text-yellow-700", badge: "bg-yellow-200 text-yellow-800" },
-            { key: "completed", label: "Delivered", icon: Truck, wrap: "border-emerald-200 bg-emerald-50 text-emerald-700", badge: "bg-emerald-200 text-emerald-800" },
-            { key: "cancelled", label: "Cancelled", icon: XCircle, wrap: "border-red-200 bg-red-50 text-red-700", badge: "bg-red-200 text-red-800" },
+            { key: "pending", label: "Pending", icon: Clock, wrap: "border-amber-200 bg-amber-50 text-amber-800", badge: "bg-amber-200 text-amber-900" },
+            { key: "processing", label: "Confirmed", icon: CheckCircle2, wrap: "border-blue-200 bg-blue-50 text-blue-800", badge: "bg-blue-200 text-blue-900" },
+            { key: "on-hold", label: "On Hold", icon: RotateCcw, wrap: "border-yellow-200 bg-yellow-50 text-yellow-800", badge: "bg-yellow-200 text-yellow-900" },
+            { key: "completed", label: "Delivered", icon: Truck, wrap: "border-emerald-200 bg-emerald-50 text-emerald-800", badge: "bg-emerald-200 text-emerald-900" },
+            { key: "cancelled", label: "Cancelled", icon: XCircle, wrap: "border-rose-200 bg-rose-50 text-rose-800", badge: "bg-rose-200 text-rose-900" },
           ].map((s) => {
             const count = orderStatusCounts[s.key] ?? 0;
             return (
               <Link
                 key={s.key}
                 href={`/admin/orders?status=${s.key}`}
-                className={`flex items-center gap-2 rounded-xl border ${s.wrap} px-4 py-2.5 text-[13px] font-medium hover:shadow-sm transition`}
+                className={`flex items-center gap-2.5 rounded-xl border ${s.wrap} px-4 py-2.5 text-[13px] font-medium hover:shadow-sm transition`}
               >
                 <s.icon className="h-4 w-4" />
                 {s.label}
@@ -570,30 +554,30 @@ export default function AdminDashboard() {
           {
             href: "/admin/products/new",
             label: "Add Product",
-            desc: "Create a new product listing",
-            color: "from-purple-600 to-purple-700",
+            desc: "Create new catalog entry",
+            color: "from-[#400604] to-[#250302]",
           },
           {
             href: "/admin/orders",
-            label: "View Orders",
-            desc: "Manage & update order status",
-            color: "from-blue-600 to-blue-700",
+            label: "Process Orders",
+            desc: "Update status & delivery",
+            color: "from-stone-800 to-stone-900",
           },
           {
             href: "/admin/products",
-            label: "All Products",
-            desc: "Edit prices, images, stock",
-            color: "from-violet-600 to-violet-700",
+            label: "Manage Catalog",
+            desc: "Prices, stock, measurements",
+            color: "from-[#B38838] to-[#8C621E]",
           },
         ].map((a) => (
           <Link
             key={a.href}
             href={a.href}
-            className={`rounded-2xl bg-gradient-to-br ${a.color} p-5 flex flex-col gap-2 hover:opacity-90 transition shadow-md hover:shadow-lg`}
+            className={`rounded-2xl bg-gradient-to-br ${a.color} p-5 flex flex-col gap-2 hover:opacity-95 transition shadow-sm hover:shadow-md`}
           >
-            <p className="text-[14px] font-bold text-white">{a.label}</p>
-            <p className="text-[12px] text-white/70">{a.desc}</p>
-            <ArrowUpRight className="h-4 w-4 text-white/60 self-end mt-auto" />
+            <p className="text-[14px] font-serif font-bold text-white">{a.label}</p>
+            <p className="text-[12px] text-white/80">{a.desc}</p>
+            <ArrowUpRight className="h-4 w-4 text-[#E1B76F] self-end mt-auto" />
           </Link>
         ))}
       </div>

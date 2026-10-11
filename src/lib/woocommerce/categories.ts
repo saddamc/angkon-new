@@ -1,40 +1,18 @@
-import "server-only";
-import { wcFetch } from "./client";
 import type { WooCategory } from "@/types/product";
 import type { CategoryNode } from "@/types/woocommerce";
-
+import { getDbCategories } from "@/lib/db/categories";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
 export async function getAllCategories(): Promise<WooCategory[]> {
-  const perPage = 100;
-  const all: WooCategory[] = [];
-  let page = 1;
-
   try {
-    while (true) {
-      const data = await wcFetch<WooCategory[]>(
-        "/wp-json/wc/v3/products/categories",
-        {
-          per_page: String(perPage),
-          page: String(page),
-          hide_empty: "false",
-          orderby: "name",
-          order: "asc",
-        },
-        { revalidate: 300, tags: ["categories"] },
-      );
-      if (!Array.isArray(data) || data.length === 0) break;
-      all.push(...data);
-      if (data.length < perPage) break;
-      page += 1;
+    const categories = await getDbCategories();
+    if (Array.isArray(categories) && categories.length > 0) {
+      return categories;
     }
-
-    if (all.length > 0) return all;
-  } catch {
-    // Quiet fallback to real categories if API is offline or unconfigured
+  } catch (error) {
+    console.warn("getAllCategories falling back to static catalog:", error);
   }
 
-  // Graceful fallback to real categories (139 categories) so prerendering and storefront always work
   return REAL_CATEGORIES as unknown as WooCategory[];
 }
 
@@ -73,5 +51,5 @@ export function findCategoryPath(tree: CategoryNode[], slug: string): CategoryNo
 
 export async function getCategoryBySlug(slug: string): Promise<WooCategory | null> {
   const flat = await getAllCategories();
-  return flat.find((category) => category.slug === slug) ?? null;
+  return flat.find((category) => category.slug.toLowerCase() === slug.toLowerCase()) ?? null;
 }

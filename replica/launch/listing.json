@@ -1,0 +1,20 @@
+{
+  "avoid": [
+    "Gorur Ghash",
+    "GorurGhash",
+    "gorurghash"
+  ],
+  "app_store": {
+    "name": "ANGKON: Modern Heritage",
+    "subtitle": "Apparel & Artisanal Fashion",
+    "promotional_text": "Discover tailored shirts, premium polos, and modern heritage apparel crafted in Bangladesh. Free shipping over ৳3,000 and Cash on Delivery nationwide.",
+    "description": "ANGKON is the House of Modern Heritage — reimagining contemporary Bangladeshi apparel with enduring artisanal tailoring, breathable fabrics, and refined silhouettes.\n\nKey Highlights:\n- Modern Heritage Drops: Structured shirts, polos, and tailored bottoms designed for everyday distinction.\n- Artisanal Craftsmanship: Breathable 100% combed cottons and reinforced seams built to last beyond fast-fashion cycles.\n- Nationwide Doorstep Delivery: 2-3 days delivery inside Dhaka and reliable shipping across all 64 districts.\n- Cash on Delivery & Free Exchanges: Seamless shopping with full support and effortless 7-day size swaps.\n- Flagship Showroom: Visit our physical boutique in Niketan, Gulshan, Dhaka.",
+    "keywords": "shirts,dhaka,clothing,bangladesh,polos,shopping,menswear,outfits,panjabi,fabric",
+    "whats_new": "Latest Modern Heritage drops with instant size guides."
+  },
+  "google_play": {
+    "title": "ANGKON: Modern Heritage",
+    "short_description": "Tailored modern heritage fashion, fast delivery, and Cash on Delivery in BD.",
+    "full_description": "ANGKON is the House of Modern Heritage — reimagining contemporary Bangladeshi apparel with enduring artisanal tailoring, breathable fabrics, and refined silhouettes.\n\nKey Highlights:\n- Modern Heritage Drops: Structured shirts, polos, and tailored bottoms designed for everyday distinction.\n- Artisanal Craftsmanship: Breathable 100% combed cottons and reinforced seams built to last beyond fast-fashion cycles.\n- Nationwide Doorstep Delivery: 2-3 days delivery inside Dhaka and reliable shipping across all 64 districts.\n- Cash on Delivery & Free Exchanges: Seamless shopping with full support and effortless 7-day size swaps.\n- Flagship Showroom: Visit our physical boutique in Niketan, Gulshan, Dhaka."
+  }
+}

@@ -140,5 +140,36 @@ export function getCategoryBySlug(slug: string): FashionCategory | undefined {
 
 /** Returns static image for a slug, falling back to a given default */
 export function getCategoryImage(slug: string, fallback = ""): string {
-  return getCategoryBySlug(slug)?.image ?? fallback;
+  const cat = getCategoryBySlug(slug);
+  if (cat?.image) return cat.image;
+  for (const c of FASHION_CATEGORIES) {
+    const sub = c.sub.find((s) => s.slug === slug);
+    if (sub) return c.image;
+  }
+  return fallback;
 }
+
+export function getCategoryIcon(slug: string): string {
+  const cat = getCategoryBySlug(slug);
+  if (cat?.icon) return cat.icon;
+  for (const c of FASHION_CATEGORIES) {
+    const sub = c.sub.find((s) => s.slug === slug);
+    if (sub?.icon) return sub.icon;
+  }
+  return "🛍️";
+}
+
+export function getCategoryAccent(slug: string): string {
+  const cat = getCategoryBySlug(slug);
+  if (cat?.accentColor) return cat.accentColor;
+  return "#400604";
+}
+
+export function getCategoryVisual(slug: string): { icon: string; accent: string; image: string } {
+  return {
+    icon: getCategoryIcon(slug),
+    accent: getCategoryAccent(slug),
+    image: getCategoryImage(slug),
+  };
+}
+

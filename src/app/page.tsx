@@ -8,6 +8,7 @@ import { getProducts } from "@/services/products.service";
 import type { WooProduct } from "@/types/product";
 import { ProductCard } from "@/components/product/product-card";
 import { useCartStore } from "@/store/cart-store";
+import { useMounted } from "@/hooks/use-mounted";
 
 // Pairs of 2-Column Banner Cards matching Gorur Ghash Homepage exactly
 const BANNER_PAIRS = [
@@ -30,13 +31,13 @@ const BANNER_PAIRS = [
   [
     {
       title: "Half Sleeves",
-      href: "/cubans",
+      href: "/product-category/men/mens-shirt/cubans",
       image: "/banners/half-sleeves.png",
       alt: "Half Sleeves Shirts",
     },
     {
       title: "Full Sleeves",
-      href: "/oversized-full-sleeves",
+      href: "/product-category/men/mens-shirt/oversized-full-sleeves",
       image: "/banners/full-sleeves.png",
       alt: "Full Sleeves Shirts",
     },
@@ -45,13 +46,13 @@ const BANNER_PAIRS = [
   [
     {
       title: "Pants",
-      href: "/pants",
+      href: "/product-category/men/men-pants",
       image: "/banners/pants.png",
       alt: "Pants & Trousers",
     },
     {
       title: "Tees",
-      href: "/t-shirt",
+      href: "/product-category/men/t-shirts-men",
       image: "/banners/tees.png",
       alt: "T-Shirts & Drop Tees",
     },
@@ -60,13 +61,13 @@ const BANNER_PAIRS = [
   [
     {
       title: "Polos",
-      href: "/polos",
+      href: "/product-category/men/polos",
       image: "/banners/polos.png",
       alt: "Polos & Knits",
     },
     {
       title: "Tops",
-      href: "/tops",
+      href: "/product-category/women/tops",
       image: "/banners/tops.png",
       alt: "Women Tops & Kimonos",
     },
@@ -75,7 +76,7 @@ const BANNER_PAIRS = [
   [
     {
       title: "Accessories",
-      href: "/accessories",
+      href: "/product-category/accessories",
       image: "/banners/accessories.png",
       alt: "Accessories",
     },
@@ -93,6 +94,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<WooProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const openCart = useCartStore((s) => s.openCart);
+  const mounted = useMounted();
   const itemCount = useCartStore((s) => s.itemCount());
 
   useEffect(() => {
@@ -105,16 +107,16 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      {/* Floating cart shortcut (bottom left matching Gorur Ghash screenshot) */}
+    <div className="min-h-screen bg-[#400604] text-[#E1B76F]">
+      {/* Floating cart shortcut */}
       <button
         onClick={openCart}
-        className="group fixed bottom-6 left-3 sm:left-4 z-40 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white text-black border border-neutral-300 shadow-2xl transition-all hover:scale-110"
+        className="group fixed bottom-6 left-3 sm:left-4 z-40 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#400604] text-[#E1B76F] border border-[#E1B76F]/40 shadow-2xl transition-all hover:scale-110 cursor-pointer"
         aria-label="Open cart"
       >
-        <ShoppingBag className="h-5 w-5 text-black transition group-hover:scale-105" />
-        {itemCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#ffd800] text-[10px] font-black text-black shadow">
+        <ShoppingBag className="h-5 w-5 text-[#E1B76F] transition group-hover:scale-105" />
+        {mounted && itemCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-black text-[#400604] shadow">
             {itemCount}
           </span>
         )}
@@ -124,7 +126,7 @@ export default function HomePage() {
       <section className="w-full overflow-hidden">
         <Link
           href="/mighto"
-          className="group relative block w-full aspect-[2560/942] overflow-hidden bg-neutral-100"
+          className="group relative block w-full aspect-[2560/942] overflow-hidden bg-[#340402]"
         >
           <Image
             src="/banners/mighto-home-banner.png"
@@ -137,7 +139,7 @@ export default function HomePage() {
         </Link>
       </section>
 
-      {/* ── 2. Pairs of 2-Column Banner Cards (Full Width Grid Edge to Edge matching Gorur Ghash e-con-full) ── */}
+      {/* ── 2. Pairs of 2-Column Banner Cards (Full Width Grid Edge to Edge) ── */}
       <section className="w-full px-2 sm:px-3 md:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3">
         {BANNER_PAIRS.map((pair, pIdx) => (
           <div key={pIdx} className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
@@ -145,7 +147,7 @@ export default function HomePage() {
               <Link
                 key={item.title}
                 href={item.href}
-                className="group relative block w-full aspect-[1700/700] overflow-hidden bg-neutral-100 shadow-sm transition hover:opacity-95"
+                className="group relative block w-full aspect-[1700/700] overflow-hidden bg-[#340402] border border-[#E1B76F]/15 shadow-sm transition hover:opacity-95"
               >
                 <Image
                   src={item.image}
@@ -160,10 +162,10 @@ export default function HomePage() {
         ))}
       </section>
 
-      {/* ── 3. Yellow Cash On Delivery Band (Full Width Edge to Edge) ── */}
-      <section className="w-full bg-[#ffd800] py-4 sm:py-6 text-center text-black my-2 sm:my-3">
+      {/* ── 3. Luxury Cash On Delivery Band (Full Width Edge to Edge) ── */}
+      <section className="w-full bg-[#300302] border-y border-[#E1B76F]/30 py-4 sm:py-6 text-center text-[#E1B76F] my-2 sm:my-3 shadow-inner">
         <div className="w-full px-4 text-center">
-          <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-black tracking-tight">
+          <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#E1B76F] tracking-tight">
             Cash on Delivery in all 64 Districts
           </h2>
         </div>
@@ -176,32 +178,34 @@ export default function HomePage() {
             ? Array.from({ length: 16 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="animate-pulse bg-white p-0"
+                  className="animate-pulse bg-transparent p-0"
                 >
-                  <div className="mb-2 aspect-square rounded-none bg-neutral-100" />
-                  <div className="mb-1 h-3 w-3/4 rounded bg-neutral-100" />
-                  <div className="mb-1 h-2.5 w-1/3 rounded bg-neutral-100" />
-                  <div className="mb-2 h-3 w-1/2 rounded bg-neutral-100" />
-                  <div className="h-6 w-24 rounded-full bg-neutral-100" />
+                  <div className="mb-2 aspect-square rounded-none bg-[#340402] border border-[#E1B76F]/10" />
+                  <div className="mb-1 h-3 w-3/4 rounded bg-[#340402]" />
+                  <div className="mb-1 h-2.5 w-1/3 rounded bg-[#340402]" />
+                  <div className="mb-2 h-3 w-1/2 rounded bg-[#340402]" />
+                  <div className="h-6 w-24 rounded-full bg-[#340402]" />
                 </div>
               ))
-            : products.slice(0, 16).map((product) => (
-                <ProductCard key={product.id} product={product} />
+            : products.slice(0, 16).map((product, index) => (
+                <ProductCard key={product.id} product={product} eager={index < 4} />
               ))}
         </div>
       </section>
 
-      {/* ── 5. SSLCOMMERZ Payment Partner Strip (Exact Gorur Ghash elementor-section-full_width) ── */}
-      <section className="w-full bg-white py-6 sm:py-8 md:py-10">
+      {/* ── 5. SSLCOMMERZ Payment Partner Strip ── */}
+      <section className="w-full bg-[#300302] border-t border-[#E1B76F]/20 py-6 sm:py-8 md:py-10">
         <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6">
-          <Image
-            src="/banners/sslcommerz.png"
-            alt="Pay With SSLCOMMERZ — VISA, Mastercard, AMEX, bKash, Nagad, Rocket, DBBL Nexus, Upay"
-            width={5011}
-            height={587}
-            sizes="(max-width: 1440px) 100vw, 1440px"
-            className="w-full h-auto object-contain mx-auto"
-          />
+          <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-[#E1B76F]/15">
+            <Image
+              src="/banners/sslcommerz.png"
+              alt="Pay With SSLCOMMERZ — VISA, Mastercard, AMEX, bKash, Nagad, Rocket, DBBL Nexus, Upay"
+              width={5011}
+              height={587}
+              sizes="(max-width: 1440px) 100vw, 1440px"
+              className="w-full h-auto object-contain mx-auto brightness-95"
+            />
+          </div>
         </div>
       </section>
 

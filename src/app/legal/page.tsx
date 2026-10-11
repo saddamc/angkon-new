@@ -74,7 +74,7 @@ export default function LegalPage() {
             <div>
               <strong className="block text-[#E1B76F] uppercase mb-1">Flagship Showroom</strong>
               <p className="text-[#f5ebd8] font-serif">
-                HOUSE OF MODERN HERITAGE<br />
+                ANGKON Flagship Showroom<br />
                 H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
               </p>
             </div>

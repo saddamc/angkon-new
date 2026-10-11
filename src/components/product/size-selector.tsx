@@ -26,8 +26,8 @@ export function SizeSelector({
           className={cn(
             "flex h-9 min-w-[2.75rem] items-center justify-center rounded border px-3 text-xs font-semibold uppercase transition-all duration-200",
             value === size
-              ? "border-2 border-black bg-black text-white"
-              : "border-neutral-300 bg-white text-neutral-800 hover:border-black",
+              ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-bold shadow-md"
+              : "border-[#E1B76F]/30 bg-[#340402] text-[#f0d29d] hover:border-[#E1B76F] hover:text-[#E1B76F]",
           )}
           onClick={() => onChange(size)}
         >

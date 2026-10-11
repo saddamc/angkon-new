@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${poppins.variable} ${lato.variable}`}>
-      <body className="font-sans antialiased text-neutral-900 bg-white" suppressHydrationWarning>
+      <body className="font-sans antialiased text-[#E1B76F] bg-[#400604]" suppressHydrationWarning>
         <RootShell categoryTree={categoryTree}>{children}</RootShell>
       </body>
     </html>

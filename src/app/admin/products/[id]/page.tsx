@@ -25,7 +25,7 @@ interface WCProductRaw {
   images: { id: number; src: string; alt: string }[];
   categories: { id: number; name: string; slug: string }[];
   attributes: { name: string; options: string[] }[];
-  meta_data: { id?: number; key: string; value: any }[];
+  meta_data: { id?: number; key: string; value: string }[];
 }
 
 export default function EditProductPage() {

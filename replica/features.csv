@@ -1,0 +1,19 @@
+feature,area,priority,original,clone,notes
+Announcement ticker with shipping and COD promo,header,must,yes,yes,Free shipping over 3000 BDT promo banner
+Astra-style 460px right slide-out cart drawer,cart,must,yes,yes,Opens off-canvas from right without leaving page
+Free shipping progress threshold bar in cart drawer,cart,must,yes,yes,Progress toward 3000 BDT goal
+Cart badge with live item count and BDT total preview,header,must,yes,yes,Header pill with item count and subtotal
+3:4 portrait product card with secondary image hover flip,catalog,must,yes,yes,Flips to alternate photoshoot angle on mouseover
+BDT currency symbol and formatting,pricing,must,yes,yes,Bangladeshi Taka symbol format
+Product size selector with 12px pill buttons,product,must,yes,yes,Pill buttons for S M L XL XXL
+Dual CTA buttons on product page (Add to Cart and Buy It Now),product,must,yes,yes,Add to cart outline and Buy Now fill
+Inside Dhaka and Outside Dhaka shipping estimator,product,must,yes,yes,Inside Dhaka 60 BDT and Outside 100 BDT
+Trust strip with 4 brand pillars,home,must,yes,yes,Heritage quality fast delivery COD 7-day exchange
+Mobile off-canvas navigation menu drawer,navigation,must,yes,yes,Responsive mobile drawer with collections
+Footer with showroom address and WhatsApp contact,footer,must,yes,yes,Niketan Gulshan showroom address and WhatsApp
+Instant search modal with real-time query filter,search,should,yes,yes,Quick modal search with product preview
+Category circular preview chips,catalog,should,yes,yes,Circular category badges with hover state
+Filter drawer by category and price on catalog,catalog,should,yes,yes,Category selection and sorting
+Sale badge on discounted products,catalog,should,yes,yes,Percentage discount pill badge
+Customer wishlist saved items,account,could,yes,yes,Persistent client-side wishlist store
+Cash on Delivery checkout selection,checkout,must,yes,yes,Order placement with COD payment method

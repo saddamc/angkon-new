@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getProducts } from "@/services/products.service";
 import { getAllCategories } from "@/lib/woocommerce/categories";
+import type { WooProduct } from "@/types/product";
 import { ProductsShell } from "@/components/product/products-shell";
 import { PageHeader } from "@/components/sections/page-header";
 
@@ -19,7 +20,13 @@ export const metadata: Metadata = {
   description: "Browse the full ANGKON collection.",
 };
 
-export const dynamic = "force-dynamic";
+// Cached and refreshed every 5 minutes instead of rendering on every request.
+export const revalidate = 300;
+
+/** The listing only needs card fields; drop the heavy ones before sending to the browser. */
+function toListProduct(p: WooProduct): WooProduct {
+  return { ...p, description: "", images: p.images.slice(0, 2) };
+}
 
 export default async function ProductsPage() {
   const [products, categories] = await Promise.all([
@@ -36,7 +43,7 @@ export default async function ProductsPage() {
         meta={`${products.length} products`}
         pills={COLLECTION_PILLS}
       />
-      <ProductsShell products={products} categories={categories} />
+      <ProductsShell products={products.map(toListProduct)} categories={categories} />
     </div>
   );
 }

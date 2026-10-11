@@ -12,11 +12,11 @@ export function CategoryHero({
 
   return (
     <div>
-      <h1 className="text-[34px] sm:text-[42px] md:text-[46px] font-light tracking-tight text-[#333333] leading-none">
+      <h1 className="text-[34px] sm:text-[42px] md:text-[46px] font-heading font-black tracking-tight text-[#E1B76F] leading-none uppercase">
         {name}
       </h1>
       {description && (
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#666666]">
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#f0d29d]">
           {description}
         </p>
       )}

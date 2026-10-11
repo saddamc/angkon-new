@@ -1,29 +1,30 @@
-import axios from "axios";
+/**
+ * Client-Side API Helper
+ * Standardized typed fetch utility for internal Next.js API endpoints.
+ */
+export async function apiFetch<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
 
+  const data = await response.json().catch(() => ({}));
 
-const baseURL = process.env.NEXT_PUBLIC_WC_API_URL;
-const consumerKey = process.env.NEXT_PUBLIC_WC_CONSUMER_KEY;
-const consumerSecret = process.env.NEXT_PUBLIC_WC_CONSUMER_SECRET;
+  if (!response.ok) {
+    const message = (data && typeof data === "object" && "error" in data)
+      ? String((data as { error: string }).error)
+      : `Request failed with status ${response.status}`;
+    throw new Error(message);
+  }
 
-export const apiClient = axios.create({
-  baseURL,
-  timeout: 30000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  params:
-    consumerKey && consumerSecret
-      ? {
-          consumer_key: consumerKey,
-          consumer_secret: consumerSecret,
-        }
-      : undefined,
-});
+  return data as T;
+}
 
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const message = error?.response?.data?.message || error.message || "Request failed";
-    return Promise.reject(new Error(message));
-  },
-);
+export default apiFetch;

@@ -19,7 +19,6 @@ import {
 import {
   ReadyToWearSizeGuideModal,
   ReadyToWearSizeGuideContent,
-  ReadyToWearSizeGuideMiniTable,
 } from "@/components/product/ready-to-wear-size-guide-modal";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -485,18 +484,6 @@ export function ProductDetailsView({
               </div>
             ) : null}
 
-            {/* Ready-to-Wear Size Guide Mini Table */}
-            {hasSizeGuide && (
-              <ReadyToWearSizeGuideMiniTable
-                selectedSize={size}
-                onOpenModal={() => setSizeGuideOpen(true)}
-                onSelectSize={(newSize) => {
-                  setSize(newSize);
-                  setOptionError(false);
-                }}
-              />
-            )}
-
             {/* Variation Attribute Selection (Size & Selectable Options) */}
             {variationAttrs.length > 0 && (
               <div className="space-y-4">
@@ -504,16 +491,17 @@ export function ProductDetailsView({
                   const isSize = attr.name.toLowerCase() === "size" || attr.name.toLowerCase() === "sizes";
                   return (
                     <div key={attr.name} className="mt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-[14px] font-semibold text-[#E1B76F] flex items-center gap-1.5">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <label className="text-[14px] font-bold text-[#E1B76F] flex items-center gap-1.5">
                           {attr.name}
-                          {isSize && size ? <span className="font-normal text-[#E1B76F]/70">({size})</span> : null}
+                          {isSize && size ? <span className="font-semibold text-white">({size})</span> : null}
                         </label>
                         {isSize && hasSizeGuide && (
                           <button
                             type="button"
                             onClick={() => setSizeGuideOpen(true)}
-                            className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#E1B76F] hover:text-white underline underline-offset-4 transition cursor-pointer"
+                            className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-bold text-[#E1B76F] hover:text-white underline underline-offset-4 decoration-[#E1B76F]/60 hover:decoration-white transition cursor-pointer rounded px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
+                            aria-label="Open size guide"
                           >
                             <Ruler className="h-4 w-4 text-[#E1B76F]" />
                             Size Guide
@@ -523,21 +511,24 @@ export function ProductDetailsView({
 
                       {/* Instant Size Pill Buttons */}
                       {isSize && attr.options.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2.5">
+                        <div className="flex flex-wrap gap-2.5 mb-3" role="radiogroup" aria-label="Choose size">
                           {attr.options.map((opt) => {
                             const isSelected = size === opt;
                             return (
                               <button
                                 key={opt}
                                 type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                aria-label={`Size ${opt}`}
                                 onClick={() => {
                                   setSize(opt);
                                   setOptionError(false);
                                 }}
-                                className={`h-9 min-w-[44px] px-3.5 rounded border text-xs font-bold uppercase transition cursor-pointer ${
+                                className={`flex min-h-[42px] min-w-[46px] items-center justify-center px-4 rounded-lg border text-xs uppercase transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#400604] ${
                                   isSelected
-                                    ? "border-[#E1B76F] bg-[#400604] text-[#E1B76F] shadow-sm font-black ring-1 ring-[#E1B76F]"
-                                    : "border-[#E1B76F]/30 bg-[#340402] text-[#E1B76F] hover:border-[#E1B76F] hover:text-white"
+                                    ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-extrabold shadow-md ring-1 ring-[#E1B76F]"
+                                    : "border-[#E1B76F]/30 bg-[#340402] text-[#f0d29d] font-bold hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]"
                                 }`}
                               >
                                 {opt}

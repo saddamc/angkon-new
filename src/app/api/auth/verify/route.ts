@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { setSessionCookie } from "@/server/auth";
+import { getSiteUrl, setSessionCookie } from "@/server/auth";
 import { findUserByToken } from "@/server/account";
 
 /**
@@ -9,7 +9,7 @@ import { findUserByToken } from "@/server/account";
  */
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
-  const redirectTo = (status: string) => new URL(`/my-account?verify=${status}`, request.nextUrl.origin);
+  const redirectTo = (status: string) => new URL(`/my-account?verify=${status}`, getSiteUrl(request));
 
   try {
     const user = await findUserByToken("verify", token);

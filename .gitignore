@@ -72,3 +72,9 @@ next-env.d.ts
 .vscode/
 backup-copy/
 follow/
+
+# playwright output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

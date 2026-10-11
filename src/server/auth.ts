@@ -192,6 +192,17 @@ export function normalizeEmail(value: unknown): string {
 export function getSiteUrl(request?: NextRequest): string {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;
   if (fromEnv) return fromEnv.replace(/\/$/, "");
-  if (request) return request.nextUrl.origin;
+  if (request) {
+    // The dev server binds to 0.0.0.0, which browsers can't open — prefer the
+    // host the visitor actually used (also correct behind Vercel's proxy).
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    if (host) {
+      const proto =
+        request.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+        request.nextUrl.protocol.replace(":", "");
+      return `${proto}://${host}`;
+    }
+    return request.nextUrl.origin;
+  }
   return "https://angkon.net";
 }

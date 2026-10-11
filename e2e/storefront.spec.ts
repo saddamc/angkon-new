@@ -1,84 +1,106 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
-test.describe("ANGKON — Storefront & E-commerce Modern Heritage Flows", () => {
-  test.beforeEach(async ({ page }) => {
-    // Intercept console errors to ensure clean execution
-    page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        console.error("Browser Console Error:", msg.text());
-      }
-    });
+// The home-page promo popup covers the screen; real visitors close it, tests skip it.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("angkon_promo_seen", "true");
+    } catch {
+      /* storage unavailable */
+    }
   });
+});
 
-  test("F01-H1: Homepage displays brand announcement and trust strip", async ({ page }) => {
+/** Open the first product from the shop page and add it to the cart. */
+async function addFirstProductToCart(page: Page) {
+  await page.goto("/products");
+  const firstCard = page.locator("article").first();
+  await expect(firstCard).toBeVisible();
+
+  // Cards aren't one big link — open the product through its title.
+  await firstCard.locator('a[href^="/products/"]:has(h3)').first().click();
+  await expect(page).toHaveURL(/\/products\/.+/);
+
+  // Pick the first size if the product has sizes.
+  const sizeButtons = page.locator("button").filter({ hasText: /^(XS|S|M|L|XL|XXL)$/i });
+  if (await sizeButtons.count()) {
+    await sizeButtons.first().click();
+  }
+
+  await page.getByRole("button", { name: /add to (cart|bag)/i }).first().click();
+  await expect(page.getByLabel("Shopping Cart Drawer")).toBeVisible();
+}
+
+test.describe("ANGKON storefront", () => {
+  test("home page shows the brand, navigation and cash-on-delivery band", async ({ page }) => {
     await page.goto("/");
 
-    // Verify top announcement ticker
-    await expect(page.locator("text=FREE SHIPPING OVER ৳3,000")).toBeVisible();
-    await expect(page.locator("text=CASH ON DELIVERY ALL OVER BANGLADESH")).toBeVisible();
-
-    // Verify brand typography and monogram
-    await expect(page.locator("text=ANGKON.")).toBeVisible();
-    await expect(page.locator("text=HOUSE OF MODERN HERITAGE")).toBeVisible();
-
-    // Verify 4 trust pillars
-    await expect(page.locator("text=HOUSE OF MODERN HERITAGE").first()).toBeVisible();
-    await expect(page.locator("text=Swift Delivery")).toBeVisible();
-    await expect(page.locator("text=Cash on Delivery").first()).toBeVisible();
-    await expect(page.locator("text=7 Days Exchange")).toBeVisible();
+    await expect(page.getByRole("link", { name: "ANGKON", exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Cash on Delivery in all 64 Districts")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Open search" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "View shopping cart" })).toBeVisible();
   });
 
-  test("F01-H2: Product selection opens 460px Astra cart drawer", async ({ page }) => {
-    await page.goto("/products");
-
-    // Click first product card
-    const firstProduct = page.locator("article").first();
-    await expect(firstProduct).toBeVisible();
-
-    // Navigate to product detail
-    await firstProduct.click();
-    await expect(page).toHaveURL(/\/products\/.+/);
-
-    // Select size pill button if available
-    const sizePill = page.locator("button:has-text('M')").first();
-    if (await sizePill.isVisible()) {
-      await sizePill.click();
-    }
-
-    // Click "Add to Bag"
-    const addBtn = page.getByRole("button", { name: /Add to (Cart|Bag)/i });
-    if (await addBtn.isVisible()) {
-      await addBtn.click();
-      // Astra cart drawer should open
-      const drawer = page.locator("aside, [role='dialog']").filter({ hasText: /Shopping Bag|Your Bag/i });
-      await expect(drawer).toBeVisible();
-    }
+  test("a product card opens the product page and adds the item to the cart", async ({ page }) => {
+    await addFirstProductToCart(page);
   });
 
-  test("F03-H1: Cart drawer tracks ৳3,000 free shipping goal meter", async ({ page }) => {
+  test("an empty cart shows the empty state and a way back to the shop", async ({ page }) => {
     await page.goto("/cart");
-    // Free shipping progress bar container exists
-    const progressText = page.locator("text=/FREE Delivery|FREE shipping|unlocked/i");
-    await expect(progressText).toBeDefined();
+
+    await expect(page.getByRole("heading", { name: "Your Bag is Empty" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /browse collections/i })).toHaveAttribute("href", "/products");
   });
 
-  test("F04-H1: Checkout validates customer phone and Bangladeshi district", async ({ page }) => {
+  test("checkout offers cash on delivery and the customer details form", async ({ page }) => {
+    // The form only appears when the cart has something in it.
+    await addFirstProductToCart(page);
     await page.goto("/checkout");
 
-    // Verify district selector and cash on delivery option
-    await expect(page.locator("text=/Cash on Delivery|COD/i")).toBeVisible();
-    await expect(page.locator("select, input").filter({ hasText: /District|City/i })).toBeDefined();
+    await expect(page.getByText(/cash on delivery/i).first()).toBeVisible();
+    for (const field of ["name", "phone", "email", "district"]) {
+      await expect(page.locator(`[name="${field}"]`)).toHaveCount(1);
+    }
   });
 
-  test("F01-M1: Responsive mobile menu drawer opens cleanly at 390px", async ({ page }) => {
+  test("mobile menu opens at 390px and shows the showroom address", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
 
-    // Open mobile menu
-    const menuBtn = page.getByRole("button", { name: /menu/i });
-    if (await menuBtn.isVisible()) {
-      await menuBtn.click();
-      await expect(page.locator("text=Niketan, Gulshan")).toBeVisible();
-    }
+    const menuButton = page.getByRole("button", { name: "Open navigation menu" });
+    await expect(menuButton).toBeVisible();
+    await menuButton.click();
+    await expect(page.getByText("Niketan, Gulshan").first()).toBeVisible();
+  });
+});
+
+test.describe("ANGKON account", () => {
+  test("signed-out visitors see sign-in and registration forms", async ({ page }) => {
+    await page.goto("/my-account");
+
+    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Forgot password?" })).toBeVisible();
+  });
+
+  test("forgot-password form opens from the sign-in form", async ({ page }) => {
+    await page.goto("/my-account");
+    await page.getByRole("button", { name: "Forgot password?" }).click();
+
+    await expect(page.getByRole("heading", { name: "Reset password" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+  });
+
+  test("an invalid or used reset link is rejected", async ({ page }) => {
+    await page.goto("/my-account/reset-password?token=not-a-real-token-0000000000000000");
+
+    await expect(page.getByText(/expired or was already used/i)).toBeVisible();
+  });
+
+  test("an invalid verification link lands on the account page with an error", async ({ page }) => {
+    await page.goto("/api/auth/verify?token=not-a-real-token-0000000000000000");
+
+    await expect(page).toHaveURL(/\/my-account/);
+    await expect(page.getByText(/verification link has expired or was already used/i)).toBeVisible();
   });
 });

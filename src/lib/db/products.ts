@@ -80,13 +80,12 @@ export async function getDbProducts(query: DbProductQuery = {}): Promise<WooProd
     }
 
     if (category) {
-      // Find category and its descendants
-      const catSlugRegex = new RegExp(`^${category}$`, "i");
-      const matchedCat = await Category.findOne({ slug: catSlugRegex }).lean();
+      // Find category and its descendants using in-memory cached category tree
+      const { getDbCategories, getDbCategoryBySlug } = await import("@/lib/db/categories");
+      const matchedCat = await getDbCategoryBySlug(category);
 
       if (matchedCat) {
-        // Collect all descendant category IDs
-        const allCats = await Category.find({}).lean();
+        const allCats = await getDbCategories();
         const descendantIds = new Set<number>([matchedCat.id]);
 
         let added = true;
@@ -100,12 +99,13 @@ export async function getDbProducts(query: DbProductQuery = {}): Promise<WooProd
           }
         }
 
+        const catSlugRegex = new RegExp(`^${category}$`, "i");
         filter.$or = [
           { "categories.id": { $in: Array.from(descendantIds) } },
           { "categories.slug": catSlugRegex },
         ];
       } else {
-        filter["categories.slug"] = catSlugRegex;
+        filter["categories.slug"] = new RegExp(`^${category}$`, "i");
       }
     }
 
@@ -170,29 +170,15 @@ export async function getDbProductsByCategorySlug(
   try {
     await connectToDatabase();
 
-    const catSlugRegex = new RegExp(`^${slug}$`, "i");
-    const categoryDoc = await Category.findOne({ slug: catSlugRegex }).lean();
-
-    const category: WooCategory | null = categoryDoc
-      ? {
-          id: categoryDoc.id,
-          name: categoryDoc.name,
-          slug: categoryDoc.slug,
-          parent: categoryDoc.parent || 0,
-          description: categoryDoc.description || "",
-          count: categoryDoc.count || 0,
-          image: categoryDoc.image
-            ? { id: categoryDoc.image.id, src: categoryDoc.image.src, alt: categoryDoc.image.alt }
-            : null,
-        }
-      : null;
+    const { getDbCategories, getDbCategoryBySlug } = await import("@/lib/db/categories");
+    const category = await getDbCategoryBySlug(slug);
 
     if (!category) {
       return { products: [], total: 0, totalPages: 0, category: null };
     }
 
-    // Collect all descendant category IDs
-    const allCats = await Category.find({}).lean();
+    // Collect all descendant category IDs from in-memory cache
+    const allCats = await getDbCategories();
     const descendantIds = new Set<number>([category.id]);
     let added = true;
     while (added) {
@@ -205,6 +191,7 @@ export async function getDbProductsByCategorySlug(
       }
     }
 
+    const catSlugRegex = new RegExp(`^${slug}$`, "i");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = {
       $or: [

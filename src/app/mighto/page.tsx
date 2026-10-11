@@ -67,7 +67,7 @@ export default function MightoPage() {
       <section className="w-full mb-2 sm:mb-3">
         <div className="w-full overflow-hidden bg-[#340402]">
           <Image
-            src="/banners/mighto-strip-1.png"
+            src="/banners/mighto-strip-1.webp"
             alt="Mighto Performance Apparel"
             width={2560}
             height={676}
@@ -84,7 +84,7 @@ export default function MightoPage() {
           className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
-            src="/banners/mighto-strip-2.png"
+            src="/banners/mighto-strip-2.webp"
             alt="Mighto Athleisure"
             width={2560}
             height={676}

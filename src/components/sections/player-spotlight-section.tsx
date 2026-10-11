@@ -20,7 +20,7 @@ const SPOTLIGHTS = [
     country: "Brazil",
     subtitle: "2026 World Cup Home Kit",
     description: "The most decorated nation in World Cup history. Samba gold, built for legends.",
-    image: "/Hero1.png",
+    image: "/Hero1.webp",
     href: "/search?q=brazil",
     code: "BRA",
     gradient: "from-[#FFDF00]/30 via-[#009C3B]/15 to-transparent",

@@ -24,10 +24,10 @@ function InstagramIcon({ className }: { className?: string }) {
 
 const GALLERY_ITEMS = [
   { src: "/Hero.jpg", alt: "Argentina 2026 jersey collection" },
-  { src: "/Hero1.png", alt: "World Cup 2026 official kit" },
+  { src: "/Hero1.webp", alt: "World Cup 2026 official kit" },
   { src: "/Hero.jpeg", alt: "France national team jersey" },
   { src: "/Hero.webp", alt: "England 2026 home kit" },
-  { src: "/Hero1.png", alt: "Brazil 2026 away kit" },
+  { src: "/Hero1.webp", alt: "Brazil 2026 away kit" },
   { src: "/Hero.jpg", alt: "Match day jersey detail" },
   { src: "/Hero.webp", alt: "Official match grade fabric" },
   { src: "/Hero.jpeg", alt: "National team 2026 collection" },

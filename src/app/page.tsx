@@ -17,13 +17,13 @@ const BANNER_PAIRS = [
     {
       title: "Men",
       href: "/product-category/men",
-      image: "/banners/men-banner.png",
+      image: "/banners/men-banner.webp",
       alt: "Men Collection",
     },
     {
       title: "Women",
       href: "/product-category/women",
-      image: "/banners/women-banner.png",
+      image: "/banners/women-banner.webp",
       alt: "Women Collection",
     },
   ],
@@ -32,13 +32,13 @@ const BANNER_PAIRS = [
     {
       title: "Half Sleeves",
       href: "/product-category/men/mens-shirt/cubans",
-      image: "/banners/half-sleeves.png",
+      image: "/banners/half-sleeves.webp",
       alt: "Half Sleeves Shirts",
     },
     {
       title: "Full Sleeves",
       href: "/product-category/men/mens-shirt/oversized-full-sleeves",
-      image: "/banners/full-sleeves.png",
+      image: "/banners/full-sleeves.webp",
       alt: "Full Sleeves Shirts",
     },
   ],
@@ -47,13 +47,13 @@ const BANNER_PAIRS = [
     {
       title: "Pants",
       href: "/product-category/men/men-pants",
-      image: "/banners/pants.png",
+      image: "/banners/pants.webp",
       alt: "Pants & Trousers",
     },
     {
       title: "Tees",
       href: "/product-category/men/t-shirts-men",
-      image: "/banners/tees.png",
+      image: "/banners/tees.webp",
       alt: "T-Shirts & Drop Tees",
     },
   ],
@@ -62,13 +62,13 @@ const BANNER_PAIRS = [
     {
       title: "Polos",
       href: "/product-category/men/polos",
-      image: "/banners/polos.png",
+      image: "/banners/polos.webp",
       alt: "Polos & Knits",
     },
     {
       title: "Tops",
       href: "/product-category/women/tops",
-      image: "/banners/tops.png",
+      image: "/banners/tops.webp",
       alt: "Women Tops & Kimonos",
     },
   ],
@@ -77,13 +77,13 @@ const BANNER_PAIRS = [
     {
       title: "Accessories",
       href: "/product-category/accessories",
-      image: "/banners/accessories.png",
+      image: "/banners/accessories.webp",
       alt: "Accessories",
     },
     {
       title: "Ethnic Wear",
       href: "/product-category/women/ethnic",
-      image: "/banners/ethnic-wear.png",
+      image: "/banners/ethnic-wear.webp",
       alt: "Ethnic Wear — Luxury Collection",
     },
   ],
@@ -129,7 +129,7 @@ export default function HomePage() {
           className="group relative block w-full aspect-[2560/942] overflow-hidden bg-[#340402]"
         >
           <Image
-            src="/banners/mighto-home-banner.png"
+            src="/banners/mighto-home-banner.webp"
             alt="Mighto Performance Activewear"
             fill
             priority

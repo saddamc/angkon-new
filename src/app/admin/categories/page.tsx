@@ -183,7 +183,7 @@ function DeleteConfirmModal({
           )}
           <p className="text-[12px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex items-center gap-2">
             <span>🗑️</span>
-            <span>Attached category image in WordPress Media Library will also be automatically removed.</span>
+            <span>Attached category image in Cloudinary will also be automatically removed.</span>
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
@@ -590,7 +590,7 @@ function CategoryModal({
   const isSavedRef = useRef(false);
 
   const handleClose = async () => {
-    // If user uploaded an image in this modal session but didn't save, clean it from WordPress
+    // If user uploaded an image in this modal session but didn't save, clean it from Cloudinary
     if (!isSavedRef.current && sessionUploadedRef.current.length > 0) {
       const toDelete = [...sessionUploadedRef.current];
       sessionUploadedRef.current = [];
@@ -641,7 +641,7 @@ function CategoryModal({
       (item) => (item.id && item.id === toDeleteId) || item.url === toDeleteUrl
     );
 
-    // Immediately remove from WordPress media library and server storage
+    // Immediately remove from Cloudinary
     if (toDeleteId || toDeleteUrl) {
       try {
         await authFetch("/api/admin/upload", {
@@ -649,7 +649,7 @@ function CategoryModal({
           body: JSON.stringify({ id: toDeleteId, url: toDeleteUrl }),
         });
       } catch (err) {
-        console.error("Failed to delete category image from WordPress:", err);
+        console.error("Failed to delete category image from Cloudinary:", err);
       }
     }
   };
@@ -661,7 +661,42 @@ function CategoryModal({
     const prevId = form.imageId;
     const prevUrl = form.imageUrl;
     try {
-      const fd = new FormData(); fd.append("image", file);
+      // Build hierarchical category folder path:
+      // Main Category: ANGKON / CATEGORIES / <CATEGORY>
+      // Subcategory:   ANGKON / CATEGORIES / <PARENT_CATEGORY> / <SUBCATEGORY>
+      let folder = "ANGKON/CATEGORIES";
+      const catSlugClean = (form.slug || slugify(form.name) || "CATEGORY")
+        .toUpperCase()
+        .replace(/[^A-Z0-9_\s-]/g, "")
+        .replace(/[\s-]+/g, "_");
+
+      if (form.type === "sub" && form.parent) {
+        const ancestors = ancestorIdsOf(flat, form.parent).reverse();
+        const ancestorSlugs = [...ancestors, form.parent]
+          .map((id) => flat.find((c) => c.id === id)?.slug || flat.find((c) => c.id === id)?.name)
+          .filter(Boolean) as string[];
+
+        const ancestorParts = ancestorSlugs.map((s) =>
+          s.toUpperCase().replace(/[^A-Z0-9_\s-]/g, "").replace(/[\s-]+/g, "_")
+        );
+
+        folder = ["ANGKON", "CATEGORIES", ...ancestorParts, catSlugClean].join("/");
+      } else {
+        folder = `ANGKON/CATEGORIES/${catSlugClean}`;
+      }
+
+      const fd = new FormData();
+      fd.append("image", file);
+      fd.append("folder", folder);
+      fd.append("uploadType", "category");
+      if (form.type === "sub" && form.parent) {
+        const parentCat = flat.find((c) => c.id === form.parent);
+        fd.append("category", parentCat?.slug || parentCat?.name || "PARENT");
+        fd.append("subcategory", form.slug || form.name);
+      } else {
+        fd.append("category", form.slug || form.name);
+      }
+
       const res = await authFetch("/api/admin/upload", { method: "POST", body: fd });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -671,12 +706,12 @@ function CategoryModal({
       const data = await res.json();
       set("imageUrl", data.url);
       set("imageId", data.id ?? null);
-      set("imageAlt", data.alt ?? "");
+      set("imageAlt", data.alt ?? form.name);
 
       // Track uploaded in session
       sessionUploadedRef.current.push({ id: data.id ?? null, url: data.url });
 
-      // If replacing a newly uploaded session image, delete the old one from WordPress
+      // If replacing an existing image, delete the old one from Cloudinary
       if ((prevId || prevUrl) && (prevId !== data.id || prevUrl !== data.url)) {
         void authFetch("/api/admin/upload", {
           method: "DELETE",
@@ -844,7 +879,7 @@ function CategoryModal({
                         <button
                           type="button"
                           onClick={handleRemoveImage}
-                          title="Remove image and delete from WordPress"
+                          title="Remove image and delete from Cloudinary"
                           className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full cursor-pointer hover:bg-red-600 shadow-md transition"
                         >
                           <X className="h-4 w-4" />
@@ -1490,12 +1525,13 @@ export default function AdminCategoriesPage() {
         { key: "_angkon_icon", value: data.icon },
         { key: "_angkon_bgTheme", value: data.bgTheme },
       ],
-      // WP attachment id when available; extras persist via description marker + local override.
-      image: data.imageId
-        ? { id: data.imageId, alt: data.imageAlt || data.name }
-        : data.imageUrl
-          ? { src: data.imageUrl, alt: data.imageAlt || data.name }
-          : null,
+      image: data.imageUrl
+        ? {
+            id: data.imageId || Date.now(),
+            src: data.imageUrl,
+            alt: data.imageAlt || data.name,
+          }
+        : null,
     };
 
     let categoryId = data.id;

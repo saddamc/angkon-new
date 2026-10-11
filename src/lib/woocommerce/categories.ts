@@ -1,9 +1,10 @@
+import { cache } from "react";
 import type { WooCategory } from "@/types/product";
 import type { CategoryNode } from "@/types/woocommerce";
 import { getDbCategories } from "@/lib/db/categories";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
-export async function getAllCategories(): Promise<WooCategory[]> {
+export const getAllCategories = cache(async (): Promise<WooCategory[]> => {
   try {
     const categories = await getDbCategories();
     if (Array.isArray(categories) && categories.length > 0) {
@@ -14,7 +15,7 @@ export async function getAllCategories(): Promise<WooCategory[]> {
   }
 
   return REAL_CATEGORIES as unknown as WooCategory[];
-}
+});
 
 // Flat WooCommerce categories -> nested tree, keyed off `parent`. O(n), arbitrary depth.
 export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
@@ -35,9 +36,9 @@ export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
   return roots;
 }
 
-export async function getCategoryTree(): Promise<CategoryNode[]> {
+export const getCategoryTree = cache(async (): Promise<CategoryNode[]> => {
   return buildCategoryTree(await getAllCategories());
-}
+});
 
 // DFS for the node matching `slug`, returning the full ancestor chain (root-first) down to it.
 export function findCategoryPath(tree: CategoryNode[], slug: string): CategoryNode[] | null {

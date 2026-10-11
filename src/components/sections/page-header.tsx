@@ -2,7 +2,7 @@ import Link from "next/link";
 
 type Pill = { label: string; href: string };
 
-/** Shared listing-page header matching clean Gorur Ghash aesthetic */
+/** Shared listing-page header matching clean ANGKON aesthetic */
 export function PageHeader({
   eyebrow,
   title,

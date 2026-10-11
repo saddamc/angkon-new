@@ -20,7 +20,7 @@ const RESERVED_SLUGS = new Set([
   "policies",
 ]);
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ category: string }>;

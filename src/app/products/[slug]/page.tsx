@@ -3,7 +3,7 @@ import { getProductBySlug, getRelatedProducts } from "@/services/products.servic
 import { ProductDetailsView } from "@/components/product/product-details-view";
 import { ProductSection } from "@/components/sections/product-section";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface ProductDetailsProps {
   params: Promise<{ slug: string }>;

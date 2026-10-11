@@ -16,6 +16,60 @@ export interface CloudinaryFolderOptions {
   product?: string;
 }
 
+export interface CategoryFolderOptions {
+  category?: string;
+  subcategory?: string;
+  ancestors?: string[];
+}
+
+/**
+ * Builds standard hierarchical Cloudinary folder path for categories:
+ * ANGKON / CATEGORIES / [PARENT_CATEGORY] / <CATEGORY_NAME_OR_SLUG>
+ */
+export function buildCategoryFolderPath({
+  category,
+  subcategory,
+  ancestors = [],
+}: CategoryFolderOptions = {}): string {
+  const parts: string[] = ["ANGKON", "CATEGORIES"];
+
+  if (ancestors && ancestors.length > 0) {
+    for (const a of ancestors) {
+      if (!a) continue;
+      const cleanA = a
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9_\s-]/g, "")
+        .replace(/[\s-]+/g, "_");
+      if (cleanA && !parts.includes(cleanA)) {
+        parts.push(cleanA);
+      }
+    }
+  } else if (category && category.trim()) {
+    const catClean = category
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_\s-]/g, "")
+      .replace(/[\s-]+/g, "_");
+    if (catClean && !parts.includes(catClean)) {
+      parts.push(catClean);
+    }
+  }
+
+  if (subcategory && subcategory.trim()) {
+    const subClean = subcategory
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_\s-]/g, "")
+      .replace(/[\s-]+/g, "_");
+    if (subClean && !parts.includes(subClean)) {
+      parts.push(subClean);
+    }
+  }
+
+  return parts.join("/");
+}
+
 /**
  * Builds standard Cloudinary folder path adhering to:
  * Project Name (ANGKON) -> Category (e.g. MEN/WOMEN) -> Subcategory (e.g. ETHNIC) -> Product (e.g. product-slug)
@@ -126,9 +180,18 @@ export function extractPublicIdFromUrl(urlOrId: string): string {
     const parts = urlOrId.split("/upload/");
     if (parts.length < 2) return urlOrId;
     let pathPart = parts[1];
-    // Strip version prefix if present e.g. "v1234567890/"
-    pathPart = pathPart.replace(/^v\d+\//, "");
-    // Strip file extension
+
+    // If path contains ANGKON/, extract starting from ANGKON/
+    const angkonIndex = pathPart.indexOf("ANGKON/");
+    if (angkonIndex !== -1) {
+      pathPart = pathPart.substring(angkonIndex);
+    } else {
+      // Strip any transformation params (e.g. c_scale,w_500/v123456/)
+      pathPart = pathPart.replace(/^(?:[a-z]_[^/]+\/)*v\d+\//, "");
+      pathPart = pathPart.replace(/^v\d+\//, "");
+    }
+
+    // Strip file extension (.jpg, .png, .webp, etc.)
     return pathPart.replace(/\.[^/.]+$/, "");
   } catch {
     return urlOrId;

@@ -11,25 +11,25 @@ const FEATURED_PRESS = [
   {
     name: "Prothom Alo",
     tagline: "Fashion & Lifestyle Feature",
-    url: "https://www.prothomalo.com/lifestyle/fashion/%E0%A6%AE%E0%A6%BF%E0%A6%B2%E0%A7%87%E0%A6%A8%E0%A6%BF%E0%A7%9F%E0%A6%BE%E0%A6%B2%E0%A6%A6%E0%A7%87%E0%A6%B0-%E0%A6%AB%E0%A7%8D%E0%A6%AF%E0%A6%BE%E0%A6%B6%E0%A6%A8-%E0%A6%AC%E0%A7%8D%E0%A6%B0%E0%A7%8D%E0%A6%AF%E0%A6%BE%E0%A6%A8%E0%A7%8D%E0%A6%A1",
+    url: "https://www.prothomalo.com/lifestyle/fashion",
     badge: "National Daily",
   },
   {
     name: "The Daily Star",
     tagline: "Where Fashion Meets Utility",
-    url: "https://www.thedailystar.net/star-youth/news/gorur-ghash-where-fashion-meets-comedy-1760020",
+    url: "https://www.thedailystar.net/lifestyle",
     badge: "Leading English Daily",
   },
   {
     name: "The Business Standard",
     tagline: "Fashion, Culture & Production",
-    url: "https://www.tbsnews.net/features/mode/gorur-ghash-fashion-comedy-and-utility-534690",
+    url: "https://www.tbsnews.net/features/mode",
     badge: "Business Journal",
   },
   {
     name: "Dhaka Tribune",
     tagline: "Season of Heritage & Expression",
-    url: "https://archive.dhakatribune.com/magazine/avenue-t/2019/02/11/season-of-ghash",
+    url: "https://archive.dhakatribune.com/magazine/avenue-t",
     badge: "Avenue T Feature",
   },
 ];

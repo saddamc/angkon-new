@@ -65,11 +65,12 @@ export function SubcategoryNavigation({
   return (
     <div className="mb-8 sm:mb-12">
       <div className="grid grid-cols-2 gap-x-3.5 sm:gap-x-5 md:gap-x-6 gap-y-4 sm:gap-y-6 md:grid-cols-3 lg:grid-cols-4">
-        {sorted.map((sub) => (
+        {sorted.map((sub, idx) => (
           <CategoryCard
             key={sub.id}
             category={sub}
             href={`${prefix}/${parentSlug}/${sub.slug}`}
+            priority={idx < 8}
           />
         ))}
       </div>

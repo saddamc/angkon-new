@@ -115,9 +115,6 @@ export function Footer() {
                 <span className="block font-serif text-2xl font-black uppercase tracking-[0.2em] text-[#E1B76F] leading-none">
                   ANGKON
                 </span>
-                <span className="block text-[11px] font-medium tracking-[0.25em] text-[#E1B76F]/70 uppercase mt-1">
-                  Ethnic Bangladeshi Fashion
-                </span>
               </div>
             </Link>
 
@@ -277,7 +274,7 @@ export function Footer() {
         <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#E1B76F]/80">
           <p className="text-center md:text-left">
             Copyright © {new Date().getFullYear()}{" "}
-            <strong className="text-[#E1B76F]">ANGKON</strong> — Ethnic Bangladeshi Fashion. All Rights Reserved.
+            <strong className="text-[#E1B76F]">ANGKON</strong>. All Rights Reserved.
           </p>
 
           {/* Secure Payment & Delivery Badges */}

@@ -17,11 +17,12 @@ export default function MightoPage() {
           className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
-            src="/banners/mighto-home-banner.png"
+            src="/banners/mighto-home-banner.webp"
             alt="Mighto Performance Activewear"
             width={2560}
             height={942}
             priority
+            loading="eager"
             sizes="100vw"
             className="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.005]"
           />
@@ -37,10 +38,12 @@ export default function MightoPage() {
             className="group block w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 shadow-sm transition hover:opacity-95"
           >
             <Image
-              src="/banners/mighto-men-card.png"
+              src="/banners/mighto-men-card.webp"
               alt="Mighto Men Collection"
               width={1440}
               height={1440}
+              priority
+              loading="eager"
               sizes="(max-width: 768px) 100vw, 50vw"
               className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.01]"
             />
@@ -52,10 +55,12 @@ export default function MightoPage() {
             className="group block w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 shadow-sm transition hover:opacity-95"
           >
             <Image
-              src="/banners/mighto-women-card.png"
+              src="/banners/mighto-women-card.webp"
               alt="Mighto Women Collection"
               width={1440}
               height={1440}
+              priority
+              loading="eager"
               sizes="(max-width: 768px) 100vw, 50vw"
               className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.01]"
             />

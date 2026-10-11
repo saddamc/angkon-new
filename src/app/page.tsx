@@ -10,7 +10,7 @@ import { ProductCard } from "@/components/product/product-card";
 import { useCartStore } from "@/store/cart-store";
 import { useMounted } from "@/hooks/use-mounted";
 
-// Pairs of 2-Column Banner Cards matching Gorur Ghash Homepage exactly
+// Pairs of 2-Column Banner Cards matching ANGKON Homepage layout
 const BANNER_PAIRS = [
   // Pair 1: Men & Women
   [
@@ -153,6 +153,8 @@ export default function HomePage() {
                   src={item.image}
                   alt={item.alt}
                   fill
+                  priority={pIdx < 2}
+                  loading={pIdx < 2 ? "eager" : "lazy"}
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
                 />

@@ -3,7 +3,7 @@ export function SeoSection() {
     <section className="bg-[#2b0403] py-12 border-t border-[#5c0f0d]">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1500px]">
         <div className="max-w-none text-[#cbb18a] leading-relaxed text-[13px] space-y-4">
-          <h2 className="font-heading text-xl font-black uppercase text-[#E1B76F] mb-4">ANGKON - Ethnic Bangladeshi Fashion in Bangladesh</h2>
+          <h2 className="font-heading text-xl font-black uppercase text-[#E1B76F] mb-4">ANGKON - Premium Apparel in Bangladesh</h2>
           
           <p>
             Welcome to ANGKON, the most trusted and reliable shopping destination in Bangladesh for authentic ethnic luxury apparel, artisanal craftsmanship, and everyday distinction. We are dedicated to providing our patrons with a seamless and refined shopping experience, offering premium fabrics and timeless silhouettes right at your fingertips.

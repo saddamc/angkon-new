@@ -9,7 +9,7 @@ import { CategoryGrid } from "@/components/categories/CategoryGrid";
 import { CategorySidebar } from "@/components/categories/CategorySidebar";
 import { categoryDisplayName } from "@/utils/category-display";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 interface Props {
   params: Promise<{ slug: string[] }>;

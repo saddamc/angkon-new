@@ -41,7 +41,9 @@ export async function getDbCategories(): Promise<WooCategory[]> {
     console.warn("MongoDB categories query failed, falling back to cached catalog:", error);
   }
 
-  return REAL_CATEGORIES as unknown as WooCategory[];
+  cachedCategories = REAL_CATEGORIES as unknown as WooCategory[];
+  lastCategoriesFetch = now;
+  return cachedCategories;
 }
 
 export async function getDbCategoryBySlug(slug: string): Promise<WooCategory | null> {

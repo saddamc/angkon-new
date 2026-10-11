@@ -4,7 +4,15 @@ import type { WooCategory } from "@/types/product";
 import { categoryDisplayName, DEFAULT_CATEGORY_EMOJI } from "@/utils/category-display";
 import { getCategoryImage } from "@/config/category-images";
 
-export function CategoryCard({ category, href }: { category: WooCategory; href: string }) {
+export function CategoryCard({
+  category,
+  href,
+  priority = false,
+}: {
+  category: WooCategory;
+  href: string;
+  priority?: boolean;
+}) {
   const imageUrl = getCategoryImage(category);
   const name = categoryDisplayName(category.name);
   const count = typeof category.count === "number" ? category.count : 0;
@@ -23,6 +31,8 @@ export function CategoryCard({ category, href }: { category: WooCategory; href: 
             alt={category.image?.alt || category.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={priority}
+            loading={priority ? "eager" : "lazy"}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (

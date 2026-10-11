@@ -1,7 +1,7 @@
 {
-  "name": "netbazer",
+  "name": "angkon",
   "version": "1.0.0",
-  "description": "Premium football jersey ecommerce frontend built with Next.js 15",
+  "description": "ANGKON — Authentic Ethnic Luxury Apparel E-Commerce Store",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack -H 0.0.0.0 -p 3001",

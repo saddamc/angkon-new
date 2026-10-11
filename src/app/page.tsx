@@ -180,7 +180,7 @@ export default function HomePage() {
                   key={idx}
                   className="animate-pulse bg-transparent p-0"
                 >
-                  <div className="mb-2 aspect-square rounded-none bg-[#340402] border border-[#E1B76F]/10" />
+                  <div className="mb-2 aspect-[3/4] rounded-none bg-[#340402] border border-[#E1B76F]/10" />
                   <div className="mb-1 h-3 w-3/4 rounded bg-[#340402]" />
                   <div className="mb-1 h-2.5 w-1/3 rounded bg-[#340402]" />
                   <div className="mb-2 h-3 w-1/2 rounded bg-[#340402]" />

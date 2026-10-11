@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { sendOrderConfirmationEmails } from "@/lib/email/resend";
@@ -84,20 +84,24 @@ export async function POST(request: NextRequest) {
         notes: orderNotes ? String(orderNotes).trim() : "",
       });
 
-      // Asynchronous background email dispatch (Customer confirmation + Admin alert)
-      sendOrderConfirmationEmails({
-        orderNumber: newOrder.orderNumber,
-        customer: customerData,
-        items: itemsData,
-        subtotal: newOrder.subtotal,
-        shippingFee: newOrder.shippingFee,
-        total: newOrder.total,
-        paymentMethod: newOrder.paymentMethod,
-        notes: newOrder.notes,
-        createdAt: newOrder.createdAt,
-      }).catch((emailErr) => {
-        console.warn("Background order confirmation email dispatch warning:", emailErr);
-      });
+      // Send emails after the response (Customer confirmation + Admin alert).
+      // after() keeps the serverless function alive until they finish; a bare
+      // un-awaited promise can be dropped on Vercel once the response is sent.
+      after(() =>
+        sendOrderConfirmationEmails({
+          orderNumber: newOrder.orderNumber,
+          customer: customerData,
+          items: itemsData,
+          subtotal: newOrder.subtotal,
+          shippingFee: newOrder.shippingFee,
+          total: newOrder.total,
+          paymentMethod: newOrder.paymentMethod,
+          notes: newOrder.notes,
+          createdAt: newOrder.createdAt,
+        }).catch((emailErr) => {
+          console.warn("Background order confirmation email dispatch warning:", emailErr);
+        }),
+      );
 
       return NextResponse.json(
         {
@@ -114,18 +118,20 @@ export async function POST(request: NextRequest) {
       console.warn("MongoDB order creation warning, returning confirmed order number:", dbErr);
 
       // Attempt email dispatch even if DB had a temporary hiccup
-      sendOrderConfirmationEmails({
-        orderNumber,
-        customer: customerData,
-        items: itemsData,
-        subtotal,
-        shippingFee,
-        total,
-        paymentMethod,
-        notes: orderNotes,
-      }).catch((emailErr) => {
-        console.warn("Fallback email dispatch warning:", emailErr);
-      });
+      after(() =>
+        sendOrderConfirmationEmails({
+          orderNumber,
+          customer: customerData,
+          items: itemsData,
+          subtotal,
+          shippingFee,
+          total,
+          paymentMethod,
+          notes: orderNotes,
+        }).catch((emailErr) => {
+          console.warn("Fallback email dispatch warning:", emailErr);
+        }),
+      );
 
       return NextResponse.json(
         {

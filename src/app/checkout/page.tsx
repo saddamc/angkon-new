@@ -881,16 +881,9 @@ export default function CheckoutPage() {
 
                 {/* Email address * */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold text-white">
-                      Email address <span className="text-red-400">*</span>
-                    </label>
-                    {emailLocked ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400">
-                        <CheckCircle className="h-3.5 w-3.5" /> Verified
-                      </span>
-                    ) : null}
-                  </div>
+                  <label className="block text-xs font-semibold text-white mb-1.5">
+                    Email address <span className="text-red-400">*</span>
+                  </label>
 
                   <div className="relative flex items-center">
                     <input
@@ -1020,18 +1013,7 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  {emailLocked ? (
-                    <div className="mt-2 flex items-center justify-between text-xs text-emerald-300">
-                      <span>✓ Signed in with verified email: <strong className="text-white">{getValues("email")}</strong></span>
-                      <button
-                        type="button"
-                        onClick={signOutOfCheckout}
-                        className="font-semibold text-[#E1B76F] underline underline-offset-4 hover:text-white cursor-pointer ml-2"
-                      >
-                        Not you? Sign out
-                      </button>
-                    </div>
-                  ) : checkoutConfig?.requireEmailVerification !== false && !inlineVerifyOpen ? (
+                  {!emailLocked && checkoutConfig?.requireEmailVerification !== false && !inlineVerifyOpen ? (
                     <p className="mt-1.5 text-xs text-white/60">
                       Click <strong>Verify</strong> to confirm your email before placing the order.
                     </p>

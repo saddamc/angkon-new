@@ -1,4 +1,4 @@
-import { after, NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { sendOrderConfirmationEmails } from "@/lib/email/resend";
@@ -221,32 +221,35 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Send emails after the response (Customer confirmation + Admin alert).
-      // after() keeps the serverless function alive until they finish; a bare
-      // un-awaited promise can be dropped on Vercel once the response is sent.
-      after(() =>
-        sendOrderConfirmationEmails({
-          orderNumber: newOrder.orderNumber,
-          customer: customerData,
-          items: itemsData,
-          subtotal: newOrder.subtotal,
-          shippingFee: newOrder.shippingFee,
-          total: newOrder.total,
-          paymentMethod: newOrder.paymentMethod,
-          notes: newOrder.notes,
-          createdAt: newOrder.createdAt,
-        }).catch((emailErr) => {
-          console.warn("Background order confirmation email dispatch warning:", emailErr);
-        }),
-      );
+      // Dispatch emails directly before responding to guarantee delivery in serverless environments.
+      try {
+        const emailTasks: Promise<unknown>[] = [
+          sendOrderConfirmationEmails({
+            orderNumber: newOrder.orderNumber,
+            customer: customerData,
+            items: itemsData,
+            subtotal: newOrder.subtotal,
+            shippingFee: newOrder.shippingFee,
+            total: newOrder.total,
+            paymentMethod: newOrder.paymentMethod,
+            notes: newOrder.notes,
+            createdAt: newOrder.createdAt,
+          }).catch((emailErr) => {
+            console.warn("Order confirmation email dispatch warning:", emailErr);
+          }),
+        ];
 
-      // New account: send the "verify your email / set a password" link.
-      if (account.status === "created" && accountUser) {
-        after(() =>
-          issueVerificationEmail(accountUser, request, "checkout", newOrder.orderNumber).catch((err) =>
-            console.warn("Checkout verification email failed:", err),
-          ),
-        );
+        if (account.status === "created" && accountUser) {
+          emailTasks.push(
+            issueVerificationEmail(accountUser, request, "checkout", newOrder.orderNumber).catch((err) => {
+              console.warn("Checkout verification email failed:", err);
+            }),
+          );
+        }
+
+        await Promise.allSettled(emailTasks);
+      } catch (emailErr) {
+        console.warn("Email task dispatch warning:", emailErr);
       }
 
       const response = NextResponse.json(
@@ -280,8 +283,8 @@ export async function POST(request: NextRequest) {
       console.warn("MongoDB order creation warning, returning confirmed order number:", dbErr);
 
       // Attempt email dispatch even if DB had a temporary hiccup
-      after(() =>
-        sendOrderConfirmationEmails({
+      try {
+        await sendOrderConfirmationEmails({
           orderNumber,
           customer: customerData,
           items: itemsData,
@@ -290,10 +293,10 @@ export async function POST(request: NextRequest) {
           total,
           paymentMethod,
           notes: orderNotes,
-        }).catch((emailErr) => {
-          console.warn("Fallback email dispatch warning:", emailErr);
-        }),
-      );
+        });
+      } catch (emailErr) {
+        console.warn("Fallback email dispatch warning:", emailErr);
+      }
 
       return NextResponse.json(
         {

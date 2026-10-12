@@ -30,33 +30,61 @@ export function hashCode(email: string, code: string): string {
 export async function issueEmailCode(email: string): Promise<{ code: string } | { cooldownSeconds: number }> {
   await connectToDatabase();
   const now = Date.now();
+  const normalized = email.trim().toLowerCase();
 
-  const existing = await EmailCode.findOne({ email }).lean();
-  if (existing) {
-    const waitMs = CODE_RESEND_COOLDOWN_MS - (now - new Date(existing.lastSentAt).getTime());
-    if (waitMs > 0) return { cooldownSeconds: Math.ceil(waitMs / 1000) };
+  try {
+    const existing = await EmailCode.findOne({ email: normalized }).lean();
+    if (existing && existing.lastSentAt) {
+      const lastSentMs = new Date(existing.lastSentAt).getTime();
+      if (!isNaN(lastSentMs)) {
+        const waitMs = CODE_RESEND_COOLDOWN_MS - (now - lastSentMs);
+        if (waitMs > 0) return { cooldownSeconds: Math.ceil(waitMs / 1000) };
+      }
+    }
+  } catch (findErr) {
+    console.warn("Could not check existing EmailCode:", findErr);
   }
 
   const code = generateCode();
-  await EmailCode.findOneAndUpdate(
-    { email },
-    {
-      $set: {
-        codeHash: hashCode(email, code),
-        attempts: 0,
-        expiresAt: new Date(now + CODE_TTL_MS),
-        lastSentAt: new Date(now),
+  const hash = hashCode(normalized, code);
+
+  try {
+    // Delete any previous code for this email and insert fresh to prevent Mongo duplicate key collisions
+    await EmailCode.deleteMany({ email: normalized });
+    await EmailCode.create({
+      email: normalized,
+      codeHash: hash,
+      attempts: 0,
+      expiresAt: new Date(now + CODE_TTL_MS),
+      lastSentAt: new Date(now),
+    });
+  } catch (writeErr) {
+    console.warn("EmailCode direct create failed, falling back to updateOne:", writeErr);
+    await EmailCode.updateOne(
+      { email: normalized },
+      {
+        $set: {
+          codeHash: hash,
+          attempts: 0,
+          expiresAt: new Date(now + CODE_TTL_MS),
+          lastSentAt: new Date(now),
+        },
       },
-    },
-    { upsert: true, new: true },
-  );
+      { upsert: true }
+    );
+  }
+
   return { code };
 }
 
 /** Forget a pending code (e.g. when the email could not be sent). */
 export async function discardEmailCode(email: string): Promise<void> {
-  await connectToDatabase();
-  await EmailCode.deleteOne({ email });
+  try {
+    await connectToDatabase();
+    await EmailCode.deleteMany({ email: email.trim().toLowerCase() });
+  } catch (err) {
+    console.warn("Could not discard email code:", err);
+  }
 }
 
 export type CodeCheck = { status: "ok" } | { status: "invalid"; attemptsLeft: number } | { status: "expired" } | { status: "locked" };

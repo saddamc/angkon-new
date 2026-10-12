@@ -29,7 +29,12 @@ export async function POST(request: NextRequest) {
 
     const result = await issueVerificationEmail(user, request, "resend");
     if (!result.success) {
-      return NextResponse.json({ error: "We couldn't send the email right now. Please try again shortly." }, { status: 502 });
+      console.warn("Resend verification email failed:", result.error);
+      const errMsg =
+        result.error === "Missing RESEND_API_KEY"
+          ? "Email service not configured (RESEND_API_KEY is missing in production environment variables)."
+          : result.error || "We couldn't send the email right now. Please try again shortly.";
+      return NextResponse.json({ error: errMsg }, { status: 502 });
     }
     return NextResponse.json({ ok: true });
   } catch (error) {

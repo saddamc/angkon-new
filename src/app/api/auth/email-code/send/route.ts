@@ -10,7 +10,13 @@ import { sendVerificationCodeEmail } from "@/lib/email/account-emails";
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { email?: unknown; name?: unknown };
+    let body: { email?: unknown; name?: unknown } = {};
+    try {
+      body = (await request.json()) as { email?: unknown; name?: unknown };
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON in request body." }, { status: 400 });
+    }
+
     const email = normalizeEmail(body.email);
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 80) : "";
 
@@ -44,16 +50,20 @@ export async function POST(request: NextRequest) {
       // Don't leave an unusable code behind or make the customer wait out a cooldown.
       await discardEmailCode(email);
       console.warn("Verification code email failed:", result.error);
-      return NextResponse.json(
-        { error: "We couldn't send the code right now. Please try again in a moment." },
-        { status: 502 },
-      );
+      const errMsg =
+        result.error === "Missing RESEND_API_KEY"
+          ? "Email service not configured (RESEND_API_KEY is missing in production environment variables)."
+          : result.error || "We couldn't send the code right now. Please try again in a moment.";
+      return NextResponse.json({ error: errMsg }, { status: 502 });
     }
 
     return NextResponse.json({ ok: true, expiresInMinutes: CODE_TTL_MS / 60000, resendAfterSeconds: 60 });
   } catch (error) {
     console.error("Email code send error:", error);
-    const message = error instanceof Error ? error.message : "Unable to send verification code. Please try again.";
+    const rawMessage = error instanceof Error ? error.message : "";
+    const message = rawMessage.includes("MONGODB")
+      ? "Database is momentarily connecting. Please try again in a few seconds."
+      : rawMessage || "Unable to send verification code. Please try again.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

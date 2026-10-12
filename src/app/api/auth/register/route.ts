@@ -1,4 +1,4 @@
-import { after, NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import {
@@ -47,12 +47,15 @@ export async function POST(request: NextRequest) {
       source: "register",
     });
 
-    // Send the verification email after responding (kept alive on Vercel by after()).
-    after(() =>
-      issueVerificationEmail(user, request, "register").catch((err) =>
-        console.warn("Verification email failed:", err),
-      ),
-    );
+    // Send the verification email directly before responding to guarantee delivery in serverless lambdas.
+    try {
+      const emailResult = await issueVerificationEmail(user, request, "register");
+      if (!emailResult.success) {
+        console.warn("Registration verification email warning:", emailResult.error);
+      }
+    } catch (emailErr) {
+      console.warn("Registration verification email failed to dispatch:", emailErr);
+    }
 
     const response = NextResponse.json({ ok: true, user: publicUser(user) }, { status: 201 });
     setSessionCookie(response, { id: String(user._id), email: user.email, name: user.name, role: user.role });

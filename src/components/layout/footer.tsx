@@ -194,13 +194,13 @@ export function Footer() {
             <div className="space-y-3.5 text-[13px] text-white/90">
               {/* Showroom Address */}
               <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-white shrink-0 mt-0.5" />
+                <MapPin className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
                 <div>
                   <p className="leading-snug text-white/90">
                     H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
                   </p>
                   <a
-                    href="https://maps.google.com/?q=H-93,+Road+2,+Block+A,+Niketan,+Gulshan,+Dhaka-1212"
+                    href="https://maps.app.goo.gl/hwrj3KgQ6NdSYp3R8"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[11px] font-bold text-[#E1B76F] hover:underline mt-1"

@@ -150,6 +150,16 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
             <p className="leading-relaxed">
               H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
             </p>
+            <div>
+              <a
+                href="https://maps.app.goo.gl/hwrj3KgQ6NdSYp3R8"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#E1B76F] hover:underline"
+              >
+                View on Google Maps →
+              </a>
+            </div>
             <div className="pt-1 space-y-1 text-xs">
               <div>
                 <span className="text-white/70">Hotline: </span>

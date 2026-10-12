@@ -31,6 +31,12 @@ export async function POST(request: NextRequest) {
     }
 
     const check = await consumeEmailCode(email, code);
+    if (check.status === "error") {
+      return NextResponse.json(
+        { error: "Our verification service is momentarily unavailable. Please try again in a moment." },
+        { status: 503 }
+      );
+    }
     if (check.status === "expired") {
       return NextResponse.json({ error: "That code has expired. Request a new one.", code: "EXPIRED" }, { status: 400 });
     }

@@ -103,30 +103,41 @@ export async function discardEmailCode(email: string): Promise<void> {
   }
 }
 
-export type CodeCheck = { status: "ok" } | { status: "invalid"; attemptsLeft: number } | { status: "expired" } | { status: "locked" };
+export type CodeCheck =
+  | { status: "ok" }
+  | { status: "invalid"; attemptsLeft: number }
+  | { status: "expired" }
+  | { status: "locked" }
+  | { status: "error"; error: string };
 
 /** Check a submitted code. A correct code is consumed and can't be used again. */
 export async function consumeEmailCode(email: string, code: string): Promise<CodeCheck> {
-  await connectToDatabase();
+  try {
+    await connectToDatabase();
 
-  // Count this attempt first (atomically) so parallel guesses can't beat the limit.
-  const doc = await EmailCode.findOneAndUpdate(
-    { email, expiresAt: { $gt: new Date() } },
-    { $inc: { attempts: 1 } },
-    { new: true },
-  );
-  if (!doc) return { status: "expired" };
-  if (doc.attempts > CODE_MAX_ATTEMPTS) return { status: "locked" };
+    const normalized = email.trim().toLowerCase();
+    // Count this attempt first (atomically) so parallel guesses can't beat the limit.
+    const doc = await EmailCode.findOneAndUpdate(
+      { email: normalized, expiresAt: { $gt: new Date() } },
+      { $inc: { attempts: 1 } },
+      { new: true },
+    );
+    if (!doc) return { status: "expired" };
+    if (doc.attempts > CODE_MAX_ATTEMPTS) return { status: "locked" };
 
-  const expected = Buffer.from(doc.codeHash, "hex");
-  const actual = Buffer.from(hashCode(email, code), "hex");
-  const matches = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+    const expected = Buffer.from(doc.codeHash, "hex");
+    const actual = Buffer.from(hashCode(normalized, code), "hex");
+    const matches = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 
-  if (matches) {
-    await EmailCode.deleteOne({ email, codeHash: doc.codeHash });
-    return { status: "ok" };
+    if (matches) {
+      await EmailCode.deleteMany({ email: normalized });
+      return { status: "ok" };
+    }
+    return doc.attempts >= CODE_MAX_ATTEMPTS
+      ? { status: "locked" }
+      : { status: "invalid", attemptsLeft: CODE_MAX_ATTEMPTS - doc.attempts };
+  } catch (err) {
+    console.error("consumeEmailCode error:", err);
+    return { status: "error", error: err instanceof Error ? err.message : "Database error" };
   }
-  return doc.attempts >= CODE_MAX_ATTEMPTS
-    ? { status: "locked" }
-    : { status: "invalid", attemptsLeft: CODE_MAX_ATTEMPTS - doc.attempts };
 }

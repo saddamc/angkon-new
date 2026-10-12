@@ -53,6 +53,8 @@ function toWooProduct(doc: any): WooProduct {
     shipping_class_id: doc.shipping_class_id || 0,
     stock_quantity: doc.stock_quantity ?? null,
     meta_data: Array.isArray(doc.meta_data) ? doc.meta_data : [],
+    updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : undefined,
+    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : undefined,
   };
 }
 
@@ -75,7 +77,7 @@ export async function getAllDbProducts(): Promise<WooProduct[]> {
   try {
     await connectToDatabase();
     const docs = await Product.find({})
-      .sort({ id: -1 })
+      .sort({ updatedAt: -1, id: -1 })
       .lean();
 
     if (docs && docs.length > 0) {
@@ -99,7 +101,12 @@ export async function getDbProducts(query: DbProductQuery = {}): Promise<WooProd
   let list = all;
 
   if (onSale) {
-    list = list.filter((p) => p.on_sale);
+    list = list.filter(
+      (p) =>
+        p.on_sale ||
+        (p.sale_price && parseFloat(p.sale_price) > 0 && parseFloat(p.sale_price) < parseFloat(p.regular_price || p.price)) ||
+        (p.regular_price && parseFloat(p.regular_price) > parseFloat(p.price))
+    );
   }
 
   if (search) {
@@ -150,7 +157,10 @@ export async function getDbProducts(query: DbProductQuery = {}): Promise<WooProd
     if (orderby === "title") {
       return order === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
     }
-    return order === "asc" ? a.id - b.id : b.id - a.id;
+    // Default ("date"): Sort by last updated date descending
+    const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : a.id);
+    const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : b.id);
+    return order === "asc" ? timeA - timeB : timeB - timeA;
   });
 
   const skip = (page - 1) * perPage;

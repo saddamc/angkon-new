@@ -23,7 +23,7 @@ export interface ShippingSettings {
 export const DEFAULT_SHIPPING_SETTINGS: ShippingSettings = {
   insideDhaka: 60,
   outsideDhaka: 120,
-  freeDeliveryThreshold: 0,
+  freeDeliveryThreshold: 1500,
 };
 
 export type ShippingZone = "inside" | "outside";

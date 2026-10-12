@@ -60,6 +60,8 @@ export interface WooProduct {
   weight?: string;
   /** Custom metadata array for advanced options like delivery charges */
   meta_data?: { id?: number; key: string; value: string }[];
+  updatedAt?: string;
+  createdAt?: string;
 }
 
 export interface CartItem {

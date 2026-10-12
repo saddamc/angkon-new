@@ -2,12 +2,14 @@ import type { WooCategory, WooProduct, WooReview } from "@/types/product";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
-interface ProductQuery {
+export interface ProductQuery {
   page?: number;
   perPage?: number;
   search?: string;
   category?: string;
   onSale?: boolean;
+  orderby?: "date" | "price" | "popularity" | "title";
+  order?: "asc" | "desc";
 }
 
 const CATALOG: WooProduct[] = REAL_PRODUCTS as unknown as WooProduct[];
@@ -48,7 +50,7 @@ export function mapWooProduct(raw: any): WooProduct {
 }
 
 export const getProducts = async (query: ProductQuery = {}): Promise<WooProduct[]> => {
-  const { page = 1, perPage = 12, search, category, onSale } = query;
+  const { page = 1, perPage = 12, search, category, onSale, orderby, order } = query;
 
   try {
     if (typeof window === "undefined") {
@@ -61,6 +63,8 @@ export const getProducts = async (query: ProductQuery = {}): Promise<WooProduct[
       if (search) params.set("search", search);
       if (category) params.set("category", category);
       if (onSale) params.set("onSale", "true");
+      if (orderby) params.set("orderby", orderby);
+      if (order) params.set("order", order);
 
       const response = await fetch(`/api/products?${params}`, { cache: "no-store" });
       if (!response.ok) return CATALOG.slice(0, perPage);

@@ -79,7 +79,12 @@ export async function PUT(
     const salePrice = body.sale_price ? String(body.sale_price) : "";
     body.regular_price = regularPrice;
     body.sale_price = salePrice;
-    body.price = String(body.price || salePrice || regularPrice || "0");
+    const hasSalePrice = Boolean(
+      salePrice && parseFloat(salePrice) > 0 && parseFloat(salePrice) < parseFloat(regularPrice || "99999999")
+    );
+    body.on_sale = Boolean(body.on_sale !== undefined ? body.on_sale : hasSalePrice);
+    body.updatedAt = new Date();
+
     if (body.buy_price !== undefined) {
       body.buy_price = String(body.buy_price);
     }

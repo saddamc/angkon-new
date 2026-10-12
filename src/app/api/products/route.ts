@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || undefined;
     const category = searchParams.get("category") || undefined;
     const onSale = searchParams.get("onSale") === "true";
+    const orderby = (searchParams.get("orderby") as any) || undefined;
+    const order = (searchParams.get("order") as any) || undefined;
 
     const products = await getDbProducts({
       page,
@@ -16,6 +18,8 @@ export async function GET(request: NextRequest) {
       search,
       category,
       onSale,
+      orderby,
+      order,
     });
 
     return NextResponse.json(products, {

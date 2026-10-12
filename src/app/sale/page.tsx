@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Special promotional discounts and clearance prices across ANGKON collections.",
 };
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 export default async function SalePage() {
   let saleProducts: WooProduct[] = [];
@@ -18,22 +18,26 @@ export default async function SalePage() {
     const fetched = await getProducts({ onSale: true, perPage: 100 });
     if (Array.isArray(fetched) && fetched.length > 0) {
       saleProducts = fetched;
-    } else {
-      saleProducts = (REAL_PRODUCTS as unknown as WooProduct[]).filter(
-        (p) =>
-          p.on_sale ||
-          (p.regular_price && parseFloat(p.regular_price) > parseFloat(p.price)) ||
-          (p.sale_price && parseFloat(p.sale_price) < parseFloat(p.regular_price || p.price))
-      );
     }
   } catch {
-    saleProducts = (REAL_PRODUCTS as unknown as WooProduct[]).filter(
-      (p) =>
-        p.on_sale ||
-        (p.regular_price && parseFloat(p.regular_price) > parseFloat(p.price)) ||
-        (p.sale_price && parseFloat(p.sale_price) < parseFloat(p.regular_price || p.price))
-    );
+    saleProducts = [];
   }
+
+  // If no products are currently marked with discount, showcase latest updated catalog products
+  if (saleProducts.length === 0) {
+    try {
+      saleProducts = await getProducts({ perPage: 24, orderby: "date", order: "desc" });
+    } catch {
+      saleProducts = (REAL_PRODUCTS as unknown as WooProduct[]).slice(0, 24);
+    }
+  }
+
+  // Guarantee products are sorted by last updated date (newest first)
+  saleProducts.sort((a, b) => {
+    const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : a.id);
+    const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : b.id);
+    return timeB - timeA;
+  });
 
   return (
     <div className="min-h-screen bg-[#400604] text-white">

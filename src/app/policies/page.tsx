@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { MessageCircle, MapPin, Truck } from "lucide-react";
+import { MessageCircle, MapPin, Truck, RotateCcw, ShieldCheck, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Policies — ANGKON",
@@ -12,21 +11,24 @@ export default function PoliciesPage() {
   const policyLinks = [
     {
       title: "Delivery Timing",
+      subtitle: "Standard delivery timelines across all 64 districts in Bangladesh",
       href: "/delivery-time",
-      image: "/policies/delivery-timing-btn.png",
-      alt: "Delivery Timing for COD Orders",
+      icon: Truck,
+      badge: "2-5 Days Nationwide",
     },
     {
       title: "Refund and Exchange Policy",
+      subtitle: "Terms for local orders · 48-hour exchange window & defect coverage",
       href: "/refund-and-exchange-policies",
-      image: "/policies/refund-policy-btn.png",
-      alt: "Refund and Exchange Policy (For local orders)",
+      icon: RotateCcw,
+      badge: "7-Day Refund SLA",
     },
     {
       title: "Privacy Policy",
+      subtitle: "How personal data, transaction security, and SSL encryption are protected",
       href: "/privacy-policy",
-      image: "/policies/privacy-policy-btn.png",
-      alt: "Privacy Policy",
+      icon: ShieldCheck,
+      badge: "100% Secure & Encrypted",
     },
   ];
 
@@ -49,26 +51,42 @@ export default function PoliciesPage() {
         </div>
       </div>
 
-      {/* ── 3 Policy Banner Option Buttons ── */}
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4 sm:space-y-6">
-        {policyLinks.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="group relative block w-full overflow-hidden rounded-xl sm:rounded-2xl border border-[#E1B76F]/25 shadow-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.01] hover:border-[#E1B76F]/50"
-          >
-            <div className="relative w-full aspect-[1920/250] bg-[#340402] overflow-hidden">
-              <Image
-                src={item.image}
-                alt={item.alt}
-                fill
-                priority
-                sizes="(max-width: 1100px) 100vw, 1100px"
-                className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.015]"
-              />
-            </div>
-          </Link>
-        ))}
+      {/* ── 3 Luxury Policy Banner Option Cards ── */}
+      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-4 sm:space-y-5">
+        {policyLinks.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-2xl border border-[#E1B76F]/25 bg-gradient-to-r from-[#340402] via-[#3a0604] to-[#2b0403] p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-[#E1B76F]/70 hover:shadow-2xl hover:scale-[1.01]"
+            >
+              <div className="flex items-center gap-4 sm:gap-5">
+                <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E1B76F]/10 border border-[#E1B76F]/30 text-[#E1B76F] group-hover:bg-[#E1B76F] group-hover:text-[#400604] transition-colors duration-300">
+                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#E1B76F] bg-[#E1B76F]/10 px-2.5 py-0.5 rounded-full border border-[#E1B76F]/20">
+                      {item.badge}
+                    </span>
+                  </div>
+                  <h2 className="font-heading text-xl sm:text-2xl font-black uppercase text-white tracking-tight group-hover:text-[#E1B76F] transition-colors">
+                    {item.title}
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm text-white/80">
+                    {item.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto text-xs font-bold uppercase tracking-wider text-[#E1B76F] shrink-0 pt-2 sm:pt-0">
+                <span>View Guidelines</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
+              </div>
+            </Link>
+          );
+        })}
 
         {/* ── Helpful Support Strip ── */}
         <div className="mt-12 pt-8 border-t border-[#E1B76F]/20 grid grid-cols-1 md:grid-cols-3 gap-4 text-center sm:text-left">

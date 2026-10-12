@@ -1,38 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Sparkles, Award, Shield, HeartHandshake, Play, ExternalLink, MapPin, Phone, Mail } from "lucide-react";
+import { Sparkles, Award, Shield, HeartHandshake, Phone, Mail } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us — HOUSE OF MODERN HERITAGE | ANGKON",
   description: "Discover ANGKON, Bangladesh's modern heritage fashion house bridging tradition and contemporary street aesthetics.",
 };
-
-const FEATURED_PRESS = [
-  {
-    name: "Prothom Alo",
-    tagline: "Fashion & Lifestyle Feature",
-    url: "https://www.prothomalo.com/lifestyle/fashion",
-    badge: "National Daily",
-  },
-  {
-    name: "The Daily Star",
-    tagline: "Where Fashion Meets Utility",
-    url: "https://www.thedailystar.net/lifestyle",
-    badge: "Leading English Daily",
-  },
-  {
-    name: "The Business Standard",
-    tagline: "Fashion, Culture & Production",
-    url: "https://www.tbsnews.net/features/mode",
-    badge: "Business Journal",
-  },
-  {
-    name: "Dhaka Tribune",
-    tagline: "Season of Heritage & Expression",
-    url: "https://archive.dhakatribune.com/magazine/avenue-t",
-    badge: "Avenue T Feature",
-  },
-];
 
 export default function AboutPage() {
   return (
@@ -102,103 +75,6 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Podcasts & Video Features */}
-        <div className="rounded-2xl border border-[#E1B76F]/20 bg-[#340402] p-8 lg:p-10 shadow-2xl">
-          <div className="text-center max-w-xl mx-auto mb-8">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-white/70 block mb-1">
-              In The Spotlight
-            </span>
-            <h2 className="font-heading text-2xl sm:text-4xl font-black uppercase text-white">
-              Podcasts & Features
-            </h2>
-            <p className="text-xs sm:text-sm text-white/90 mt-2">
-              Deep dives into the creative journey, manufacturing trials, and storytelling behind contemporary apparel in Bangladesh.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Podcast Video 1 */}
-            <div className="space-y-3">
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-[#E1B76F]/20 bg-black shadow-lg">
-                <iframe
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/A3hjb6EyOmc"
-                  title="The story behind contemporary apparel brand in Bangladesh"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              <h4 className="font-bold text-sm sm:text-base text-white">
-                The Story Behind the Brand & 300x Growth Through Content
-              </h4>
-              <p className="text-xs text-white/90">
-                A full podcast breakdown covering fabric sourcing, creative positioning, and direct-to-consumer fulfillment in Dhaka.
-              </p>
-            </div>
-
-            {/* Podcast Video 2 */}
-            <div className="space-y-3">
-              <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-[#E1B76F]/20 bg-black shadow-lg">
-                <iframe
-                  className="w-full h-full"
-                  src="https://www.youtube.com/embed/iFb44mVECvs"
-                  title="Daekhopedia Stories"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-              <h4 className="font-bold text-sm sm:text-base text-white">
-                Daekhopedia Stories: Modern Heritage Edition
-              </h4>
-              <p className="text-xs text-white/90">
-                Behind-the-scenes documentary discussing product design philosophy and redefining homegrown youth fashion.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Featured On Media Strip */}
-        <div>
-          <div className="text-center max-w-xl mx-auto mb-8">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-white/70 block mb-1">
-              Press & Media
-            </span>
-            <h2 className="font-heading text-2xl sm:text-4xl font-black uppercase text-white">
-              Featured On
-            </h2>
-            <p className="text-xs sm:text-sm text-white/90 mt-2">
-              Recognized and documented across prominent publications and national journals.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {FEATURED_PRESS.map((press) => (
-              <a
-                key={press.name}
-                href={press.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col justify-between rounded-xl border border-[#E1B76F]/20 bg-[#340402] p-5 shadow-lg transition hover:border-[#E1B76F] hover:bg-[#400604]"
-              >
-                <div>
-                  <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-white bg-[#400604] px-2 py-0.5 rounded border border-[#E1B76F]/30 mb-3">
-                    {press.badge}
-                  </span>
-                  <h3 className="font-heading text-lg font-black text-white group-hover:text-white transition">
-                    {press.name}
-                  </h3>
-                  <p className="text-xs text-white/90 mt-1">
-                    {press.tagline}
-                  </p>
-                </div>
-                <div className="mt-4 pt-3 border-t border-[#E1B76F]/20 flex items-center justify-between text-[11px] font-bold uppercase text-white">
-                  <span>Read Article</span>
-                  <ExternalLink className="h-3.5 w-3.5 text-white group-hover:translate-x-0.5 transition-transform" />
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
 
         {/* Showroom & Contact Box */}
         <div className="rounded-2xl border-2 border-[#E1B76F]/40 bg-[#340402] p-8 sm:p-10 text-center space-y-6 shadow-2xl">

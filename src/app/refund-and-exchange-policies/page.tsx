@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, MessageCircle, AlertTriangle, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, MessageCircle, AlertTriangle, RefreshCw, RotateCcw, CheckCircle2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Refund and Exchange Policy — ANGKON",
@@ -9,21 +8,48 @@ export const metadata: Metadata = {
 };
 
 export default function RefundAndExchangePoliciesPage() {
-  const policyCards = [
+  const policyHighlights = [
     {
       title: "Trial Policy",
-      image: "/policies/trial-policy.png",
-      alt: "Trial Policy: Trials and partial delivery are not allowed",
+      subtitle: "No Try-Ons Before Payment",
+      icon: AlertTriangle,
+      badge: "Delivery Notice",
+      tagColor: "bg-amber-500/20 text-[#E1B76F] border-amber-500/30",
+      bullets: [
+        "Trials and partial delivery are strictly not allowed.",
+        "Parcels must be received in full upon courier arrival.",
+        "To protect parcel safety and courier logistics.",
+        "Sizing issues can be exchanged within 48 hours.",
+      ],
+      highlight: "48-Hour Exchange Window",
     },
     {
       title: "Exchange Policy",
-      image: "/policies/exchange-policy.png",
-      alt: "Exchange Policy: Contact us within 48 hours of delivery and have it exchanged",
+      subtitle: "Size Adjustments & Defects",
+      icon: RefreshCw,
+      badge: "Sizing Guarantee",
+      tagColor: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+      bullets: [
+        "Eligible if size doesn't fit or defect is found.",
+        "Contact ANGKON support within 48 hours of delivery.",
+        "Apparel must remain unworn with original tags attached.",
+        "Free exchange delivery if defect or incorrect item sent.",
+      ],
+      highlight: "Free Shipping on Defects",
     },
     {
       title: "Refund Policy",
-      image: "/policies/refund-policy.png",
-      alt: "Refund Policy: Full refund within 7 working days",
+      subtitle: "Full Return within 7 Days",
+      icon: RotateCcw,
+      badge: "Quality Assurance",
+      tagColor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+      bullets: [
+        "Dissatisfied with quality? We've got you covered.",
+        "Notify support within 48 hours of receiving delivery.",
+        "Full refund processed within 7 working business days.",
+        "Refunded directly to original payment method.",
+      ],
+      highlight: "7 Working Days Refund",
     },
   ];
 
@@ -59,25 +85,52 @@ export default function RefundAndExchangePoliciesPage() {
       </div>
 
       <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* ── 1. The 3 Authentic Policy Poster Banners ── */}
+        {/* ── 1. Luxury ANGKON Policy Summary Cards ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {policyCards.map((card) => (
-            <div
-              key={card.title}
-              className="overflow-hidden rounded-2xl border border-[#E1B76F]/30 shadow-md bg-[#340402] transition-all duration-300 hover:shadow-xl hover:scale-[1.015] hover:border-[#E1B76F]/60"
-            >
-              <div className="relative w-full aspect-square bg-[#2b0403]">
-                <Image
-                  src={card.image}
-                  alt={card.alt}
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-contain"
-                />
+          {policyHighlights.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.title}
+                className="flex flex-col justify-between rounded-2xl border border-[#E1B76F]/30 bg-[#340402] p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-[#E1B76F]/70 hover:shadow-2xl hover:scale-[1.015]"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#E1B76F]/10 border border-[#E1B76F]/30 text-[#E1B76F]">
+                      <Icon className="h-6 w-6" />
+                    </div>
+                    <span
+                      className={`inline-block rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${card.tagColor}`}
+                    >
+                      {card.badge}
+                    </span>
+                  </div>
+
+                  <h3 className="font-heading text-xl sm:text-2xl font-black uppercase text-white tracking-tight">
+                    {card.title}
+                  </h3>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-[#E1B76F]">
+                    {card.subtitle}
+                  </p>
+
+                  <ul className="mt-5 space-y-2.5 text-xs sm:text-[13px] text-white/85">
+                    {card.bullets.map((b, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#E1B76F] shrink-0 mt-0.5" />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-[#E1B76F]/15">
+                  <div className="rounded-xl bg-[#2b0403] border border-[#E1B76F]/20 px-3.5 py-2 text-center text-xs font-bold text-[#E1B76F]">
+                    ★ {card.highlight}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ── 2. Authentic Policy Text Details ── */}

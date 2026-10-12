@@ -33,14 +33,13 @@ export async function POST(request: NextRequest) {
       if (typeof body.currentPassword !== "string" || !verifyPassword(body.currentPassword, user.password)) {
         return NextResponse.json({ error: "Your current password is incorrect." }, { status: 400 });
       }
-    } else if (!user.emailVerified) {
-      return NextResponse.json(
-        { error: "Please verify your email first — use the link we sent you." },
-        { status: 403 },
-      );
     }
 
     user.password = hashPassword(body.password);
+    if (!user.emailVerified) {
+      user.emailVerified = true;
+      user.emailVerifiedAt = new Date();
+    }
     await user.save();
     return NextResponse.json({ ok: true, user: publicUser(user) });
   } catch (error) {

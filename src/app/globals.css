@@ -76,6 +76,99 @@ h1, h2, h3, h4, h5, h6 {
 .product-prose hr { border: none; border-top: 1px solid rgba(225, 183, 111, 0.2); margin: 1.25rem 0; }
 .product-prose table { width: 100%; border-collapse: collapse; margin-bottom: 0.875rem; font-size: 0.875rem; color: rgba(255, 255, 255, 0.9); }
 
+/* ── Admin Description Editor Prose (Dark, crisp, readable on white backgrounds) ── */
+.admin-prose {
+  color: #1c1917 !important;
+  caret-color: #400604 !important;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+.admin-prose,
+.admin-prose *,
+.admin-prose p,
+.admin-prose span,
+.admin-prose div,
+.admin-prose font {
+  color: #1c1917 !important;
+}
+.admin-prose p {
+  margin-bottom: 0.75rem;
+  line-height: 1.7;
+  color: #292524 !important;
+}
+.admin-prose p:last-child {
+  margin-bottom: 0;
+}
+.admin-prose ul, .admin-prose ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #292524 !important;
+}
+.admin-prose ul {
+  list-style: disc !important;
+}
+.admin-prose ol {
+  list-style: decimal !important;
+}
+.admin-prose li {
+  margin-bottom: 0.35rem;
+  line-height: 1.65;
+  color: #292524 !important;
+}
+.admin-prose h1, .admin-prose h2, .admin-prose h3, .admin-prose h4 {
+  font-weight: 700;
+  color: #1c1917 !important;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+  line-height: 1.35;
+}
+.admin-prose h2 { font-size: 1.2rem; }
+.admin-prose h3 { font-size: 1.05rem; }
+.admin-prose h4 { font-size: 0.95rem; }
+.admin-prose strong, .admin-prose b {
+  font-weight: 700;
+  color: #1c1917 !important;
+}
+.admin-prose em, .admin-prose i {
+  font-style: italic;
+  color: #44403c !important;
+}
+.admin-prose u {
+  text-decoration: underline;
+  color: inherit;
+}
+.admin-prose a {
+  color: #400604 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+.admin-prose hr {
+  border: none;
+  border-top: 1px solid #e7e5e4;
+  margin: 1rem 0;
+}
+.admin-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  color: #292524 !important;
+}
+.admin-prose th {
+  font-weight: 600;
+  color: #1c1917 !important;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid #e7e5e4;
+  background-color: #f5f5f4;
+  text-align: left;
+}
+.admin-prose td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #e7e5e4;
+  color: #292524 !important;
+}
+
 /* ── Industry-level Right-to-Left Slide Search Animations ── */
 @keyframes slideSearchIn {
   0% {

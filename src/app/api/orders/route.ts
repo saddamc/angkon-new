@@ -87,34 +87,43 @@ export async function POST(request: NextRequest) {
 
     const resolvedDistrict = district || city || "Dhaka";
 
-    // ── Email verification gate ──
-    // When enabled in Admin → Settings → Checkout, an order is only accepted from a
-    // signed-in customer whose email is verified and matches the email on the order.
+    // ── Email verification & Account gate ──
     let verifiedUser: IUser | null = null;
     const checkoutSettings = await getCheckoutSettings();
-    if (checkoutSettings.requireEmailVerification) {
-      const orderEmail = normalizeEmail(email);
-      if (!orderEmail || !EMAIL_REGEX.test(orderEmail)) {
-        return NextResponse.json({ error: "A valid email address is required to place an order." }, { status: 400 });
-      }
-      let sessionUser: IUser | null = null;
-      try {
-        const sessionUserId = getSessionUserId(request);
-        if (sessionUserId) {
-          await connectToDatabase();
-          sessionUser = await User.findById(sessionUserId);
+    const orderEmail = normalizeEmail(email);
+
+    if (!orderEmail || !EMAIL_REGEX.test(orderEmail)) {
+      return NextResponse.json({ error: "A valid email address is required to place an order." }, { status: 400 });
+    }
+
+    let sessionUser: IUser | null = null;
+    try {
+      const sessionUserId = getSessionUserId(request);
+      if (sessionUserId) {
+        await connectToDatabase();
+        sessionUser = await User.findById(sessionUserId);
+        if (sessionUser && sessionUser.emailVerified && normalizeEmail(sessionUser.email) === orderEmail) {
+          verifiedUser = sessionUser;
         }
-      } catch (gateErr) {
-        console.error("Order email-verification check failed:", gateErr);
-        return NextResponse.json({ error: "We couldn't confirm your email just now. Please try again." }, { status: 503 });
       }
-      if (!sessionUser || !sessionUser.emailVerified || sessionUser.email !== orderEmail) {
+    } catch (gateErr) {
+      console.error("Order session check:", gateErr);
+    }
+
+    // When guest checkout is explicitly disabled in settings, enforce that customer must be logged in & verified:
+    if (!checkoutSettings.allowGuestCheckout) {
+      if (!sessionUser) {
+        return NextResponse.json(
+          { error: "Guest checkout is disabled. Please log in or create an account to place your order.", code: "LOGIN_REQUIRED" },
+          { status: 403 },
+        );
+      }
+      if (checkoutSettings.requireEmailVerification && (!sessionUser.emailVerified || normalizeEmail(sessionUser.email) !== orderEmail)) {
         return NextResponse.json(
           { error: "Please verify your email address to place your order.", code: "EMAIL_VERIFICATION_REQUIRED" },
           { status: 403 },
         );
       }
-      verifiedUser = sessionUser;
     }
 
     // Calculate subtotal

@@ -111,14 +111,15 @@ export default function HomePage() {
           className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
-            src="/banners/hero-banner.webp"
+            src="/banners/HERO1.png"
             alt="ANGKON — House of Modern Heritage"
-            width={2048}
-            height={978}
+            width={4096}
+            height={1956}
             priority
             loading="eager"
+            quality={95}
             sizes="100vw"
-            className="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.008]"
+            className="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.008] [image-rendering:-webkit-optimize-contrast]"
           />
         </Link>
       </section>

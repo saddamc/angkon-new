@@ -337,8 +337,8 @@ export function DescriptionEditor({
             onInput={handleInput}
             onPaste={handlePaste}
             onBlur={handleBlur}
-            className="product-prose w-full p-4 text-[13px] text-stone-800 focus:outline-none transition overflow-y-auto leading-relaxed"
-            style={{ minHeight }}
+            className="admin-prose w-full p-4 text-[13px] text-stone-900 focus:outline-none transition overflow-y-auto leading-relaxed bg-white"
+            style={{ minHeight, color: "#1c1917", caretColor: "#400604" }}
             data-placeholder={placeholder}
           />
         </div>

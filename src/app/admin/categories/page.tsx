@@ -595,6 +595,41 @@ function isIconUrl(val?: string | null): boolean {
   return val.startsWith("http://") || val.startsWith("https://") || val.startsWith("/");
 }
 
+/**
+ * Shrink big photos in the browser before uploading. Hosting platforms reject request bodies of
+ * roughly 4.5 MB and over, so a 5 MB phone photo would fail there; category images never need more
+ * than ~1600px anyway. Small files and unsupported formats (SVG, GIF) are sent unchanged.
+ */
+async function shrinkImageForUpload(file: File): Promise<File> {
+  const MAX_SIDE = 1600;
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    if (scale === 1 && file.size <= 1.5 * 1024 * 1024) {
+      bitmap.close();
+      return file;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    // Keep transparency for PNG/WebP, use JPEG for photos.
+    const keepAlpha = file.type !== "image/jpeg";
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, keepAlpha ? "image/webp" : "image/jpeg", 0.88),
+    );
+    if (!blob || blob.size >= file.size) return file;
+    const ext = keepAlpha ? "webp" : "jpg";
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + ext, { type: blob.type });
+  } catch {
+    return file;
+  }
+}
+
 function CategoryStudio({
   mode,
   initial,
@@ -807,7 +842,7 @@ function CategoryStudio({
   };
 
   const handleUpload = async (file: File) => {
-    if (file.size > 5 * 1024 * 1024) return setError("Image exceeds max size (5MB).");
+    if (file.size > 15 * 1024 * 1024) return setError("Image is too large (15MB max).");
     if (!file.type.startsWith("image/")) return setError("Please select a valid image file.");
     setUploading(true); setError("");
     const prevId = form.imageId;
@@ -837,8 +872,13 @@ function CategoryStudio({
         folder = `ANGKON/CATEGORIES/${catSlugClean}`;
       }
 
+      const prepared = await shrinkImageForUpload(file);
+      if (prepared.size > 4 * 1024 * 1024) {
+        throw new Error("Image is still over 4MB after compression. Please choose a smaller image.");
+      }
+
       const fd = new FormData();
-      fd.append("image", file);
+      fd.append("image", prepared);
       fd.append("folder", folder);
       fd.append("uploadType", "category");
       if (form.type === "sub" && form.parent) {
@@ -853,7 +893,10 @@ function CategoryStudio({
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         const detail = Array.isArray(d.details) ? ` (${d.details.slice(0, 2).join("; ")})` : "";
-        throw new Error((d.error || "Upload failed") + detail);
+        if (res.status === 413) throw new Error("The image is too large for the server. Please choose a smaller image.");
+        if (res.status === 401) throw new Error("Your admin session expired. Please log in again.");
+        if (res.status === 503) throw new Error("Image storage isn't set up on this server: add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in the hosting environment variables, then redeploy.");
+        throw new Error((d.error || `Upload failed (${res.status})`) + detail);
       }
       const data = await res.json();
       set("imageUrl", data.url);
@@ -1248,7 +1291,7 @@ function CategoryStudio({
                           browse files
                         </button>
                       </p>
-                      <p className="text-[10px] text-gray-400 mt-1">Recommended: 1000×1000px · Max 5MB</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Recommended: 1000×1000px · large photos are resized automatically</p>
                     </>
                   )}
                 </div>

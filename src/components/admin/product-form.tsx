@@ -154,23 +154,139 @@ const STOCK_OPTIONS = [
 
 const CLOTHING_SIZES = ["S", "M", "L", "XL", "XXL"];
 const SHOE_SIZES = ["38", "39", "40", "41", "42", "43", "44"];
+export function resolveColorStyle(name: string): {
+  bg: string;
+  isLight: boolean;
+  borderClass: string;
+  swatchBorder: string;
+} {
+  const clean = name.trim().toLowerCase();
+  const map: Record<string, { bg: string; isLight?: boolean }> = {
+    white: { bg: "#ffffff", isLight: true },
+    "pure white": { bg: "#ffffff", isLight: true },
+    "off-white": { bg: "#fafaf9", isLight: true },
+    "off white": { bg: "#fafaf9", isLight: true },
+    cream: { bg: "#fffdd0", isLight: true },
+    ivory: { bg: "#fffff0", isLight: true },
+    beige: { bg: "#f5f5dc", isLight: true },
+    snow: { bg: "#fffafa", isLight: true },
+    black: { bg: "#171717" },
+    red: { bg: "#dc2626" },
+    blue: { bg: "#2563eb" },
+    navy: { bg: "#1e3a8a" },
+    "navy blue": { bg: "#1e3a8a" },
+    green: { bg: "#16a34a" },
+    "emerald green": { bg: "#059669" },
+    emerald: { bg: "#059669" },
+    yellow: { bg: "#eab308", isLight: true },
+    mustard: { bg: "#ca8a04" },
+    pink: { bg: "#ec4899" },
+    "baby pink": { bg: "#fbcfe8", isLight: true },
+    "dusty rose": { bg: "#d4a373" },
+    grey: { bg: "#9ca3af" },
+    gray: { bg: "#9ca3af" },
+    "light grey": { bg: "#e5e7eb", isLight: true },
+    "light gray": { bg: "#e5e7eb", isLight: true },
+    brown: { bg: "#78350f" },
+    purple: { bg: "#9333ea" },
+    orange: { bg: "#ea580c" },
+    maroon: { bg: "#400604" },
+    olive: { bg: "#65a30d" },
+    "sky blue": { bg: "#38bdf8", isLight: true },
+    gold: { bg: "#E1B76F", isLight: true },
+    silver: { bg: "#cbd5e1", isLight: true },
+    charcoal: { bg: "#334155" },
+    teal: { bg: "#0d9488" },
+    turquoise: { bg: "#06b6d4" },
+    peach: { bg: "#fed7aa", isLight: true },
+    lavender: { bg: "#e9d5ff", isLight: true },
+    magenta: { bg: "#d946ef" },
+    khaki: { bg: "#c3b091", isLight: true },
+    burgundy: { bg: "#800020" },
+    rust: { bg: "#b45309" },
+  };
+
+  if (map[clean]) {
+    const isLight = !!map[clean].isLight;
+    return {
+      bg: map[clean].bg,
+      isLight,
+      borderClass: isLight ? "border-stone-300 ring-1 ring-stone-200" : "border-black/20",
+      swatchBorder: isLight
+        ? "border-2 border-stone-400 ring-1 ring-stone-300 shadow-2xs"
+        : "border border-black/30 shadow-2xs",
+    };
+  }
+
+  // Hex format #fff or #ffffff
+  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(clean)) {
+    let hex = clean.slice(1);
+    if (hex.length === 3) hex = hex.split("").map((c) => c + c).join("");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    const isLight = lum > 0.72;
+    return {
+      bg: clean,
+      isLight,
+      borderClass: isLight ? "border-stone-300 ring-1 ring-stone-200" : "border-black/20",
+      swatchBorder: isLight
+        ? "border-2 border-stone-400 ring-1 ring-stone-300 shadow-2xs"
+        : "border border-black/30 shadow-2xs",
+    };
+  }
+
+  const isLight =
+    clean.includes("white") ||
+    clean.includes("light") ||
+    clean.includes("cream") ||
+    clean.includes("beige") ||
+    clean.includes("ivory") ||
+    clean.includes("snow") ||
+    clean.includes("silver");
+
+  return {
+    bg: clean,
+    isLight,
+    borderClass: isLight ? "border-stone-300 ring-1 ring-stone-200" : "border-stone-300",
+    swatchBorder: isLight
+      ? "border-2 border-stone-400 ring-1 ring-stone-300 shadow-2xs"
+      : "border border-stone-300 shadow-2xs",
+  };
+}
+
 const COLOR_OPTIONS = [
-  "Black",
   "White",
+  "Off-White",
+  "Cream",
+  "Black",
+  "Maroon",
   "Red",
-  "Blue",
   "Navy",
+  "Blue",
   "Green",
+  "Olive",
   "Yellow",
   "Pink",
   "Grey",
   "Beige",
+  "Gold",
   "Brown",
   "Purple",
   "Orange",
-  "Maroon",
-  "Olive",
   "Sky Blue",
+];
+
+const POPULAR_SUGGESTIONS = [
+  "White",
+  "Off-White",
+  "Cream",
+  "Maroon",
+  "Black",
+  "Gold",
+  "Navy",
+  "Emerald Green",
 ];
 
 async function cropImageCanvas(
@@ -562,11 +678,15 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
       return [...prev, c];
     });
 
-  const addCustomColor = () => {
-    const next = customColor.trim();
-    if (!next) return;
-    const exists = colors.some((c) => c.toLowerCase() === next.toLowerCase());
-    if (!exists) setColors((prev) => [...prev, next]);
+  const addCustomColor = (colorToAdd?: string) => {
+    const raw = (colorToAdd !== undefined ? colorToAdd : customColor).trim();
+    if (!raw) return;
+    const formatted =
+      raw.length > 1 && !raw.startsWith("#")
+        ? raw.charAt(0).toUpperCase() + raw.slice(1)
+        : raw;
+    const exists = colors.some((c) => c.toLowerCase() === raw.toLowerCase());
+    if (!exists) setColors((prev) => [...prev, formatted]);
     setCustomColor("");
   };
 
@@ -2278,105 +2398,228 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
             )}
           </div>
 
-          {/* Colors */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Palette className="h-4 w-4 text-purple-500" />
-              <h3 className="text-[14px] font-bold text-gray-700">Colors</h3>
+          {/* Colors & Fabric Swatches Studio */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Palette className="h-4 w-4 text-[#400604]" />
+                <h3 className="text-[14px] font-bold text-stone-800">
+                  Product Colors &amp; Fabric Swatches
+                </h3>
+              </div>
+              <span
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  colors.length > 0
+                    ? "bg-[#400604]/5 text-[#400604] border-[#400604]/20"
+                    : "bg-stone-50 text-stone-500 border-stone-200"
+                }`}
+              >
+                {colors.length} {colors.length === 1 ? "Color" : "Colors"} Selected
+              </span>
             </div>
-            <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
-              Check every color this product is available in. Customers will choose one on the product page.
+            <p className="text-[11px] text-stone-500 mb-4 leading-relaxed">
+              Select all available colors for this product or enter custom shades. Every color displays an authentic visual swatch with guaranteed high-contrast borders for light tones like White.
             </p>
-            <div className="flex flex-wrap gap-2">
-              {COLOR_OPTIONS.map((c) => {
-                const checked = colors.some(
-                  (x) => x.toLowerCase() === c.toLowerCase(),
-                );
-                return (
-                  <label
-                    key={c}
-                    className={`inline-flex items-center gap-2 h-9 px-3 rounded-xl text-[12px] font-semibold border cursor-pointer transition select-none ${
-                      checked
-                        ? "bg-purple-600 border-purple-500 text-white shadow-sm"
-                        : "bg-gray-50 border-gray-200 text-gray-600 hover:border-purple-300 hover:text-purple-600"
-                    }`}
+
+            {/* 1. Active Selected Colors Tray — Always Visible with Physical Swatch & 1-Click Remove */}
+            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3.5 mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                    Active Selected Colors
+                  </span>
+                  <span className="rounded-full bg-[#400604] px-2 py-0.5 text-[10px] font-bold text-white tabular-nums">
+                    {colors.length}
+                  </span>
+                </div>
+                {colors.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setColors([])}
+                    className="text-[11px] font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer"
                   >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleColor(c)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={`flex h-4 w-4 items-center justify-center rounded border ${
-                        checked
-                          ? "border-white bg-white/20"
-                          : "border-gray-300 bg-white"
-                      }`}
-                    >
-                      {checked && <Check className="h-3 w-3" />}
-                    </span>
-                    {c}
-                  </label>
-                );
-              })}
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {colors.length === 0 ? (
+                <p className="text-[12px] text-stone-400 italic">
+                  No colors selected yet. Click any preset below, use the color picker, or type &quot;White&quot;, &quot;Maroon&quot;, etc.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((c) => {
+                    const style = resolveColorStyle(c);
+                    return (
+                      <span
+                        key={c}
+                        className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-xl text-[12px] font-bold border border-stone-200 bg-white text-stone-800 shadow-2xs transition group hover:border-[#400604]/40"
+                      >
+                        <span
+                          className={`h-4 w-4 rounded-full shrink-0 ${style.swatchBorder}`}
+                          style={{ backgroundColor: style.bg }}
+                          title={`Color swatch: ${c}`}
+                        />
+                        <span className="font-semibold">{c}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleColor(c)}
+                          className="h-5 w-5 rounded-lg flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-stone-100 transition cursor-pointer"
+                          title={`Remove ${c}`}
+                          aria-label={`Remove ${c}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Custom colors already selected that aren't in the preset list */}
-            {colors.filter(
-              (c) =>
-                !COLOR_OPTIONS.some((p) => p.toLowerCase() === c.toLowerCase()),
-            ).length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {colors
-                  .filter(
-                    (c) =>
-                      !COLOR_OPTIONS.some(
-                        (p) => p.toLowerCase() === c.toLowerCase(),
-                      ),
-                  )
-                  .map((c) => (
+            {/* 2. Popular Fashion Presets Grid */}
+            <div className="mb-4">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-2">
+                Fashion &amp; Ethnic Presets
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {COLOR_OPTIONS.map((c) => {
+                  const checked = colors.some(
+                    (x) => x.toLowerCase() === c.toLowerCase(),
+                  );
+                  const style = resolveColorStyle(c);
+                  return (
                     <button
                       key={c}
                       type="button"
                       onClick={() => toggleColor(c)}
-                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12px] font-semibold border bg-purple-600 border-purple-500 text-white shadow-sm"
+                      className={`inline-flex items-center gap-2 h-9 px-3 rounded-xl text-[12px] font-semibold border cursor-pointer transition select-none ${
+                        checked
+                          ? "bg-[#400604] border-[#400604] text-white shadow-xs ring-1 ring-[#E1B76F]"
+                          : "bg-stone-50/70 border-stone-200 text-stone-700 hover:border-[#400604]/50 hover:bg-stone-100/70"
+                      }`}
                     >
-                      <Check className="h-3 w-3" />
-                      {c}
-                      <X className="h-3 w-3 opacity-80" />
+                      <span
+                        className={`h-3.5 w-3.5 rounded-full shrink-0 ${
+                          checked && style.isLight
+                            ? "border-2 border-stone-200 shadow-2xs"
+                            : style.swatchBorder
+                        }`}
+                        style={{ backgroundColor: style.bg }}
+                      />
+                      <span>{c}</span>
+                      {checked && (
+                        <Check className="h-3.5 w-3.5 text-[#E1B76F] stroke-[2.5]" />
+                      )}
                     </button>
-                  ))}
+                  );
+                })}
               </div>
-            )}
-
-            <div className="mt-3 flex gap-2">
-              <input
-                value={customColor}
-                onChange={(e) => setCustomColor(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomColor();
-                  }
-                }}
-                className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                placeholder="Add custom color…"
-              />
-              <button
-                type="button"
-                onClick={addCustomColor}
-                className="rounded-xl bg-purple-50 border border-purple-100 px-4 text-[12px] font-bold text-purple-700 hover:bg-purple-100 transition"
-              >
-                Add
-              </button>
             </div>
 
-            {colors.length > 0 && (
-              <p className="mt-3 text-[11px] text-purple-500 font-medium">
-                Selected ({colors.length}): {colors.join(", ")}
-              </p>
-            )}
+            {/* 3. Add Custom Color Input with Live Preview + Native Color Picker */}
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                Type Any Custom Color or Hex Code
+              </label>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex-1">
+                  <input
+                    value={customColor}
+                    onChange={(e) => setCustomColor(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomColor();
+                      }
+                    }}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="Type color e.g. White, Off-White, Ivory, Lavender, #FFFFFF…"
+                  />
+                </div>
+
+                {/* Eyedropper / Color Picker Modal */}
+                <label
+                  className="relative flex items-center justify-center h-10 w-10 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 hover:text-[#400604] cursor-pointer transition shadow-2xs shrink-0"
+                  title="Pick exact shade from color spectrum"
+                >
+                  <Palette className="h-4 w-4" />
+                  <input
+                    type="color"
+                    defaultValue="#ffffff"
+                    onChange={(e) => {
+                      const hex = e.target.value;
+                      addCustomColor(hex);
+                    }}
+                    className="sr-only"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => addCustomColor()}
+                  className="rounded-xl bg-[#400604] border border-[#400604] px-4 py-2.5 text-[12px] font-bold text-white hover:bg-[#520805] active:scale-95 transition shadow-2xs cursor-pointer shrink-0"
+                >
+                  Add Color
+                </button>
+              </div>
+
+              {/* Live Preview while typing */}
+              {customColor.trim() && (() => {
+                const preview = resolveColorStyle(customColor);
+                return (
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-[12px]">
+                    <span className="text-[11px] font-bold text-stone-500">Live Preview:</span>
+                    <span
+                      className={`h-4 w-4 rounded-full shrink-0 ${preview.swatchBorder}`}
+                      style={{ backgroundColor: preview.bg }}
+                    />
+                    <strong className="text-stone-800 font-bold capitalize">
+                      {customColor.trim()}
+                    </strong>
+                    {preview.isLight && (
+                      <span className="text-[10px] font-semibold text-stone-600 bg-white px-2 py-0.5 rounded border border-stone-200">
+                        Light tone — high-contrast border applied
+                      </span>
+                    )}
+                    <span className="text-[10px] text-stone-400 ml-auto">
+                      Press Enter to add
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* 4. Quick Suggestions for Colors Not Yet Selected */}
+              {POPULAR_SUGGESTIONS.filter(
+                (p) => !colors.some((c) => c.toLowerCase() === p.toLowerCase()),
+              ).length > 0 && (
+                <div className="pt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10.5px] font-bold text-stone-400 uppercase tracking-wider mr-1">
+                    Quick suggestions:
+                  </span>
+                  {POPULAR_SUGGESTIONS.filter(
+                    (p) => !colors.some((c) => c.toLowerCase() === p.toLowerCase()),
+                  ).map((sug) => {
+                    const style = resolveColorStyle(sug);
+                    return (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => addCustomColor(sug)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-stone-200 bg-white text-stone-600 hover:border-[#400604] hover:text-[#400604] transition cursor-pointer"
+                      >
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full shrink-0 ${style.swatchBorder}`}
+                          style={{ backgroundColor: style.bg }}
+                        />
+                        + {sug}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -2392,15 +2635,15 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
         <button
           type="submit"
           disabled={saving || uploading}
-          className="flex items-center gap-2 rounded-xl bg-purple-600 px-6 py-3 text-[14px] font-semibold text-white hover:bg-purple-500 disabled:opacity-50 transition shadow-md shadow-purple-200 cursor-pointer"
+          className="flex items-center gap-2 rounded-xl bg-[#400604] border border-[#400604] px-6 py-3 text-[14px] font-semibold text-white hover:bg-[#520805] disabled:opacity-50 transition shadow-md shadow-[#400604]/20 cursor-pointer"
         >
           {saving ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Saving…
+              <Loader2 className="h-4 w-4 animate-spin text-[#E1B76F]" /> Saving…
             </>
           ) : (
             <>
-              <Save className="h-4 w-4" />
+              <Save className="h-4 w-4 text-[#E1B76F]" />
               {initialData?.id ? "Update Product" : "Create Product"}
             </>
           )}
@@ -2410,7 +2653,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
           type="button"
           onClick={handleCancel}
           disabled={saving}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-[14px] font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 disabled:opacity-50 transition cursor-pointer"
+          className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-[14px] font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 disabled:opacity-50 transition cursor-pointer"
         >
           Cancel
         </button>

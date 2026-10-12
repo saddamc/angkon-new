@@ -11,6 +11,7 @@ export interface ICategory extends Document {
   name: string;
   slug: string;
   parent: number;
+  linked_parents: number[];
   menu_order: number;
   description: string;
   count: number;
@@ -38,6 +39,7 @@ const CategorySchema = new Schema<ICategory>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, index: true, trim: true },
     parent: { type: Number, default: 0, index: true },
+    linked_parents: { type: [Number], default: [], index: true },
     menu_order: { type: Number, default: 0, index: true },
     description: { type: String, default: "" },
     count: { type: Number, default: 0 },
@@ -59,6 +61,12 @@ const CategorySchema = new Schema<ICategory>(
     },
   }
 );
+
+// In development, hot reload keeps the first compiled model alive, so a schema change (e.g. a newly
+// added field) would be silently ignored until the server restarts. Rebuild the model each reload.
+if (process.env.NODE_ENV !== "production" && mongoose.models.Category) {
+  delete mongoose.models.Category;
+}
 
 export const Category: Model<ICategory> =
   mongoose.models.Category || mongoose.model<ICategory>("Category", CategorySchema);

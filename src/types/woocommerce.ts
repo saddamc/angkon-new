@@ -3,4 +3,5 @@ import type { WooCategory } from "@/types/product";
 
 export interface CategoryNode extends WooCategory {
   children: CategoryNode[];
+  is_linked?: boolean;
 }

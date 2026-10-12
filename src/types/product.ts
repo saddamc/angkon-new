@@ -11,6 +11,8 @@ export interface WooCategory {
   slug: string;
   count?: number;
   parent?: number;
+  linked_parents?: number[];
+  is_active?: boolean;
   menu_order?: number;
   description?: string;
   image?: { id?: number; src: string; alt?: string } | null;

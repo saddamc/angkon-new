@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getCategoryTree, findCategoryPath } from "@/lib/woocommerce/categories";
+import { getCategoryTree, findCategoryPath, findCategoryPathBySlugs } from "@/lib/woocommerce/categories";
 import { getProductsByCategorySlug } from "@/lib/woocommerce/products";
 import { CategoryBreadcrumb } from "@/components/categories/CategoryBreadcrumb";
 import { CategoryHero } from "@/components/categories/CategoryHero";
@@ -68,7 +68,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const currentSlug = slug[slug.length - 1];
   const lookupSlug = SLUG_ALIASES[currentSlug] || currentSlug;
   const tree = await getCategoryTree();
-  const path = findCategoryPath(tree, lookupSlug);
+  const mappedSlugs = slug.map((s) => SLUG_ALIASES[s] || s);
+  const path = findCategoryPathBySlugs(tree, mappedSlugs) || findCategoryPath(tree, lookupSlug);
   if (!path) return { title: "Category not found" };
 
   const node = path[path.length - 1];
@@ -89,7 +90,8 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
 
   const tree = await getCategoryTree();
   const lookupSlug = SLUG_ALIASES[currentSlug] || currentSlug;
-  const path = findCategoryPath(tree, lookupSlug);
+  const mappedSlugs = slug.map((s) => SLUG_ALIASES[s] || s);
+  const path = findCategoryPathBySlugs(tree, mappedSlugs) || findCategoryPath(tree, lookupSlug);
   if (!path) notFound();
 
   // If accessed via a legacy or partial slug path, redirect to canonical

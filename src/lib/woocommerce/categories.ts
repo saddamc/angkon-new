@@ -33,6 +33,27 @@ export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
     }
   });
 
+  // Cross-link categories to their linked_parents
+  flat.forEach((category) => {
+    if (Array.isArray(category.linked_parents) && category.linked_parents.length > 0) {
+      category.linked_parents.forEach((linkedParentId) => {
+        const targetParent = byId.get(linkedParentId);
+        if (targetParent && targetParent.id !== category.id) {
+          const alreadyExists = targetParent.children.some((child) => child.id === category.id);
+          if (!alreadyExists) {
+            const originalNode = byId.get(category.id);
+            if (originalNode) {
+              targetParent.children.push({
+                ...originalNode,
+                is_linked: true,
+              });
+            }
+          }
+        }
+      });
+    }
+  });
+
   return roots;
 }
 
@@ -48,6 +69,25 @@ export function findCategoryPath(tree: CategoryNode[], slug: string): CategoryNo
     if (childPath) return [node, ...childPath];
   }
   return null;
+}
+
+// Match an exact multi-segment path down the tree
+export function findCategoryPathBySlugs(tree: CategoryNode[], slugs: string[]): CategoryNode[] | null {
+  if (slugs.length === 0) return null;
+  const [first, ...rest] = slugs;
+  const root = tree.find((node) => node.slug.toLowerCase() === first.toLowerCase());
+  if (!root) return null;
+  if (rest.length === 0) return [root];
+
+  let current = root;
+  const path: CategoryNode[] = [root];
+  for (const s of rest) {
+    const child = current.children.find((c) => c.slug.toLowerCase() === s.toLowerCase());
+    if (!child) return null;
+    path.push(child);
+    current = child;
+  }
+  return path;
 }
 
 export async function getCategoryBySlug(slug: string): Promise<WooCategory | null> {

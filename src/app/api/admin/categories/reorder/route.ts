@@ -29,6 +29,25 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase();
 
+    // Refuse any change that would create a loop (a category inside itself or its own descendant).
+    const existing = await Category.find({}).select("id parent").lean();
+    const parentOf = new Map<number, number>(existing.map((c) => [c.id, c.parent || 0]));
+    for (const it of items) {
+      if (it.parent !== undefined) parentOf.set(Number(it.id), Number(it.parent) || 0);
+    }
+    for (const it of items) {
+      if (it.parent === undefined) continue;
+      let cursor = Number(it.parent) || 0;
+      const seen = new Set<number>([Number(it.id)]);
+      while (cursor) {
+        if (seen.has(cursor)) {
+          return NextResponse.json({ error: "A category cannot be placed inside itself or its own sub-category." }, { status: 400 });
+        }
+        seen.add(cursor);
+        cursor = parentOf.get(cursor) || 0;
+      }
+    }
+
     // 1. Bulk write to MongoDB for instant atomic update
     const bulkOps = items.map((item) => {
       const updateFields: Record<string, unknown> = {

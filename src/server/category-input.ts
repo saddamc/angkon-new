@@ -4,6 +4,7 @@ export interface CleanCategoryInput {
   slug?: string;
   description?: string;
   parent?: number;
+  linked_parents?: number[];
   menu_order?: number;
   is_active?: boolean;
   meta_data?: { key: string; value: string }[];
@@ -27,6 +28,11 @@ export function cleanCategoryInput(body: any): CleanCategoryInput {
   if (typeof body?.slug === "string" && body.slug.trim()) out.slug = slugifyCategory(body.slug);
   if (typeof body?.description === "string") out.description = body.description;
   if (body?.parent !== undefined) out.parent = Math.max(0, Number(body.parent) || 0);
+  if (Array.isArray(body?.linked_parents)) {
+    out.linked_parents = body.linked_parents
+      .map((n: unknown) => Number(n))
+      .filter((n: number) => !isNaN(n) && n > 0 && n !== out.parent);
+  }
   const order = body?.menu_order ?? body?.sortOrder;
   if (order !== undefined) out.menu_order = Number(order) || 0;
 

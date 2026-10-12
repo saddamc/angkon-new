@@ -40,6 +40,9 @@ export async function PATCH(
     }
 
     const input = cleanCategoryInput(body);
+    if (input.linked_parents) {
+      input.linked_parents = input.linked_parents.filter((pid) => pid !== oldCategory.id);
+    }
 
     if (input.name === "") {
       return NextResponse.json({ error: "Category name cannot be empty." }, { status: 400 });
@@ -72,12 +75,13 @@ export async function PATCH(
       const jsonPath = path.resolve(process.cwd(), "src/data/real-categories.json");
       if (fs.existsSync(jsonPath)) {
         const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-        const idx = raw.findIndex((c: any) => c.id === oldCategory.id || c.slug === oldCategory.slug);
+        const idx = raw.findIndex((c: { id?: number; slug?: string }) => c.id === oldCategory.id || c.slug === oldCategory.slug);
         if (idx >= 0) {
           raw[idx] = {
             ...raw[idx],
             ...body,
             id: oldCategory.id,
+            ...(input.linked_parents !== undefined ? { linked_parents: input.linked_parents } : {}),
           };
           fs.writeFileSync(jsonPath, JSON.stringify(raw, null, 2), "utf-8");
         }
@@ -86,7 +90,12 @@ export async function PATCH(
       console.warn("Failed to sync category update to real-categories.json:", syncErr);
     }
 
-    await syncProductCategoryRefs([oldCategory.id]);
+    const refIds = Array.from(new Set([
+      oldCategory.id,
+      ...(oldCategory.linked_parents || []),
+      ...(input.linked_parents || []),
+    ]));
+    await syncProductCategoryRefs(refIds);
     await publishCatalogChange();
 
     return NextResponse.json(updated, { status: 200 });

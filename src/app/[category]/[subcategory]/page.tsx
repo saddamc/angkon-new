@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getCategoryTree, findCategoryPath } from "@/lib/woocommerce/categories";
+import { getCategoryTree, findCategoryPath, findCategoryPathBySlugs } from "@/lib/woocommerce/categories";
 
 export const revalidate = 60;
 
@@ -10,9 +10,9 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { subcategory } = await params;
+  const { category, subcategory } = await params;
   const tree = await getCategoryTree();
-  const path = findCategoryPath(tree, subcategory);
+  const path = findCategoryPathBySlugs(tree, [category, subcategory]) || findCategoryPath(tree, subcategory);
   if (!path) return { title: "Category not found" };
 
   const node = path[path.length - 1];
@@ -22,9 +22,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SubcategoryPage({ params, searchParams }: Props) {
-  const { subcategory } = await params;
+  const { category, subcategory } = await params;
   const tree = await getCategoryTree();
-  const path = findCategoryPath(tree, subcategory);
+  const path = findCategoryPathBySlugs(tree, [category, subcategory]) || findCategoryPath(tree, subcategory);
   if (!path) notFound();
 
   const sp = await searchParams;

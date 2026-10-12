@@ -146,7 +146,9 @@ export async function getDbProducts(query: DbProductQuery = {}): Promise<WooProd
       while (added) {
         added = false;
         for (const c of allCats) {
-          if (c.parent && descendantIds.has(c.parent) && !descendantIds.has(c.id)) {
+          const isDirectChild = Boolean(c.parent && descendantIds.has(c.parent));
+          const isLinkedChild = Boolean(Array.isArray(c.linked_parents) && c.linked_parents.some((lp) => descendantIds.has(lp)));
+          if ((isDirectChild || isLinkedChild) && !descendantIds.has(c.id)) {
             descendantIds.add(c.id);
             added = true;
           }

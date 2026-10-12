@@ -10,21 +10,9 @@ export async function getCategoryBySlug(slug: string): Promise<WooCategory | nul
   return await getDbCategoryBySlug(slug);
 }
 
+import { buildCategoryTree } from "@/lib/woocommerce/categories";
+
 export async function getCategoryTree(): Promise<CategoryNode[]> {
   const flat = await getDbCategories();
-  const byId = new Map<number, CategoryNode>();
-  flat.forEach((category) => byId.set(category.id, { ...category, children: [] }));
-
-  const roots: CategoryNode[] = [];
-  byId.forEach((node) => {
-    const parentId = node.parent ?? 0;
-    const parent = parentId ? byId.get(parentId) : undefined;
-    if (parent) {
-      parent.children.push(node);
-    } else {
-      roots.push(node);
-    }
-  });
-
-  return roots;
+  return buildCategoryTree(flat);
 }

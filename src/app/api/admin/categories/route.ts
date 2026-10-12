@@ -13,7 +13,7 @@ import REAL_CATEGORIES from "@/data/real-categories.json";
 
 export const dynamic = "force-dynamic";
 
-function syncRealCategoriesFile(updater: (cats: any[]) => any[]) {
+function syncRealCategoriesFile(updater: (cats: Record<string, unknown>[]) => Record<string, unknown>[]) {
   try {
     const jsonPath = path.resolve(process.cwd(), "src/data/real-categories.json");
     if (fs.existsSync(jsonPath)) {
@@ -38,17 +38,26 @@ export async function GET() {
         await connectToDatabase();
         const prods = await Product.find({}).select("id categories.id").lean();
         const parentOf = new Map<number, number>(categories.map((c) => [c.id, c.parent || 0]));
+        const linkedParentsOf = new Map<number, number[]>(categories.map((c) => [c.id, Array.isArray(c.linked_parents) ? c.linked_parents : []]));
         for (const p of prods) {
           for (const ref of p.categories || []) {
             direct.set(ref.id, (direct.get(ref.id) ?? 0) + 1);
-            // Walk up the tree so ancestors include this product too.
-            let cursor: number | undefined = ref.id;
+            // Walk up ancestors and cross-listed parents
+            const queue: number[] = [ref.id];
             const seen = new Set<number>();
-            while (cursor && !seen.has(cursor)) {
-              seen.add(cursor);
-              if (!subtree.has(cursor)) subtree.set(cursor, new Set());
-              subtree.get(cursor)!.add(p.id);
-              cursor = parentOf.get(cursor);
+            while (queue.length > 0) {
+              const cur = queue.shift()!;
+              if (seen.has(cur)) continue;
+              seen.add(cur);
+              if (!subtree.has(cur)) subtree.set(cur, new Set());
+              subtree.get(cur)!.add(p.id);
+
+              const pId = parentOf.get(cur);
+              if (pId && !seen.has(pId)) queue.push(pId);
+              const lParents = linkedParentsOf.get(cur) || [];
+              for (const lp of lParents) {
+                if (lp && !seen.has(lp)) queue.push(lp);
+              }
             }
           }
         }
@@ -101,6 +110,7 @@ export async function POST(request: NextRequest) {
       slug,
       description: input.description ?? "",
       parent: input.parent ?? 0,
+      linked_parents: input.linked_parents ?? [],
       menu_order: input.menu_order ?? 0,
       count: 0,
       is_active: input.is_active ?? true,
@@ -115,6 +125,7 @@ export async function POST(request: NextRequest) {
         name,
         slug,
         parent: input.parent ?? 0,
+        linked_parents: input.linked_parents ?? [],
         menu_order: input.menu_order ?? 0,
         description: input.description ?? "",
         count: 0,
@@ -220,7 +231,7 @@ export async function DELETE(request: NextRequest) {
 
     // 5. Synchronize local real-categories.json
     syncRealCategoriesFile((cats) =>
-      cats.filter((c) => !categoryIdsToDelete.includes(c.id))
+      cats.filter((c) => !categoryIdsToDelete.includes(Number(c.id)))
     );
 
     // 6. Attempt cleaning category Cloudinary folder

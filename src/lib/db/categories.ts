@@ -44,6 +44,7 @@ export async function getAllDbCategoriesIncludingInactive(): Promise<WooCategory
         name: c.name,
         slug: c.slug,
         parent: c.parent ?? 0,
+        linked_parents: Array.isArray(c.linked_parents) ? c.linked_parents : [],
         menu_order: c.menu_order ?? 0,
         description: c.description ?? "",
         count: c.count ?? 0,

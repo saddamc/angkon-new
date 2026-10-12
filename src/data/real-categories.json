@@ -730,19 +730,6 @@
     }
   },
   {
-    "id": 765,
-    "name": "Waffle Up Hoodies",
-    "slug": "waffle-up-hoodies",
-    "parent": 190,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 160182,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Waffle Up Hoodies"
-    }
-  },
-  {
     "id": 774,
     "name": "Waffle Up Tees",
     "slug": "waffle-up-tees",
@@ -881,19 +868,6 @@
     "count": 0,
     "image": {
       "id": 5247,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Hoodies"
-    }
-  },
-  {
-    "id": 190,
-    "name": "Hoodies",
-    "slug": "hoodies",
-    "parent": 15,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 300190,
       "src": "/banners/full-sleeves.webp",
       "alt": "Hoodies"
     }
@@ -1594,19 +1568,6 @@
     }
   },
   {
-    "id": 183,
-    "name": "T-shirt",
-    "slug": "t-shirt",
-    "parent": 15,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 119750,
-      "src": "/banners/tees.webp",
-      "alt": "T-shirt"
-    }
-  },
-  {
     "id": 165,
     "name": "Tees",
     "slug": "tees",
@@ -1726,20 +1687,6 @@
     }
   },
   {
-    "id": 15,
-    "name": "Unisex",
-    "slug": "unisex",
-    "parent": 162,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 1652,
-      "src": "/banners/tees.webp",
-      "alt": "Unisex"
-    },
-    "menu_order": 12
-  },
-  {
     "id": 773,
     "name": "Waffle Up Collection",
     "slug": "waffle-up-collection",
@@ -1777,7 +1724,31 @@
       "src": "/banners/women-banner.webp",
       "alt": "Women Collection"
     },
-    "menu_order": 1
+    "menu_order": 1,
+    "linked_parents": [],
+    "imageUrl": "/banners/women-banner.webp",
+    "imageId": 163001,
+    "imageAlt": "Women Collection",
+    "icon": "",
+    "bgTheme": "blue",
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/women-banner.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ]
   },
   {
     "id": 600,
@@ -1804,7 +1775,33 @@
       "id": 914001,
       "src": "/banners/ethnic-wear.webp",
       "alt": "Ethnic Wear — Luxury Collection"
-    }
+    },
+    "linked_parents": [
+      163
+    ],
+    "imageUrl": "/banners/ethnic-wear.webp",
+    "imageId": 914001,
+    "imageAlt": "Ethnic Wear — Luxury Collection",
+    "icon": "",
+    "bgTheme": "blue",
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/ethnic-wear.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ]
   },
   {
     "id": 990,

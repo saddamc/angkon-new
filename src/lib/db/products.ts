@@ -58,20 +58,30 @@ function toWooProduct(doc: any): WooProduct {
   };
 }
 
-// High-speed In-Memory Products Cache (60s TTL)
-let cachedAllProducts: WooProduct[] | null = null;
-let lastProductsFetch = 0;
-const PRODUCTS_CACHE_TTL_MS = 60 * 1000;
+// High-speed Global In-Memory Products Cache (10 min TTL, invalidated on admin edit)
+declare global {
+  // eslint-disable-next-line no-var
+  var __globalProductsCache: { data: WooProduct[] | null; lastFetch: number } | undefined;
+}
+
+if (!globalThis.__globalProductsCache) {
+  globalThis.__globalProductsCache = { data: null, lastFetch: 0 };
+}
+
+const PRODUCTS_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export function invalidateProductsCache() {
-  cachedAllProducts = null;
-  lastProductsFetch = 0;
+  if (globalThis.__globalProductsCache) {
+    globalThis.__globalProductsCache.data = null;
+    globalThis.__globalProductsCache.lastFetch = 0;
+  }
 }
 
 export async function getAllDbProducts(): Promise<WooProduct[]> {
   const now = Date.now();
-  if (cachedAllProducts && now - lastProductsFetch < PRODUCTS_CACHE_TTL_MS) {
-    return cachedAllProducts;
+  const cacheObj = globalThis.__globalProductsCache!;
+  if (cacheObj.data && now - cacheObj.lastFetch < PRODUCTS_CACHE_TTL_MS) {
+    return cacheObj.data;
   }
 
   try {
@@ -81,17 +91,17 @@ export async function getAllDbProducts(): Promise<WooProduct[]> {
       .lean();
 
     if (docs && docs.length > 0) {
-      cachedAllProducts = docs.map(toWooProduct);
-      lastProductsFetch = now;
-      return cachedAllProducts;
+      cacheObj.data = docs.map(toWooProduct);
+      cacheObj.lastFetch = now;
+      return cacheObj.data;
     }
   } catch (error) {
     console.warn("MongoDB getAllDbProducts failed, using static catalog fallback:", error);
   }
 
-  cachedAllProducts = (REAL_PRODUCTS as unknown as WooProduct[]);
-  lastProductsFetch = now;
-  return cachedAllProducts;
+  cacheObj.data = (REAL_PRODUCTS as unknown as WooProduct[]);
+  cacheObj.lastFetch = now;
+  return cacheObj.data;
 }
 
 export async function getDbProducts(query: DbProductQuery = {}): Promise<WooProduct[]> {

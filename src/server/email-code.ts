@@ -26,11 +26,21 @@ export function hashCode(email: string, code: string): string {
   return crypto.createHmac("sha256", SECRET).update(`${email}:${code}`).digest("hex");
 }
 
-/** Create (or replace) the pending code for an email. Returns the code, or the wait time if sent too recently. */
-export async function issueEmailCode(email: string): Promise<{ code: string } | { cooldownSeconds: number }> {
-  await connectToDatabase();
-  const now = Date.now();
+/** Create (or replace) the pending code for an email. Returns the code, cooldown, or a db-error sentinel. */
+export async function issueEmailCode(
+  email: string
+): Promise<{ code: string } | { cooldownSeconds: number } | { dbError: string }> {
   const normalized = email.trim().toLowerCase();
+  const now = Date.now();
+
+  // Connect – surface a clear error sentinel instead of throwing into the route handler
+  try {
+    await connectToDatabase();
+  } catch (connErr) {
+    const msg = connErr instanceof Error ? connErr.message : "Database connection failed";
+    console.error("issueEmailCode: DB connect failed:", msg);
+    return { dbError: msg };
+  }
 
   try {
     const existing = await EmailCode.findOne({ email: normalized }).lean();
@@ -60,18 +70,24 @@ export async function issueEmailCode(email: string): Promise<{ code: string } | 
     });
   } catch (writeErr) {
     console.warn("EmailCode direct create failed, falling back to updateOne:", writeErr);
-    await EmailCode.updateOne(
-      { email: normalized },
-      {
-        $set: {
-          codeHash: hash,
-          attempts: 0,
-          expiresAt: new Date(now + CODE_TTL_MS),
-          lastSentAt: new Date(now),
+    try {
+      await EmailCode.updateOne(
+        { email: normalized },
+        {
+          $set: {
+            codeHash: hash,
+            attempts: 0,
+            expiresAt: new Date(now + CODE_TTL_MS),
+            lastSentAt: new Date(now),
+          },
         },
-      },
-      { upsert: true }
-    );
+        { upsert: true }
+      );
+    } catch (updateErr) {
+      const msg = updateErr instanceof Error ? updateErr.message : "Database write failed";
+      console.error("issueEmailCode: DB write failed:", msg);
+      return { dbError: msg };
+    }
   }
 
   return { code };

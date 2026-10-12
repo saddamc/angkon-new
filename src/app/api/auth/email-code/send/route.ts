@@ -38,6 +38,14 @@ export async function POST(request: NextRequest) {
     }
 
     const issued = await issueEmailCode(email);
+    if ("dbError" in issued) {
+      console.error("Email code send: DB error:", issued.dbError);
+      // Return a friendly 503 — customer can retry, and we don't leak DB internals
+      return NextResponse.json(
+        { error: "Our system is momentarily unavailable. Please try again in a few seconds." },
+        { status: 503 }
+      );
+    }
     if ("cooldownSeconds" in issued) {
       return NextResponse.json(
         { error: "A code was sent a moment ago. Check your inbox and spam folder.", reason: "cooldown", retryAfterSeconds: issued.cooldownSeconds },
@@ -52,7 +60,7 @@ export async function POST(request: NextRequest) {
       console.warn("Verification code email failed:", result.error);
       const errMsg =
         result.error === "Missing RESEND_API_KEY"
-          ? "Email service not configured (RESEND_API_KEY is missing in production environment variables)."
+          ? "Email service not configured. Please contact support."
           : result.error || "We couldn't send the code right now. Please try again in a moment.";
       return NextResponse.json({ error: errMsg }, { status: 502 });
     }
@@ -60,10 +68,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, expiresInMinutes: CODE_TTL_MS / 60000, resendAfterSeconds: 60 });
   } catch (error) {
     console.error("Email code send error:", error);
-    const rawMessage = error instanceof Error ? error.message : "";
-    const message = rawMessage.includes("MONGODB")
-      ? "Database is momentarily connecting. Please try again in a few seconds."
-      : rawMessage || "Unable to send verification code. Please try again.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to send verification code. Please try again." },
+      { status: 500 }
+    );
   }
 }

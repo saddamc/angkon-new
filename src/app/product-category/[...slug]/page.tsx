@@ -9,7 +9,31 @@ import { CategoryGrid } from "@/components/categories/CategoryGrid";
 import { CategorySidebar } from "@/components/categories/CategorySidebar";
 import { categoryDisplayName } from "@/utils/category-display";
 
-export const revalidate = 60;
+export const revalidate = 300; // 5-minute ISR cache at the edge for instant loads
+
+export async function generateStaticParams() {
+  try {
+    const tree = await getCategoryTree();
+    const paths: { slug: string[] }[] = [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function collectPaths(nodes: any[], parentSlugs: string[] = []) {
+      for (const node of nodes) {
+        const current = [...parentSlugs, node.slug];
+        paths.push({ slug: current });
+        if (Array.isArray(node.children) && node.children.length > 0) {
+          collectPaths(node.children, current);
+        }
+      }
+    }
+
+    collectPaths(tree);
+    return paths;
+  } catch (err) {
+    console.warn("generateStaticParams failed:", err);
+    return [];
+  }
+}
 
 interface Props {
   params: Promise<{ slug: string[] }>;

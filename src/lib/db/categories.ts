@@ -3,19 +3,29 @@ import { Category } from "@/models/Category";
 import type { WooCategory } from "@/types/product";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
-let cachedCategories: WooCategory[] | null = null;
-let lastCategoriesFetch = 0;
-const CACHE_TTL_MS = 5 * 1000; // 5 seconds cache for fast response and instant admin updates
+declare global {
+  // eslint-disable-next-line no-var
+  var __globalCategoriesCache: { data: WooCategory[] | null; lastFetch: number } | undefined;
+}
+
+if (!globalThis.__globalCategoriesCache) {
+  globalThis.__globalCategoriesCache = { data: null, lastFetch: 0 };
+}
+
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache for sub-millisecond response
 
 export function invalidateCategoriesCache() {
-  cachedCategories = null;
-  lastCategoriesFetch = 0;
+  if (globalThis.__globalCategoriesCache) {
+    globalThis.__globalCategoriesCache.data = null;
+    globalThis.__globalCategoriesCache.lastFetch = 0;
+  }
 }
 
 export async function getDbCategories(): Promise<WooCategory[]> {
   const now = Date.now();
-  if (cachedCategories && now - lastCategoriesFetch < CACHE_TTL_MS) {
-    return cachedCategories;
+  const cacheObj = globalThis.__globalCategoriesCache!;
+  if (cacheObj.data && now - cacheObj.lastFetch < CACHE_TTL_MS) {
+    return cacheObj.data;
   }
 
   try {
@@ -25,7 +35,7 @@ export async function getDbCategories(): Promise<WooCategory[]> {
       .lean();
 
     if (categories && categories.length > 0) {
-      cachedCategories = categories.map((c) => ({
+      cacheObj.data = categories.map((c) => ({
         id: c.id,
         name: c.name,
         slug: c.slug,
@@ -35,16 +45,16 @@ export async function getDbCategories(): Promise<WooCategory[]> {
         count: c.count ?? 0,
         image: c.image ? { id: c.image.id, src: c.image.src, alt: c.image.alt } : null,
       })) as WooCategory[];
-      lastCategoriesFetch = now;
-      return cachedCategories;
+      cacheObj.lastFetch = now;
+      return cacheObj.data;
     }
   } catch (error) {
     console.warn("MongoDB categories query failed, falling back to cached catalog:", error);
   }
 
-  cachedCategories = REAL_CATEGORIES as unknown as WooCategory[];
-  lastCategoriesFetch = now;
-  return cachedCategories;
+  cacheObj.data = REAL_CATEGORIES as unknown as WooCategory[];
+  cacheObj.lastFetch = now;
+  return cacheObj.data;
 }
 
 export async function getDbCategoryBySlug(slug: string): Promise<WooCategory | null> {

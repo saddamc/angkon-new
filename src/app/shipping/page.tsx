@@ -69,7 +69,7 @@ export default async function ShippingPage() {
           </div>
         </div>
         {/* Shipping Rates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#400604] text-white border border-[#5c0f0d]">
@@ -84,6 +84,23 @@ export default async function ShippingPage() {
               <p><strong>Fee:</strong> {settings.insideDhaka === 0 ? "Free" : `${tk(settings.insideDhaka)} Flat Rate`}</p>
               <p><strong>Timeline:</strong> 2 to 3 Business Days</p>
               <p><strong>Coverage:</strong> All postal zones within Dhaka Metro</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#400604] text-white border border-[#5c0f0d]">
+                <Truck className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-heading text-lg font-bold text-white">Gazipur, Narayanganj &amp; Savar</h3>
+                <span className="text-xs text-white/70">Dhaka Outskirts</span>
+              </div>
+            </div>
+            <div className="space-y-2 text-[14px] text-white">
+              <p><strong>Fee:</strong> {settings.nearDhaka === 0 ? "Free" : `${tk(settings.nearDhaka)} Flat Rate`}</p>
+              <p><strong>Timeline:</strong> 1 to 2 Business Days</p>
+              <p><strong>Coverage:</strong> Gazipur, Narayanganj and Savar</p>
             </div>
           </div>
 

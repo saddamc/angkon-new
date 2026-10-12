@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
       if (doc) {
         const saved = (doc.addresses ?? []).find((a) => a.isDefault) ?? doc.addresses?.[0];
         user = {
-          name: doc.name,
+          name: doc.name || saved?.fullName || "",
           email: doc.email,
-          phone: doc.phone || "",
+          phone: doc.phone || saved?.phone || "",
           emailVerified: Boolean(doc.emailVerified),
           address: saved
             ? { address: saved.address, city: saved.city, district: saved.district, postalCode: saved.postalCode }
@@ -44,5 +44,13 @@ export async function GET(request: NextRequest) {
     console.warn("Checkout config: could not read the signed-in user:", error);
   }
 
-  return NextResponse.json({ requireEmailVerification: settings.requireEmailVerification, user }, { headers: NO_STORE });
+  return NextResponse.json(
+    {
+      requireEmailVerification: settings.requireEmailVerification,
+      allowGuestCheckout: settings.allowGuestCheckout,
+      enablePromoCodes: settings.enablePromoCodes,
+      user,
+    },
+    { headers: NO_STORE }
+  );
 }

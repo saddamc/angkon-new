@@ -15,9 +15,10 @@ interface QuoteItem {
  * `loading` is true while the quote for the current cart/district hasn't arrived yet;
  * `quote` keeps the previous value meanwhile so the UI doesn't flicker.
  */
-export function useShippingQuote(items: QuoteItem[], district?: string) {
+export function useShippingQuote(items: QuoteItem[], district?: string, city?: string) {
   const payload = JSON.stringify({
     district: district ?? "",
+    city: city ?? "",
     items: items.map((i) => ({ productId: i.productId, price: i.price, quantity: i.quantity })),
   });
   const [result, setResult] = useState<{ payload: string; quote: ShippingQuote | null }>({

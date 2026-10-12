@@ -5,6 +5,7 @@ import { getShippingSettings, SHIPPING_SETTINGS_KEY } from "@/server/shipping";
 
 const FIELDS = [
   ["insideDhaka", "Inside Dhaka delivery"],
+  ["nearDhaka", "Gazipur / Narayanganj / Savar delivery"],
   ["outsideDhaka", "Outside Dhaka delivery"],
   ["freeDeliveryThreshold", "Free delivery threshold"],
 ] as const;

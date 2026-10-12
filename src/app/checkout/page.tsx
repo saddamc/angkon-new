@@ -48,6 +48,8 @@ interface CheckoutConfig {
     emailVerified: boolean;
     address?: { address: string; city: string; district: string; postalCode?: string };
   } | null;
+  allowGuestCheckout?: boolean;
+  enablePromoCodes?: boolean;
 }
 
 /** Fresh config from the server. If it can't be read, assume verification is required (the server enforces it anyway). */
@@ -58,7 +60,7 @@ async function loadCheckoutConfig(): Promise<CheckoutConfig> {
   } catch {
     /* fall through */
   }
-  return { requireEmailVerification: true, user: null };
+  return { requireEmailVerification: true, enablePromoCodes: true, user: null };
 }
 
 export default function CheckoutPage() {
@@ -74,6 +76,8 @@ export default function CheckoutPage() {
   const [confirmedShippingFee, setConfirmedShippingFee] = useState<number | null>(null);
   const [confirmedSubtotal, setConfirmedSubtotal] = useState<number | null>(null);
   const [confirmedTotal, setConfirmedTotal] = useState<number | null>(null);
+  const [confirmedDiscount, setConfirmedDiscount] = useState<number | null>(null);
+  const [confirmedPromoCode, setConfirmedPromoCode] = useState<string | null>(null);
   const [confirmedCustomer, setConfirmedCustomer] = useState<{
     name: string;
     phone: string;
@@ -85,8 +89,14 @@ export default function CheckoutPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showCoupon, setShowCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discount: number;
+    description?: string;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const items = useCartStore((state) => state.items);
   const subtotal = useCartStore((state) => state.subtotal());
@@ -106,6 +116,7 @@ export default function CheckoutPage() {
   } = useForm<CheckoutFormValues>();
 
   const watchedDistrict = watch("district");
+  const watchedCity = watch("city");
 
   // Email verification state
   const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null);
@@ -121,7 +132,32 @@ export default function CheckoutPage() {
   const [inlineCountdown, setInlineCountdown] = useState(0);
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [inlineSuccess, setInlineSuccess] = useState<string | null>(null);
+  const [returningVerifiedUser, setReturningVerifiedUser] = useState<{ name: string } | null>(null);
   const emailInputRef = useRef<HTMLInputElement | null>(null);
+
+  const checkEmailStatus = async (emailToCheck?: string) => {
+    const raw = (emailToCheck || getValues("email") || "").trim().toLowerCase();
+    if (!raw || !/^\S+@\S+\.\S+$/.test(raw)) {
+      setReturningVerifiedUser(null);
+      return;
+    }
+    if (checkoutConfig?.user?.emailVerified) return;
+    try {
+      const res = await fetch("/api/auth/email-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: raw }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.exists && data.emailVerified) {
+        setReturningVerifiedUser({ name: data.name || "" });
+      } else {
+        setReturningVerifiedUser(null);
+      }
+    } catch {
+      setReturningVerifiedUser(null);
+    }
+  };
 
   useEffect(() => {
     if (inlineCountdown <= 0) return;
@@ -157,19 +193,94 @@ export default function CheckoutPage() {
 
   // Delivery fee comes from the server (admin Shipping settings + product fees),
   // so what is shown here is exactly what the order is charged.
-  const { quote: shippingQuote, loading: shippingLoading } = useShippingQuote(items, watchedDistrict);
+  const { quote: shippingQuote, loading: shippingLoading } = useShippingQuote(items, watchedDistrict, watchedCity);
   const SHIPPING_FEE = shippingQuote?.fee ?? 0;
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  // Sync promo code from localStorage or Cart on load / subtotal update
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("angkon_applied_promo");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.code) {
+          setCouponCode(parsed.code);
+          fetch("/api/promo/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: parsed.code, subtotal }),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data?.valid) {
+                setAppliedPromo({
+                  code: data.code,
+                  discount: Number(data.discount) || 0,
+                  description: data.description,
+                });
+                setCouponMessage(data.message || `Promo code ${data.code} applied!`);
+              } else {
+                localStorage.removeItem("angkon_applied_promo");
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [subtotal]);
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!couponCode.trim()) return;
-    if (couponCode.trim().toUpperCase() === "ANGKON" || couponCode.trim().toUpperCase() === "WELCOME10") {
-      setCouponApplied(true);
-      setCouponMessage("Coupon applied successfully!");
-    } else {
-      setCouponMessage("Invalid coupon code. Please try another.");
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponMessage(null);
+    setCouponError(null);
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, subtotal }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.valid) {
+        setAppliedPromo(null);
+        localStorage.removeItem("angkon_applied_promo");
+        setCouponError(data.error || "Invalid or expired promo code. Please try another.");
+        return;
+      }
+      setAppliedPromo({
+        code: data.code,
+        discount: Number(data.discount) || 0,
+        description: data.description,
+      });
+      localStorage.setItem(
+        "angkon_applied_promo",
+        JSON.stringify({ code: data.code, discount: data.discount, description: data.description })
+      );
+      setCouponMessage(data.message || `Promo code ${data.code} applied!`);
+    } catch {
+      setCouponError("Could not validate promo code. Please check your connection.");
+    } finally {
+      setCouponLoading(false);
     }
   };
+
+  const handleRemoveCoupon = () => {
+    setAppliedPromo(null);
+    setCouponCode("");
+    setCouponMessage(null);
+    setCouponError(null);
+    try {
+      localStorage.removeItem("angkon_applied_promo");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const discountAmount = appliedPromo?.discount ?? 0;
+  const FINAL_TOTAL = Math.max(0, subtotal - discountAmount) + SHIPPING_FEE;
 
   /** Send the order. The server re-checks the email verification and recalculates the delivery fee. */
   const placeOrder = async (data: CheckoutFormValues) => {
@@ -190,6 +301,8 @@ export default function CheckoutPage() {
           email: data.email,
           orderNotes: data.orderNotes || "",
           paymentMethod,
+          promoCode: appliedPromo?.code || "",
+          discount: discountAmount,
           items: items.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -219,6 +332,8 @@ export default function CheckoutPage() {
       if (result.account) setAccountInfo(result.account);
       if (typeof result.shippingFee === "number") setConfirmedShippingFee(result.shippingFee);
       if (typeof result.subtotal === "number") setConfirmedSubtotal(result.subtotal);
+      if (typeof result.discount === "number") setConfirmedDiscount(result.discount);
+      if (result.promoCode) setConfirmedPromoCode(result.promoCode);
       if (typeof result.total === "number") setConfirmedTotal(result.total);
       setConfirmedCustomer({
         name: data.name,
@@ -227,6 +342,11 @@ export default function CheckoutPage() {
       });
       setSubmitted(true);
       clearCart();
+      try {
+        localStorage.removeItem("angkon_applied_promo");
+      } catch {
+        /* ignore */
+      }
       playCheckoutSuccessSound();
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
@@ -247,6 +367,7 @@ export default function CheckoutPage() {
     setSendingCode(true);
     setInlineError(null);
     setInlineSuccess(null);
+    setReturningVerifiedUser(null);
     try {
       const sent = await requestEmailCode(email, getValues("name"));
       if (!sent.ok) {
@@ -294,7 +415,23 @@ export default function CheckoutPage() {
       setInlineVerifyOpen(false);
       setInlineCode("");
       setInlineError(null);
+      setReturningVerifiedUser(null);
       setInlineSuccess("Email verified successfully!");
+      // Auto-fill profile and address fields from verified customer account
+      if (data.user) {
+        if (data.user.name && !getValues("name")) setValue("name", data.user.name);
+        if (data.user.phone && !getValues("phone")) setValue("phone", data.user.phone);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const savedAddr = data.user.addresses?.find((a: any) => a.isDefault) || data.user.addresses?.[0];
+        if (savedAddr) {
+          if (!getValues("streetAddress") && savedAddr.address) setValue("streetAddress", savedAddr.address);
+          if (!getValues("city") && savedAddr.city) setValue("city", savedAddr.city);
+          if (!getValues("district") && savedAddr.district) setValue("district", savedAddr.district);
+          if (!getValues("postcode") && savedAddr.postalCode) setValue("postcode", savedAddr.postalCode);
+        }
+      }
+
       setCheckoutConfig((c) => ({
         requireEmailVerification: c?.requireEmailVerification ?? true,
         user: {
@@ -422,13 +559,21 @@ export default function CheckoutPage() {
                   <span className="text-white/70">Shipment fee:</span>
                   {confirmedShippingFee === 0 && (
                     <span className="text-[10px] bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded font-bold uppercase">
-                      Free (Orders ≥ ৳1,500)
+                      Free{shippingQuote?.freeDeliveryThreshold ? ` (Orders ≥ ${formatPrice(shippingQuote.freeDeliveryThreshold)})` : ""}
                     </span>
                   )}
                 </div>
                 <strong className={confirmedShippingFee === 0 ? "text-emerald-400 font-bold" : "text-white font-semibold"}>
                   {confirmedShippingFee === 0 ? "৳0 (Free)" : formatPrice(confirmedShippingFee)}
                 </strong>
+              </div>
+            )}
+
+            {/* Promo Discount */}
+            {confirmedDiscount !== null && confirmedDiscount > 0 && (
+              <div className="flex justify-between items-center text-xs sm:text-sm text-emerald-300">
+                <span>Promo Discount ({confirmedPromoCode || "Applied"}):</span>
+                <strong className="font-bold text-emerald-300">-{formatPrice(confirmedDiscount)}</strong>
               </div>
             )}
 
@@ -627,51 +772,77 @@ export default function CheckoutPage() {
           )}
         </div>
 
-        {/* ── Top Notice 2: Have a coupon? Click here to enter your code ── */}
-        <div className="mb-6">
-          <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-white/90 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="text-white text-base leading-none">▢</span>
-              <span>
-                Have a coupon?{" "}
-                <button
-                  type="button"
-                  onClick={() => setShowCoupon((v) => !v)}
-                  className="text-[#E1B76F] underline underline-offset-2 hover:text-white transition font-medium cursor-pointer"
-                >
-                  Click here to enter your code
-                </button>
-              </span>
-            </div>
-          </div>
-
-          {/* Expandable coupon input */}
-          {showCoupon && (
-            <form onSubmit={handleApplyCoupon} className="mt-2 p-5 rounded-xl border border-[#E1B76F]/25 bg-[#2d0302] animate-in fade-in slide-in-from-top-1 duration-150">
-              <p className="text-xs text-white/90 mb-3">If you have a coupon code, please apply it below.</p>
-              <div className="flex flex-col sm:flex-row items-stretch gap-2.5 max-w-md">
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  placeholder="Coupon code"
-                  className="h-10 flex-1 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-white outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] uppercase"
-                />
-                <button
-                  type="submit"
-                  className="h-10 rounded-lg bg-[#E1B76F] text-[#400604] px-5 text-xs font-bold uppercase hover:bg-[#f3cb87] transition cursor-pointer"
-                >
-                  Apply coupon
-                </button>
+        {/* ── Top Notice 2: Have a coupon / promo code? ── */}
+        {checkoutConfig?.enablePromoCodes !== false && (
+          <div className="mb-6">
+            <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-white/90 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <Tag className="h-4 w-4 text-[#E1B76F] shrink-0" />
+                <span>
+                  Have a coupon or promo code?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowCoupon((v) => !v)}
+                    className="text-[#E1B76F] underline underline-offset-2 hover:text-white transition font-medium cursor-pointer"
+                  >
+                    Click here to enter your code
+                  </button>
+                </span>
               </div>
-              {couponMessage && (
-                <p className={`mt-2 text-xs font-medium ${couponApplied ? "text-emerald-400" : "text-amber-300"}`}>
-                  {couponMessage}
-                </p>
+              {appliedPromo && (
+                <span className="text-xs font-bold text-emerald-400 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 rounded">
+                  {appliedPromo.code} Applied (-{formatPrice(discountAmount)})
+                </span>
               )}
-            </form>
-          )}
-        </div>
+            </div>
+
+            {/* Expandable coupon input */}
+            {showCoupon && (
+              <form onSubmit={handleApplyCoupon} className="mt-2 p-5 rounded-xl border border-[#E1B76F]/25 bg-[#2d0302] animate-in fade-in slide-in-from-top-1 duration-150">
+                <p className="text-xs text-white/90 mb-3">If you have a promo code or royal voucher, enter it below to apply your discount.</p>
+                <div className="flex flex-col sm:flex-row items-stretch gap-2.5 max-w-md">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="e.g. ANGKON10"
+                    disabled={couponLoading || !!appliedPromo}
+                    className="h-10 flex-1 rounded-lg border border-[#E1B76F]/30 bg-[#340402] px-3 text-xs text-white outline-none placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] uppercase disabled:opacity-60"
+                  />
+                  {appliedPromo ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="h-10 rounded-lg bg-rose-900/60 border border-rose-500/40 text-rose-200 px-5 text-xs font-bold uppercase hover:bg-rose-900 transition cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="h-10 rounded-lg bg-[#E1B76F] text-[#400604] px-5 text-xs font-bold uppercase hover:bg-[#f3cb87] transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      {couponLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Apply coupon"}
+                    </button>
+                  )}
+                </div>
+                {couponMessage && (
+                  <p className="mt-2.5 text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                    {couponMessage}
+                  </p>
+                )}
+                {couponError && (
+                  <p className="mt-2.5 text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    {couponError}
+                  </p>
+                )}
+              </form>
+            )}
+          </div>
+        )}
 
         {/* ── Social Login Row (from screenshot) ── */}
         <div className="mb-8">
@@ -898,6 +1069,10 @@ export default function CheckoutPage() {
                         required: "Email is required",
                         pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email address" },
                       })}
+                      onBlur={(e) => {
+                        register("email").onBlur(e);
+                        void checkEmailStatus(e.target.value);
+                      }}
                       ref={(e) => {
                         register("email").ref(e);
                         emailInputRef.current = e;
@@ -932,6 +1107,25 @@ export default function CheckoutPage() {
                   </div>
 
                   {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>}
+
+                  {/* Returning verified customer notice */}
+                  {returningVerifiedUser && !emailLocked && !inlineVerifyOpen && (
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2 text-xs text-emerald-200 animate-in fade-in duration-150">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 shrink-0 text-emerald-400" />
+                        <span>
+                          Verified customer account found{returningVerifiedUser.name ? ` (${returningVerifiedUser.name})` : ""}.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSendEmailCodeInline}
+                        className="cursor-pointer font-bold text-[#E1B76F] hover:underline whitespace-nowrap"
+                      >
+                        Load Saved Address →
+                      </button>
+                    </div>
+                  )}
 
                   {/* Inline Verification Box */}
                   {inlineVerifyOpen && !emailLocked && (
@@ -1112,7 +1306,9 @@ export default function CheckoutPage() {
                                 ? "Free delivery for this order"
                                 : shippingQuote.zone === "inside"
                                   ? "Inside Dhaka"
-                                  : "Outside Dhaka"}
+                                  : shippingQuote.zone === "near"
+                                    ? "Gazipur / Narayanganj / Savar"
+                                    : "Outside Dhaka"}
                         </div>
                         {shippingQuote.amountToFreeDelivery !== null && (
                           <div className="mt-0.5 text-xs font-semibold text-[#E1B76F]">
@@ -1124,10 +1320,31 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {/* Promo Code Discount Row */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between items-center py-3 border-b border-[#E1B76F]/25 text-sm text-emerald-300 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Tag className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <span>Promo Discount ({appliedPromo?.code})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-emerald-300">-{formatPrice(discountAmount)}</span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-[11px] text-white/50 hover:text-red-400 underline cursor-pointer"
+                        title="Remove promo code"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Total Row */}
                 <div className="flex justify-between items-center py-4 border-b border-[#E1B76F]/25 text-base font-bold text-white">
                   <span>Total</span>
-                  <span className="text-xl text-white">{formatPrice(subtotal + SHIPPING_FEE)}</span>
+                  <span className="text-xl text-white">{formatPrice(FINAL_TOTAL)}</span>
                 </div>
 
                 {/* ── Payment Options (inside "Your order" card) ── */}

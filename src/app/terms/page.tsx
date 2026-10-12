@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { getShippingSettings } from "@/server/shipping";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions — ANGKON",
   description: "Official terms of service, payment policies, and legal agreements for ANGKON.",
 };
 
-export default function TermsPage() {
+export const revalidate = 60;
+
+export default async function TermsPage() {
+  const s = await getShippingSettings();
   return (
     <div className="min-h-screen bg-[#400604] text-white">
       <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-12 px-4 text-center">
@@ -30,7 +34,7 @@ export default function TermsPage() {
         <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-white">2. Pricing & Currency</h2>
           <p>
-            All listed prices are denominated in Bangladeshi Taka (BDT / Tk) and include applicable statutory taxes. Delivery charges are calculated based on your destination: inside Dhaka (Tk60) or outside Dhaka (Tk120), with free shipping on orders over Tk1,500.
+            All listed prices are denominated in Bangladeshi Taka (BDT / Tk) and include applicable statutory taxes. Delivery charges are calculated based on your destination: inside Dhaka (Tk{s.insideDhaka}), Gazipur / Narayanganj / Savar (Tk{s.nearDhaka}) or elsewhere in Bangladesh (Tk{s.outsideDhaka}){s.freeDeliveryThreshold > 0 ? `, with free shipping on orders of Tk${s.freeDeliveryThreshold.toLocaleString("en-US")} or more` : ""}.
           </p>
         </div>
 

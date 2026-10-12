@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Settings,
@@ -26,6 +26,17 @@ const inputClass =
 export default function AdminSettingsPage() {
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState("general");
+  const [mail, setMail] = useState<{ orderEmails: string[]; senderEmail: string; emailServiceConfigured: boolean } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/settings/general", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setMail(d))
+      .catch(() => {});
+  }, []);
+
+  const orderEmailText = !mail ? "Loading…" : mail.orderEmails.length ? mail.orderEmails.join(", ") : "Not configured — set ADMIN_EMAIL";
+  const alertTargets = mail?.orderEmails.length ? mail.orderEmails.join(", ") : "the configured order email";
 
   const tabs = [
     { key: "general", label: "General", icon: Store },
@@ -110,26 +121,16 @@ export default function AdminSettingsPage() {
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-1.5">
-                    Executive / Order Email
+                    Order Email
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
-                    <input type="email" value="angkonofficial08@gmail.com" readOnly disabled className={inputClass} />
+                    <input type="text" value={orderEmailText} readOnly disabled className={inputClass} />
                   </div>
+                  <p className="mt-1.5 text-[11px] text-stone-400">
+                    New-order alerts are sent here. Set by <code className="font-mono">ADMIN_EMAIL</code> in the server environment (separate several with commas).
+                  </p>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-1.5">
-                  Storefront Description
-                </label>
-                <textarea
-                  value="Exclusive Luxury Fashion & Royal Apparel Maison powered by Next.js & MongoDB Atlas."
-                  rows={3}
-                  readOnly
-                  disabled
-                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2.5 text-[13px] text-stone-600 cursor-not-allowed resize-none"
-                />
               </div>
             </div>
           )}
@@ -139,14 +140,17 @@ export default function AdminSettingsPage() {
               <div>
                 <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-1">Notification Dispatchers</h2>
                 <p className="text-[13px] text-stone-500">
-                  Transactional order emails powered by <strong>Resend</strong> (<code className="text-[12px] bg-stone-100 px-1 py-0.5 rounded">noreply@angkon.net</code>)
+                  Transactional order emails powered by <strong>Resend</strong> (sent from <code className="text-[12px] bg-stone-100 px-1 py-0.5 rounded">{mail?.senderEmail ?? "…"}</code>)
+                  {mail && !mail.emailServiceConfigured && (
+                    <span className="block mt-1 text-rose-600 font-semibold">RESEND_API_KEY is missing — no emails can be sent.</span>
+                  )}
                 </p>
               </div>
 
               <div className="space-y-4">
                 {[
                   { label: "Customer Confirmation Email", desc: "Instant branded receipt with order ID dispatched to customer via Resend", enabled: true },
-                  { label: "Executive Admin Order Alert", desc: "Real-time dispatch to angkonofficial08@gmail.com upon checkout", enabled: true },
+                  { label: "New Order Alert", desc: `Real-time dispatch to ${alertTargets} upon checkout`, enabled: Boolean(mail?.orderEmails.length) },
                   { label: "Order Status Lifecycle Updates", desc: "Notify client upon order confirmation, dispatch, and delivery", enabled: true },
                   { label: "Low Inventory Notification", desc: "Alert administrator when items drop below threshold", enabled: true },
                 ].map((item) => (

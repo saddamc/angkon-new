@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Truck, Clock, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { getShippingSettings } from "@/server/shipping";
@@ -18,9 +17,8 @@ export default async function DeliveryTimePage() {
   // Dhaka uses the inside-Dhaka rate; every other district uses the outside-Dhaka rate.
   const deliveryEstimates = [
     { area: "Dhaka Metro", time: "1 - 2 Days", fee: taka(settings.insideDhaka) },
-    { area: "Gazipur, Narayanganj, Savar", time: "1 - 2 Days", fee: taka(settings.outsideDhaka) },
-    { area: "Chittagong, Sylhet, Rajshahi", time: "3 - 4 Days", fee: taka(settings.outsideDhaka) },
-    { area: "Other Major Cities (All 64 Districts)", time: "4 - 5 Days", fee: taka(settings.outsideDhaka) },
+    { area: "Gazipur, Narayanganj, Savar", time: "1 - 2 Days", fee: taka(settings.nearDhaka) },
+    { area: "All Other Districts (Outside Dhaka)", time: "4 - 5 Days", fee: taka(settings.outsideDhaka) },
   ];
 
   return (
@@ -55,22 +53,8 @@ export default async function DeliveryTimePage() {
       </div>
 
       <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* ── 1. Authentic Delivery Timing Poster Graphic ── */}
-        <div className="max-w-[720px] mx-auto overflow-hidden rounded-2xl shadow-xl border border-[#E1B76F]/30 bg-[#340402]">
-          <div className="relative w-full aspect-square">
-            <Image
-              src="/policies/delivery-time-table.png"
-              alt="Delivery Timing for Cash on Delivery (COD) - Dhaka 1-2 Days, Gazipur Narayanganj Savar 1-2 Days, Chittagong Sylhet Rajshahi 3-4 Days, Other Major Cities 4-5 Days"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 720px"
-              className="object-contain"
-            />
-          </div>
-        </div>
-
         {/* ── 2. Modern Structured Breakdown ── */}
-        <div className="mt-12 max-w-[850px] mx-auto">
+        <div className="max-w-[850px] mx-auto">
           <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#E1B76F]/20">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#400604] border border-[#E1B76F]/40 text-white">

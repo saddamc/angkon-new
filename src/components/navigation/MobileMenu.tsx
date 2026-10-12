@@ -101,8 +101,8 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
               </Link>
             </li>
             <li>
-              <Link href="/product-category/mighto" onClick={onClose} className="block border-b border-[#E1B76F]/15 px-6 py-3.5 hover:bg-[#280504] transition">
-                Mighto Activewear
+              <Link href="/products" onClick={onClose} className="block border-b border-[#E1B76F]/15 px-6 py-3.5 hover:bg-[#280504] transition">
+                Products
               </Link>
             </li>
             <li>

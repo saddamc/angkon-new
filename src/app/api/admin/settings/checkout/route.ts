@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
-import { CHECKOUT_SETTINGS_KEY, getCheckoutSettings } from "@/server/checkout-settings";
+import {
+  CHECKOUT_SETTINGS_KEY,
+  getCheckoutSettings,
+  normalizeCheckoutSettings,
+} from "@/server/checkout-settings";
 
 export async function GET() {
   const settings = await getCheckoutSettings();
@@ -10,18 +14,17 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { requireEmailVerification?: unknown };
-    if (typeof body.requireEmailVerification !== "boolean") {
-      return NextResponse.json({ error: "requireEmailVerification must be true or false." }, { status: 400 });
-    }
+    const body = await request.json();
+    const current = await getCheckoutSettings();
+    const normalized = normalizeCheckoutSettings({ ...current, ...body });
 
     await connectToDatabase();
     await Settings.findOneAndUpdate(
       { key: CHECKOUT_SETTINGS_KEY },
-      { $set: { value: { requireEmailVerification: body.requireEmailVerification } } },
+      { $set: { value: normalized } },
       { upsert: true, new: true },
     );
-    return NextResponse.json({ success: true, checkout: { requireEmailVerification: body.requireEmailVerification } });
+    return NextResponse.json({ success: true, settings: normalized });
   } catch (error) {
     console.error("POST /api/admin/settings/checkout error:", error);
     return NextResponse.json({ error: "Failed to update checkout settings." }, { status: 500 });

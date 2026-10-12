@@ -1,22 +1,140 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowRight } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, Tag, Loader2, CheckCircle2 } from "lucide-react";
 import { QuantitySelector } from "@/components/product/quantity-selector";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
 import { useShippingQuote } from "@/hooks/use-shipping-quote";
+
+interface AppliedPromo {
+  code: string;
+  discount: number;
+  description?: string;
+}
 
 export default function CartPage() {
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const subtotal = useCartStore((state) => state.subtotal());
+
   // Delivery quote from the server (admin Shipping settings). The district isn't known yet,
   // so this is the inside-Dhaka rate; the final fee is set by district at checkout.
   const { quote, loading: quoteLoading } = useShippingQuote(items);
   const shippingFee = quote?.fee ?? 0;
+
+  // Promo code state
+  const [enablePromo, setEnablePromo] = useState(true);
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoMessage, setPromoMessage] = useState<string | null>(null);
+
+  // Sync config and restore applied promo from localStorage
+  useEffect(() => {
+    fetch("/api/checkout/config")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (cfg && typeof cfg.enablePromoCodes === "boolean") {
+          setEnablePromo(cfg.enablePromoCodes);
+        }
+      })
+      .catch(() => {});
+
+    try {
+      const stored = localStorage.getItem("angkon_applied_promo");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.code) {
+          setPromoInput(parsed.code);
+          fetch("/api/promo/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: parsed.code, subtotal }),
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              if (data?.valid) {
+                setAppliedPromo({
+                  code: data.code,
+                  discount: Number(data.discount) || 0,
+                  description: data.description,
+                });
+                setPromoMessage(data.message || `Promo code ${data.code} applied!`);
+              } else {
+                localStorage.removeItem("angkon_applied_promo");
+                setAppliedPromo(null);
+              }
+            })
+            .catch(() => {});
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [subtotal]);
+
+  const handleApplyPromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = promoInput.trim().toUpperCase();
+    if (!clean) return;
+    setPromoLoading(true);
+    setPromoError(null);
+    setPromoMessage(null);
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: clean, subtotal }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.valid) {
+        setAppliedPromo(null);
+        try {
+          localStorage.removeItem("angkon_applied_promo");
+        } catch {
+          /* ignore */
+        }
+        setPromoError(data.error || "Invalid or expired promo code.");
+        return;
+      }
+      const item: AppliedPromo = {
+        code: data.code,
+        discount: Number(data.discount) || 0,
+        description: data.description,
+      };
+      setAppliedPromo(item);
+      setPromoMessage(data.message || `Promo code ${data.code} applied!`);
+      try {
+        localStorage.setItem("angkon_applied_promo", JSON.stringify(item));
+      } catch {
+        /* ignore */
+      }
+    } catch {
+      setPromoError("Could not validate promo code. Please check your connection.");
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoInput("");
+    setPromoMessage(null);
+    setPromoError(null);
+    try {
+      localStorage.removeItem("angkon_applied_promo");
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const discountAmount = appliedPromo?.discount ?? 0;
+  const estimatedTotal = Math.max(0, subtotal - discountAmount) + shippingFee;
 
   if (items.length === 0) {
     return (
@@ -90,6 +208,26 @@ export default function CartPage() {
                 <span>Subtotal</span>
                 <span className="font-bold text-white">{formatPrice(subtotal)}</span>
               </div>
+
+              {appliedPromo && (
+                <div className="flex items-center justify-between text-emerald-300 font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5 text-emerald-400" /> Promo ({appliedPromo.code})
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span>-{formatPrice(discountAmount)}</span>
+                    <button
+                      type="button"
+                      onClick={handleRemovePromo}
+                      className="text-white/50 hover:text-red-300 text-xs transition underline"
+                      aria-label="Remove promo code"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-white/70">
                 <span>Estimated Shipping</span>
                 {!quote ? (
@@ -104,26 +242,81 @@ export default function CartPage() {
                   <span className="font-semibold text-white">{formatPrice(quote.fee)}</span>
                 )}
               </div>
+
               {quote && !quote.isFree && (
                 <p className="text-xs text-white/60">Inside Dhaka rate shown. Your final delivery fee is set by district at checkout.</p>
               )}
+
               {quote?.amountToFreeDelivery != null && (
                 <div className="rounded-lg bg-[#2d0302] border border-[#E1B76F]/30 p-2.5 text-xs text-white/90">
                   Add <strong>{formatPrice(quote.amountToFreeDelivery)}</strong> more to get <strong>FREE Delivery</strong>!
                 </div>
               )}
+
               {quote?.freeByThreshold && (
                 <div className="rounded-lg bg-[#2d0302] border border-emerald-500/40 p-2.5 text-xs text-emerald-300 font-medium">
                   🎉 You unlocked Free Delivery!
                 </div>
               )}
+
+              {/* Promo Code Input Box (if enabled by admin) */}
+              {enablePromo && (
+                <div className="pt-2 border-t border-[#E1B76F]/15">
+                  {!appliedPromo ? (
+                    <form onSubmit={handleApplyPromo} className="space-y-1.5">
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+                          <input
+                            type="text"
+                            placeholder="Promo code (e.g. ANGKON10)"
+                            value={promoInput}
+                            onChange={(e) => setPromoInput(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                            className="w-full rounded-xl border border-[#E1B76F]/30 bg-[#2d0302] pl-8 pr-3 py-2 text-xs font-mono font-bold uppercase tracking-wider text-white placeholder:text-white/40 focus:border-[#E1B76F] focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={promoLoading || !promoInput.trim()}
+                          className="rounded-xl border border-[#E1B76F]/50 bg-[#400604] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#520805] disabled:opacity-40"
+                        >
+                          {promoLoading ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E1B76F]" />
+                          ) : (
+                            "Apply"
+                          )}
+                        </button>
+                      </div>
+                      {promoError && (
+                        <p className="text-[11.5px] text-red-300 font-medium">{promoError}</p>
+                      )}
+                    </form>
+                  ) : (
+                    <div className="rounded-xl border border-emerald-500/40 bg-[#2d0302] p-2.5 text-xs text-emerald-300 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                        {promoMessage || `Coupon ${appliedPromo.code} active`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemovePromo}
+                        className="font-bold text-emerald-200 hover:text-red-300 ml-2 underline shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="border-t border-[#E1B76F]/20 pt-3 text-base font-bold text-white">
                 <div className="flex items-center justify-between">
                   <span>Estimated Total</span>
-                  <span>{formatPrice(subtotal + shippingFee)}</span>
+                  <span>{formatPrice(estimatedTotal)}</span>
                 </div>
               </div>
             </div>
+
             <Link
               href="/checkout"
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#400604] border border-[#E1B76F]/50 py-3.5 text-sm font-bold text-white transition hover:bg-[#520805] shadow-sm"

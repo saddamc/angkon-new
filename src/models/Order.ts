@@ -27,6 +27,8 @@ export interface IOrder extends Document {
   customer: IOrderCustomer;
   items: IOrderItem[];
   subtotal: number;
+  discount?: number;
+  promoCode?: string;
   shippingFee: number;
   total: number;
   paymentMethod: "cod" | "sslcommerz" | "bkash" | "nagad" | "online";
@@ -70,6 +72,8 @@ const OrderSchema = new Schema<IOrder>(
     customer: { type: OrderCustomerSchema, required: true },
     items: { type: [OrderItemSchema], required: true },
     subtotal: { type: Number, required: true, default: 0 },
+    discount: { type: Number, default: 0 },
+    promoCode: { type: String, default: "" },
     shippingFee: { type: Number, required: true, default: 60 },
     total: { type: Number, required: true, default: 0 },
     paymentMethod: {

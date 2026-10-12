@@ -83,7 +83,8 @@ export async function POST(request: NextRequest) {
       user.verifyTokenHash = null; // any older link is no longer needed
       user.verifyTokenExpires = null;
     }
-    if (!user.phone && phone) user.phone = phone;
+    if (name && (!user.name || user.name === user.email.split("@")[0])) user.name = name;
+    if (phone) user.phone = phone;
     await user.save();
 
     const response = NextResponse.json({ ok: true, user: publicUser(user) });

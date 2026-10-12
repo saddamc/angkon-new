@@ -11,8 +11,9 @@ const MAX_ITEMS = 100;
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { district?: unknown; items?: unknown };
+    const body = (await request.json()) as { district?: unknown; city?: unknown; items?: unknown };
     const district = typeof body.district === "string" ? body.district.trim().slice(0, 80) : "";
+    const city = typeof body.city === "string" ? body.city.trim().slice(0, 80) : "";
     const rawItems = Array.isArray(body.items) ? body.items.slice(0, MAX_ITEMS) : [];
 
     const items = rawItems.map((item) => {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     const quote = calculateShipping({
       subtotal,
       district,
+      city,
       settings,
       itemRates: items.map((i) => rates.get(i.productId) ?? {}),
     });

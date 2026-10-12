@@ -87,11 +87,10 @@ export async function sendOrderConfirmationEmails(
   }
 
   // 2. Send Admin Alert (configured in .env)
-  const rawAdminEmails = process.env.ADMIN_EMAIL || "angkonofficial08@gmail.com";
-  const adminRecipients = rawAdminEmails
-    .split(",")
-    .map((e) => e.trim())
-    .filter((e) => emailRegex.test(e));
+  const adminRecipients = getOrderNotificationEmails();
+  if (adminRecipients.length === 0) {
+    console.warn("⚠️ ADMIN_EMAIL is not set (or has no valid address). Order alert skipped.");
+  }
 
   if (adminRecipients.length > 0) {
     try {
@@ -111,4 +110,12 @@ export async function sendOrderConfirmationEmails(
   }
 
   return { customerSent, adminSent };
+}
+
+/** Where new-order alerts go: the comma-separated `ADMIN_EMAIL` env var (valid addresses only). */
+export function getOrderNotificationEmails(): string[] {
+  return (process.env.ADMIN_EMAIL || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
 }

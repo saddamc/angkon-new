@@ -32,7 +32,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
   const openCart = useCartStore((state) => state.openCart);
   const closeCart = useCartStore((state) => state.closeCart);
   const [openMobile, setOpenMobile] = useState(false);
-  const [mightoExpanded, setMightoExpanded] = useState(false);
   const mounted = useMounted();
   const itemCount = useCartStore((state) => state.itemCount());
   const subtotal = useCartStore((state) => state.subtotal());
@@ -161,7 +160,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
     { label: "Home", href: "/", isExact: true },
     { label: "Women", href: "/product-category/women", isExact: false },
     { label: "Men", href: "/product-category/men", isExact: false },
-    { label: "Mighto", href: "/product-category/mighto", isExact: false, hasSubmenu: true },
+    { label: "Products", href: "/products", isExact: false },
     { label: "Accessories", href: "/product-category/accessories", isExact: false },
     { label: "Policies", href: "/policies", isExact: false },
     { label: "On Sale", href: "/sale", isExact: false },
@@ -214,38 +213,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
               <nav className="hidden lg:flex items-center justify-center gap-6 xl:gap-8 text-[13px] xl:text-[14px] font-bold tracking-normal uppercase animate-in fade-in duration-150">
                 {navLinks.map((link) => {
                   const active = isLinkActive(link.href, link.isExact);
-
-                  if (link.hasSubmenu) {
-                    return (
-                      <div key={link.label} className="relative group py-2">
-                        <Link
-                          href={link.href}
-                          className={`transition ${
-                            active
-                              ? "text-[#400604] border-b-2 border-[#400604] pb-1 font-extrabold tracking-wide"
-                              : "text-neutral-800 hover:text-[#400604]"
-                          }`}
-                        >
-                          {link.label}
-                        </Link>
-                        {/* Mighto Dropdown (clean Astra-style popover) */}
-                        <div className="absolute left-1/2 -translate-x-1/2 top-full hidden group-hover:block w-48 rounded border border-neutral-200 bg-white p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                          <Link
-                            href="/product-category/mighto/mighto-men"
-                            className="block rounded px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-100 hover:text-[#400604] transition uppercase"
-                          >
-                            Mighto Men
-                          </Link>
-                          <Link
-                            href="/product-category/mighto/mighto-women"
-                            className="block rounded px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-100 hover:text-[#400604] transition uppercase"
-                          >
-                            Mighto Women
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  }
 
                   return (
                     <Link
@@ -669,54 +636,13 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 </Link>
               </li>
               <li>
-                <div>
-                  <div className="flex items-center justify-between py-0.5">
-                    <Link
-                      href="/product-category/mighto"
-                      onClick={() => setOpenMobile(false)}
-                      className="flex-1 text-neutral-800 hover:text-[#400604] transition"
-                    >
-                      Mighto
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setMightoExpanded(!mightoExpanded);
-                      }}
-                      className="p-0.5 text-neutral-500 hover:text-[#400604] cursor-pointer"
-                      aria-label="Toggle Mighto subcategories"
-                    >
-                      <ChevronDown
-                        className={`h-4 w-4 stroke-[1.5] transition-transform duration-200 ${
-                          mightoExpanded ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  {mightoExpanded && (
-                    <ul className="pl-4 pt-2 pb-1 space-y-2 text-[14px] text-neutral-600 animate-in fade-in duration-150">
-                      <li>
-                        <Link
-                          href="/product-category/mighto/mighto-men"
-                          onClick={() => setOpenMobile(false)}
-                          className="block py-0.5 hover:text-[#400604] transition"
-                        >
-                          Mighto Men
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          href="/product-category/mighto/mighto-women"
-                          onClick={() => setOpenMobile(false)}
-                          className="block py-0.5 hover:text-[#400604] transition"
-                        >
-                          Mighto Women
-                        </Link>
-                      </li>
-                    </ul>
-                  )}
-                </div>
+                <Link
+                  href="/products"
+                  onClick={() => setOpenMobile(false)}
+                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                >
+                  Products
+                </Link>
               </li>
               <li>
                 <Link

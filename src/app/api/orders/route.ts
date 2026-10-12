@@ -128,12 +128,29 @@ export async function POST(request: NextRequest) {
     const shippingQuote = calculateShipping({
       subtotal,
       district: resolvedDistrict,
+      city,
       settings: shippingSettings,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       itemRates: items.map((item: any) => productRates.get(Number(item.productId || 0)) ?? {}),
     });
+    // Calculate Promo Code discount (verified on the server against active settings)
+    let discount = 0;
+    const submittedPromo = String(body.promoCode || "").trim().toUpperCase();
+    if (submittedPromo && checkoutSettings.enablePromoCodes) {
+      const match = checkoutSettings.promoCodes.find((p) => p.code.toUpperCase() === submittedPromo);
+      if (match && match.active) {
+        if (!match.minSpend || subtotal >= match.minSpend) {
+          if (match.type === "percentage") {
+            discount = Math.round((subtotal * match.value) / 100);
+          } else {
+            discount = Math.min(subtotal, match.value);
+          }
+        }
+      }
+    }
+
     const shippingFee = shippingQuote.fee;
-    const total = subtotal + shippingFee;
+    const total = Math.max(0, subtotal - discount) + shippingFee;
 
     // Generate unique ANGKON luxury order number
     const randomSuffix = Math.floor(100 + Math.random() * 900);
@@ -194,6 +211,8 @@ export async function POST(request: NextRequest) {
         customer: customerData,
         items: itemsData,
         subtotal,
+        discount,
+        promoCode: discount > 0 ? submittedPromo : "",
         shippingFee,
         total,
         paymentMethod: paymentMethod === "sslcommerz" ? "sslcommerz" : "cod",
@@ -202,22 +221,67 @@ export async function POST(request: NextRequest) {
         notes: orderNotes ? String(orderNotes).trim() : "",
       });
 
-      // First order on this account: remember the delivery address so the next checkout can pre-fill it.
-      // (Best effort — never allowed to fail the order.)
-      if (accountUser && account.status !== "existing" && (accountUser.addresses?.length ?? 0) === 0) {
+      // Synchronize complete customer profile in MongoDB so returning checkouts & admin panel have full records
+      if (accountUser) {
         try {
-          accountUser.addresses.push({
+          let updated = false;
+
+          // 1. Sync latest customer name if provided
+          if (customerData.fullName && customerData.fullName !== accountUser.name) {
+            accountUser.name = customerData.fullName;
+            updated = true;
+          }
+
+          // 2. Sync latest phone if provided
+          if (customerData.phone && customerData.phone !== accountUser.phone) {
+            accountUser.phone = customerData.phone;
+            updated = true;
+          }
+
+          // 3. If verified at checkout or verifiedUser is present, guarantee emailVerified is true
+          if (verifiedUser && !accountUser.emailVerified) {
+            accountUser.emailVerified = true;
+            accountUser.emailVerifiedAt = new Date();
+            updated = true;
+          }
+
+          // 4. Save/update latest delivery address as default address for future visits
+          const newAddr = {
             fullName: customerData.fullName,
             phone: customerData.phone,
             address: customerData.address,
             city: customerData.city,
             district: customerData.district,
-            postalCode: customerData.postalCode,
+            postalCode: customerData.postalCode || "",
             isDefault: true,
+          };
+
+          const currentAddresses = Array.isArray(accountUser.addresses) ? [...accountUser.addresses] : [];
+          // Unset isDefault on other addresses
+          currentAddresses.forEach((a) => {
+            a.isDefault = false;
           });
-          await accountUser.save();
-        } catch (addressErr) {
-          console.warn("Could not save the delivery address to the account:", addressErr);
+
+          const normAddress = newAddr.address.toLowerCase().trim();
+          const normDistrict = newAddr.district.toLowerCase().trim();
+          const matchIdx = currentAddresses.findIndex(
+            (a) => a.address.toLowerCase().trim() === normAddress && a.district.toLowerCase().trim() === normDistrict
+          );
+
+          if (matchIdx >= 0) {
+            currentAddresses[matchIdx] = newAddr;
+          } else {
+            currentAddresses.unshift(newAddr);
+          }
+
+          accountUser.addresses = currentAddresses.slice(0, 10);
+          updated = true;
+
+          if (updated) {
+            await accountUser.save();
+          }
+        } catch (profileErr) {
+          console.warn("Could not synchronize customer profile:", profileErr);
         }
       }
 
@@ -258,6 +322,8 @@ export async function POST(request: NextRequest) {
           orderNumber: newOrder.orderNumber,
           shippingFee,
           subtotal,
+          discount,
+          promoCode: newOrder.promoCode,
           total,
           status: "success",
           account: {
@@ -269,8 +335,9 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
 
-      // Auto sign-in only for the account this order just created.
-      if (account.status === "created" && accountUser) {
+      // Persist/refresh 30-day session cookie for the customer account so next time they visit
+      // checkout or my-account, they are already recognized as verified and their details are pre-filled!
+      if (accountUser) {
         setSessionCookie(response, {
           id: String(accountUser._id),
           email: accountUser.email,

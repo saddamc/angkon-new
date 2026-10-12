@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Sparkles, Truck } from "lucide-react";
 import { DEFAULT_SHIPPING_SETTINGS, normalizeShippingSettings, type ShippingSettings } from "@/lib/shipping";
 
-type FormState = { insideDhaka: string; outsideDhaka: string; freeDeliveryThreshold: string };
+type FormState = { insideDhaka: string; nearDhaka: string; outsideDhaka: string; freeDeliveryThreshold: string };
 
 const toForm = (s: ShippingSettings): FormState => ({
   insideDhaka: String(s.insideDhaka),
+  nearDhaka: String(s.nearDhaka),
   outsideDhaka: String(s.outsideDhaka),
   freeDeliveryThreshold: String(s.freeDeliveryThreshold),
 });
@@ -18,6 +19,7 @@ const money = (n: number) => `৳${n.toLocaleString("en-BD")}`;
 function parseForm(form: FormState): { ok: true; value: ShippingSettings } | { ok: false; error: string } {
   const fields: [keyof FormState, string][] = [
     ["insideDhaka", "Inside Dhaka delivery"],
+    ["nearDhaka", "Gazipur / Narayanganj / Savar delivery"],
     ["outsideDhaka", "Outside Dhaka delivery"],
     ["freeDeliveryThreshold", "Free delivery threshold"],
   ];
@@ -63,6 +65,7 @@ export function ShippingSettings() {
   const dirty = Boolean(
     saved && parsed.ok && (
       parsed.value.insideDhaka !== saved.insideDhaka ||
+      parsed.value.nearDhaka !== saved.nearDhaka ||
       parsed.value.outsideDhaka !== saved.outsideDhaka ||
       parsed.value.freeDeliveryThreshold !== saved.freeDeliveryThreshold
     ),
@@ -135,7 +138,7 @@ export function ShippingSettings() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-2 shadow-sm">
           <label htmlFor="ship-inside" className="block text-[11px] font-bold uppercase tracking-wider text-stone-500">
             Inside Dhaka delivery (৳)
@@ -145,6 +148,17 @@ export function ShippingSettings() {
             <input id="ship-inside" type="number" inputMode="numeric" min="0" step="1" value={form.insideDhaka} onChange={update("insideDhaka")} className={inputClass} />
           </div>
           <p className="text-[11px] text-stone-400">Charged when the customer chooses Dhaka as the district.</p>
+        </div>
+
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-2 shadow-sm">
+          <label htmlFor="ship-near" className="block text-[11px] font-bold uppercase tracking-wider text-stone-500">
+            Gazipur / Narayanganj / Savar (৳)
+          </label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[14px] font-bold text-stone-400">৳</span>
+            <input id="ship-near" type="number" inputMode="numeric" min="0" step="1" value={form.nearDhaka} onChange={update("nearDhaka")} className={inputClass} />
+          </div>
+          <p className="text-[11px] text-stone-400">Charged when the district is Gazipur or Narayanganj, or the town is Savar.</p>
         </div>
 
         <div className="rounded-2xl border border-stone-200 bg-white p-5 space-y-2 shadow-sm">
@@ -175,10 +189,14 @@ export function ShippingSettings() {
       {/* What customers will actually see */}
       <div className="rounded-2xl border border-[#E1B76F]/40 bg-[#FDFBF7] p-5">
         <p className="text-[11px] font-bold uppercase tracking-wider text-[#400604] mb-3">What customers will pay</p>
-        <dl className="grid gap-2 text-[13px] sm:grid-cols-3">
+        <dl className="grid gap-2 text-[13px] sm:grid-cols-4">
           <div className="rounded-xl bg-white border border-stone-200 p-3">
             <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Inside Dhaka</dt>
             <dd className="mt-0.5 font-bold text-stone-900">{preview.insideDhaka === 0 ? "Free" : money(preview.insideDhaka)}</dd>
+          </div>
+          <div className="rounded-xl bg-white border border-stone-200 p-3">
+            <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Gazipur / Narayanganj / Savar</dt>
+            <dd className="mt-0.5 font-bold text-stone-900">{preview.nearDhaka === 0 ? "Free" : money(preview.nearDhaka)}</dd>
           </div>
           <div className="rounded-xl bg-white border border-stone-200 p-3">
             <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Outside Dhaka</dt>

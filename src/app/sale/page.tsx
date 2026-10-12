@@ -46,7 +46,7 @@ export default async function SalePage() {
         <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6">
           <div className="relative w-full aspect-[1980/600] overflow-hidden">
             <Image
-              src="/banners/on-sale-header.png"
+              src="/banners/on-sale-header.png?v=2"
               alt="On Sale"
               fill
               priority

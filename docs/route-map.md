@@ -7,10 +7,10 @@ Every storefront route renders inside `RootShell` → **Navbar** (announcement b
 
 | Part | Contents | File |
 |---|---|---|
-| Announcement bar | Free shipping over ৳3,000 · COD nationwide · 7-day exchange | `navigation/Navbar.tsx` |
+| Announcement bar | Free shipping over ৳15,000 · COD nationwide · 7-day exchange | `navigation/Navbar.tsx` |
 | Header (desktop) | Logo · Home · Women · Men · Activewear · Accessories · All Products · Policies · About · SALE · Search · Wishlist · Cart (with subtotal) | `navigation/Navbar.tsx` |
 | Header (mobile) | Menu button → drawer with category tree · Search · Wishlist · Cart | `navigation/MobileMenu.tsx` |
-| Cart drawer | Line items, free-shipping meter (৳3,000), checkout button | `layout/cart-drawer.tsx` |
+| Cart drawer | Line items, free-shipping meter (৳15,000), checkout button | `layout/cart-drawer.tsx` |
 | Search | Instant search modal | `layout/search-modal.tsx` |
 | Footer | Brand + showroom + contact · Explore collections · Customer support · Newsletter · Social · Payment badges | `layout/footer.tsx` |
 

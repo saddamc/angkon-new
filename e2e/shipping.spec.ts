@@ -32,10 +32,10 @@ test.describe("shipping rule (pure)", () => {
   });
 
   test("the threshold unlocks free delivery exactly at the amount", () => {
-    const settings = { ...store, freeDeliveryThreshold: 3000 };
-    const below = calculateShipping({ subtotal: 2999, district: "Sylhet", settings });
+    const settings = { ...store, freeDeliveryThreshold: 15000 };
+    const below = calculateShipping({ subtotal: 14999, district: "Sylhet", settings });
     expect(below).toMatchObject({ fee: 120, freeByThreshold: false, amountToFreeDelivery: 1 });
-    const at = calculateShipping({ subtotal: 3000, district: "Sylhet", settings });
+    const at = calculateShipping({ subtotal: 15000, district: "Sylhet", settings });
     expect(at).toMatchObject({ fee: 0, isFree: true, freeByThreshold: true, amountToFreeDelivery: null });
   });
 
@@ -59,6 +59,7 @@ test.describe("shipping rule (pure)", () => {
     expect(normalizeShippingSettings(undefined)).toEqual(DEFAULT_SHIPPING_SETTINGS);
     expect(normalizeShippingSettings({ insideDhaka: "75", outsideDhaka: -5, freeDeliveryThreshold: "abc" })).toEqual({
       insideDhaka: 75,
+      nearDhaka: DEFAULT_SHIPPING_SETTINGS.nearDhaka,
       outsideDhaka: DEFAULT_SHIPPING_SETTINGS.outsideDhaka,
       freeDeliveryThreshold: DEFAULT_SHIPPING_SETTINGS.freeDeliveryThreshold,
     });

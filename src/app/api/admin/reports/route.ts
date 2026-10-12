@@ -26,9 +26,14 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase();
 
-    const orders = await Order.find({ createdAt: { $gte: startDate } }).lean();
-    const allOrders = await Order.find({}).lean();
-    const totalProducts = await Product.countDocuments();
+    const [allOrders, totalProducts] = await Promise.all([
+      Order.find({})
+        .select("orderStatus createdAt total shippingFee items customer.phone")
+        .lean(),
+      Product.countDocuments(),
+    ]);
+
+    const orders = allOrders.filter((ord) => new Date(ord.createdAt) >= startDate);
 
     let totalSales = 0;
     let totalItems = 0;

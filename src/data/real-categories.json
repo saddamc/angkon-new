@@ -1821,17 +1821,40 @@
   },
   {
     "id": 990,
-    "name": "Tawakkal",
-    "slug": "tawakkal",
+    "name": "Tawakkal Wada",
+    "slug": "tawakkal-wada",
     "parent": 914,
-    "menu_order": 0,
+    "menu_order": 11,
     "description": "Tawakkal Fabrics Luxury Collection",
     "count": 7,
     "image": {
       "id": 990001,
       "src": "/banners/ethnic-wear.webp",
       "alt": "Tawakkal"
-    }
+    },
+    "imageUrl": "/banners/ethnic-wear.webp",
+    "imageId": 990001,
+    "imageAlt": "Tawakkal",
+    "icon": "",
+    "bgTheme": "blue",
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/ethnic-wear.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ]
   },
   {
     "id": 915,

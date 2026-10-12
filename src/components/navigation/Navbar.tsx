@@ -10,7 +10,6 @@ import { CartDrawer } from "@/components/layout/cart-drawer";
 import { useCartStore } from "@/store/cart-store";
 import type { CategoryNode } from "@/types/woocommerce";
 import { getProducts } from "@/services/products.service";
-import { formatPrice } from "@/utils/price";
 import { decodeEntities } from "@/utils/html";
 
 interface SearchProduct {
@@ -46,9 +45,9 @@ export function Navbar({ categoryTree }: NavbarProps) {
   const [searchLoading, setSearchLoading] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const mobileSearchContainerRef = useRef<HTMLDivElement>(null);
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
-
 
   const focusActiveSearchInput = () => {
     if (typeof window !== "undefined" && window.innerWidth < 1024) {
@@ -62,12 +61,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
     setOpenMobile(false);
     setIsSearchClosing(false);
     setSearchOpen(true);
-    setSearchLoading(false); // No fake loading on click!
-    // Multiple microtask attempts ensure cursor is immediately placed ready to type
-    focusActiveSearchInput();
-    setTimeout(focusActiveSearchInput, 15);
-    setTimeout(focusActiveSearchInput, 50);
-    setTimeout(focusActiveSearchInput, 120);
+    setSearchLoading(false);
   };
 
   const handleCloseSearch = () => {
@@ -78,37 +72,36 @@ export function Navbar({ categoryTree }: NavbarProps) {
       setSearchQuery("");
       setSearchResults([]);
       setSearchLoading(false);
-    }, 200);
+    }, 150);
   };
 
-  // Focus input on search open
+  // Focus active input gently on search open without layout thrashing
   useEffect(() => {
     if (searchOpen && !isSearchClosing) {
-      focusActiveSearchInput();
-      const t1 = setTimeout(focusActiveSearchInput, 30);
-      const t2 = setTimeout(focusActiveSearchInput, 100);
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-      };
+      const timer = setTimeout(() => {
+        focusActiveSearchInput();
+      }, 50);
+      return () => clearTimeout(timer);
     }
   }, [searchOpen, isSearchClosing]);
 
-  // Click outside listener to close search and restore menu
+  // Click / touch outside listener to close search and restore menu
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
-      ) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      const target = event.target as Node;
+      const insideDesktop = searchContainerRef.current?.contains(target);
+      const insideMobile = mobileSearchContainerRef.current?.contains(target);
+      if (!insideDesktop && !insideMobile) {
         handleCloseSearch();
       }
     }
     if (searchOpen && !isSearchClosing) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, { passive: true });
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [searchOpen, isSearchClosing]);
 
@@ -168,7 +161,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
     { label: "Home", href: "/", isExact: true },
     { label: "Women", href: "/product-category/women", isExact: false },
     { label: "Men", href: "/product-category/men", isExact: false },
-    { label: "Ethnic Wear", href: "/product-category/ethnic-wear", isExact: false },
     { label: "Mighto", href: "/product-category/mighto", isExact: false, hasSubmenu: true },
     { label: "Accessories", href: "/product-category/accessories", isExact: false },
     { label: "Policies", href: "/policies", isExact: false },
@@ -188,14 +180,14 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
   return (
     <header
-      className={`top-0 z-50 w-full bg-white text-neutral-800 transition-all shadow-xs ${
+      className={`top-0 z-50 w-full bg-white text-neutral-800 transition-all shadow-xs overflow-x-clip ${
         openMobile
           ? "max-lg:relative max-lg:shadow-none lg:sticky"
           : "sticky"
       }`}
     >
       {/* ── Main Navigation Header (Border directly under navbar) ── */}
-      <div className="w-full border-b border-neutral-200/80">
+      <div className="relative w-full border-b border-neutral-200/80">
         <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-3.5">
           
           {/* Left: Brand Logo (ANGKON Official Logo) */}
@@ -215,8 +207,8 @@ export function Navbar({ categoryTree }: NavbarProps) {
             </Link>
           </div>
 
-          {/* ── Center: Menu Row OR Expanded Search Bar ── */}
-          <div className="flex-1 mx-4 xl:mx-8 flex items-center justify-center min-w-0">
+          {/* ── Center: Menu Row OR Expanded Search Bar (Desktop Only) ── */}
+          <div className="hidden lg:flex flex-1 mx-4 xl:mx-8 items-center justify-center min-w-0">
             {!searchOpen ? (
               /* Normal State: Centered Navigation Menu with Search Icon at the End */
               <nav className="hidden lg:flex items-center justify-center gap-6 xl:gap-8 text-[13px] xl:text-[14px] font-bold tracking-normal uppercase animate-in fade-in duration-150">
@@ -297,7 +289,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
                 >
                   <input
                     ref={desktopInputRef}
-                    autoFocus
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -436,45 +427,152 @@ export function Navbar({ categoryTree }: NavbarProps) {
 
           {/* Mobile Full-Width Search Overlay Bar when Search is Open on Mobile */}
           {searchOpen && (
-            <div className="lg:hidden absolute inset-0 z-50 bg-white px-3 flex items-center animate-slide-search-in shadow-md border-b border-neutral-200">
+            <div
+              ref={mobileSearchContainerRef}
+              className={`lg:hidden absolute inset-0 z-50 bg-white px-3 sm:px-4 flex items-center shadow-xs ${
+                isSearchClosing
+                  ? "animate-out fade-out duration-150"
+                  : "animate-in fade-in duration-150"
+              }`}
+            >
               <form
                 onSubmit={handleSearchSubmit}
-                className="relative flex items-center w-full h-[38px] border border-neutral-300 bg-neutral-50 px-3 py-1 rounded-[2px] focus-within:border-[#400604]"
+                className="relative flex items-center w-full h-[40px] border border-neutral-300 bg-neutral-50 px-3 rounded-[4px] focus-within:border-[#400604] focus-within:bg-white transition-all shadow-xs"
               >
+                <Search className="h-4 w-4 text-neutral-400 flex-shrink-0 mr-2" />
                 <input
                   ref={mobileInputRef}
-                  autoFocus
-                  type="text"
+                  type="search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search..."
-                  className="flex-1 text-[13.5px] text-neutral-900 placeholder:text-neutral-400 bg-transparent outline-none pr-2 font-normal"
+                  placeholder="Search products..."
+                  className="flex-1 text-[16px] text-neutral-900 placeholder:text-neutral-400 bg-transparent outline-none pr-2 font-normal"
                 />
+
+                {/* Loading Spinner */}
                 <div
-                  className={`flex items-center justify-center transition-opacity duration-150 mr-2 ${
+                  className={`flex items-center justify-center transition-opacity duration-150 mr-1.5 ${
                     searchLoading && searchQuery.trim().length > 0
                       ? "opacity-100"
                       : "opacity-0 pointer-events-none"
                   }`}
+                  aria-hidden={!searchLoading}
                 >
                   <svg
                     className="animate-spin h-3.5 w-3.5 text-[#400604]"
                     viewBox="0 0 24 24"
                     fill="none"
                   >
-                    <circle className="opacity-20" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" />
-                    <path fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" d="M12 3a9 9 0 0 1 9 9" />
+                    <circle
+                      className="opacity-20"
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                    />
+                    <path
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      d="M12 3a9 9 0 0 1 9 9"
+                    />
                   </svg>
                 </div>
+
+                {/* Dismiss button */}
                 <button
                   type="button"
                   onClick={handleCloseSearch}
-                  className="p-1 text-neutral-400 hover:text-neutral-800 transition flex items-center justify-center"
+                  className="p-1 text-neutral-500 hover:text-neutral-900 transition flex items-center justify-center cursor-pointer"
                   aria-label="Close search"
                 >
-                  <X className="h-4 w-4 stroke-[1.8]" />
+                  <X className="h-4.5 w-4.5 stroke-[1.8]" />
                 </button>
               </form>
+
+              {/* Instant Live Search Dropdown on Mobile */}
+              {searchQuery.trim().length > 0 && (
+                <div className="absolute left-0 right-0 top-full bg-white border-b border-neutral-200 shadow-2xl p-2 z-50 max-h-[75vh] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
+                  {searchLoading && searchResults.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-neutral-500 flex items-center justify-center gap-2">
+                      <svg
+                        className="animate-spin h-3.5 w-3.5 text-[#400604]"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          className="opacity-20"
+                          cx="12"
+                          cy="12"
+                          r="9"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        />
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          d="M12 3a9 9 0 0 1 9 9"
+                        />
+                      </svg>
+                      Searching products...
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="py-6 text-center text-xs text-neutral-500">
+                      No products found for &ldquo;{searchQuery}&rdquo;
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 px-2 py-1">
+                        Matching Products
+                      </div>
+                      {searchResults.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/products/${product.slug}`}
+                          onClick={() => {
+                            handleCloseSearch();
+                          }}
+                          className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-neutral-50 transition group"
+                        >
+                          <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-neutral-100 border border-neutral-200">
+                            <Image
+                              src={product.image}
+                              alt={product.name}
+                              fill
+                              className="object-cover"
+                              sizes="40px"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#400604] transition">
+                              {product.name}
+                            </h4>
+                            <p className="text-[10px] text-neutral-500">
+                              {product.category}
+                            </p>
+                          </div>
+                          <span className="text-xs font-bold text-[#400604] flex-shrink-0">
+                            Tk{product.price.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </Link>
+                      ))}
+                      <div className="pt-2 mt-1 border-t border-neutral-100">
+                        <button
+                          type="button"
+                          onClick={handleSearchSubmit}
+                          className="w-full text-center py-2 text-xs font-bold text-[#400604] hover:underline cursor-pointer"
+                        >
+                          View all results for &ldquo;{searchQuery}&rdquo; &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -559,15 +657,6 @@ export function Navbar({ categoryTree }: NavbarProps) {
                   className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
                 >
                   Women
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/product-category/ethnic-wear"
-                  onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
-                >
-                  Ethnic Wear
                 </Link>
               </li>
               <li>

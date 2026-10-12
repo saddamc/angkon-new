@@ -50,21 +50,26 @@ interface Customer {
   orders: WCOrder[];
 }
 
+/* ─── Client Cache for Instant Tab Switching ──────────────────────── */
+let cachedCustomersOrders: WCOrder[] | null = null;
+
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default function AdminCustomersPage() {
   const { authFetch } = useAuth();
-  const [orders, setOrders] = useState<WCOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<WCOrder[]>(cachedCustomersOrders || []);
+  const [loading, setLoading] = useState(!cachedCustomersOrders);
   const [searchQuery, setSearchQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (soft = false) => {
+    if (!cachedCustomersOrders && !soft) setLoading(true);
     try {
       const res = await authFetch("/api/admin/orders?per_page=150&status=any");
       if (res.ok) {
         const data = await res.json();
-        setOrders(Array.isArray(data) ? data : data.orders ?? []);
+        const list = Array.isArray(data) ? data : data.orders ?? [];
+        cachedCustomersOrders = list;
+        setOrders(list);
       }
     } finally {
       setLoading(false);
@@ -72,7 +77,7 @@ export default function AdminCustomersPage() {
   };
 
   useEffect(() => {
-    void load();
+    void load(Boolean(cachedCustomersOrders));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive customers from MongoDB orders
@@ -135,14 +140,11 @@ export default function AdminCustomersPage() {
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-[#1A0302]">Clientele Directory</h1>
-            <p className="text-[12px] text-stone-500">
-              Aggregated from MongoDB order activity — {customers.length} unique customers
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={load}
+            onClick={() => void load()}
             className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 hover:text-[#400604] hover:border-[#400604] transition"
             title="Refresh customers"
           >

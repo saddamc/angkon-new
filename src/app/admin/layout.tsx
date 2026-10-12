@@ -90,7 +90,8 @@ export default function AdminLayout({
     // Refresh every 60 seconds
     const timer = setInterval(() => void fetchPendingCount(), 60_000);
     return () => clearInterval(timer);
-  }, [fetchPendingCount, pathname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchPendingCount]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {

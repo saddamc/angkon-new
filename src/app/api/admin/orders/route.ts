@@ -18,15 +18,18 @@ export async function GET(request: NextRequest) {
       filter.orderStatus = status;
     }
 
-    const total = await Order.countDocuments(filter);
-    const totalPages = Math.ceil(total / perPage) || 1;
     const skip = (page - 1) * perPage;
 
-    const orders = await Order.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(perPage)
-      .lean();
+    const [total, orders] = await Promise.all([
+      Order.countDocuments(filter),
+      Order.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(perPage)
+        .lean(),
+    ]);
+
+    const totalPages = Math.ceil(total / perPage) || 1;
 
     // Format for admin dashboard table compatibility
     const formattedOrders = orders.map((o) => ({

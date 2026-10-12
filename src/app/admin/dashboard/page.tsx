@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Phone,
   ShoppingBag,
+  Package,
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────────────────── */
@@ -44,6 +45,11 @@ interface WCProduct {
   name: string;
   total_sales: number;
   price: string;
+  regular_price?: string;
+  sale_price?: string;
+  buy_price?: string;
+  stock_quantity?: number | null;
+  manage_stock?: boolean;
   images: { src: string }[];
 }
 
@@ -102,29 +108,37 @@ function fmt(n: number) {
   return `৳ ${n.toLocaleString("en-BD", { minimumFractionDigits: 0 })}`;
 }
 
+/* ─── Client Cache for Instant Tab Switching ──────────────────────── */
+let cachedDashboard: { orders: WCOrder[]; products: WCProduct[] } | null = null;
+
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default function AdminDashboard() {
   const { authFetch } = useAuth();
-  const [orders, setOrders] = useState<WCOrder[]>([]);
-  const [products, setProducts] = useState<WCProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<WCOrder[]>(cachedDashboard?.orders || []);
+  const [products, setProducts] = useState<WCProduct[]>(cachedDashboard?.products || []);
+  const [loading, setLoading] = useState(!cachedDashboard);
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
+      if (!cachedDashboard) setLoading(true);
       try {
         const [oRes, pRes] = await Promise.all([
           authFetch("/api/admin/orders?per_page=100&status=any"),
           authFetch("/api/admin/products?per_page=100"),
         ]);
+        let nextOrders = cachedDashboard?.orders || [];
+        let nextProducts = cachedDashboard?.products || [];
         if (oRes.ok) {
           const d = await oRes.json();
-          setOrders(Array.isArray(d) ? d : d.orders ?? []);
+          nextOrders = Array.isArray(d) ? d : d.orders ?? [];
+          setOrders(nextOrders);
         }
         if (pRes.ok) {
           const d = await pRes.json();
-          setProducts(Array.isArray(d) ? d : d.products ?? []);
+          nextProducts = Array.isArray(d) ? d : d.products ?? [];
+          setProducts(nextProducts);
         }
+        cachedDashboard = { orders: nextOrders, products: nextProducts };
       } finally {
         setLoading(false);
       }
@@ -186,6 +200,32 @@ export default function AdminDashboard() {
     };
   }, [orders]);
 
+  const inventoryStats = useMemo(() => {
+    let totalStockQty = 0;
+    let stockCostVal = 0;
+    let itemsWithBuyPrice = 0;
+
+    products.forEach((p) => {
+      // Only count finite, tracked inventory with explicit buy price
+      const isManaged = Boolean(p.manage_stock);
+      const qty = typeof p.stock_quantity === "number" ? p.stock_quantity : 0;
+      if (isManaged && qty > 0) {
+        totalStockQty += qty;
+        const cost = parseFloat(p.buy_price || "0");
+        if (cost > 0) {
+          stockCostVal += cost * qty;
+          itemsWithBuyPrice++;
+        }
+      }
+    });
+
+    return {
+      totalStockQty,
+      stockCostVal,
+      itemsWithBuyPrice,
+    };
+  }, [products]);
+
   const topProducts = useMemo(
     () => [...products].sort((a, b) => (b.total_sales || 0) - (a.total_sales || 0)).slice(0, 5),
     [products]
@@ -224,9 +264,6 @@ export default function AdminDashboard() {
       {/* ── Page title ───────────────────────────────────── */}
       <div>
         <h1 className="text-2xl font-serif font-bold text-[#1A0302]">Store Overview</h1>
-        <p className="text-sm text-stone-500 mt-0.5">
-          Welcome to the ANGKON luxury administration dashboard. Real-time MongoDB intelligence.
-        </p>
       </div>
 
       {/* ── Donut Charts Row (Today / Monthly / All Time) ── */}
@@ -290,27 +327,42 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Stats Cards Row ────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
           {
             label: "Total Revenue",
             value: fmt(stats.totalRevenue),
+            subtext: "Net store sales",
             icon: TrendingUp,
             color: "text-[#400604]",
             bg: "bg-[#400604]/10",
             border: "border-[#E1B76F]/30",
           },
           {
-            label: "Total Orders",
-            value: orders.length,
-            icon: ShoppingBag,
-            color: "text-amber-700",
+            label: "Stock Value",
+            value: inventoryStats.stockCostVal > 0 ? fmt(inventoryStats.stockCostVal) : "—",
+            subtext:
+              inventoryStats.stockCostVal > 0
+                ? `${inventoryStats.itemsWithBuyPrice} products with buy price`
+                : "No buy price provided",
+            icon: Package,
+            color: "text-amber-800",
             bg: "bg-amber-50",
             border: "border-amber-200",
           },
           {
+            label: "Total Orders",
+            value: orders.length,
+            subtext: "All customer orders",
+            icon: ShoppingBag,
+            color: "text-stone-800",
+            bg: "bg-stone-100",
+            border: "border-stone-200",
+          },
+          {
             label: "Pending",
             value: stats.pendingCount,
+            subtext: "Awaiting action",
             icon: Clock,
             color: "text-orange-600",
             bg: "bg-orange-50",
@@ -319,6 +371,7 @@ export default function AdminDashboard() {
           {
             label: "Delivered",
             value: stats.deliveredCount,
+            subtext: "Fulfilled successfully",
             icon: CheckCircle2,
             color: "text-emerald-700",
             bg: "bg-emerald-50",
@@ -327,6 +380,7 @@ export default function AdminDashboard() {
           {
             label: "Cancelled",
             value: stats.cancelledCount,
+            subtext: "Voided or returned",
             icon: XCircle,
             color: "text-rose-700",
             bg: "bg-rose-50",
@@ -338,14 +392,21 @@ export default function AdminDashboard() {
             className={`rounded-2xl bg-white border ${s.border} p-4 shadow-sm hover:shadow-md transition-all duration-300`}
           >
             <div
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${s.bg} mb-3`}
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${s.bg} mb-2.5`}
             >
-              <s.icon className={`h-5 w-5 ${s.color}`} />
+              <s.icon className={`h-4.5 w-4.5 ${s.color}`} />
             </div>
-            <p className="text-[20px] font-bold text-[#1A0302]">{s.value}</p>
-            <p className="text-[11px] text-stone-400 mt-0.5 font-medium">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
               {s.label}
-            </p>
+            </div>
+            <div className="text-lg font-serif font-bold text-[#1A0302] mt-0.5 truncate">
+              {s.value}
+            </div>
+            {s.subtext && (
+              <div className="text-[10px] text-stone-500 mt-0.5 truncate">
+                {s.subtext}
+              </div>
+            )}
           </div>
         ))}
       </div>

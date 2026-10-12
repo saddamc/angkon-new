@@ -117,15 +117,19 @@ function formatBDT(amount: string | number) {
 
 const REFRESH_INTERVAL = 30_000;
 
+/* ─── Client Cache for Instant Tab Switching ──────────────────────── */
+let cachedOrdersAll: WCOrder[] | null = null;
+let cachedOrdersFiltered: WCOrder[] | null = null;
+
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default function AdminOrdersPage() {
   const { authFetch } = useAuth();
   const searchParams = useSearchParams();
   const initialStatus = searchParams.get("status") ?? "any";
 
-  const [orders, setOrders] = useState<WCOrder[]>([]);
-  const [allOrders, setAllOrders] = useState<WCOrder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<WCOrder[]>(cachedOrdersFiltered || cachedOrdersAll || []);
+  const [allOrders, setAllOrders] = useState<WCOrder[]>(cachedOrdersAll || []);
+  const [loading, setLoading] = useState(!cachedOrdersAll);
   const [updating, setUpdating] = useState<string | number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>(initialStatus);
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,7 +150,7 @@ export default function AdminOrdersPage() {
   };
 
   const load = useCallback(
-    async (status = "any", showSpinner = true) => {
+    async (status = "any", showSpinner = !cachedOrdersAll) => {
       if (showSpinner) setLoading(true);
       try {
         const query = status && status !== "any" ? `?status=${status}&per_page=100` : "?per_page=100";
@@ -154,12 +158,13 @@ export default function AdminOrdersPage() {
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data) ? data : data.orders ?? [];
+          cachedOrdersFiltered = list;
           setOrders(list);
         }
       } catch (err) {
         console.error("Failed to load orders:", err);
       } finally {
-        if (showSpinner) setLoading(false);
+        setLoading(false);
       }
     },
     [authFetch]
@@ -171,6 +176,7 @@ export default function AdminOrdersPage() {
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data.orders ?? [];
+        cachedOrdersAll = list;
         setAllOrders(list);
       }
     } catch {
@@ -263,9 +269,6 @@ export default function AdminOrdersPage() {
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-[#1A0302]">Orders Processing</h1>
-            <p className="text-[12px] text-stone-500">
-              Live MongoDB pipeline — auto-refreshes every 30s
-            </p>
           </div>
         </div>
       </div>

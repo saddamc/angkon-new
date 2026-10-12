@@ -4,7 +4,7 @@ import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary, deleteCloudinaryFolder } from "@/lib/cloudinary";
-import { invalidateCategoriesCache } from "@/lib/db/categories";
+import { getDbCategories, invalidateCategoriesCache } from "@/lib/db/categories";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +24,10 @@ function syncRealCategoriesFile(updater: (cats: any[]) => any[]) {
 
 export async function GET() {
   try {
-    await connectToDatabase();
-    const categories = await Category.find({})
-      .sort({ parent: 1, menu_order: 1, name: 1 })
-      .lean();
-
+    const categories = await getDbCategories();
     if (categories && categories.length > 0) {
       return NextResponse.json(categories, {
-        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+        headers: { "Cache-Control": "public, max-age=5, stale-while-revalidate=30" },
       });
     }
   } catch (err) {

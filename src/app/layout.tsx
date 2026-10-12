@@ -18,7 +18,12 @@ const lato = Lato({
   display: "swap",
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://angkon.com.bd");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "ANGKON — House of Modern Heritage",
   description: "ANGKON — HOUSE OF MODERN HERITAGE. Premium fashion and modern heritage apparel crafted with excellence in Bangladesh. Showroom: HOUSE OF MODERN HERITAGE — H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212.",
   icons: {

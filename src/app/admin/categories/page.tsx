@@ -1432,12 +1432,16 @@ function DetailsDrawer({
   );
 }
 
+/* ─── Client Cache for Instant Tab Switching ──────────────────────── */
+let cachedFlatCategories: WCCategory[] | null = null;
+let cachedTreeCategories: CategoryTree[] | null = null;
+
 /* ─── Page ───────────────────────────────────────────────────────────── */
 export default function AdminCategoriesPage() {
   const { authFetch } = useAuth();
-  const [flat, setFlat] = useState<WCCategory[]>([]);
-  const [tree, setTree] = useState<CategoryTree[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [flat, setFlat] = useState<WCCategory[]>(cachedFlatCategories || []);
+  const [tree, setTree] = useState<CategoryTree[]>(cachedTreeCategories || []);
+  const [loading, setLoading] = useState(!cachedFlatCategories);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [modal, setModal] = useState<{ mode: "add" | "edit"; initial: FormData & { id?: number } } | null>(null);
   const [moveCat, setMoveCat] = useState<WCCategory | null>(null);
@@ -1466,8 +1470,8 @@ export default function AdminCategoriesPage() {
 
   const showToast = (msg: string, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (soft = false) => {
+    if (!cachedFlatCategories && !soft) setLoading(true);
     try {
       const res = await authFetch("/api/admin/categories");
       if (res.status === 401) {
@@ -1476,15 +1480,18 @@ export default function AdminCategoriesPage() {
       }
       const data: WCCategory[] = await res.json();
       if (Array.isArray(data)) {
+        cachedFlatCategories = data;
+        const built = buildTree(data);
+        cachedTreeCategories = built;
         setFlat(data);
-        setTree(buildTree(data));
+        setTree(built);
         // Default: all parents with children start collapsed (mains visible, subs hidden)
         setCollapsedIds(new Set(parentsWithChildrenIds(data)));
       }
     } finally { setLoading(false); }
   }, [authFetch]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(Boolean(cachedFlatCategories)); }, [load]);
 
   // Auto-expand ancestors when search matches nested categories
   useEffect(() => {
@@ -1874,7 +1881,6 @@ export default function AdminCategoriesPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
           <h1 className="text-[28px] font-black text-gray-900 tracking-tight">Categories</h1>
-          <p className="text-[14px] text-gray-500 mt-1 max-w-lg">Manage your fashion store categories, hierarchy, visibility, and images.</p>
         </div>
         <button onClick={openAdd} className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-[14px] font-bold text-white transition shadow-sm hover:shadow-md shrink-0">
           <Plus className="h-4 w-4" /> Add Category
@@ -1926,7 +1932,7 @@ export default function AdminCategoriesPage() {
               <option value="all">All Status</option><option value="active">Active</option><option value="inactive">Inactive</option>
             </select>
           </div>
-          <button type="button" onClick={load} className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition shrink-0"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></button>
+          <button type="button" onClick={() => void load()} className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition shrink-0"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /></button>
         </div>
       </div>
 

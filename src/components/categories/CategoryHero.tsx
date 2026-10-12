@@ -15,7 +15,7 @@ export function CategoryHero({
   const heroImage = getCategoryImage(category);
 
   return (
-    <div className="relative w-full rounded-sm overflow-hidden bg-[#340402] border border-[#E1B76F]/25 shadow-lg aspect-[21/9] sm:aspect-[24/8] md:aspect-[28/8] min-h-[190px] sm:min-h-[220px] md:min-h-[260px] max-h-[380px] flex items-end">
+    <div className="relative w-full rounded-sm overflow-hidden bg-[#340402] border border-[#E1B76F]/25 shadow-lg aspect-[16/9] sm:aspect-[21/9] md:aspect-[28/8] min-h-[175px] sm:min-h-[220px] md:min-h-[260px] max-h-[380px] flex items-end">
       {/* Background Hero Banner Image */}
       <Image
         src={heroImage}
@@ -24,7 +24,7 @@ export function CategoryHero({
         priority
         loading="eager"
         sizes="(max-width: 1440px) 100vw, 1440px"
-        className="object-cover object-center transition-transform duration-700 hover:scale-[1.01]"
+        className="object-cover object-[center_top] sm:object-center transition-transform duration-700 hover:scale-[1.01]"
       />
 
       {/* Luxury multi-stage dark gradient overlays for crystal-clear readability */}
@@ -33,7 +33,7 @@ export function CategoryHero({
       <div className="absolute inset-0 border border-[#E1B76F]/20 pointer-events-none" />
 
       {/* Hero Content Layer */}
-      <div className="relative z-10 w-full p-4 sm:p-6 md:p-8 flex flex-col justify-end">
+      <div className="relative z-10 w-full p-3.5 sm:p-6 md:p-8 flex flex-col justify-end">
         {/* Luxury Gold Eyebrow Badge */}
         <div className="mb-2 flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E1B76F]/20 border border-[#E1B76F]/40 text-[#E1B76F] text-[10px] sm:text-xs font-bold tracking-widest uppercase">

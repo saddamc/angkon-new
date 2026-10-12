@@ -50,6 +50,7 @@ interface WCProduct {
   name: string;
   sku: string;
   price: string;
+  buy_price?: string;
   stock_quantity: number | null;
   stock_status: string;
   manage_stock: boolean;
@@ -79,28 +80,36 @@ function fmt(n: string | number) {
   return `৳ ${Number(n || 0).toLocaleString("en-BD", { minimumFractionDigits: 0 })}`;
 }
 
+/* ─── Client Cache for Instant Tab Switching ──────────────────────── */
+let cachedReportData: { report: ReportData | null; products: WCProduct[] } | null = null;
+
 export default function ReportsPage() {
   const { authFetch } = useAuth();
-  const [report, setReport] = useState<ReportData | null>(null);
-  const [products, setProducts] = useState<WCProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [report, setReport] = useState<ReportData | null>(cachedReportData?.report || null);
+  const [products, setProducts] = useState<WCProduct[]>(cachedReportData?.products || []);
+  const [loading, setLoading] = useState(!cachedReportData);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState("month");
 
   const load = useCallback(
     async (p: string, soft = false) => {
-      if (soft) setRefreshing(true);
+      if (soft || cachedReportData) setRefreshing(true);
       else setLoading(true);
       try {
         const [rRes, pRes] = await Promise.all([
           authFetch(`/api/admin/reports?period=${p}`),
           authFetch("/api/admin/products?per_page=150"),
         ]);
-        if (rRes.ok) setReport(await rRes.json());
+        let nextReport = cachedReportData?.report || null;
+        let nextProducts = cachedReportData?.products || [];
+        if (rRes.ok) nextReport = await rRes.json();
         if (pRes.ok) {
           const d = await pRes.json();
-          setProducts(Array.isArray(d) ? d : d.products ?? []);
+          nextProducts = Array.isArray(d) ? d : d.products ?? [];
         }
+        setReport(nextReport);
+        setProducts(nextProducts);
+        cachedReportData = { report: nextReport, products: nextProducts };
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -110,7 +119,7 @@ export default function ReportsPage() {
   );
 
   useEffect(() => {
-    void load(period);
+    void load(period, Boolean(cachedReportData));
   }, [load, period]);
 
   const handlePeriod = (p: string) => {
@@ -123,10 +132,19 @@ export default function ReportsPage() {
   );
   const outOfStock = products.filter((p) => p.stock_status === "outofstock");
   const inStock = products.filter((p) => p.stock_status === "instock");
-  const totalStockValue = products.reduce(
-    (s, p) => s + (Number(p.price) || 0) * (p.stock_quantity ?? 0),
-    0
-  );
+  let totalStockCost = 0;
+  let productsWithCostCount = 0;
+  products.forEach((p) => {
+    const isManaged = Boolean(p.manage_stock);
+    const qty = typeof p.stock_quantity === "number" ? p.stock_quantity : 0;
+    if (isManaged && qty > 0) {
+      const cost = parseFloat(p.buy_price || "0");
+      if (cost > 0) {
+        totalStockCost += cost * qty;
+        productsWithCostCount++;
+      }
+    }
+  });
 
   const s = report?.sales;
   const periodLabel = PERIODS.find((t) => t.key === period)?.label ?? "This period";
@@ -139,8 +157,7 @@ export default function ReportsPage() {
             <BarChart3 className="h-5 w-5 text-[#400604]" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Analytics & Reports</h1>
-            <p className="text-[12px] text-stone-500">Querying real-time store metrics…</p>
+            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Analytics &amp; Reports</h1>
           </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -161,10 +178,7 @@ export default function ReportsPage() {
             <BarChart3 className="h-5 w-5 text-[#400604]" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Reports & Sales Intelligence</h1>
-            <p className="text-[12px] text-stone-500">
-              MongoDB Atlas financial insights · {periodLabel}
-            </p>
+            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Reports &amp; Sales Intelligence</h1>
           </div>
         </div>
 
@@ -299,9 +313,11 @@ export default function ReportsPage() {
           </div>
 
           <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-200">
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Estimated Stock Value</p>
-            <p className="text-xl font-bold text-[#400604] mt-1">{fmt(totalStockValue)}</p>
-            <p className="text-[11px] text-stone-400">Retail inventory value</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Stock Value (Buy Price)</p>
+            <p className="text-xl font-bold text-[#400604] mt-1">{totalStockCost > 0 ? fmt(totalStockCost) : "—"}</p>
+            <p className="text-[11px] text-stone-500 mt-0.5 truncate">
+              {totalStockCost > 0 ? `${productsWithCostCount} products with buy price` : "No buy price provided"}
+            </p>
           </div>
         </div>
       </div>

@@ -26,9 +26,6 @@ export default function NewProductPage() {
             <h1 className="text-xl font-serif font-bold text-[#1A0302]">
               Add New Product
             </h1>
-            <p className="text-[12px] text-stone-500">
-              Create an exclusive fashion piece with cloud media and measurements
-            </p>
           </div>
         </div>
       </div>

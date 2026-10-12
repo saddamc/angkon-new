@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
+import { Category } from "@/models/Category";
 import { invalidateProductsCache } from "@/lib/db/products";
 import REAL_PRODUCTS from "@/data/real-products.json";
+import REAL_CATEGORIES from "@/data/real-categories.json";
 
 // GET /api/admin/products — list all products from MongoDB Atlas
 export async function GET(request: NextRequest) {
@@ -24,15 +26,19 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const total = await Product.countDocuments(filter);
-    const totalPages = Math.ceil(total / perPage) || 1;
     const skip = (page - 1) * perPage;
 
-    const products = await Product.find(filter)
-      .sort({ id: -1 })
-      .skip(skip)
-      .limit(perPage)
-      .lean();
+    const [total, products] = await Promise.all([
+      Product.countDocuments(filter),
+      Product.find(filter)
+        .select("-description -short_description")
+        .sort({ id: -1 })
+        .skip(skip)
+        .limit(perPage)
+        .lean(),
+    ]);
+
+    const totalPages = Math.ceil(total / perPage) || 1;
 
     return NextResponse.json(
       { products, total, totalPages },
@@ -81,16 +87,46 @@ export async function POST(request: NextRequest) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
+    // Resolve categories so name, slug, and parent are always populated
+    let resolvedCategories = body.categories || [];
+    if (Array.isArray(resolvedCategories) && resolvedCategories.length > 0) {
+      resolvedCategories = await Promise.all(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        resolvedCategories.map(async (c: any) => {
+          if (c.name && c.slug) return c;
+          const found = await Category.findOne({ id: c.id }).lean();
+          if (found) {
+            return { id: found.id, name: found.name, slug: found.slug, parent: found.parent || 0 };
+          }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const fromLocal = REAL_CATEGORIES.find((rc: any) => rc.id === c.id);
+          if (fromLocal) {
+            return { id: fromLocal.id, name: fromLocal.name, slug: fromLocal.slug, parent: fromLocal.parent || 0 };
+          }
+          return { id: c.id, name: c.name || "Category", slug: c.slug || "category", parent: c.parent || 0 };
+        })
+      );
+    }
+
+    const regularPrice = body.regular_price ? String(body.regular_price) : "";
+    const salePrice = body.sale_price ? String(body.sale_price) : "";
+    const buyPrice = body.buy_price ? String(body.buy_price) : "";
+    const price = String(body.price || salePrice || regularPrice || "0");
+
     const newProduct = await Product.create({
       ...body,
       id: productId,
       name,
       slug,
-      price: String(body.price || "0"),
-      regular_price: body.regular_price ? String(body.regular_price) : "",
-      sale_price: body.sale_price ? String(body.sale_price) : "",
-      on_sale: Boolean(body.on_sale || (body.sale_price && parseFloat(body.sale_price) < parseFloat(body.regular_price))),
+      categories: resolvedCategories,
+      price,
+      regular_price: regularPrice,
+      sale_price: salePrice,
+      buy_price: buyPrice,
+      on_sale: Boolean(body.on_sale || (salePrice && parseFloat(salePrice) < parseFloat(regularPrice))),
       stock_status: body.stock_status || "instock",
+      manage_stock: Boolean(body.manage_stock),
+      sizes: Array.isArray(body.sizes) ? body.sizes : [],
     });
 
     invalidateProductsCache();

@@ -45,8 +45,22 @@ interface WCProductRaw {
   shipping_class_id: number;
   images: { id: number; src: string; alt: string }[];
   categories: { id: number; name: string; slug: string }[];
+  buy_price?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   meta_data?: { id?: number; key: string; value: any }[];
+}
+
+function getBuyPrice(product: WCProductRaw): number {
+  if (product.buy_price) {
+    const parsed = parseFloat(product.buy_price);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  const metaVal = product.meta_data?.slice().reverse().find((m) => m.key === "_buy_price")?.value;
+  if (metaVal != null) {
+    const parsed = parseFloat(String(metaVal));
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 0;
 }
 
 function getDeliveryFees(product: WCProductRaw): { inside: number; outside: number } {
@@ -62,12 +76,15 @@ function getDeliveryFees(product: WCProductRaw): { inside: number; outside: numb
   };
 }
 
+/* ─── Client Cache for Instant Tab Switching ──────────────────────── */
+let cachedProductsList: WCProductRaw[] | null = null;
+
 /* ─── Page ────────────────────────────────────────────────────────── */
 export default function AdminProductsPage() {
   const router = useRouter();
   const { authFetch } = useAuth();
-  const [products, setProducts] = useState<WCProductRaw[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<WCProductRaw[]>(cachedProductsList || []);
+  const [loading, setLoading] = useState(!cachedProductsList);
   const [duplicating, setDuplicating] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [actionMenu, setActionMenu] = useState<number | null>(null);
@@ -87,14 +104,15 @@ export default function AdminProductsPage() {
     }, 3500);
   }, []);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (soft = false) => {
+    if (!cachedProductsList && !soft) setLoading(true);
     try {
       const res = await authFetch("/api/admin/products?per_page=150");
       if (res.ok) {
         const data = await res.json();
         const list = data.products ?? data;
         const validList = Array.isArray(list) ? list : [];
+        cachedProductsList = validList;
         setProducts(validList);
         setSelectedIds((prev) => {
           const next = new Set<number>();
@@ -110,7 +128,7 @@ export default function AdminProductsPage() {
   };
 
   useEffect(() => {
-    void load();
+    void load(Boolean(cachedProductsList));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -167,6 +185,41 @@ export default function AdminProductsPage() {
         p.categories?.some((c) => c.name.toLowerCase().includes(q))
     );
   }, [products, searchQuery]);
+
+  const inventorySummary = useMemo(() => {
+    let totalStockQty = 0;
+    let totalCostVal = 0;
+    let itemsWithCost = 0;
+    let inStockCount = 0;
+    let outOfStockCount = 0;
+
+    products.forEach((p) => {
+      const isManaged = Boolean(p.manage_stock);
+      const qty = typeof p.stock_quantity === "number" ? p.stock_quantity : 0;
+      if (p.stock_status === "outofstock" || (isManaged && qty <= 0)) {
+        outOfStockCount++;
+      } else {
+        inStockCount++;
+      }
+      // Only count finite, tracked inventory with explicit buy price
+      if (isManaged && qty > 0) {
+        totalStockQty += qty;
+        const cost = getBuyPrice(p);
+        if (cost > 0) {
+          totalCostVal += cost * qty;
+          itemsWithCost++;
+        }
+      }
+    });
+
+    return {
+      totalUnits: totalStockQty,
+      costVal: totalCostVal,
+      itemsWithCost,
+      inStockCount,
+      outOfStockCount,
+    };
+  }, [products]);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -299,14 +352,11 @@ export default function AdminProductsPage() {
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-[#1A0302]">Products Catalog</h1>
-            <p className="text-[12px] text-stone-500">
-              Live MongoDB Atlas Catalog — {products.length} products loaded
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={load}
+            onClick={() => void load()}
             className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 hover:text-[#400604] hover:border-[#400604] transition"
             title="Refresh product list"
           >
@@ -320,6 +370,40 @@ export default function AdminProductsPage() {
           >
             <Plus className="h-4 w-4 text-[#E1B76F]" /> Add Product
           </Link>
+        </div>
+      </div>
+
+      {/* ── Inventory & Valuation Summary Cards ────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-2xl bg-white border border-[#E1B76F]/25 p-4 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Total Products</p>
+          <p className="text-xl font-serif font-bold text-[#1A0302] mt-1">{products.length}</p>
+          <p className="text-[11px] text-emerald-700 mt-0.5">{inventorySummary.inStockCount} active in catalog</p>
+        </div>
+        <div className="rounded-2xl bg-white border border-amber-200 bg-amber-50/20 p-4 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Tracked Stock Units</p>
+          <p className="text-xl font-serif font-bold text-[#1A0302] mt-1">{inventorySummary.totalUnits.toLocaleString()}</p>
+          <p className="text-[11px] text-stone-500 mt-0.5">Physical items in inventory</p>
+        </div>
+        <div className="rounded-2xl bg-white border border-[#400604]/20 bg-[#400604]/5 p-4 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Stock Value (Buy Price)</p>
+          <p className="text-xl font-serif font-bold text-[#400604] mt-1">
+            {inventorySummary.costVal > 0 ? `৳${Math.round(inventorySummary.costVal).toLocaleString()}` : "—"}
+          </p>
+          <p className="text-[11px] text-stone-500 mt-0.5">
+            {inventorySummary.itemsWithCost > 0 ? `${inventorySummary.itemsWithCost} products with buy price` : "No buy price provided"}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-white border border-stone-200 p-4 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Stock Availability</p>
+          <p className="text-xl font-serif font-bold text-stone-900 mt-1">
+            <span className="text-emerald-700">{inventorySummary.inStockCount}</span>
+            <span className="text-stone-400 text-sm font-normal mx-1">in</span>
+            <span className="text-stone-300">/</span>
+            <span className="text-rose-600 ml-1">{inventorySummary.outOfStockCount}</span>
+            <span className="text-stone-400 text-sm font-normal ml-1">out</span>
+          </p>
+          <p className="text-[11px] text-stone-500 mt-0.5">Catalog availability status</p>
         </div>
       </div>
 
@@ -536,6 +620,11 @@ export default function AdminProductsPage() {
                         {product.on_sale && product.regular_price && (
                           <span className="block text-[10px] text-stone-400 line-through">
                             ৳{Number(product.regular_price).toLocaleString()}
+                          </span>
+                        )}
+                        {getBuyPrice(product) > 0 && (
+                          <span className="block text-[10.5px] text-emerald-700 font-medium">
+                            Cost: ৳{getBuyPrice(product).toLocaleString()}
                           </span>
                         )}
                       </div>

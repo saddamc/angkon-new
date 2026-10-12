@@ -19,13 +19,14 @@ interface WCProductRaw {
   short_description: string;
   regular_price: string;
   sale_price: string;
+  buy_price?: string;
   price: string;
   on_sale: boolean;
   stock_status: string;
   stock_quantity: number | null;
   manage_stock: boolean;
   images: { id: number; src: string; alt: string }[];
-  categories: { id: number; name: string; slug: string }[];
+  categories: { id: number; name: string; slug: string; parent?: number }[];
   attributes: { name: string; options: string[]; visible?: boolean; variation?: boolean; id?: number }[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   meta_data: { id?: number; key: string; value: any }[];
@@ -70,8 +71,8 @@ export default function EditProductBySlugPage() {
   if (loading) {
     return (
       <ProductFormSkeleton
-        title="Loading luxury garment"
-        subtitle="Fetching catalog details from MongoDB Atlas…"
+        title="Loading garment details"
+        subtitle="Loading product details…"
       />
     );
   }
@@ -117,6 +118,10 @@ export default function EditProductBySlugPage() {
     description: product.description || "",
     regularPrice: product.regular_price || "",
     salePrice: product.sale_price || "",
+    buyPrice:
+      product.buy_price ||
+      (product.meta_data?.slice().reverse().find((m) => m.key === "_buy_price")
+        ?.value ?? ""),
     stockStatus: product.stock_status || "instock",
     stockQuantity:
       product.stock_quantity != null ? String(product.stock_quantity) : "",
@@ -124,6 +129,7 @@ export default function EditProductBySlugPage() {
     categoryId: product.categories?.[0]?.id || 0,
     categoryName: product.categories?.[0]?.name || "",
     categorySlug: product.categories?.[0]?.slug || "",
+    categoryParent: product.categories?.[0]?.parent || 0,
     sizes: sizeAttr?.options || [],
     colors: colorAttr?.options || [],
     sizeChart: sizeChart ?? emptySizeChart(),
@@ -169,10 +175,6 @@ export default function EditProductBySlugPage() {
           </div>
           <div>
             <h1 className="text-xl font-serif font-bold text-[#1A0302]">Edit Product</h1>
-            <p className="text-[12px] text-stone-500 truncate max-w-md">
-              {product.name}
-              <span className="ml-2 font-mono text-stone-400">/{product.slug}/edit</span>
-            </p>
           </div>
         </div>
       </div>

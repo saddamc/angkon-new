@@ -111,12 +111,14 @@ interface ProductFormData {
   description: string;
   regularPrice: string;
   salePrice: string;
+  buyPrice?: string;
   stockStatus: string;
   stockQuantity: string;
   manageStock: boolean;
   categoryId: number;
   categoryName: string;
   categorySlug: string;
+  categoryParent?: number;
   sizes: string[];
   colors: string[];
   sizeChart?: SizeChartData;
@@ -284,6 +286,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
     initialData?.regularPrice || ""
   );
   const [salePrice, setSalePrice] = useState(initialData?.salePrice || "");
+  const [buyPrice, setBuyPrice] = useState(initialData?.buyPrice || "");
   const [stockStatus, setStockStatus] = useState(
     initialData?.stockStatus || "instock"
   );
@@ -301,6 +304,9 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
   );
   const [categorySlug, setCategorySlug] = useState(
     initialData?.categorySlug || ""
+  );
+  const [categoryParent, setCategoryParent] = useState<number>(
+    initialData?.categoryParent || 0
   );
   const [sizes, setSizes] = useState<string[]>(initialData?.sizes || []);
   const [colors, setColors] = useState<string[]>(initialData?.colors || []);
@@ -368,18 +374,30 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
 
   const formattedCategories = (() => {
     const parentMap = new Map<number, WooCategory[]>();
+    const byId = new Map<number, WooCategory>();
     availableCategories.forEach((c) => {
+      byId.set(c.id, c);
       const p = c.parent || 0;
       if (!parentMap.has(p)) parentMap.set(p, []);
       parentMap.get(p)!.push(c);
     });
 
-    const result: { id: number; name: string; slug: string; level: number }[] = [];
+    const getBreadcrumb = (cat: WooCategory): string => {
+      const parts = [cat.name];
+      let curr = cat;
+      while (curr.parent && byId.has(curr.parent)) {
+        curr = byId.get(curr.parent)!;
+        parts.unshift(curr.name);
+      }
+      return parts.join(" → ");
+    };
+
+    const result: { id: number; name: string; slug: string; level: number; parent?: number; path: string }[] = [];
     const traverse = (parentId: number, level: number) => {
       const children = parentMap.get(parentId) || [];
       children.sort((a, b) => a.name.localeCompare(b.name));
       children.forEach((c) => {
-        result.push({ id: c.id, name: c.name, slug: c.slug, level });
+        result.push({ id: c.id, name: c.name, slug: c.slug, level, parent: c.parent, path: getBreadcrumb(c) });
         traverse(c.id, level + 1);
       });
     };
@@ -397,14 +415,15 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
     const q = categoryQuery.trim().toLowerCase();
     if (!q) return formattedCategories;
     return formattedCategories.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q)
+      (c) => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q) || c.path.toLowerCase().includes(q)
     );
   })();
 
-  const selectCategory = (cat: { id: number; name: string; slug: string }) => {
+  const selectCategory = (cat: { id: number; name: string; slug: string; parent?: number }) => {
     setCategoryId(cat.id);
     setCategoryName(cat.name);
     setCategorySlug(cat.slug);
+    setCategoryParent(cat.parent || 0);
     setCategoryQuery("");
     setCategoryDropdownOpen(false);
   };
@@ -413,6 +432,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
     setCategoryId(0);
     setCategoryName("");
     setCategorySlug("");
+    setCategoryParent(0);
     setCategoryQuery("");
   };
 
@@ -842,6 +862,8 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
       description: toWpDescription(description),
       regular_price: regularPrice,
       sale_price: salePrice || "",
+      buy_price: buyPrice || "",
+      price: salePrice || regularPrice || "0",
       stock_status: stockStatus,
       manage_stock: manageStock,
       ...(manageStock && stockQuantity
@@ -853,8 +875,11 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
           ? { id: img.wpId, src: img.src, alt: img.alt }
           : { src: img.src, alt: img.alt }
       ),
-      categories: categoryId ? [{ id: categoryId }] : [],
+      categories: categoryId
+        ? [{ id: categoryId, name: categoryName, slug: categorySlug, parent: categoryParent || 0 }]
+        : [],
       meta_data: [
+        ...(buyPrice ? [{ key: "_buy_price", value: buyPrice }] : []),
         { ...(initialData?.deliveryInsideId ? { id: initialData.deliveryInsideId } : {}), key: "_delivery_inside", value: deliveryInside },
         { ...(initialData?.deliveryOutsideId ? { id: initialData.deliveryOutsideId } : {}), key: "_delivery_outside", value: deliveryOutside },
         {
@@ -913,18 +938,18 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Left Column — Main Info ────────────────────── */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Product Name */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
+          {/* Product Name & Basic Information */}
+          <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <Package className="h-4 w-4 text-purple-500" />
-              <h3 className="text-[14px] font-bold text-gray-700">
+              <Package className="h-4 w-4 text-[#400604]" />
+              <h3 className="text-[14px] font-bold text-stone-800">
                 Basic Information
               </h3>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
                   Product Name *
                 </label>
                 <input
@@ -935,24 +960,25 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                     if (!slugManual) setSlug(slugifyProductName(next));
                   }}
                   required
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                  placeholder="e.g. Argentina Home Jersey 2026"
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                  placeholder="e.g. Elegant Handloom Cotton Panjabi"
                 />
-                <div className="mt-2 flex items-start gap-2 rounded-xl bg-purple-50/70 border border-purple-100 px-3 py-2">
-                  <Link2 className="h-3.5 w-3.5 text-purple-500 mt-0.5 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-purple-500 mb-0.5">
-                      Production URL
-                    </p>
-                    <p className="text-[12px] text-purple-800 font-mono break-all leading-relaxed">
-                      {getProductPageUrl(slugManual ? slug || name : name, {
-                        fromName: true,
-                      })}
-                    </p>
-                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
+                    SKU / Product Code
+                  </label>
+                  <input
+                    value={sku}
+                    onChange={(e) => setSku(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="e.g. ANK-PNJ-26"
+                  />
                 </div>
-                <div className="mt-2">
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
                     URL Slug
                     <button
                       type="button"
@@ -960,7 +986,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                         setSlugManual(false);
                         setSlug(slugifyProductName(name));
                       }}
-                      className="ml-2 font-semibold normal-case tracking-normal text-purple-500 hover:text-purple-700"
+                      className="ml-2 font-semibold normal-case tracking-normal text-[#400604] hover:underline"
                     >
                       Reset from name
                     </button>
@@ -971,128 +997,217 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                       setSlugManual(true);
                       setSlug(slugifyProductName(e.target.value));
                     }}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] font-mono text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] font-mono text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
                     placeholder="product-name-in-url"
                   />
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
-                    SKU / Product Code
-                  </label>
-                  <input
-                    value={sku}
-                    onChange={(e) => setSku(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                    placeholder="e.g. ARG-HOME-26"
-                  />
+          {/* ── Dedicated Category & Department Section ────────────────────── */}
+          <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-[#400604]">
+                  <FolderPlus className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400">
-                      Category
-                    </label>
-                  </div>
-                  <div className="relative" ref={categoryBoxRef}>
-                    <div className="relative">
-                      <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={categoryDropdownOpen ? categoryQuery : categoryName}
-                        onChange={(e) => {
-                          setCategoryQuery(e.target.value);
-                          setCategoryActiveIndex(0);
-                          if (!categoryDropdownOpen) setCategoryDropdownOpen(true);
-                        }}
-                        onFocus={() => {
-                          setCategoryDropdownOpen(true);
-                          setCategoryQuery("");
-                          setCategoryActiveIndex(0);
-                        }}
-                        onKeyDown={(e) => {
-                          if (!categoryDropdownOpen) return;
-                          if (e.key === "ArrowDown") {
-                            e.preventDefault();
-                            setCategoryActiveIndex((i) =>
-                              Math.min(i + 1, filteredCategories.length - 1)
-                            );
-                          } else if (e.key === "ArrowUp") {
-                            e.preventDefault();
-                            setCategoryActiveIndex((i) => Math.max(i - 1, 0));
-                          } else if (e.key === "Enter") {
-                            e.preventDefault();
-                            const cat = filteredCategories[categoryActiveIndex];
-                            if (cat) selectCategory(cat);
-                          } else if (e.key === "Escape") {
-                            setCategoryDropdownOpen(false);
-                          }
-                        }}
-                        placeholder="Search category…"
-                        className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-9 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                      />
-                      {categoryId ? (
-                        <button
-                          type="button"
-                          onClick={clearCategory}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          aria-label="Clear category"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      ) : null}
-                    </div>
+                  <h3 className="text-[14px] font-bold text-stone-900">
+                    Category &amp; Department *
+                  </h3>
+                  <p className="text-[11px] text-stone-500">
+                    Assign this garment to its store department, navigation filter &amp; category URL
+                  </p>
+                </div>
+              </div>
+              {categoryId ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Check className="h-3 w-3" /> Assigned
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  Select Category
+                </span>
+              )}
+            </div>
 
-                    {categoryDropdownOpen && (
-                      <div className="absolute z-20 mt-1.5 max-h-64 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-                        {filteredCategories.length === 0 ? (
-                          <div className="px-4 py-3 text-[13px] text-gray-400">
-                            No categories found
-                          </div>
-                        ) : (
-                          filteredCategories.map((cat, idx) => {
-                            const isMain = cat.level === 0;
-                            const isActive = idx === categoryActiveIndex;
-                            const isSelected = cat.id === categoryId;
-                            return (
-                              <button
-                                type="button"
-                                key={cat.id}
-                                onClick={() => selectCategory(cat)}
-                                className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[13px] transition ${
-                                  isActive ? "bg-purple-50" : "hover:bg-gray-50"
-                                } ${
-                                  isMain
-                                    ? "font-bold text-gray-900"
-                                    : "text-gray-600"
-                                } ${isSelected ? "text-purple-700" : ""} ${
-                                  isMain && idx !== 0
-                                    ? "mt-0.5 border-t border-gray-100 pt-2"
-                                    : ""
-                                }`}
-                              >
-                                {cat.level > 0 && (
-                                  <span className="shrink-0 text-gray-300">
-                                    {"— ".repeat(cat.level)}
-                                  </span>
-                                )}
-                                <span className="truncate">{cat.name}</span>
-                                {isMain && (
-                                  <span className="ml-auto shrink-0 rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-purple-600">
-                                    Main
-                                  </span>
-                                )}
-                                {isSelected && (
-                                  <Check className="h-3.5 w-3.5 shrink-0 text-purple-600" />
-                                )}
-                              </button>
-                            );
-                          })
-                        )}
+            {/* Selected Category Display */}
+            {categoryId ? (
+              <div className="mb-4 rounded-xl border border-amber-200/80 bg-[#FAF7F2] p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-lg bg-[#400604] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Tag className="h-4 w-4 text-[#E1B76F]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-bold text-stone-900 truncate">
+                        {categoryName}
+                      </span>
+                      <span className="text-[11px] font-mono text-stone-500 bg-white px-2 py-0.5 rounded border border-stone-200">
+                        /{categorySlug}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                      Hierarchy: {formattedCategories.find((c) => c.id === categoryId)?.path || categoryName}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={clearCategory}
+                  className="ml-3 shrink-0 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition"
+                >
+                  Change Category
+                </button>
+              </div>
+            ) : (
+              <div className="mb-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-3.5 text-[12px] text-amber-800 flex items-center gap-2.5">
+                <Tag className="h-4 w-4 shrink-0 text-amber-600" />
+                <span>Please select a category below so this garment appears under the correct collection and storefront filters.</span>
+              </div>
+            )}
+
+            {/* Quick-Select Pills */}
+            <div className="mb-4">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-2">
+                Quick Select Categories
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {formattedCategories
+                  .filter((c) => c.level === 0 || ["Three Piece", "3-Piece Suit", "Panjabi", "Shirts", "Polos", "Kurtis", "Saree"].some(k => c.name.toLowerCase().includes(k.toLowerCase())))
+                  .slice(0, 10)
+                  .map((cat) => {
+                    const isSelected = cat.id === categoryId;
+                    return (
+                      <button
+                        type="button"
+                        key={cat.id}
+                        onClick={() => selectCategory(cat)}
+                        className={`rounded-xl px-3 py-1.5 text-[12px] font-medium transition ${
+                          isSelected
+                            ? "bg-[#400604] text-white shadow-sm ring-2 ring-[#400604]/20"
+                            : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                        }`}
+                      >
+                        {cat.name}
+                        {isSelected && " ✓"}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Full Searchable Category Tree Selector */}
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
+                Search or Browse All Categories
+              </label>
+              <div className="relative" ref={categoryBoxRef}>
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={categoryDropdownOpen ? categoryQuery : (categoryName ? `${categoryName} (Click to browse all)` : "")}
+                    onChange={(e) => {
+                      setCategoryQuery(e.target.value);
+                      setCategoryActiveIndex(0);
+                      if (!categoryDropdownOpen) setCategoryDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      setCategoryDropdownOpen(true);
+                      setCategoryQuery("");
+                      setCategoryActiveIndex(0);
+                    }}
+                    placeholder="Search all categories (e.g. Women, Panjabi, Saree, 3-Piece)…"
+                    className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-9 py-2.5 text-[13px] text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                  />
+                  {categoryId ? (
+                    <button
+                      type="button"
+                      onClick={clearCategory}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                      aria-label="Clear category"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </div>
+
+                {categoryDropdownOpen && (
+                  <div className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-xl">
+                    {filteredCategories.length === 0 ? (
+                      <div className="px-4 py-4 text-center text-[13px] text-stone-400">
+                        No matching categories found
                       </div>
+                    ) : (
+                      filteredCategories.map((cat, idx) => {
+                        const isMain = cat.level === 0;
+                        const isActive = idx === categoryActiveIndex;
+                        const isSelected = cat.id === categoryId;
+                        return (
+                          <button
+                            type="button"
+                            key={cat.id}
+                            onClick={() => selectCategory(cat)}
+                            className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition ${
+                              isActive ? "bg-stone-50" : "hover:bg-stone-50/80"
+                            } ${isSelected ? "bg-amber-50/80 font-bold text-[#400604]" : "text-stone-700"}`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              {cat.level > 0 && (
+                                <span className="shrink-0 text-stone-300 font-mono text-[11px]">
+                                  {"└" + "─".repeat(cat.level)}
+                                </span>
+                              )}
+                              <span className="truncate">{cat.name}</span>
+                              {isMain && (
+                                <span className="shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-600">
+                                  Root
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              <span className="text-[10px] text-stone-400 font-mono">
+                                /{cat.slug}
+                              </span>
+                              {isSelected && <Check className="h-3.5 w-3.5 text-[#400604]" />}
+                            </div>
+                          </button>
+                        );
+                      })
                     )}
                   </div>
+                )}
+              </div>
+            </div>
+
+            {/* Category-Wise Store URL Preview */}
+            <div className="mt-4 rounded-xl bg-stone-50 border border-stone-200 p-3.5">
+              <div className="flex items-center gap-2 mb-2">
+                <Link2 className="h-3.5 w-3.5 text-[#400604]" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                  Storefront URLs &amp; Category Routing
+                </span>
+              </div>
+              <div className="space-y-1.5 text-[11.5px]">
+                <div className="flex items-start gap-2">
+                  <span className="text-stone-400 font-medium shrink-0 w-24">Product URL:</span>
+                  <code className="text-[#400604] font-mono break-all font-semibold">
+                    {getProductPageUrl(slugManual ? slug || name : name, { fromName: true })}
+                  </code>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-stone-400 font-medium shrink-0 w-24">Category URL:</span>
+                  <code className="text-stone-700 font-mono break-all">
+                    {categorySlug ? `/category/${categorySlug}` : "— Select a category above —"}
+                  </code>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-stone-400 font-medium shrink-0 w-24">Breadcrumbs:</span>
+                  <span className="text-stone-600">
+                    Home &gt; {categoryName || "Unassigned"} &gt; {name || "Product Name"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1676,7 +1791,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
                   Sale Price (৳)
                 </label>
                 <input
@@ -1684,10 +1799,60 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   min="0"
                   value={salePrice}
                   onChange={(e) => setSalePrice(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
                   placeholder="Leave empty if no sale"
                 />
               </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                    Buy Price / Cost (৳)
+                  </label>
+                  <span className="text-[10px] text-stone-400">Inventory Cost</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  value={buyPrice}
+                  onChange={(e) => setBuyPrice(e.target.value)}
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                  placeholder="e.g. 950 (cost per unit)"
+                />
+                <p className="mt-1 text-[11px] text-stone-400 leading-tight">
+                  Your purchase or production cost. Powers stock valuation &amp; margins.
+                </p>
+              </div>
+
+              {/* Live Profit Margin Preview */}
+              {(() => {
+                const effectiveRetail = parseFloat(salePrice || regularPrice || "0");
+                const unitCost = parseFloat(buyPrice || "0");
+                if (effectiveRetail > 0 && unitCost > 0) {
+                  const profit = effectiveRetail - unitCost;
+                  const marginPct = ((profit / effectiveRetail) * 100).toFixed(1);
+                  const isProfitable = profit >= 0;
+                  return (
+                    <div
+                      className={`rounded-xl p-3 border text-[12px] ${
+                        isProfitable
+                          ? "bg-emerald-50/80 border-emerald-200 text-emerald-900"
+                          : "bg-rose-50/80 border-rose-200 text-rose-900"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-bold">
+                        <span>{isProfitable ? "Gross Profit per Unit" : "Negative Margin Warning"}</span>
+                        <span>৳{profit.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] mt-1 opacity-85">
+                        <span>Gross Margin:</span>
+                        <span className="font-semibold">{marginPct}%</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 
@@ -1786,6 +1951,24 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                     className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
                     placeholder="0"
                   />
+                  {/* Live Stock Value at Buy Price (Only if tracked and buy price provided) */}
+                  {(() => {
+                    const qty = parseInt(stockQuantity || "0", 10);
+                    const costPerUnit = parseFloat(buyPrice || "0");
+                    if (qty > 0 && costPerUnit > 0) {
+                      const costVal = costPerUnit * qty;
+                      return (
+                        <div className="mt-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 px-3 py-2 text-[12px] flex items-center justify-between text-stone-700">
+                          <div>
+                            <span className="font-semibold text-stone-800">Stock Value (Buy Price):</span>
+                            <span className="ml-1 text-[11px] text-stone-500">(৳{costPerUnit.toLocaleString()} × {qty})</span>
+                          </div>
+                          <span className="font-bold text-[#400604] text-[13px]">৳{costVal.toLocaleString()}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>

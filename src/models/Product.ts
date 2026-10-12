@@ -43,6 +43,7 @@ export interface IProduct extends Document {
   price: string;
   regular_price: string;
   sale_price: string;
+  buy_price?: string;
   on_sale: boolean;
   stock_status: "instock" | "outofstock" | "onbackorder";
   sizes: string[];
@@ -54,6 +55,7 @@ export interface IProduct extends Document {
   weight?: string;
   shipping_class_id: number;
   stock_quantity?: number | null;
+  manage_stock?: boolean;
   meta_data: IProductMetaData[];
   createdAt: Date;
   updatedAt: Date;
@@ -72,8 +74,8 @@ const ProductImageSchema = new Schema<IProductImage>(
 const ProductCategoryRefSchema = new Schema<IProductCategoryRef>(
   {
     id: { type: Number, required: true },
-    name: { type: String, required: true },
-    slug: { type: String, required: true },
+    name: { type: String, default: "" },
+    slug: { type: String, default: "" },
     parent: { type: Number, default: 0 },
   },
   { _id: false }
@@ -118,12 +120,14 @@ const ProductSchema = new Schema<IProduct>(
     price: { type: String, required: true, default: "0" },
     regular_price: { type: String, default: "" },
     sale_price: { type: String, default: "" },
+    buy_price: { type: String, default: "" },
     on_sale: { type: Boolean, default: false, index: true },
     stock_status: {
       type: String,
       enum: ["instock", "outofstock", "onbackorder"],
       default: "instock",
     },
+    manage_stock: { type: Boolean, default: false },
     sizes: { type: [String], default: [] },
     images: { type: [ProductImageSchema], default: [] },
     categories: { type: [ProductCategoryRefSchema], default: [] },

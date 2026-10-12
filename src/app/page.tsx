@@ -111,7 +111,7 @@ export default function HomePage() {
           className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
-            src="/banners/HERO1.png"
+            src="/banners/HERO1.webp"
             alt="ANGKON — House of Modern Heritage"
             width={4096}
             height={1956}

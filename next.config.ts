@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     // back as a ~500-byte WebP instead of a 1MB PNG.
     loader: "custom",
     loaderFile: "./src/lib/image-loader.ts",
+    // Qualities the app is allowed to request via <Image quality={...}> (homepage hero uses 95).
+    qualities: [75, 95],
     minimumCacheTTL: 3600,
     dangerouslyAllowSVG: false,
   },

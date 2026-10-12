@@ -99,6 +99,17 @@ export async function POST(request: NextRequest) {
     const buyPrice = body.buy_price ? String(body.buy_price) : "";
     const price = String(body.price || salePrice || regularPrice || "0");
 
+    const stockQtyRaw = body.stock_quantity;
+    const stockQuantity =
+      stockQtyRaw !== undefined && stockQtyRaw !== null && stockQtyRaw !== "" && !isNaN(Number(stockQtyRaw))
+        ? Number(stockQtyRaw)
+        : null;
+    const manageStock = stockQuantity !== null ? true : Boolean(body.manage_stock);
+    const stockStatus =
+      manageStock && stockQuantity === 0 && (!body.stock_status || body.stock_status === "instock")
+        ? "outofstock"
+        : (body.stock_status || "instock");
+
     const newProduct = await Product.create({
       ...body,
       id: productId,
@@ -110,8 +121,9 @@ export async function POST(request: NextRequest) {
       sale_price: salePrice,
       buy_price: buyPrice,
       on_sale: Boolean(body.on_sale || (salePrice && parseFloat(salePrice) < parseFloat(regularPrice))),
-      stock_status: body.stock_status || "instock",
-      manage_stock: Boolean(body.manage_stock),
+      stock_status: stockStatus,
+      manage_stock: manageStock,
+      stock_quantity: stockQuantity,
       sizes: Array.isArray(body.sizes) ? body.sizes : [],
     });
 

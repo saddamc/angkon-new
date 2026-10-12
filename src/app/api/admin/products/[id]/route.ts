@@ -96,6 +96,23 @@ export async function PUT(
       body.sizes = body.sizes;
     }
 
+    if (body.stock_quantity !== undefined) {
+      if (body.stock_quantity === null || body.stock_quantity === "" || isNaN(Number(body.stock_quantity))) {
+        body.stock_quantity = null;
+      } else {
+        body.stock_quantity = Number(body.stock_quantity);
+        if (body.manage_stock === undefined) {
+          body.manage_stock = true;
+        }
+      }
+    }
+    if (body.manage_stock !== undefined) {
+      body.manage_stock = Boolean(body.manage_stock);
+    }
+    if (body.manage_stock && body.stock_quantity === 0 && (!body.stock_status || body.stock_status === "instock")) {
+      body.stock_status = "outofstock";
+    }
+
     // Categories are re-read from the categories collection so name / slug / parent are always
     // correct and de-duplicated (an empty list clears the product's categories).
     if (Array.isArray(body.categories)) {

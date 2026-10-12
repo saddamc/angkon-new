@@ -43,6 +43,34 @@ export function ShippingSettings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
+  const [overrides, setOverrides] = useState<{
+    count: number;
+    products: { id: number; name: string; inside: number | null; outside: number | null }[];
+  } | null>(null);
+  const [clearing, setClearing] = useState(false);
+
+  const loadOverrides = () =>
+    fetch("/api/admin/settings/shipping/overrides", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setOverrides(d))
+      .catch(() => {});
+
+  useEffect(() => {
+    void loadOverrides();
+  }, []);
+
+  const clearOverrides = async () => {
+    setClearing(true);
+    try {
+      const res = await fetch("/api/admin/settings/shipping/overrides", { method: "POST" });
+      if (!res.ok) throw new Error();
+      await loadOverrides();
+    } catch {
+      setError("Couldn't clear the product delivery fees. Please try again.");
+    } finally {
+      setClearing(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +158,41 @@ export function ShippingSettings() {
           These rates are used by the cart, checkout and every new order. Changes apply to customers straight away.
         </p>
       </div>
+
+      {overrides && overrides.count > 0 && (
+        <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[12.5px] text-amber-900 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-bold">
+                {overrides.count} product{overrides.count === 1 ? " has its" : "s have their"} own delivery fee — it overrides the rates below.
+              </p>
+              <p className="mt-0.5">
+                That is why checkout can show a different price (for example ৳60) than the rate you set here. Clear them to use these store-wide rates for every product.
+              </p>
+            </div>
+          </div>
+          <ul className="max-h-28 overflow-y-auto rounded-lg bg-white/70 px-3 py-2 space-y-0.5">
+            {overrides.products.map((p) => (
+              <li key={p.id} className="flex justify-between gap-3">
+                <span className="truncate">{p.name}</span>
+                <span className="shrink-0 font-mono text-stone-600">
+                  Dhaka {p.inside ?? "—"} · Other {p.outside ?? "—"}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={clearOverrides}
+            disabled={clearing}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#400604] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#5a0906] disabled:opacity-60"
+          >
+            {clearing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Use store-wide rates for all products
+          </button>
+        </div>
+      )}
 
       {loadError && (
         <div role="alert" className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-[12.5px] text-amber-900">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
+import { revalidateStorefront } from "@/lib/catalog-sync";
 import { getShippingSettings, SHIPPING_SETTINGS_KEY } from "@/server/shipping";
 
 const FIELDS = [
@@ -41,6 +42,9 @@ export async function POST(request: NextRequest) {
       { $set: { value: values } },
       { upsert: true, new: true },
     );
+
+    // Pages that print these prices (shipping, delivery-time, terms) refresh right away.
+    revalidateStorefront();
 
     return NextResponse.json({ success: true, shipping: values });
   } catch (error) {

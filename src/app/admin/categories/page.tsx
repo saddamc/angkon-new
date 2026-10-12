@@ -25,6 +25,7 @@ interface WCCategory {
   menu_order: number;
   meta_data?: { id?: number; key: string; value: any }[];
   image?: { id?: number; src: string; alt?: string } | null;
+  is_linked?: boolean;
 }
 
 interface CategoryTree extends WCCategory {
@@ -42,6 +43,28 @@ function buildTree(flat: WCCategory[]): CategoryTree[] {
       roots.push(node);
     }
   });
+
+  // Cross-link categories to their linked_parents
+  flat.forEach((category) => {
+    if (Array.isArray(category.linked_parents) && category.linked_parents.length > 0) {
+      category.linked_parents.forEach((linkedParentId) => {
+        const targetParent = byId.get(linkedParentId);
+        if (targetParent && targetParent.id !== category.id) {
+          const alreadyExists = targetParent.children.some((child) => child.id === category.id);
+          if (!alreadyExists) {
+            const originalNode = byId.get(category.id);
+            if (originalNode) {
+              targetParent.children.push({
+                ...originalNode,
+                is_linked: true,
+              });
+            }
+          }
+        }
+      });
+    }
+  });
+
   const sortRecursive = (nodes: CategoryTree[]) => {
     nodes.sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || catName(a).localeCompare(catName(b)));
     nodes.forEach((n) => sortRecursive(n.children as CategoryTree[]));
@@ -50,18 +73,30 @@ function buildTree(flat: WCCategory[]): CategoryTree[] {
   return roots;
 }
 
-/** Direct children of a category in display order (same order the tree shows). */
+/** Direct and cross-listed children of a category in display order (same order the tree shows). */
 function sortedChildrenOf(flat: WCCategory[], parentId: number): WCCategory[] {
-  return flat
-    .filter((c) => c.parent === parentId)
-    .sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || catName(a).localeCompare(catName(b)));
+  const direct = flat.filter((c) => c.parent === parentId);
+  const linked = flat
+    .filter(
+      (c) =>
+        c.parent !== parentId &&
+        Array.isArray(c.linked_parents) &&
+        c.linked_parents.includes(parentId)
+    )
+    .map((c) => ({ ...c, is_linked: true }));
+  return [...direct, ...linked].sort(
+    (a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || catName(a).localeCompare(catName(b))
+  );
 }
 
-/** Every category id that currently has at least one child */
+/** Every category id that currently has at least one child (direct or cross-listed) */
 function parentsWithChildrenIds(flat: WCCategory[]): number[] {
   const parents = new Set<number>();
   flat.forEach((c) => {
     if (c.parent) parents.add(c.parent);
+    if (Array.isArray(c.linked_parents)) {
+      c.linked_parents.forEach((p) => parents.add(p));
+    }
   });
   return [...parents];
 }
@@ -568,6 +603,7 @@ function CategoryStudio({
   onClose,
   onEditChild,
   onAddChild,
+  onReload,
 }: {
   mode: "add" | "edit";
   initial: FormData & { id?: number };
@@ -576,6 +612,7 @@ function CategoryStudio({
   onClose: () => void;
   onEditChild?: (cat: WCCategory) => void;
   onAddChild?: (parentId: number) => void;
+  onReload?: () => Promise<void>;
 }) {
   const { authFetch } = useAuth();
   const [form, setForm] = useState<FormData>({ ...initial, linkedParents: initial.linkedParents || [] });
@@ -588,6 +625,9 @@ function CategoryStudio({
   const [iconTab, setIconTab] = useState<"library" | "custom">("library");
   const [iconSearch, setIconSearch] = useState("");
   const [iconCategory, setIconCategory] = useState<string>("All");
+
+  const [linkingChildId, setLinkingChildId] = useState<number | "">("");
+  const [linkingActionLoading, setLinkingActionLoading] = useState(false);
 
   useEffect(() => {
     setForm({ ...initial, linkedParents: initial.linkedParents || [] });
@@ -618,7 +658,71 @@ function CategoryStudio({
   );
   const destParent = form.type === "main" ? 0 : form.parent;
   const positionSiblings = siblingsOf(flat, destParent, initial.id);
-  const childCats = initial.id ? directChildren(flat, initial.id) : [];
+  const categoryId = initial.id;
+  const directChildCats = categoryId ? directChildren(flat, categoryId) : [];
+  const crossListedChildCats = categoryId
+    ? flat.filter(
+        (c) =>
+          c.id !== categoryId &&
+          c.parent !== categoryId &&
+          Array.isArray(c.linked_parents) &&
+          c.linked_parents.includes(categoryId)
+      )
+    : [];
+  const totalSubCount = directChildCats.length + crossListedChildCats.length;
+  const linkableCandidates = categoryId
+    ? flat.filter(
+        (c) =>
+          c.id !== categoryId &&
+          c.parent !== categoryId &&
+          !(Array.isArray(c.linked_parents) && c.linked_parents.includes(categoryId)) &&
+          !banned.has(c.id)
+      )
+    : [];
+
+  const handleLinkExistingChild = async (childId: number) => {
+    if (!initial.id || !childId) return;
+    setLinkingActionLoading(true);
+    try {
+      const target = flat.find((c) => c.id === childId);
+      if (!target) return;
+      const currentLinked = Array.isArray(target.linked_parents) ? target.linked_parents : [];
+      if (currentLinked.includes(initial.id)) return;
+      const updatedLinked = [...currentLinked, initial.id];
+      const res = await authFetch(`/api/admin/categories/${childId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linked_parents: updatedLinked }),
+      });
+      if (!res.ok) throw new Error("Failed to link category");
+      setLinkingChildId("");
+      if (onReload) await onReload();
+    } catch (e: any) {
+      setError(e.message || "Failed to link category");
+    } finally {
+      setLinkingActionLoading(false);
+    }
+  };
+
+  const handleUnlinkChild = async (childCat: WCCategory) => {
+    if (!initial.id) return;
+    setLinkingActionLoading(true);
+    try {
+      const currentLinked = Array.isArray(childCat.linked_parents) ? childCat.linked_parents : [];
+      const updatedLinked = currentLinked.filter((id) => id !== initial.id);
+      const res = await authFetch(`/api/admin/categories/${childCat.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ linked_parents: updatedLinked }),
+      });
+      if (!res.ok) throw new Error("Failed to unlink category");
+      if (onReload) await onReload();
+    } catch (e: any) {
+      setError(e.message || "Failed to unlink category");
+    } finally {
+      setLinkingActionLoading(false);
+    }
+  };
 
   const set = (key: keyof FormData, val: any) => setForm((prev) => ({ ...prev, [key]: val }));
 
@@ -661,7 +765,7 @@ function CategoryStudio({
       await onSave({
         ...form,
         id: initial.id,
-        linkedParents: form.type === "main" ? (form.linkedParents || []) : [],
+        linkedParents: form.linkedParents || [],
       });
     }
     catch (err: any) {
@@ -867,7 +971,7 @@ function CategoryStudio({
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
-            Subcategories ({childCats.length})
+            Subcategories ({totalSubCount})
           </button>
         ) : null}
       </div>
@@ -935,66 +1039,64 @@ function CategoryStudio({
               </div>
             )}
 
-            {/* If Main Category -> Multi-Parent Cross-Listing ("Also Show Under") */}
-            {form.type === "main" && (
-              <div className="rounded-2xl border border-amber-200/90 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 p-4 space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-amber-100 text-amber-900 shrink-0 mt-0.5 shadow-xs">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-[13px] font-black text-gray-900">
-                      Also Show Under (Cross-Listing)
-                    </h4>
-                    <p className="text-[12px] text-gray-600 leading-relaxed mt-0.5">
-                      Cross-list this main category under other main categories so shoppers browsing those sections can easily discover and shop its products (e.g. cross-list <span className="font-bold text-gray-800">{form.name || "Ethnic Wear"}</span> under <span className="font-bold text-gray-800">Women</span>).
-                    </p>
-                  </div>
+            {/* Multi-Parent Cross-Listing ("Also Show Under") */}
+            <div className="rounded-2xl border border-amber-200/90 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 p-4 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-amber-100 text-amber-900 shrink-0 mt-0.5 shadow-xs">
+                  <Sparkles className="h-4 w-4" />
                 </div>
-
-                <div className="pt-1">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {mainCategoryOptions.map((mainCat) => {
-                      const isChecked = (form.linkedParents || []).includes(mainCat.id);
-                      return (
-                        <label
-                          key={mainCat.id}
-                          className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
-                            isChecked
-                              ? "bg-amber-100/70 border-amber-300 text-amber-950 font-bold shadow-xs"
-                              : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              const current = form.linkedParents || [];
-                              const next = e.target.checked
-                                ? [...current, mainCat.id]
-                                : current.filter((id) => id !== mainCat.id);
-                              set("linkedParents", next);
-                            }}
-                            className="h-4 w-4 rounded border-gray-300 text-[#400604] focus:ring-[#400604]"
-                          />
-                          <span className="truncate">{catName(mainCat)}</span>
-                          {mainCat.image?.src && (
-                            <img
-                              src={mainCat.image.src}
-                              alt=""
-                              className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
-                            />
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                  {mainCategoryOptions.length === 0 && (
-                    <p className="text-[12px] text-gray-400 italic">No other main categories available to link under.</p>
-                  )}
+                <div>
+                  <h4 className="text-[13px] font-black text-gray-900">
+                    Also Show Under (Cross-Listing)
+                  </h4>
+                  <p className="text-[12px] text-gray-600 leading-relaxed mt-0.5">
+                    Cross-list this category under additional parent categories so shoppers browsing those sections can easily discover and shop its products (e.g. show <span className="font-bold text-gray-800">{form.name || "Ethnic Wear"}</span> under <span className="font-bold text-gray-800">Women</span>).
+                  </p>
                 </div>
               </div>
-            )}
+
+              <div className="pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {mainCategoryOptions.filter((m) => m.id !== form.parent).map((mainCat) => {
+                    const isChecked = (form.linkedParents || []).includes(mainCat.id);
+                    return (
+                      <label
+                        key={mainCat.id}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
+                          isChecked
+                            ? "bg-amber-100/70 border-amber-300 text-amber-950 font-bold shadow-xs"
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const current = form.linkedParents || [];
+                            const next = e.target.checked
+                              ? [...current, mainCat.id]
+                              : current.filter((id) => id !== mainCat.id);
+                            set("linkedParents", next);
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-[#400604] focus:ring-[#400604]"
+                        />
+                        <span className="truncate">{catName(mainCat)}</span>
+                        {mainCat.image?.src && (
+                          <img
+                            src={mainCat.image.src}
+                            alt=""
+                            className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
+                          />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+                {mainCategoryOptions.filter((m) => m.id !== form.parent).length === 0 && (
+                  <p className="text-[12px] text-gray-400 italic">No other main categories available to link under.</p>
+                )}
+              </div>
+            </div>
 
             {/* Name */}
             <div>
@@ -1366,76 +1468,196 @@ function CategoryStudio({
           </div>
         )}
 
-        {/* Tab 3: Subcategories (In Edit Mode) */}
+        {/* Tab 3: Subcategories & Cross-Listed Collections (In Edit Mode) */}
         {activeTab === "subcategories" && mode === "edit" && initial.id && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-[13px] font-bold text-gray-900">
-                  Direct Subcategories ({childCats.length})
-                </h4>
-                <p className="text-[11px] text-gray-500">
-                  Subcategories nested directly under {catName(form)}
-                </p>
+          <div className="space-y-6">
+            {/* Section 1: Direct Subcategories */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div>
+                  <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                    <FolderOpen className="h-4 w-4 text-[#400604]" />
+                    Direct Subcategories ({directChildCats.length})
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    Subcategories whose primary parent is {catName(form)}
+                  </p>
+                </div>
+                {onAddChild && (
+                  <button
+                    type="button"
+                    onClick={() => onAddChild(initial.id!)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-[#400604] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5a0906] transition shadow-xs"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add Sub
+                  </button>
+                )}
               </div>
-              {onAddChild && (
-                <button
-                  type="button"
-                  onClick={() => onAddChild(initial.id!)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-[#400604] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5a0906] transition shadow-xs"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add Sub
-                </button>
+
+              {directChildCats.length === 0 ? (
+                <div className="p-6 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                  <FolderOpen className="h-7 w-7 text-gray-300 mx-auto mb-1.5" />
+                  <p className="text-[12px] font-semibold text-gray-700">No direct subcategories</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    Click &ldquo;Add Sub&rdquo; above to create a subcategory directly under {catName(form)}.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {directChildCats.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/70 hover:bg-white transition shadow-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {sub.image?.src ? (
+                          <img
+                            src={sub.image.src}
+                            alt=""
+                            className="h-8 w-8 rounded-lg object-cover border border-gray-100 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
+                            <FolderOpen className="h-4 w-4" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
+                          <p className="text-[11px] text-gray-400 font-mono truncate">
+                            /{sub.slug} · {sub.count} items
+                          </p>
+                        </div>
+                      </div>
+                      {onEditChild && (
+                        <button
+                          type="button"
+                          onClick={() => onEditChild(sub)}
+                          className="text-[12px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
+                        >
+                          Edit
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
-            {childCats.length === 0 ? (
-              <div className="p-8 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
-                <FolderOpen className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-[13px] font-semibold text-gray-700">No subcategories yet</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  Click &ldquo;Add Sub&rdquo; above to create the first subcategory under {catName(form)}.
+            {/* Section 2: Cross-Listed Collections */}
+            <div className="space-y-3 pt-2 border-t border-gray-100">
+              <div className="pb-2 border-b border-gray-100">
+                <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-amber-600" />
+                  Cross-Listed Collections ({crossListedChildCats.length})
+                </h4>
+                <p className="text-[11px] text-gray-500">
+                  Categories displayed under {catName(form)} for easy browsing while keeping their own root status
                 </p>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {childCats.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/70 hover:bg-white transition shadow-xs"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {sub.image?.src ? (
-                        <img
-                          src={sub.image.src}
-                          alt=""
-                          className="h-8 w-8 rounded-lg object-cover border border-gray-100 shrink-0"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
-                          <FolderOpen className="h-4 w-4" />
+
+              {crossListedChildCats.length === 0 ? (
+                <div className="p-5 text-center rounded-xl border border-dashed border-amber-200 bg-amber-50/20">
+                  <p className="text-[12px] font-semibold text-gray-700">No cross-listed categories linked yet</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">
+                    Use the selector below to link any category (e.g. Ethnic Wear) to also display under {catName(form)}.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {crossListedChildCats.map((sub) => (
+                    <div
+                      key={sub.id}
+                      className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-200/70 bg-amber-50/40 hover:bg-amber-50/70 transition shadow-2xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {sub.image?.src ? (
+                          <img
+                            src={sub.image.src}
+                            alt=""
+                            className="h-8 w-8 rounded-lg object-cover border border-amber-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-lg bg-amber-100/70 flex items-center justify-center shrink-0 text-amber-800">
+                            <Sparkles className="h-4 w-4" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                              ✨ Cross-listed
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-mono truncate">
+                            /{sub.slug} · {sub.count} items
+                          </p>
                         </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
-                        <p className="text-[11px] text-gray-400 font-mono truncate">
-                          /{sub.slug} · {sub.count} items
-                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {onEditChild && (
+                          <button
+                            type="button"
+                            onClick={() => onEditChild(sub)}
+                            className="text-[11px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={linkingActionLoading}
+                          onClick={() => handleUnlinkChild(sub)}
+                          className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
+                          title={`Remove from ${catName(form)}`}
+                        >
+                          Unlink
+                        </button>
                       </div>
                     </div>
-                    {onEditChild && (
-                      <button
-                        type="button"
-                        onClick={() => onEditChild(sub)}
-                        className="text-[12px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
-                      >
-                        Edit
-                      </button>
-                    )}
+                  ))}
+                </div>
+              )}
+
+              {/* Inline Link Existing Category Control */}
+              {linkableCandidates.length > 0 && (
+                <div className="mt-3 p-3 rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/40 to-white flex flex-col sm:flex-row sm:items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-950 mb-1">
+                      + Cross-Link Another Category Under {catName(form)}
+                    </label>
+                    <select
+                      value={linkingChildId}
+                      onChange={(e) => setLinkingChildId(e.target.value ? Number(e.target.value) : "")}
+                      className="w-full rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-800 focus:outline-none focus:border-[#400604]"
+                    >
+                      <option value="">Select category to cross-list...</option>
+                      {linkableCandidates.map((cand) => (
+                        <option key={cand.id} value={cand.id}>
+                          {catName(cand)} (/{cand.slug}) — {cand.count} items
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ))}
-              </div>
-            )}
+                  <button
+                    type="button"
+                    disabled={!linkingChildId || linkingActionLoading}
+                    onClick={() => {
+                      if (typeof linkingChildId === "number") {
+                        void handleLinkExistingChild(linkingChildId);
+                      }
+                    }}
+                    className="sm:self-end px-3.5 py-1.5 rounded-lg bg-[#400604] text-white text-[12px] font-bold hover:bg-[#5a0906] transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-2xs"
+                  >
+                    {linkingActionLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    <span>Link Under This</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -1890,7 +2112,7 @@ export default function AdminCategoriesPage() {
       slug: data.slug.trim() || slugify(data.name),
       description: data.description,
       parent,
-      linked_parents: data.type === "main" ? (data.linkedParents || []) : [],
+      linked_parents: data.linkedParents || [],
       menu_order: data.sortOrder,
       imageUrl: data.imageUrl || "",
       imageId: data.imageId,
@@ -2186,9 +2408,9 @@ export default function AdminCategoriesPage() {
       : [];
 
     return (
-      <div key={cat.id}>
+      <div key={`${cat.id}-${depth}-${cat.is_linked ? 'linked' : 'direct'}`}>
         <div
-          draggable={dndEnabled}
+          draggable={dndEnabled && !cat.is_linked}
           onDragStart={(e) => handleDragStart(e, cat)}
           onDragOver={(e) => handleRowDragOver(e, cat)}
           onDrop={(e) => handleDrop(e, cat)}
@@ -2207,6 +2429,8 @@ export default function AdminCategoriesPage() {
           } ${
             isSelected
               ? "bg-amber-50/80 border-l-4 border-l-[#400604] shadow-2xs"
+              : cat.is_linked
+              ? "bg-amber-50/30 hover:bg-amber-50/60"
               : depth > 0
               ? "bg-slate-50/60 hover:bg-amber-50/30"
               : "bg-white hover:bg-gray-50/90"
@@ -2215,36 +2439,44 @@ export default function AdminCategoriesPage() {
           {/* Drag + order badge + expand + indent */}
           <div className="flex items-center gap-1 shrink-0" style={{ paddingLeft: `${Math.min(depth * 18, 54)}px` }}>
             <div
-              className="w-4 cursor-grab text-gray-300 hover:text-gray-700 transition flex items-center justify-center"
-              title={dndEnabled ? "Drag to reorder, or drop onto a category to nest it" : "Clear search and filters to drag"}
+              className={`w-4 text-gray-300 transition flex items-center justify-center ${cat.is_linked ? "opacity-30 cursor-not-allowed" : "cursor-grab hover:text-gray-700"}`}
+              title={cat.is_linked ? "Cross-listed category" : dndEnabled ? "Drag to reorder, or drop onto a category to nest it" : "Clear search and filters to drag"}
             >
               <GripVertical className="h-3.5 w-3.5" />
             </div>
 
             <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-              <span className={`text-[10px] font-mono font-bold rounded px-1.5 py-0.5 ${
-                depth === 0 ? "bg-amber-50 text-amber-950 border border-amber-200/80" : "bg-gray-100 text-gray-500"
-              }`} title={`Display Order: #${index + 1}`}>
-                #{index + 1}
-              </span>
-              <div className="flex flex-col">
-                <button
-                  type="button"
-                  onClick={() => moveCategory(cat.id, cat.parent, "up")}
-                  className="p-0.5 text-gray-400 hover:text-[#400604] hover:bg-amber-50 rounded transition"
-                  title="Move Up"
-                >
-                  <ChevronUp className="h-2.5 w-2.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveCategory(cat.id, cat.parent, "down")}
-                  className="p-0.5 text-gray-400 hover:text-[#400604] hover:bg-amber-50 rounded transition"
-                  title="Move Down"
-                >
-                  <ChevronDown className="h-2.5 w-2.5" />
-                </button>
-              </div>
+              {cat.is_linked ? (
+                <span className="text-[10px] font-bold rounded px-1.5 py-0.5 bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-0.5" title="Cross-listed collection">
+                  <Sparkles className="h-2.5 w-2.5 text-amber-700" /> Linked
+                </span>
+              ) : (
+                <>
+                  <span className={`text-[10px] font-mono font-bold rounded px-1.5 py-0.5 ${
+                    depth === 0 ? "bg-amber-50 text-amber-950 border border-amber-200/80" : "bg-gray-100 text-gray-500"
+                  }`} title={`Display Order: #${index + 1}`}>
+                    #{index + 1}
+                  </span>
+                  <div className="flex flex-col">
+                    <button
+                      type="button"
+                      onClick={() => moveCategory(cat.id, cat.parent, "up")}
+                      className="p-0.5 text-gray-400 hover:text-[#400604] hover:bg-amber-50 rounded transition"
+                      title="Move Up"
+                    >
+                      <ChevronUp className="h-2.5 w-2.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveCategory(cat.id, cat.parent, "down")}
+                      className="p-0.5 text-gray-400 hover:text-[#400604] hover:bg-amber-50 rounded transition"
+                      title="Move Down"
+                    >
+                      <ChevronDown className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {hasChildren ? (
@@ -2302,12 +2534,18 @@ export default function AdminCategoriesPage() {
               <span className={`font-bold ${depth === 0 ? "text-[14px] text-gray-900" : "text-[12px] text-gray-800"}`}>
                 {catName(cat)}
               </span>
+              {cat.is_linked && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded-md shrink-0">
+                  <Sparkles className="h-2.5 w-2.5 text-amber-700" />
+                  Cross-listed
+                </span>
+              )}
               {hasChildren && (
                 <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md shrink-0">
                   {childCount} {childCount === 1 ? "sub" : "subs"}
                 </span>
               )}
-              {depth > 0 && (
+              {depth > 0 && !cat.is_linked && (
                 <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide px-1 py-0.2 rounded bg-gray-50 border border-gray-100 shrink-0">
                   sub
                 </span>
@@ -2315,7 +2553,7 @@ export default function AdminCategoriesPage() {
             </div>
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <span className="text-[11px] text-gray-400 font-mono truncate">/{cat.slug}</span>
-              {linkedParentNames.length > 0 && (
+              {!cat.is_linked && linkedParentNames.length > 0 && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-amber-100/90 text-amber-900 border border-amber-200/80 shrink-0">
                   <Sparkles className="h-2.5 w-2.5 text-amber-700 shrink-0" />
                   Also under: {linkedParentNames.join(", ")}
@@ -2388,7 +2626,7 @@ export default function AdminCategoriesPage() {
   const subCount = flat.length - mainCount;
 
   return (
-    <div className="w-full max-w-[1720px] mx-auto min-h-screen space-y-6">
+    <div className="w-full max-w-[1920px] mx-auto min-h-screen space-y-6">
       {toast && (
         <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-xl text-[14px] font-bold text-white transition-all ${toast.ok ? "bg-emerald-600" : "bg-red-500"}`}>
           {toast.ok ? <Check className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
@@ -2613,6 +2851,7 @@ export default function AdminCategoriesPage() {
               }}
               onEditChild={(c) => openEdit(c)}
               onAddChild={(parentId) => openAddUnder(parentId)}
+              onReload={() => load(true)}
             />
           ) : (
             <div className="bg-white rounded-2xl border border-gray-200/90 shadow-xs p-8 text-center flex flex-col items-center justify-center min-h-[460px]">

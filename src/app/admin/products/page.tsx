@@ -63,7 +63,8 @@ function getBuyPrice(product: WCProductRaw): number {
   return 0;
 }
 
-function getDeliveryFees(product: WCProductRaw): { inside: number; outside: number } {
+/** A product's OWN delivery fee, or null when it uses the store-wide rate from Settings → Shipping. */
+function getDeliveryFees(product: WCProductRaw): { inside: number | null; outside: number | null } {
   const insideRaw = product.meta_data?.slice().reverse().find((m) => m.key === "_delivery_inside")?.value;
   const outsideRaw = product.meta_data?.slice().reverse().find((m) => m.key === "_delivery_outside")?.value;
   const insideStr = insideRaw != null ? String(insideRaw).trim() : "";
@@ -71,8 +72,8 @@ function getDeliveryFees(product: WCProductRaw): { inside: number; outside: numb
   const insideParsed = insideStr !== "" ? Number.parseInt(insideStr, 10) : NaN;
   const outsideParsed = outsideStr !== "" ? Number.parseInt(outsideStr, 10) : NaN;
   return {
-    inside: Number.isFinite(insideParsed) ? insideParsed : 60,
-    outside: Number.isFinite(outsideParsed) ? outsideParsed : 120,
+    inside: Number.isFinite(insideParsed) ? insideParsed : null,
+    outside: Number.isFinite(outsideParsed) ? outsideParsed : null,
   };
 }
 
@@ -674,10 +675,10 @@ export default function AdminProductsPage() {
                       <div>
                         <div className="space-y-0.5">
                           <p className="text-[11px] text-stone-600 leading-tight">
-                            Inside: <span className="font-semibold text-[#400604]">{fees.inside} TK</span>
+                            Inside: <span className="font-semibold text-[#400604]">{fees.inside === null ? "Store rate" : fees.inside === 0 ? "Free" : `${fees.inside} TK`}</span>
                           </p>
                           <p className="text-[11px] text-stone-600 leading-tight">
-                            Outside: <span className="font-semibold text-[#400604]">{fees.outside} TK</span>
+                            Outside: <span className="font-semibold text-[#400604]">{fees.outside === null ? "Store rate" : fees.outside === 0 ? "Free" : `${fees.outside} TK`}</span>
                           </p>
                         </div>
                       </div>

@@ -26,6 +26,9 @@ import {
   Search,
   Palette,
   Link2,
+  Boxes,
+  Coins,
+  AlertTriangle,
 } from "lucide-react";
 import type { WooCategory } from "@/types/product";
 import { toWpDescription } from "@/utils/html";
@@ -292,8 +295,30 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
     initialData?.stockQuantity || ""
   );
   const [manageStock, setManageStock] = useState(
-    initialData?.manageStock || false
+    initialData?.manageStock !== undefined
+      ? initialData.manageStock
+      : Boolean(initialData?.stockQuantity && initialData.stockQuantity !== "0")
   );
+
+  const handleStockQuantityChange = (val: string) => {
+    setStockQuantity(val);
+    const parsed = parseInt(val, 10);
+    if (!isNaN(parsed)) {
+      setManageStock(true);
+      if (parsed === 0) {
+        setStockStatus("outofstock");
+      } else if (parsed > 0 && stockStatus === "outofstock") {
+        setStockStatus("instock");
+      }
+    }
+  };
+
+  const handleQuickAddStock = (delta: number) => {
+    const current = parseInt(stockQuantity || "0", 10);
+    const safeCurrent = isNaN(current) ? 0 : current;
+    const next = Math.max(0, safeCurrent + delta);
+    handleStockQuantityChange(String(next));
+  };
   const [selectedCategories, setSelectedCategories] = useState<
     { id: number; name: string; slug: string; parent?: number }[]
   >(initialData?.categories || []);
@@ -853,10 +878,14 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
       buy_price: buyPrice || "",
       price: salePrice || regularPrice || "0",
       stock_status: stockStatus,
-      manage_stock: manageStock,
-      ...(manageStock && stockQuantity
+      manage_stock: Boolean(
+        manageStock || (stockQuantity.trim() !== "" && !isNaN(Number(stockQuantity)))
+      ),
+      ...(stockQuantity.trim() !== "" && !isNaN(Number(stockQuantity))
         ? { stock_quantity: Number(stockQuantity) }
-        : {}),
+        : manageStock
+          ? { stock_quantity: 0 }
+          : { stock_quantity: null }),
       // Include wpId (id) so WooCommerce re-uses the existing media attachment
       images: images.map((img) =>
         img.wpId
@@ -1827,7 +1856,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
 
             <div className="space-y-3">
               <p className="text-[11.5px] text-gray-500 leading-relaxed bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                💡 <strong>Leave empty</strong> to use store defaults from Settings. Enter <strong>0</strong> for Free Delivery.
+                💡 <strong>Leave both empty</strong> to use the store-wide delivery rates (Settings → Shipping). Typing <strong>0</strong> makes delivery <strong>Free</strong> for this product only — don&apos;t enter 0 to &quot;remove&quot; a rate.
               </p>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
@@ -1839,7 +1868,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   value={deliveryInside}
                   onChange={(e) => setDeliveryInside(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                  placeholder="Store default (e.g. 60) or 0 for Free"
+                  placeholder="Empty = store rate · 0 = Free for this product"
                 />
               </div>
               <div>
@@ -1852,30 +1881,131 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   value={deliveryOutside}
                   onChange={(e) => setDeliveryOutside(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                  placeholder="Store default (e.g. 120) or 0 for Free"
+                  placeholder="Empty = store rate · 0 = Free for this product"
                 />
               </div>
             </div>
           </div>
 
-          {/* Stock */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Tag className="h-4 w-4 text-purple-500" />
-              <h3 className="text-[14px] font-bold text-gray-700">
-                Inventory
-              </h3>
+          {/* Stock & Inventory Valuation */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center text-[#400604]">
+                  <Boxes className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-bold text-stone-800">
+                    Inventory &amp; Stock
+                  </h3>
+                  <p className="text-[11px] text-stone-400">
+                    Quantity, fulfillment status &amp; valuation
+                  </p>
+                </div>
+              </div>
+              {/* Dynamic Live Status Badge */}
+              {(() => {
+                const qty = parseInt(stockQuantity || "0", 10);
+                if (stockStatus === "outofstock" || (manageStock && stockQuantity !== "" && qty === 0)) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                      Out of Stock
+                    </span>
+                  );
+                }
+                if (manageStock && stockQuantity !== "" && qty > 0 && qty <= 3) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                      <AlertTriangle className="h-3 w-3 text-amber-600" />
+                      Low Stock ({qty})
+                    </span>
+                  );
+                }
+                if (manageStock && stockQuantity !== "" && qty > 3) {
+                  return (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      {qty} In Stock
+                    </span>
+                  );
+                }
+                return (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                    {stockStatus === "onbackorder" ? "Backorder" : "In Stock"}
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="space-y-4">
+              {/* Stock Quantity - ALWAYS VISIBLE */}
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-600">
+                    Stock Quantity (Units)
+                  </label>
+                  <span className="text-[10px] text-stone-400">Available to sell</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(e) => handleStockQuantityChange(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[14px] font-semibold text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="Enter quantity (e.g. 25)"
+                  />
+                  {stockQuantity && (
+                    <button
+                      type="button"
+                      onClick={() => handleStockQuantityChange("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-stone-400 hover:text-stone-700 bg-stone-100 px-2 py-0.5 rounded-md"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Add Pills */}
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="text-[11px] text-stone-400 font-medium mr-1">Quick Add:</span>
+                  {[
+                    { label: "+1", delta: 1 },
+                    { label: "+5", delta: 5 },
+                    { label: "+10", delta: 10 },
+                    { label: "+25", delta: 25 },
+                    { label: "+50", delta: 50 },
+                  ].map((pill) => (
+                    <button
+                      key={pill.label}
+                      type="button"
+                      onClick={() => handleQuickAddStock(pill.delta)}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-stone-200 bg-stone-50 hover:bg-white hover:border-[#400604] hover:text-[#400604] text-stone-600 transition shadow-2xs"
+                    >
+                      {pill.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => handleStockQuantityChange("0")}
+                    className="px-2 py-1 text-[11px] font-bold rounded-lg border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-rose-700 transition"
+                    title="Mark quantity as 0 (Out of stock)"
+                  >
+                    Set 0
+                  </button>
+                </div>
+              </div>
+
+              {/* Stock Status Selector */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
                   Stock Status
                 </label>
                 <select
                   value={stockStatus}
                   onChange={(e) => setStockStatus(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
+                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] font-medium text-stone-700 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
                 >
                   {STOCK_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -1885,7 +2015,8 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 </select>
               </div>
 
-              <div className="flex items-center gap-3">
+              {/* Track Stock Quantity Checkbox */}
+              <div className="flex items-center gap-3 pt-1">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -1893,46 +2024,104 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                     onChange={(e) => setManageStock(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                  <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#400604]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#400604]"></div>
                 </label>
-                <span className="text-[12px] text-gray-600">
-                  Track stock quantity
-                </span>
+                <div>
+                  <span className="text-[12px] font-bold text-stone-700">
+                    Track Inventory Quantity
+                  </span>
+                  <p className="text-[11px] text-stone-400">
+                    Auto-decrement on orders &amp; prevent overselling
+                  </p>
+                </div>
               </div>
 
-              {manageStock && (
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
-                    Stock Quantity
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={stockQuantity}
-                    onChange={(e) => setStockQuantity(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                    placeholder="0"
-                  />
-                  {/* Live Stock Value at Buy Price (Only if tracked and buy price provided) */}
-                  {(() => {
-                    const qty = parseInt(stockQuantity || "0", 10);
-                    const costPerUnit = parseFloat(buyPrice || "0");
-                    if (qty > 0 && costPerUnit > 0) {
-                      const costVal = costPerUnit * qty;
-                      return (
-                        <div className="mt-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 px-3 py-2 text-[12px] flex items-center justify-between text-stone-700">
-                          <div>
-                            <span className="font-semibold text-stone-800">Stock Value (Buy Price):</span>
-                            <span className="ml-1 text-[11px] text-stone-500">(৳{costPerUnit.toLocaleString()} × {qty})</span>
-                          </div>
-                          <span className="font-bold text-[#400604] text-[13px]">৳{costVal.toLocaleString()}</span>
+              {/* Industry-Level Inventory Valuation & Economics Card */}
+              {(() => {
+                const qty = parseInt(stockQuantity || "0", 10);
+                const costPerUnit = parseFloat(buyPrice || "0");
+                const retailPerUnit = parseFloat(salePrice || regularPrice || "0");
+
+                if (costPerUnit > 0 || (qty > 0 && retailPerUnit > 0)) {
+                  const totalCostVal = costPerUnit * (qty > 0 ? qty : 1);
+                  const totalRetailVal = retailPerUnit * (qty > 0 ? qty : 1);
+                  const unitGrossProfit = retailPerUnit > 0 && costPerUnit > 0 ? retailPerUnit - costPerUnit : 0;
+                  const marginPct = retailPerUnit > 0 ? ((unitGrossProfit / retailPerUnit) * 100).toFixed(1) : "0";
+
+                  return (
+                    <div className="mt-3 rounded-2xl bg-gradient-to-br from-amber-50/60 via-stone-50 to-amber-50/30 border border-amber-200/80 p-3.5 space-y-3">
+                      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-stone-600 border-b border-amber-200/60 pb-2">
+                        <span className="flex items-center gap-1.5 text-[#400604]">
+                          <Coins className="h-3.5 w-3.5" />
+                          Inventory Valuation &amp; Economics
+                        </span>
+                        {qty > 0 && (
+                          <span className="font-mono text-stone-500 font-bold">
+                            {qty} units
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5 text-[12px]">
+                        {/* Cost Basis (Capital Invested) */}
+                        <div className="bg-white/80 rounded-xl p-2.5 border border-stone-200/70 shadow-2xs">
+                          <p className="text-[10px] uppercase font-bold text-stone-400">
+                            {qty > 0 ? "Total Stock Cost" : "Unit Buy Price"}
+                          </p>
+                          <p className="text-[14px] font-extrabold text-[#400604] mt-0.5">
+                            ৳{(qty > 0 ? totalCostVal : costPerUnit).toLocaleString()}
+                          </p>
+                          {qty > 0 && costPerUnit > 0 && (
+                            <p className="text-[10px] text-stone-400 mt-0.5">
+                              ৳{costPerUnit.toLocaleString()} × {qty} pcs
+                            </p>
+                          )}
                         </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              )}
+
+                        {/* Retail Revenue Value */}
+                        <div className="bg-white/80 rounded-xl p-2.5 border border-stone-200/70 shadow-2xs">
+                          <p className="text-[10px] uppercase font-bold text-stone-400">
+                            {qty > 0 ? "Total Retail Value" : "Unit Retail"}
+                          </p>
+                          <p className="text-[14px] font-extrabold text-stone-800 mt-0.5">
+                            ৳{(qty > 0 ? totalRetailVal : retailPerUnit).toLocaleString()}
+                          </p>
+                          {qty > 0 && retailPerUnit > 0 && (
+                            <p className="text-[10px] text-stone-400 mt-0.5">
+                              ৳{retailPerUnit.toLocaleString()} × {qty} pcs
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Profit & Margin Metrics */}
+                      {costPerUnit > 0 && retailPerUnit > 0 && (
+                        <div className="rounded-xl bg-white/90 p-2.5 border border-emerald-200/70 flex items-center justify-between text-[12px]">
+                          <div>
+                            <span className="font-bold text-stone-700">Projected Gross Profit:</span>
+                            <span className="ml-1 text-[11px] font-bold text-emerald-600">
+                              ({marginPct}% margin)
+                            </span>
+                          </div>
+                          <span className="font-black text-emerald-700 text-[13px]">
+                            ৳{(qty > 0 ? (totalRetailVal - totalCostVal) : unitGrossProfit).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // If Buy Price is not yet entered
+                return (
+                  <div className="rounded-xl bg-amber-50/40 border border-amber-200/60 p-2.5 text-[11.5px] text-stone-600 leading-relaxed flex items-start gap-2">
+                    <Sparkles className="h-4 w-4 text-[#E1B76F] shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Inventory Tip:</strong> Enter your <strong>Buy Price</strong> in the Pricing card to unlock real-time warehouse valuation, total capital invested, and profit margins.
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

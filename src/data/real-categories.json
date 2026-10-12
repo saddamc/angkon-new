@@ -313,19 +313,6 @@
     }
   },
   {
-    "id": 555,
-    "name": "Co-ord Set",
-    "slug": "co-rd-set",
-    "parent": 163,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 96052,
-      "src": "/banners/tops.webp",
-      "alt": "Co-ord Set"
-    }
-  },
-  {
     "id": 644,
     "name": "CO-ORD SET MALE",
     "slug": "co-ord-set-male",

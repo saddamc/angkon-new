@@ -17,7 +17,10 @@ interface WCCategory {
   slug: string;
   parent: number;
   description: string;
+  /** Distinct products shown on this category's storefront page (itself + sub-categories). */
   count: number;
+  /** Products listed directly in this category. */
+  direct_count?: number;
   menu_order: number;
   meta_data?: { id?: number; key: string; value: any }[];
   image?: { id?: number; src: string; alt?: string } | null;
@@ -1265,12 +1268,12 @@ function MoveModal({
             <label className="block text-[13px] font-bold text-gray-700 mb-1.5">Position in that list</label>
             <PositionPicker siblings={positionSiblings} value={index} onChange={setIndex} />
           </div>
-          {cat.count > 0 && (
+          {(cat.direct_count ?? cat.count) > 0 && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input type="checkbox" checked={moveProducts} onChange={(e) => setMoveProducts(e.target.checked)} className="mt-1" />
                 <span className="text-[13px] text-gray-700">
-                  Also move the <b>{cat.count} products</b> in this category to another category
+                  Also move the <b>{cat.direct_count ?? cat.count} products</b> listed directly in this category to another category
                 </span>
               </label>
               {moveProducts && (
@@ -1993,7 +1996,7 @@ export default function AdminCategoriesPage() {
         <DeleteConfirmModal
           cat={deleteCat}
           subCount={subtreeList(flat, deleteCat.id).length - 1}
-          productCount={subtreeList(flat, deleteCat.id).reduce((sum, c) => sum + (c.count || 0), 0)}
+          productCount={deleteCat.count || 0}
           deleting={deleting === deleteCat.id}
           onClose={() => { if (deleting !== deleteCat.id) setDeleteCat(null); }}
           onConfirm={() => void confirmDelete()}

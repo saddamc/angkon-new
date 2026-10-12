@@ -31,9 +31,9 @@ export interface IOrder extends Document {
   promoCode?: string;
   shippingFee: number;
   total: number;
-  paymentMethod: "cod" | "sslcommerz" | "bkash" | "nagad" | "online";
-  paymentStatus: "pending" | "paid" | "failed";
-  orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  paymentMethod: "cod" | "sslcommerz" | "bkash" | "nagad" | "online" | string;
+  paymentStatus: "pending" | "paid" | "failed" | string;
+  orderStatus: "pending" | "processing" | "shipped" | "delivered" | "completed" | "cancelled" | "on-hold" | "refunded" | "failed" | string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -90,7 +90,17 @@ const OrderSchema = new Schema<IOrder>(
     },
     orderStatus: {
       type: String,
-      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      enum: [
+        "pending",
+        "processing",
+        "shipped",
+        "delivered",
+        "completed",
+        "cancelled",
+        "on-hold",
+        "refunded",
+        "failed",
+      ],
       default: "pending",
       index: true,
     },

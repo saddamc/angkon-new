@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
-import { Category } from "@/models/Category";
-import { invalidateProductsCache } from "@/lib/db/products";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
+import { resolveProductCategories } from "@/server/category-sync";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const localCategory = (id: number) => (REAL_CATEGORIES as any[]).find((rc) => rc.id === id);
 
 // GET /api/admin/products — list all products from MongoDB Atlas
 export async function GET(request: NextRequest) {
@@ -87,26 +91,8 @@ export async function POST(request: NextRequest) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
-    // Resolve categories so name, slug, and parent are always populated
-    let resolvedCategories = body.categories || [];
-    if (Array.isArray(resolvedCategories) && resolvedCategories.length > 0) {
-      resolvedCategories = await Promise.all(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        resolvedCategories.map(async (c: any) => {
-          if (c.name && c.slug) return c;
-          const found = await Category.findOne({ id: c.id }).lean();
-          if (found) {
-            return { id: found.id, name: found.name, slug: found.slug, parent: found.parent || 0 };
-          }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const fromLocal = REAL_CATEGORIES.find((rc: any) => rc.id === c.id);
-          if (fromLocal) {
-            return { id: fromLocal.id, name: fromLocal.name, slug: fromLocal.slug, parent: fromLocal.parent || 0 };
-          }
-          return { id: c.id, name: c.name || "Category", slug: c.slug || "category", parent: c.parent || 0 };
-        })
-      );
-    }
+    // Categories are re-read from the categories collection (name / slug / parent always correct).
+    const resolvedCategories = await resolveProductCategories(body.categories, localCategory);
 
     const regularPrice = body.regular_price ? String(body.regular_price) : "";
     const salePrice = body.sale_price ? String(body.sale_price) : "";
@@ -129,7 +115,7 @@ export async function POST(request: NextRequest) {
       sizes: Array.isArray(body.sizes) ? body.sizes : [],
     });
 
-    invalidateProductsCache();
+    await publishCatalogChange();
     return NextResponse.json(newProduct, { status: 201 });
   } catch (err) {
     console.error("Create product failed:", err);

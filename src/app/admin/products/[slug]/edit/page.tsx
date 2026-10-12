@@ -126,10 +126,12 @@ export default function EditProductBySlugPage() {
     stockQuantity:
       product.stock_quantity != null ? String(product.stock_quantity) : "",
     manageStock: Boolean(product.manage_stock),
-    categoryId: product.categories?.[0]?.id || 0,
-    categoryName: product.categories?.[0]?.name || "",
-    categorySlug: product.categories?.[0]?.slug || "",
-    categoryParent: product.categories?.[0]?.parent || 0,
+    categories: (product.categories || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      parent: c.parent || 0,
+    })),
     sizes: sizeAttr?.options || [],
     colors: colorAttr?.options || [],
     sizeChart: sizeChart ?? emptySizeChart(),

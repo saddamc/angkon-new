@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
+import { getCatalogVersion } from "@/lib/catalog-version";
 import type { WooProduct, WooCategory } from "@/types/product";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
@@ -61,7 +62,7 @@ function toWooProduct(doc: any): WooProduct {
 // High-speed Global In-Memory Products Cache (10 min TTL, invalidated on admin edit)
 declare global {
   // eslint-disable-next-line no-var
-  var __globalProductsCache: { data: WooProduct[] | null; lastFetch: number } | undefined;
+  var __globalProductsCache: { data: WooProduct[] | null; lastFetch: number; version?: string } | undefined;
 }
 
 if (!globalThis.__globalProductsCache) {
@@ -74,13 +75,16 @@ export function invalidateProductsCache() {
   if (globalThis.__globalProductsCache) {
     globalThis.__globalProductsCache.data = null;
     globalThis.__globalProductsCache.lastFetch = 0;
+    globalThis.__globalProductsCache.version = undefined;
   }
 }
 
 export async function getAllDbProducts(): Promise<WooProduct[]> {
   const now = Date.now();
   const cacheObj = globalThis.__globalProductsCache!;
-  if (cacheObj.data && now - cacheObj.lastFetch < PRODUCTS_CACHE_TTL_MS) {
+  // The version stamp changes whenever an admin edits the catalog (on any server instance).
+  const version = await getCatalogVersion();
+  if (cacheObj.data && cacheObj.version === version && now - cacheObj.lastFetch < PRODUCTS_CACHE_TTL_MS) {
     return cacheObj.data;
   }
 
@@ -93,6 +97,7 @@ export async function getAllDbProducts(): Promise<WooProduct[]> {
     if (docs && docs.length > 0) {
       cacheObj.data = docs.map(toWooProduct);
       cacheObj.lastFetch = now;
+      cacheObj.version = version;
       return cacheObj.data;
     }
   } catch (error) {

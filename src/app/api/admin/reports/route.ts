@@ -11,15 +11,18 @@ export async function GET(request: NextRequest) {
   try {
     const now = new Date();
     let startDate = new Date();
+    let endDate: Date | null = null;
 
     if (period === "today") {
       startDate.setHours(0, 0, 0, 0);
     } else if (period === "week") {
       startDate.setDate(now.getDate() - 7);
+      startDate.setHours(0, 0, 0, 0);
     } else if (period === "month") {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     } else if (period === "last_month") {
       startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
     } else if (period === "year") {
       startDate = new Date(now.getFullYear(), 0, 1);
     }
@@ -28,29 +31,55 @@ export async function GET(request: NextRequest) {
 
     const [allOrders, totalProducts] = await Promise.all([
       Order.find({})
-        .select("orderStatus createdAt total shippingFee items customer.phone")
+        .select("orderStatus paymentStatus createdAt total shippingFee items customer.phone customer.email")
         .lean(),
       Product.countDocuments(),
     ]);
 
-    const orders = allOrders.filter((ord) => new Date(ord.createdAt) >= startDate);
+    // Filter orders by time window
+    const ordersInPeriod = allOrders.filter((ord) => {
+      const d = new Date(ord.createdAt);
+      if (d < startDate) return false;
+      if (endDate && d > endDate) return false;
+      return true;
+    });
+
+    // Separate valid orders from cancelled/refunded orders
+    const validOrders = ordersInPeriod.filter(
+      (ord) => !["cancelled", "failed", "refunded", "trash"].includes(ord.orderStatus)
+    );
+    const cancelledOrders = ordersInPeriod.filter((ord) =>
+      ["cancelled", "failed", "refunded", "trash"].includes(ord.orderStatus)
+    );
 
     let totalSales = 0;
     let totalItems = 0;
     let totalShipping = 0;
+    let paidRevenue = 0;
+    let pendingRevenue = 0;
 
-    for (const ord of orders) {
-      totalSales += ord.total || 0;
-      totalShipping += ord.shippingFee || 0;
+    for (const ord of validOrders) {
+      const orderTotal = Number(ord.total) || 0;
+      totalSales += orderTotal;
+      totalShipping += Number(ord.shippingFee) || 0;
+
+      const isPaid = ord.paymentStatus === "paid" || ord.orderStatus === "completed";
+      if (isPaid) {
+        paidRevenue += orderTotal;
+      } else {
+        pendingRevenue += orderTotal;
+      }
+
       if (Array.isArray(ord.items)) {
         for (const it of ord.items) {
-          totalItems += it.quantity || 1;
+          totalItems += Number(it.quantity) || 1;
         }
       }
     }
 
+    const cancelledSales = cancelledOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const netSales = Math.max(0, totalSales - totalShipping);
-    const avgSales = orders.length > 0 ? (totalSales / orders.length).toFixed(2) : "0.00";
+    const avgSales = validOrders.length > 0 ? (totalSales / validOrders.length).toFixed(2) : "0.00";
 
     const statusCounts: Record<string, number> = {
       pending: 0,
@@ -73,15 +102,19 @@ export async function GET(request: NextRequest) {
       {
         sales: {
           total_sales: totalSales.toFixed(2),
+          paid_revenue: paidRevenue.toFixed(2),
+          pending_revenue: pendingRevenue.toFixed(2),
+          cancelled_sales: cancelledSales.toFixed(2),
           net_sales: netSales.toFixed(2),
           average_sales: avgSales,
-          total_orders: orders.length,
+          total_orders: validOrders.length,
+          all_orders_count: ordersInPeriod.length,
           total_items: totalItems,
           total_tax: "0.00",
           total_shipping: totalShipping.toFixed(2),
-          total_refunds: 0,
+          total_refunds: cancelledOrders.length,
           total_discount: "0.00",
-          total_customers: new Set(allOrders.map((o) => o.customer?.phone).filter(Boolean)).size,
+          total_customers: new Set(allOrders.map((o) => o.customer?.phone || o.customer?.email).filter(Boolean)).size,
         },
         order_statuses: orderStatuses,
         top_sellers: [],

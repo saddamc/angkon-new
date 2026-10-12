@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
-import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
-import { invalidateProductsCache } from "@/lib/db/products";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
+import { resolveProductCategories } from "@/server/category-sync";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const localCategory = (id: number) => (REAL_CATEGORIES as any[]).find((rc) => rc.id === id);
 
 // GET /api/admin/products/[id] — single product by numeric ID or slug from MongoDB (with fallback)
 export async function GET(
@@ -92,24 +96,10 @@ export async function PUT(
       body.sizes = body.sizes;
     }
 
-    // Resolve categories so name, slug, and parent are always complete
-    if (Array.isArray(body.categories) && body.categories.length > 0) {
-      body.categories = await Promise.all(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        body.categories.map(async (c: any) => {
-          if (c.name && c.slug) return c;
-          const found = await Category.findOne({ id: c.id }).lean();
-          if (found) {
-            return { id: found.id, name: found.name, slug: found.slug, parent: found.parent || 0 };
-          }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const fromLocal = (REAL_CATEGORIES as any[]).find((rc) => rc.id === c.id);
-          if (fromLocal) {
-            return { id: fromLocal.id, name: fromLocal.name, slug: fromLocal.slug, parent: fromLocal.parent || 0 };
-          }
-          return { id: c.id, name: c.name || "Category", slug: c.slug || "category", parent: c.parent || 0 };
-        })
-      );
+    // Categories are re-read from the categories collection so name / slug / parent are always
+    // correct and de-duplicated (an empty list clears the product's categories).
+    if (Array.isArray(body.categories)) {
+      body.categories = await resolveProductCategories(body.categories, localCategory);
     }
 
     let updated = await Product.findOneAndUpdate(
@@ -138,7 +128,7 @@ export async function PUT(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    invalidateProductsCache();
+    await publishCatalogChange();
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
     console.error("Update product failed:", error);
@@ -163,7 +153,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    invalidateProductsCache();
+    await publishCatalogChange();
 
     // Clean up Cloudinary images if present
     if (product.images && Array.isArray(product.images)) {

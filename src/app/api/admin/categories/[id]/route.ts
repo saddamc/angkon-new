@@ -4,7 +4,9 @@ import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
-import { invalidateCategoriesCache } from "@/lib/db/categories";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+import { syncProductCategoryRefs } from "@/server/category-sync";
+import { cleanCategoryInput } from "@/server/category-input";
 
 export async function PATCH(
   request: NextRequest,
@@ -37,9 +39,31 @@ export async function PATCH(
       }
     }
 
+    const input = cleanCategoryInput(body);
+
+    if (input.name === "") {
+      return NextResponse.json({ error: "Category name cannot be empty." }, { status: 400 });
+    }
+    if (input.slug && input.slug !== oldCategory.slug && (await Category.exists({ slug: input.slug, id: { $ne: oldCategory.id } }))) {
+      return NextResponse.json({ error: `The slug "${input.slug}" is already used by another category.` }, { status: 409 });
+    }
+    if (input.parent !== undefined && input.parent !== oldCategory.parent) {
+      // A category can't be moved under itself or one of its own sub-categories.
+      const all = await Category.find({}).select("id parent").lean();
+      let cursor: number | undefined = input.parent;
+      const seen = new Set<number>();
+      while (cursor && !seen.has(cursor)) {
+        if (cursor === oldCategory.id) {
+          return NextResponse.json({ error: "A category cannot be placed inside itself or its own sub-category." }, { status: 400 });
+        }
+        seen.add(cursor);
+        cursor = all.find((c) => c.id === cursor)?.parent;
+      }
+    }
+
     const updated = await Category.findOneAndUpdate(
       query,
-      { $set: body },
+      { $set: input },
       { new: true }
     );
 
@@ -62,7 +86,8 @@ export async function PATCH(
       console.warn("Failed to sync category update to real-categories.json:", syncErr);
     }
 
-    invalidateCategoriesCache();
+    await syncProductCategoryRefs([oldCategory.id]);
+    await publishCatalogChange();
 
     return NextResponse.json(updated, { status: 200 });
   } catch (err) {

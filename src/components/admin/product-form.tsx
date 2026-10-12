@@ -115,10 +115,8 @@ interface ProductFormData {
   stockStatus: string;
   stockQuantity: string;
   manageStock: boolean;
-  categoryId: number;
-  categoryName: string;
-  categorySlug: string;
-  categoryParent?: number;
+  /** Every category the product belongs to. The first one is the "primary" (breadcrumbs). */
+  categories: { id: number; name: string; slug: string; parent?: number }[];
   sizes: string[];
   colors: string[];
   sizeChart?: SizeChartData;
@@ -296,18 +294,9 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
   const [manageStock, setManageStock] = useState(
     initialData?.manageStock || false
   );
-  const [categoryId, setCategoryId] = useState<number>(
-    initialData?.categoryId || 0
-  );
-  const [categoryName, setCategoryName] = useState(
-    initialData?.categoryName || ""
-  );
-  const [categorySlug, setCategorySlug] = useState(
-    initialData?.categorySlug || ""
-  );
-  const [categoryParent, setCategoryParent] = useState<number>(
-    initialData?.categoryParent || 0
-  );
+  const [selectedCategories, setSelectedCategories] = useState<
+    { id: number; name: string; slug: string; parent?: number }[]
+  >(initialData?.categories || []);
   const [sizes, setSizes] = useState<string[]>(initialData?.sizes || []);
   const [colors, setColors] = useState<string[]>(initialData?.colors || []);
   const [sizeChart, setSizeChart] = useState<SizeChartData>(
@@ -407,8 +396,6 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
 
   // Searchable category combobox state
   const [categoryQuery, setCategoryQuery] = useState("");
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-  const [categoryActiveIndex, setCategoryActiveIndex] = useState(0);
   const categoryBoxRef = useRef<HTMLDivElement>(null);
 
   const filteredCategories = (() => {
@@ -419,33 +406,30 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
     );
   })();
 
-  const selectCategory = (cat: { id: number; name: string; slug: string; parent?: number }) => {
-    setCategoryId(cat.id);
-    setCategoryName(cat.name);
-    setCategorySlug(cat.slug);
-    setCategoryParent(cat.parent || 0);
-    setCategoryQuery("");
-    setCategoryDropdownOpen(false);
+  const isCategorySelected = (id: number) => selectedCategories.some((c) => c.id === id);
+
+  const toggleCategory = (cat: { id: number; name: string; slug: string; parent?: number }) => {
+    setSelectedCategories((prev) =>
+      prev.some((c) => c.id === cat.id)
+        ? prev.filter((c) => c.id !== cat.id)
+        : [...prev, { id: cat.id, name: cat.name, slug: cat.slug, parent: cat.parent || 0 }],
+    );
   };
 
-  const clearCategory = () => {
-    setCategoryId(0);
-    setCategoryName("");
-    setCategorySlug("");
-    setCategoryParent(0);
+  /** Move a category to the front — the first one is the primary (used for breadcrumbs). */
+  const makePrimaryCategory = (id: number) => {
+    setSelectedCategories((prev) => {
+      const target = prev.find((c) => c.id === id);
+      return target ? [target, ...prev.filter((c) => c.id !== id)] : prev;
+    });
+  };
+
+  const clearCategories = () => {
+    setSelectedCategories([]);
     setCategoryQuery("");
   };
 
-  useEffect(() => {
-    if (!categoryDropdownOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (categoryBoxRef.current && !categoryBoxRef.current.contains(e.target as Node)) {
-        setCategoryDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [categoryDropdownOpen]);
+  const primaryCategory = selectedCategories[0];
 
   const toggleSize = (s: string) =>
     setSizes((prev) => {
@@ -816,6 +800,10 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
       setError("Please wait for image uploads to finish.");
       return;
     }
+    if (selectedCategories.length === 0) {
+      setError("Please select at least one category so the product appears on the website.");
+      return;
+    }
     setError("");
     setSaving(true);
 
@@ -875,9 +863,12 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
           ? { id: img.wpId, src: img.src, alt: img.alt }
           : { src: img.src, alt: img.alt }
       ),
-      categories: categoryId
-        ? [{ id: categoryId, name: categoryName, slug: categorySlug, parent: categoryParent || 0 }]
-        : [],
+      categories: selectedCategories.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        parent: c.parent || 0,
+      })),
       meta_data: [
         ...(buyPrice ? [{ key: "_buy_price", value: buyPrice }] : []),
         { ...(initialData?.deliveryInsideId ? { id: initialData.deliveryInsideId } : {}), key: "_delivery_inside", value: deliveryInside },
@@ -1005,7 +996,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
             </div>
           </div>
 
-          {/* ── Dedicated Category & Department Section ────────────────────── */}
+          {/* ── Categories (multi-select) ─────────────────────────────────── */}
           <div className="bg-white rounded-2xl border border-stone-200 p-5 shadow-sm">
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-stone-100">
               <div className="flex items-center gap-2.5">
@@ -1013,176 +1004,145 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   <FolderPlus className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-[14px] font-bold text-stone-900">
-                    Category &amp; Department *
-                  </h3>
+                  <h3 className="text-[14px] font-bold text-stone-900">Categories *</h3>
                   <p className="text-[11px] text-stone-500">
-                    Assign this garment to its store department, navigation filter &amp; category URL
+                    Choose every collection this product should appear in — it shows in all of them on the website.
                   </p>
                 </div>
               </div>
-              {categoryId ? (
+              {selectedCategories.length > 0 ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <Check className="h-3 w-3" /> Assigned
+                  <Check className="h-3 w-3" /> {selectedCategories.length} selected
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                  Select Category
+                  Select at least one
                 </span>
               )}
             </div>
 
-            {/* Selected Category Display */}
-            {categoryId ? (
-              <div className="mb-4 rounded-xl border border-amber-200/80 bg-[#FAF7F2] p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-lg bg-[#400604] text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <Tag className="h-4 w-4 text-[#E1B76F]" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-bold text-stone-900 truncate">
-                        {categoryName}
+            {/* Selected categories */}
+            {selectedCategories.length > 0 ? (
+              <div className="mb-4 rounded-xl border border-amber-200/80 bg-[#FAF7F2] p-3.5">
+                <div className="flex flex-wrap gap-2">
+                  {selectedCategories.map((cat, i) => {
+                    const path = formattedCategories.find((c) => c.id === cat.id)?.path || cat.name;
+                    return (
+                      <span
+                        key={cat.id}
+                        title={path}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#400604]/20 bg-white pl-2.5 pr-1 py-1 text-[12px] font-semibold text-[#400604] shadow-xs"
+                      >
+                        {i === 0 ? (
+                          <span className="rounded bg-[#400604] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#E1B76F]">
+                            Primary
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => makePrimaryCategory(cat.id)}
+                            className="rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-400 hover:bg-stone-100 hover:text-[#400604]"
+                            title="Make this the primary category"
+                          >
+                            Make primary
+                          </button>
+                        )}
+                        {cat.name}
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(cat)}
+                          className="rounded p-1 text-stone-400 hover:bg-rose-50 hover:text-rose-600"
+                          aria-label={`Remove ${cat.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </span>
-                      <span className="text-[11px] font-mono text-stone-500 bg-white px-2 py-0.5 rounded border border-stone-200">
-                        /{categorySlug}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 truncate mt-0.5">
-                      Hierarchy: {formattedCategories.find((c) => c.id === categoryId)?.path || categoryName}
-                    </p>
-                  </div>
+                    );
+                  })}
                 </div>
-                <button
-                  type="button"
-                  onClick={clearCategory}
-                  className="ml-3 shrink-0 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 transition"
-                >
-                  Change Category
-                </button>
+                <div className="mt-2.5 flex items-center justify-between gap-3 text-[11px] text-stone-500">
+                  <span>
+                    Primary: <strong className="text-stone-700">{formattedCategories.find((c) => c.id === primaryCategory?.id)?.path || primaryCategory?.name}</strong>
+                  </span>
+                  <button type="button" onClick={clearCategories} className="font-semibold text-rose-600 hover:underline">
+                    Clear all
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="mb-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-3.5 text-[12px] text-amber-800 flex items-center gap-2.5">
                 <Tag className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>Please select a category below so this garment appears under the correct collection and storefront filters.</span>
+                <span>Pick one or more categories below so this product appears in the right collections.</span>
               </div>
             )}
 
-            {/* Quick-Select Pills */}
-            <div className="mb-4">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-2">
-                Quick Select Categories
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {formattedCategories
-                  .filter((c) => c.level === 0 || ["Three Piece", "3-Piece Suit", "Panjabi", "Shirts", "Polos", "Kurtis", "Saree"].some(k => c.name.toLowerCase().includes(k.toLowerCase())))
-                  .slice(0, 10)
-                  .map((cat) => {
-                    const isSelected = cat.id === categoryId;
-                    return (
-                      <button
-                        type="button"
-                        key={cat.id}
-                        onClick={() => selectCategory(cat)}
-                        className={`rounded-xl px-3 py-1.5 text-[12px] font-medium transition ${
-                          isSelected
-                            ? "bg-[#400604] text-white shadow-sm ring-2 ring-[#400604]/20"
-                            : "bg-stone-100 text-stone-700 hover:bg-stone-200"
-                        }`}
-                      >
-                        {cat.name}
-                        {isSelected && " ✓"}
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-
-            {/* Full Searchable Category Tree Selector */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
-                Search or Browse All Categories
-              </label>
-              <div className="relative" ref={categoryBoxRef}>
-                <div className="relative">
-                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={categoryDropdownOpen ? categoryQuery : (categoryName ? `${categoryName} (Click to browse all)` : "")}
-                    onChange={(e) => {
-                      setCategoryQuery(e.target.value);
-                      setCategoryActiveIndex(0);
-                      if (!categoryDropdownOpen) setCategoryDropdownOpen(true);
-                    }}
-                    onFocus={() => {
-                      setCategoryDropdownOpen(true);
-                      setCategoryQuery("");
-                      setCategoryActiveIndex(0);
-                    }}
-                    placeholder="Search all categories (e.g. Women, Panjabi, Saree, 3-Piece)…"
-                    className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-9 py-2.5 text-[13px] text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
-                  />
-                  {categoryId ? (
-                    <button
-                      type="button"
-                      onClick={clearCategory}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-                      aria-label="Clear category"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  ) : null}
-                </div>
-
-                {categoryDropdownOpen && (
-                  <div className="absolute z-30 mt-1.5 max-h-72 w-full overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 shadow-xl">
-                    {filteredCategories.length === 0 ? (
-                      <div className="px-4 py-4 text-center text-[13px] text-stone-400">
-                        No matching categories found
-                      </div>
-                    ) : (
-                      filteredCategories.map((cat, idx) => {
-                        const isMain = cat.level === 0;
-                        const isActive = idx === categoryActiveIndex;
-                        const isSelected = cat.id === categoryId;
-                        return (
-                          <button
-                            type="button"
-                            key={cat.id}
-                            onClick={() => selectCategory(cat)}
-                            className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-[13px] transition ${
-                              isActive ? "bg-stone-50" : "hover:bg-stone-50/80"
-                            } ${isSelected ? "bg-amber-50/80 font-bold text-[#400604]" : "text-stone-700"}`}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              {cat.level > 0 && (
-                                <span className="shrink-0 text-stone-300 font-mono text-[11px]">
-                                  {"└" + "─".repeat(cat.level)}
-                                </span>
-                              )}
-                              <span className="truncate">{cat.name}</span>
-                              {isMain && (
-                                <span className="shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-600">
-                                  Root
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0 ml-2">
-                              <span className="text-[10px] text-stone-400 font-mono">
-                                /{cat.slug}
-                              </span>
-                              {isSelected && <Check className="h-3.5 w-3.5 text-[#400604]" />}
-                            </div>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
+            {/* Searchable multi-select list */}
+            <div ref={categoryBoxRef}>
+              <div className="relative mb-2">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={categoryQuery}
+                  onChange={(e) => setCategoryQuery(e.target.value)}
+                  placeholder="Search categories (e.g. Panjabi, Saree, Women)…"
+                  className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-9 py-2.5 text-[13px] text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                />
+                {categoryQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoryQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
+
+              <div className="max-h-72 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1">
+                {availableCategories.length === 0 ? (
+                  <div className="px-4 py-4 text-center text-[13px] text-stone-400">Loading categories…</div>
+                ) : filteredCategories.length === 0 ? (
+                  <div className="px-4 py-4 text-center text-[13px] text-stone-400">No matching categories found</div>
+                ) : (
+                  filteredCategories.map((cat) => {
+                    const checked = isCategorySelected(cat.id);
+                    return (
+                      <label
+                        key={cat.id}
+                        className={`flex cursor-pointer items-center gap-3 px-4 py-2 text-[13px] transition hover:bg-stone-50 ${
+                          checked ? "bg-amber-50/70 font-semibold text-[#400604]" : "text-stone-700"
+                        }`}
+                        style={{ paddingLeft: categoryQuery ? undefined : 16 + cat.level * 20 }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCategory(cat)}
+                          className="h-4 w-4 shrink-0 rounded border-stone-300 accent-[#400604]"
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {cat.name}
+                          {categoryQuery && cat.level > 0 && (
+                            <span className="ml-2 text-[11px] font-normal text-stone-400">{cat.path}</span>
+                          )}
+                        </span>
+                        {cat.level === 0 && (
+                          <span className="shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-500">
+                            Main
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <p className="mt-2 text-[11px] text-stone-400">
+                Tip: a product in a sub-category automatically shows under its parent collection too — you only need to tick the parent if you want it listed there on its own.
+              </p>
             </div>
 
-            {/* Category-Wise Store URL Preview */}
+            {/* Storefront routing preview */}
             <div className="mt-4 rounded-xl bg-stone-50 border border-stone-200 p-3.5">
               <div className="flex items-center gap-2 mb-2">
                 <Link2 className="h-3.5 w-3.5 text-[#400604]" />
@@ -1198,15 +1158,17 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   </code>
                 </div>
                 <div className="flex items-start gap-2">
-                  <span className="text-stone-400 font-medium shrink-0 w-24">Category URL:</span>
-                  <code className="text-stone-700 font-mono break-all">
-                    {categorySlug ? `/category/${categorySlug}` : "— Select a category above —"}
-                  </code>
+                  <span className="text-stone-400 font-medium shrink-0 w-24">Appears in:</span>
+                  <span className="text-stone-700 break-all">
+                    {selectedCategories.length
+                      ? selectedCategories.map((c) => `/category/${c.slug}`).join("  ·  ")
+                      : "— Select a category above —"}
+                  </span>
                 </div>
                 <div className="flex items-start gap-2">
                   <span className="text-stone-400 font-medium shrink-0 w-24">Breadcrumbs:</span>
                   <span className="text-stone-600">
-                    Home &gt; {categoryName || "Unassigned"} &gt; {name || "Product Name"}
+                    Home &gt; {primaryCategory?.name || "Unassigned"} &gt; {name || "Product Name"}
                   </span>
                 </div>
               </div>

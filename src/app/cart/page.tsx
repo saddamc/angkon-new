@@ -21,11 +21,6 @@ export default function CartPage() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const subtotal = useCartStore((state) => state.subtotal());
 
-  // Delivery quote from the server (admin Shipping settings). The district isn't known yet,
-  // so this is the inside-Dhaka rate; the final fee is set by district at checkout.
-  const { quote, loading: quoteLoading } = useShippingQuote(items);
-  const shippingFee = quote?.fee ?? 0;
-
   // Promo code state
   const [enablePromo, setEnablePromo] = useState(true);
   const [promoInput, setPromoInput] = useState("");
@@ -134,7 +129,10 @@ export default function CartPage() {
   };
 
   const discountAmount = appliedPromo?.discount ?? 0;
-  const estimatedTotal = Math.max(0, subtotal - discountAmount) + shippingFee;
+  // Delivery depends on the district, which is chosen at checkout — so it isn't added here.
+  // The quote is only used to tell the customer how close they are to free delivery.
+  const { quote, loading: quoteLoading } = useShippingQuote(items, "", "", discountAmount);
+  const estimatedTotal = Math.max(0, subtotal - discountAmount);
 
   if (items.length === 0) {
     return (
@@ -229,22 +227,18 @@ export default function CartPage() {
               )}
 
               <div className="flex items-center justify-between text-white/70">
-                <span>Estimated Shipping</span>
-                {!quote ? (
-                  quoteLoading ? (
-                    <span className="h-4 w-14 animate-pulse rounded bg-[#2d0302]" />
-                  ) : (
-                    <span className="text-white/60">At checkout</span>
-                  )
-                ) : quote.isFree ? (
+                <span>Shipping</span>
+                {quote?.freeByThreshold ? (
                   <span className="text-white font-bold">Free</span>
+                ) : quoteLoading && !quote ? (
+                  <span className="h-4 w-14 animate-pulse rounded bg-[#2d0302]" />
                 ) : (
-                  <span className="font-semibold text-white">{formatPrice(quote.fee)}</span>
+                  <span className="text-white/60">Calculated at checkout</span>
                 )}
               </div>
 
-              {quote && !quote.isFree && (
-                <p className="text-xs text-white/60">Inside Dhaka rate shown. Your final delivery fee is set by district at checkout.</p>
+              {quote && !quote.freeByThreshold && (
+                <p className="text-xs text-white/60">Delivery fee depends on your district and is shown at checkout.</p>
               )}
 
               {quote?.amountToFreeDelivery != null && (
@@ -311,7 +305,7 @@ export default function CartPage() {
 
               <div className="border-t border-[#E1B76F]/20 pt-3 text-base font-bold text-white">
                 <div className="flex items-center justify-between">
-                  <span>Estimated Total</span>
+                  <span>Total (excl. delivery)</span>
                   <span>{formatPrice(estimatedTotal)}</span>
                 </div>
               </div>

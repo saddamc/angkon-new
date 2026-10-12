@@ -16,9 +16,13 @@ import {
 
 interface SalesReport {
   total_sales: string;
+  paid_revenue?: string;
+  pending_revenue?: string;
+  cancelled_sales?: string;
   net_sales: string;
   average_sales: string;
   total_orders: number;
+  all_orders_count?: number;
   total_items: number;
   total_tax: string;
   total_shipping: string;
@@ -220,41 +224,52 @@ export default function ReportsPage() {
           </div>
           <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Total Sales</p>
           <p className="text-2xl font-bold text-[#1A0302] mt-1">{fmt(s?.total_sales ?? "0")}</p>
-          <p className="text-[11px] text-stone-400 mt-1">Gross order volume</p>
+          <p className="text-[11px] text-stone-400 mt-1">Active order volume</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm">
-          <div className="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center mb-3">
-            <Percent className="h-5 w-5 text-amber-700" />
+        <div className="bg-white rounded-2xl border border-emerald-200/60 bg-emerald-50/20 p-5 shadow-sm">
+          <div className="h-9 w-9 rounded-xl bg-emerald-100 flex items-center justify-center mb-3">
+            <Percent className="h-5 w-5 text-emerald-800" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Net Revenue</p>
-          <p className="text-2xl font-bold text-[#1A0302] mt-1">{fmt(s?.net_sales ?? "0")}</p>
-          <p className="text-[11px] text-stone-400 mt-1">Excluding delivery charges</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-emerald-800/70">Payment Received</p>
+          <p className="text-2xl font-bold text-emerald-800 mt-1">{fmt(s?.paid_revenue ?? "0")}</p>
+          <p className="text-[11px] text-emerald-700/80 mt-1">Delivered &amp; collected in cash</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-amber-200/60 bg-amber-50/20 p-5 shadow-sm">
+          <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center mb-3">
+            <Truck className="h-5 w-5 text-amber-800" />
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-800/70">Pending Collection</p>
+          <p className="text-2xl font-bold text-amber-800 mt-1">{fmt(s?.pending_revenue ?? "0")}</p>
+          <p className="text-[11px] text-amber-700/80 mt-1">In-transit COD awaiting delivery</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm">
           <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
             <ShoppingCart className="h-5 w-5 text-blue-700" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Total Orders</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Active Orders</p>
           <p className="text-2xl font-bold text-[#1A0302] mt-1">{s?.total_orders ?? 0}</p>
           <p className="text-[11px] text-stone-400 mt-1">
             Avg ticket: {fmt(s?.average_sales ?? "0")}
           </p>
         </div>
-
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm">
-          <div className="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center mb-3">
-            <Package className="h-5 w-5 text-emerald-700" />
-          </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Items Sold</p>
-          <p className="text-2xl font-bold text-[#1A0302] mt-1">{s?.total_items ?? 0}</p>
-          <p className="text-[11px] text-stone-400 mt-1">Apparel units ordered</p>
-        </div>
       </div>
 
       {/* ── Financial Details & Shipping ─────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-700 flex-shrink-0">
+            <Percent className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Net Sales</p>
+            <p className="text-xl font-bold text-[#1A0302] mt-0.5">{fmt(s?.net_sales ?? "0")}</p>
+            <p className="text-[10px] text-stone-400">Excluding delivery</p>
+          </div>
+        </div>
+
         <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
             <Truck className="h-6 w-6" />
@@ -275,13 +290,14 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-700 flex-shrink-0">
+        <div className="bg-white rounded-2xl border border-rose-200/80 bg-rose-50/20 p-5 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-rose-100 flex items-center justify-center text-rose-700 flex-shrink-0">
             <AlertTriangle className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Refunds & Returns</p>
-            <p className="text-xl font-bold text-[#1A0302] mt-0.5">{s?.total_refunds ?? 0} Orders</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-rose-800">Cancelled Orders</p>
+            <p className="text-xl font-bold text-rose-800 mt-0.5">{s?.total_refunds ?? 0} Orders</p>
+            <p className="text-[10px] text-rose-600 font-semibold">{fmt(s?.cancelled_sales ?? "0")} voided</p>
           </div>
         </div>
       </div>

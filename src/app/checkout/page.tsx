@@ -193,8 +193,14 @@ export default function CheckoutPage() {
 
   // Delivery fee comes from the server (admin Shipping settings + product fees),
   // so what is shown here is exactly what the order is charged.
-  const { quote: shippingQuote, loading: shippingLoading } = useShippingQuote(items, watchedDistrict, watchedCity);
-  const SHIPPING_FEE = shippingQuote?.fee ?? 0;
+  const { quote: shippingQuote, loading: shippingLoading } = useShippingQuote(
+    items,
+    watchedDistrict,
+    watchedCity,
+    appliedPromo?.discount ?? 0,
+  );
+  // No fee is charged to the total until the customer has chosen a district.
+  const SHIPPING_FEE = shippingQuote?.zoneKnown ? shippingQuote.fee : 0;
 
   // Sync promo code from localStorage or Cart on load / subtotal update
   useEffect(() => {
@@ -498,7 +504,16 @@ export default function CheckoutPage() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
-      setCheckoutConfig(await loadCheckoutConfig());
+      const cfg = await loadCheckoutConfig();
+      setCheckoutConfig(cfg);
+      setValue("email", "");
+      setValue("name", "");
+      setValue("phone", "");
+      setValue("streetAddress", "");
+      setValue("city", "");
+      setValue("district", "");
+      setValue("postcode", "");
+      setReturningVerifiedUser(null);
     }
   };
 
@@ -721,20 +736,35 @@ export default function CheckoutPage() {
 
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-8 md:py-12">
 
-        {/* ── Top Notice 1: Returning customer? Click here to login ── */}
+        {/* ── Top Notice 1: Returning customer / Signed-in Account ── */}
         <div className="mb-4">
           <div className="border-t-2 border-[#E1B76F] border-b border-[#E1B76F]/20 bg-[#340402] px-4 py-3.5 text-sm text-white/90 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="text-white text-base leading-none">▢</span>
               <span>
-                Returning customer?{" "}
-                <button
-                  type="button"
-                  onClick={() => setShowLogin((v) => !v)}
-                  className="text-[#E1B76F] underline underline-offset-2 hover:text-white transition font-medium cursor-pointer"
-                >
-                  Click here to login
-                </button>
+                {checkoutConfig?.user ? (
+                  <>
+                    Logged in as <strong className="text-white font-bold">{checkoutConfig.user.email}</strong>.{" "}
+                    <button
+                      type="button"
+                      onClick={signOutOfCheckout}
+                      className="text-[#E1B76F] underline underline-offset-2 hover:text-white transition font-medium cursor-pointer ml-1.5"
+                    >
+                      Switch account / Log out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Returning customer?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowLogin((v) => !v)}
+                      className="text-[#E1B76F] underline underline-offset-2 hover:text-white transition font-medium cursor-pointer"
+                    >
+                      Click here to login
+                    </button>
+                  </>
+                )}
               </span>
             </div>
           </div>
@@ -1081,9 +1111,29 @@ export default function CheckoutPage() {
 
                     {/* Right side verification action */}
                     {emailLocked ? (
-                      <div className="absolute right-2 flex items-center gap-1 rounded bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
-                        <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>Verified</span>
+                      <div className="absolute right-2 flex items-center gap-2">
+                        <div className="flex items-center gap-1 rounded bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 text-[11px] font-bold text-emerald-300">
+                          <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>Verified</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCheckoutConfig((c) => (c ? { ...c, user: null } : null));
+                            setValue("email", "");
+                            setValue("name", "");
+                            setValue("phone", "");
+                            setValue("streetAddress", "");
+                            setValue("city", "");
+                            setValue("district", "");
+                            setValue("postcode", "");
+                            setReturningVerifiedUser(null);
+                          }}
+                          className="text-[11px] font-bold text-[#E1B76F] hover:underline cursor-pointer"
+                          title="Use a different email address"
+                        >
+                          Change
+                        </button>
                       </div>
                     ) : checkoutConfig?.requireEmailVerification !== false ? (
                       <button
@@ -1291,6 +1341,8 @@ export default function CheckoutPage() {
                       ) : (
                         <span className="text-white/70">Calculated when you place the order</span>
                       )
+                    ) : !shippingQuote.zoneKnown ? (
+                      <span className="text-white/70">Choose your district to see the delivery fee</span>
                     ) : (
                       <>
                         <div>
@@ -1298,9 +1350,7 @@ export default function CheckoutPage() {
                           <strong className="text-white">{shippingQuote.isFree ? "Free" : formatPrice(shippingQuote.fee)}</strong>
                         </div>
                         <div className="mt-0.5 text-xs text-white/60">
-                          {!shippingQuote.zoneKnown
-                            ? "Inside Dhaka rate — updates when you choose your district"
-                            : shippingQuote.freeByThreshold
+                          {shippingQuote.freeByThreshold
                               ? `Free delivery on orders of ${formatPrice(shippingQuote.freeDeliveryThreshold)} or more`
                               : shippingQuote.isFree
                                 ? "Free delivery for this order"

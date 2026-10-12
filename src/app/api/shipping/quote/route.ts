@@ -11,9 +11,10 @@ const MAX_ITEMS = 100;
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { district?: unknown; city?: unknown; items?: unknown };
+    const body = (await request.json()) as { district?: unknown; city?: unknown; discount?: unknown; items?: unknown };
     const district = typeof body.district === "string" ? body.district.trim().slice(0, 80) : "";
     const city = typeof body.city === "string" ? body.city.trim().slice(0, 80) : "";
+    const discount = Math.max(0, Number(body.discount) || 0);
     const rawItems = Array.isArray(body.items) ? body.items.slice(0, MAX_ITEMS) : [];
 
     const items = rawItems.map((item) => {
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
     ]);
 
     const quote = calculateShipping({
-      subtotal,
+      // Free delivery is judged on what the customer actually pays for the goods (after a promo).
+      subtotal: Math.max(0, subtotal - discount),
       district,
       city,
       settings,

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +41,8 @@ export async function POST(request: NextRequest) {
       await prod.save();
       moved++;
     }
+
+    await publishCatalogChange();
 
     return NextResponse.json({ ok: true, moved, total: products.length });
   } catch (error) {

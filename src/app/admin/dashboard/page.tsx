@@ -59,11 +59,13 @@ function DonutChart({
   max,
   color,
   size = 140,
+  label = "COLLECTED",
 }: {
   value: number;
   max: number;
   color: string;
   size?: number;
+  label?: string;
 }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   const r = (size - 16) / 2;
@@ -94,9 +96,12 @@ function DonutChart({
           className="transition-all duration-1000 ease-out"
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-serif font-bold text-[#1A0302]">
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl font-serif font-bold text-[#1A0302]">
           {pct.toFixed(0)}%
+        </span>
+        <span className="text-[10px] font-bold tracking-wider uppercase text-stone-400">
+          {label}
         </span>
       </div>
     </div>
@@ -148,55 +153,79 @@ export default function AdminDashboard() {
 
   /* ── Derived stats ───────────────────────────────────────── */
   const stats = useMemo(() => {
-    const totalRevenue = orders
-      .filter((o) => !["cancelled", "failed", "refunded", "trash"].includes(o.status))
+    // 1. Filter out cancelled, failed, and refunded orders from revenue
+    const validOrders = orders.filter(
+      (o) => !["cancelled", "failed", "refunded", "trash"].includes(o.status)
+    );
+    const cancelledOrders = orders.filter((o) =>
+      ["cancelled", "failed", "refunded", "trash"].includes(o.status)
+    );
+
+    const totalRevenue = validOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const paidRevenue = validOrders
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((o: any) => o.paymentStatus === "paid" || o.payment_status === "paid" || o.status === "completed")
       .reduce((sum, o) => sum + Number(o.total || 0), 0);
-    const pendingCount = orders.filter(
+    const pendingRevenue = Math.max(0, totalRevenue - paidRevenue);
+
+    const pendingCount = validOrders.filter(
       (o) => o.status === "pending" || o.status === "on-hold"
     ).length;
-    const completedCount = orders.filter(
+    const completedCount = validOrders.filter(
       (o) => o.status === "completed"
     ).length;
-    const processingCount = orders.filter(
+    const processingCount = validOrders.filter(
       (o) => o.status === "processing"
     ).length;
-    const cancelledCount = orders.filter(
-      (o) => o.status === "cancelled"
-    ).length;
+    const cancelledCount = cancelledOrders.length;
     const deliveredCount = completedCount;
 
-    // Today's orders
+    // Today's valid orders
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayOrders = orders.filter(
+    const todayOrders = validOrders.filter(
       (o) => new Date(o.date_created) >= today
     );
     const todayRevenue = todayOrders.reduce(
       (sum, o) => sum + Number(o.total || 0),
       0
     );
+    const todayPaid = todayOrders
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((o: any) => o.paymentStatus === "paid" || o.payment_status === "paid" || o.status === "completed")
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
 
-    // This month's orders
+    // This month's valid orders
     const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthOrders = orders.filter(
+    const monthOrders = validOrders.filter(
       (o) => new Date(o.date_created) >= thisMonth
     );
     const monthRevenue = monthOrders.reduce(
       (sum, o) => sum + Number(o.total || 0),
       0
     );
+    const monthPaid = monthOrders
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((o: any) => o.paymentStatus === "paid" || o.payment_status === "paid" || o.status === "completed")
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
 
     return {
       totalRevenue,
+      paidRevenue,
+      pendingRevenue,
       pendingCount,
       completedCount,
       processingCount,
       cancelledCount,
       deliveredCount,
       todayRevenue,
+      todayPaid,
       todayOrders: todayOrders.length,
       monthRevenue,
+      monthPaid,
       monthOrders: monthOrders.length,
+      totalActiveOrders: validOrders.length,
+      allOrdersCount: orders.length,
     };
   }, [orders]);
 
@@ -271,24 +300,27 @@ export default function AdminDashboard() {
         {[
           {
             title: "Today",
-            value: stats.todayRevenue,
-            max: stats.totalRevenue || 1,
+            revenue: stats.todayRevenue,
+            paid: stats.todayPaid,
+            pending: stats.todayRevenue - stats.todayPaid,
             color: "#E1B76F",
             orders: stats.todayOrders,
           },
           {
             title: "This Month",
-            value: stats.monthRevenue,
-            max: stats.totalRevenue || 1,
+            revenue: stats.monthRevenue,
+            paid: stats.monthPaid,
+            pending: stats.monthRevenue - stats.monthPaid,
             color: "#400604",
             orders: stats.monthOrders,
           },
           {
             title: "All Time",
-            value: stats.totalRevenue,
-            max: stats.totalRevenue || 1,
+            revenue: stats.totalRevenue,
+            paid: stats.paidRevenue,
+            pending: stats.pendingRevenue,
             color: "#1A0302",
-            orders: orders.length,
+            orders: stats.totalActiveOrders,
           },
         ].map((item) => (
           <div
@@ -299,24 +331,39 @@ export default function AdminDashboard() {
               {item.title}
             </h3>
             <DonutChart
-              value={item.value}
-              max={item.max}
+              value={item.paid}
+              max={item.revenue || 1}
               color={item.color}
+              label="COLLECTED"
             />
-            <div className="mt-5 space-y-2 w-full">
-              <div className="flex items-center gap-2 text-[13px]">
+            <div className="mt-5 space-y-2 w-full text-[13px]">
+              <div className="flex items-center gap-2">
                 <span
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ background: item.color }}
                 />
-                <span className="text-stone-500">Revenue</span>
+                <span className="text-stone-500">Gross Sales</span>
                 <span className="ml-auto font-bold text-[#1A0302]">
-                  {fmt(item.value)}
+                  {fmt(item.revenue)}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-[13px]">
-                <span className="h-2.5 w-2.5 rounded-full bg-stone-200" />
-                <span className="text-stone-500">Orders Placed</span>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <span className="text-stone-500">Payment Received</span>
+                <span className="ml-auto font-bold text-emerald-700">
+                  {fmt(item.paid)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                <span className="text-stone-500">Pending (COD)</span>
+                <span className="ml-auto font-semibold text-amber-700">
+                  {fmt(item.pending)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-stone-100">
+                <span className="h-2.5 w-2.5 rounded-full bg-stone-300" />
+                <span className="text-stone-500">Active Orders</span>
                 <span className="ml-auto font-semibold text-stone-700">
                   {item.orders}
                 </span>

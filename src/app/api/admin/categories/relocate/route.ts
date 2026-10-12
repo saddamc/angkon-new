@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+import { syncProductCategoryRefs } from "@/server/category-sync";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +43,9 @@ export async function POST(request: NextRequest) {
     } catch {
       // ignore
     }
+
+    await syncProductCategoryRefs([Number(id)]);
+    await publishCatalogChange();
 
     return NextResponse.json({ ok: true, category: updated });
   } catch (error) {

@@ -1581,19 +1581,6 @@
     }
   },
   {
-    "id": 818,
-    "name": "String Tie Top",
-    "slug": "string-tie-top",
-    "parent": 173,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 191574,
-      "src": "/banners/tops.webp",
-      "alt": "String Tie Top"
-    }
-  },
-  {
     "id": 697,
     "name": "Stud Earrings",
     "slug": "stud-earrings",
@@ -1855,19 +1842,5 @@
         "value": "blue"
       }
     ]
-  },
-  {
-    "id": 915,
-    "name": "3-Piece Suit",
-    "slug": "3-piece-suit",
-    "parent": 914,
-    "menu_order": 1,
-    "description": "Premium 3-Piece Stitched & Unstitched Suits",
-    "count": 7,
-    "image": {
-      "id": 915001,
-      "src": "/banners/ethnic-wear.webp",
-      "alt": "3-Piece Suit"
-    }
   }
 ]

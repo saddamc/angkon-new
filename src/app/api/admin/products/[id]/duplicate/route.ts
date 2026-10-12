@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
-import { invalidateProductsCache } from "@/lib/db/products";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+
 
 function uniqueSku(sku: string | undefined): string {
   const base = (sku || "").trim();
@@ -52,7 +53,7 @@ export async function POST(
       stock_status: source.stock_status || "instock",
     });
 
-    invalidateProductsCache();
+    await publishCatalogChange();
 
     return NextResponse.json(
       {

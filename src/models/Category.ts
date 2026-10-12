@@ -14,6 +14,10 @@ export interface ICategory extends Document {
   menu_order: number;
   description: string;
   count: number;
+  /** Hidden from the storefront (menus, collection pages) when false. */
+  is_active: boolean;
+  /** Admin presentation settings (icon, theme…) as key/value pairs. */
+  meta_data: { key: string; value: string }[];
   image: ICategoryImage | null;
   createdAt: Date;
   updatedAt: Date;
@@ -37,6 +41,11 @@ const CategorySchema = new Schema<ICategory>(
     menu_order: { type: Number, default: 0, index: true },
     description: { type: String, default: "" },
     count: { type: Number, default: 0 },
+    is_active: { type: Boolean, default: true, index: true },
+    meta_data: {
+      type: [new Schema({ key: { type: String, required: true }, value: { type: String, default: "" } }, { _id: false })],
+      default: [],
+    },
     image: { type: CategoryImageSchema, default: null },
   },
   {

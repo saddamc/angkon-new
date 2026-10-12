@@ -4,7 +4,11 @@ import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary, deleteCloudinaryFolder } from "@/lib/cloudinary";
-import { getDbCategories, invalidateCategoriesCache } from "@/lib/db/categories";
+import { getAllDbCategoriesIncludingInactive } from "@/lib/db/categories";
+import { Product } from "@/models/Product";
+import { cleanCategoryInput, slugifyCategory } from "@/server/category-input";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+import { removeCategoryRefs } from "@/server/category-sync";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +28,40 @@ function syncRealCategoriesFile(updater: (cats: any[]) => any[]) {
 
 export async function GET() {
   try {
-    const categories = await getDbCategories();
+    const categories = await getAllDbCategoriesIncludingInactive();
     if (categories && categories.length > 0) {
-      return NextResponse.json(categories, {
-        headers: { "Cache-Control": "public, max-age=5, stale-while-revalidate=30" },
+      // Live product counts. `direct_count` = products listed in this category itself;
+      // `count` = distinct products shown on its storefront page (itself + all sub-categories).
+      const direct = new Map<number, number>();
+      const subtree = new Map<number, Set<number>>();
+      try {
+        await connectToDatabase();
+        const prods = await Product.find({}).select("id categories.id").lean();
+        const parentOf = new Map<number, number>(categories.map((c) => [c.id, c.parent || 0]));
+        for (const p of prods) {
+          for (const ref of p.categories || []) {
+            direct.set(ref.id, (direct.get(ref.id) ?? 0) + 1);
+            // Walk up the tree so ancestors include this product too.
+            let cursor: number | undefined = ref.id;
+            const seen = new Set<number>();
+            while (cursor && !seen.has(cursor)) {
+              seen.add(cursor);
+              if (!subtree.has(cursor)) subtree.set(cursor, new Set());
+              subtree.get(cursor)!.add(p.id);
+              cursor = parentOf.get(cursor);
+            }
+          }
+        }
+      } catch (countErr) {
+        console.warn("Category product counts unavailable:", countErr);
+      }
+      const withCounts = categories.map((c) => ({
+        ...c,
+        count: subtree.get(c.id)?.size ?? 0,
+        direct_count: direct.get(c.id) ?? 0,
+      }));
+      return NextResponse.json(withCounts, {
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
       });
     }
   } catch (err) {
@@ -42,64 +76,57 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     await connectToDatabase();
 
-    const name = String(body.name || "Category").trim();
-    const slug =
-      body.slug ||
-      name
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w-]/g, "");
+    const input = cleanCategoryInput(body);
+    const name = input.name || "Category";
+    const baseSlug = input.slug || slugifyCategory(name) || "category";
+
+    // Unique slug: "kurti", "kurti-2", "kurti-3"...
+    let slug = baseSlug;
+    for (let n = 2; await Category.exists({ slug }); n++) slug = `${baseSlug}-${n}`;
 
     // Generate unique category ID
     let catId = Number(body.id);
-    if (!catId || isNaN(catId)) {
+    if (!catId || isNaN(catId) || (await Category.exists({ id: catId }))) {
       const highest = await Category.findOne({}).sort({ id: -1 }).select("id").lean();
       catId = (highest?.id || 1000) + 1;
     }
 
-    const imageObj = body.image && body.image.src
-      ? {
-          id: body.image.id ? Number(body.image.id) : 300000 + catId,
-          src: String(body.image.src),
-          alt: String(body.image.alt || name),
-        }
+    const imageObj = input.image
+      ? { id: input.image.id ?? 300000 + catId, src: input.image.src, alt: input.image.alt || name }
       : null;
-
-    const menuOrder = Number(body.menu_order ?? body.sortOrder ?? 0);
 
     const newCategory = await Category.create({
       id: catId,
       name,
       slug,
-      description: body.description ?? "",
-      parent: Number(body.parent ?? 0),
-      menu_order: menuOrder,
-      count: Number(body.count ?? 0),
+      description: input.description ?? "",
+      parent: input.parent ?? 0,
+      menu_order: input.menu_order ?? 0,
+      count: 0,
+      is_active: input.is_active ?? true,
+      meta_data: input.meta_data ?? [],
       image: imageObj,
     });
 
-    // Synchronize to real-categories.json
+    // Synchronize to real-categories.json (local development convenience; no-op on read-only hosts)
     syncRealCategoriesFile((cats) => {
-      const existsIndex = cats.findIndex((c) => c.id === catId || c.slug === slug);
       const catData = {
         id: catId,
         name,
         slug,
-        parent: Number(body.parent ?? 0),
-        menu_order: menuOrder,
-        description: body.description ?? "",
-        count: Number(body.count ?? 0),
+        parent: input.parent ?? 0,
+        menu_order: input.menu_order ?? 0,
+        description: input.description ?? "",
+        count: 0,
         image: imageObj,
       };
-      if (existsIndex >= 0) {
-        cats[existsIndex] = catData;
-      } else {
-        cats.push(catData);
-      }
+      const existsIndex = cats.findIndex((c) => c.id === catId || c.slug === slug);
+      if (existsIndex >= 0) cats[existsIndex] = catData;
+      else cats.push(catData);
       return cats;
     });
 
-    invalidateCategoriesCache();
+    await publishCatalogChange();
 
     return NextResponse.json(newCategory, { status: 201 });
   } catch (err) {
@@ -187,8 +214,9 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // 4. Delete the categories from MongoDB
+    // 4. Delete the categories from MongoDB (and drop them from products that still list them)
     await Category.deleteMany({ id: { $in: categoryIdsToDelete } });
+    await removeCategoryRefs(categoryIdsToDelete);
 
     // 5. Synchronize local real-categories.json
     syncRealCategoriesFile((cats) =>
@@ -206,7 +234,7 @@ export async function DELETE(request: NextRequest) {
       // ignore folder deletion if already empty or not a folder
     }
 
-    invalidateCategoriesCache();
+    await publishCatalogChange();
 
     return NextResponse.json(
       {

@@ -9,6 +9,7 @@ import {
   Search,
   ShoppingCart,
   Phone,
+  Mail,
   MapPin,
   Users,
   Clock,
@@ -38,6 +39,9 @@ interface WCOrder {
   id: string | number;
   number: string;
   status: string;
+  payment_status?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
   date_created: string;
   total: string;
   discount_total?: string;
@@ -215,19 +219,42 @@ export default function AdminOrdersPage() {
       });
       if (res.ok) {
         const updated = await res.json();
-        const nextStatus = updated.status || updated.orderStatus || newStatus;
+        const isCompleted = newStatus === "completed";
         setOrders((prev) =>
           prev.map((o) =>
-            o.id === orderId || o.number === String(orderId) ? { ...o, status: nextStatus } : o
+            o.id === orderId || o.number === String(orderId)
+              ? {
+                  ...o,
+                  status: newStatus,
+                  payment_status: isCompleted ? "paid" : o.payment_status,
+                  paymentStatus: isCompleted ? "paid" : o.paymentStatus,
+                }
+              : o
           )
         );
         setAllOrders((prev) =>
           prev.map((o) =>
-            o.id === orderId || o.number === String(orderId) ? { ...o, status: nextStatus } : o
+            o.id === orderId || o.number === String(orderId)
+              ? {
+                  ...o,
+                  status: newStatus,
+                  payment_status: isCompleted ? "paid" : o.payment_status,
+                  paymentStatus: isCompleted ? "paid" : o.paymentStatus,
+                }
+              : o
           )
         );
         if (statusModal?.id === orderId) {
-          setStatusModal((prev) => (prev ? { ...prev, status: nextStatus } : null));
+          setStatusModal((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: newStatus,
+                  payment_status: isCompleted ? "paid" : prev.payment_status,
+                  paymentStatus: isCompleted ? "paid" : prev.paymentStatus,
+                }
+              : null
+          );
         }
         showToast(`Order #${orderId} status changed to ${newStatus.replace("-", " ")}`, "success");
       } else {
@@ -237,6 +264,41 @@ export default function AdminOrdersPage() {
       showToast("Network error — please try again", "error");
     }
     setUpdating(null);
+  };
+
+  const handleTogglePayment = async (orderId: string | number, currentPaymentStatus?: string) => {
+    const isPaid = currentPaymentStatus === "paid";
+    const nextStatus = isPaid ? "pending" : "paid";
+    setUpdating(orderId);
+    try {
+      const res = await authFetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ paymentStatus: nextStatus }),
+      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId || o.number === String(orderId)
+              ? { ...o, payment_status: nextStatus, paymentStatus: nextStatus }
+              : o
+          )
+        );
+        setAllOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId || o.number === String(orderId)
+              ? { ...o, payment_status: nextStatus, paymentStatus: nextStatus }
+              : o
+          )
+        );
+        showToast(`Order #${orderId} payment marked as ${nextStatus.toUpperCase()}`, "success");
+      } else {
+        showToast("Failed to update payment status", "error");
+      }
+    } catch {
+      showToast("Network error — please try again", "error");
+    } finally {
+      setUpdating(null);
+    }
   };
 
   const handleFilterChange = (status: string) => {
@@ -338,7 +400,7 @@ export default function AdminOrdersPage() {
       {/* ── Orders Table ───────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
         {/* Table header */}
-        <div className="hidden lg:grid grid-cols-[50px_110px_1fr_1fr_100px_110px_100px_110px] gap-2 px-5 py-3 bg-[#FDFBF7] text-[10px] font-bold uppercase tracking-widest text-stone-400 border-b border-stone-100">
+        <div className="hidden lg:grid grid-cols-[45px_150px_minmax(190px,1.4fr)_minmax(180px,1.2fr)_120px_100px_90px_105px] gap-3 px-5 py-3.5 bg-[#FDFBF7] text-[10px] font-bold uppercase tracking-widest text-[#400604] border-b border-stone-100 items-center">
           <span>SL</span>
           <span>Order No & Date</span>
           <span>Customer Info</span>
@@ -378,12 +440,18 @@ export default function AdminOrdersPage() {
                 0
               );
               const thumb = firstItem?.image?.src;
+              const isPaid =
+                order.payment_status === "paid" ||
+                order.paymentStatus === "paid" ||
+                order.status === "completed";
+              const isCancelled =
+                order.status === "cancelled" || order.status === "failed";
 
               return (
                 <div key={order.id} className="group">
                   {/* Summary row */}
                   <div
-                    className="w-full grid grid-cols-[auto_1fr] lg:grid-cols-[50px_110px_1fr_1fr_100px_110px_100px_110px] items-center gap-2 px-5 py-3.5 text-left hover:bg-stone-50/70 transition"
+                    className="w-full grid grid-cols-[auto_1fr] lg:grid-cols-[45px_150px_minmax(190px,1.4fr)_minmax(180px,1.2fr)_120px_100px_90px_105px] items-center gap-3 px-5 py-4 text-left hover:bg-stone-50/70 transition"
                   >
                     {/* SL */}
                     <span className="hidden lg:block text-[12px] text-stone-400 font-bold">
@@ -391,8 +459,8 @@ export default function AdminOrdersPage() {
                     </span>
 
                     {/* Order No & Date */}
-                    <div>
-                      <p className="text-[12px] font-bold text-[#400604]">
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-[#400604] whitespace-nowrap font-mono tracking-tight">
                         #{order.number || order.id}
                       </p>
                       <p className="text-[10px] text-stone-400">
@@ -404,17 +472,27 @@ export default function AdminOrdersPage() {
                             })
                           : "—"}
                       </p>
-                      <p className="text-[9px] uppercase font-semibold text-[#E1B76F]">Online</p>
+                      <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-[#E1B76F] bg-[#400604]/5 px-1.5 py-0.2 rounded border border-[#E1B76F]/20">
+                        Online
+                      </span>
                     </div>
 
                     {/* Customer Info */}
-                    <div className="min-w-0">
+                    <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-1.5">
                         <Users className="h-3 w-3 text-stone-400 flex-shrink-0" />
                         <span className="text-[12px] font-semibold text-stone-800 truncate">
                           {custName}
                         </span>
                       </div>
+                      {order.billing?.email && (
+                        <div className="flex items-center gap-1.5 min-w-0" title={order.billing.email}>
+                          <Mail className="h-3 w-3 text-stone-400 flex-shrink-0" />
+                          <span className="text-[11px] text-stone-500 truncate hover:text-[#400604] transition select-all">
+                            {order.billing.email}
+                          </span>
+                        </div>
+                      )}
                       {order.billing?.phone && (
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3 w-3 text-stone-400 flex-shrink-0" />
@@ -431,35 +509,108 @@ export default function AdminOrdersPage() {
                           </span>
                         </div>
                       )}
+                      {/* Mobile Row Info */}
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap lg:hidden">
+                        <span className="text-[11px] font-bold text-[#1A0302]">
+                          {formatBDT(order.total)}
+                        </span>
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!FINAL_STATUSES.includes(order.status)) {
+                              setSelectedStatus(null);
+                              setStatusModal(order);
+                            }
+                          }}
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold capitalize ${statusColor}`}
+                        >
+                          {order.status.replace("-", " ")}
+                        </span>
+                        {isCancelled ? (
+                          <span className="text-[9px] font-medium text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                            Void
+                          </span>
+                        ) : isPaid ? (
+                          <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            ✓ Paid
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            ⏳ Unpaid
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Product Info */}
-                    <div className="hidden lg:flex items-center gap-2 min-w-0">
-                      {thumb && (
-                        <div className="h-9 w-9 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
+                    <div className="hidden lg:flex items-center gap-2.5 min-w-0">
+                      {thumb ? (
+                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
                           <Image
                             src={thumb}
                             alt={productName}
-                            width={36}
-                            height={36}
+                            width={40}
+                            height={40}
                             className="object-cover w-full h-full"
                           />
                         </div>
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg bg-stone-100 flex-shrink-0 border border-stone-200 flex items-center justify-center text-stone-300">
+                          <ShoppingCart className="h-4 w-4" />
+                        </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-[12px] text-stone-700 truncate">
+                        <p className="text-[12px] font-medium text-stone-700 truncate" title={productName}>
                           {productName}
                         </p>
                         <p className="text-[10px] text-stone-400">
-                          Items: {productQty}
+                          Qty: {productQty}
                         </p>
                       </div>
                     </div>
 
-                    {/* Payment Method */}
-                    <span className="hidden lg:block text-[11px] font-medium text-stone-600 truncate">
-                      {order.payment_method_title || "COD"}
-                    </span>
+                    {/* Payment & Collection Status */}
+                    <div className="hidden lg:flex flex-col items-start gap-1">
+                      <span
+                        className="text-[11px] font-medium text-stone-600 truncate max-w-[110px]"
+                        title={order.payment_method_title || order.paymentMethod || "COD"}
+                      >
+                        {order.payment_method_title || order.paymentMethod || "COD"}
+                      </span>
+                      {isCancelled ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-medium bg-stone-100 text-stone-500 border border-stone-200">
+                          Void
+                        </span>
+                      ) : isPaid ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleTogglePayment(order.id, "paid");
+                          }}
+                          disabled={updating === order.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition shadow-xs cursor-pointer"
+                          title="Payment received. Click to switch to Unpaid."
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          Paid
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleTogglePayment(order.id, "pending");
+                          }}
+                          disabled={updating === order.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition shadow-xs cursor-pointer"
+                          title="Pending collection / COD. Click to mark Paid."
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          Unpaid
+                        </button>
+                      )}
+                    </div>
 
                     {/* Total Price */}
                     <span className="hidden lg:block text-[13px] font-bold text-[#1A0302]">
@@ -467,9 +618,17 @@ export default function AdminOrdersPage() {
                     </span>
 
                     {/* Due */}
-                    <span className="hidden lg:block text-[13px] font-bold text-[#400604]">
-                      {order.status === "completed" ? "৳ 0" : formatBDT(order.total)}
-                    </span>
+                    <div className="hidden lg:block">
+                      {isCancelled ? (
+                        <span className="text-[11px] font-medium text-stone-400">Void</span>
+                      ) : isPaid ? (
+                        <span className="text-[12px] font-bold text-emerald-600">৳ 0</span>
+                      ) : (
+                        <span className="text-[13px] font-bold text-[#400604]">
+                          {formatBDT(order.total)}
+                        </span>
+                      )}
+                    </div>
 
                     {/* Status Button */}
                     <span

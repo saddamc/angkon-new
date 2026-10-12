@@ -16,6 +16,10 @@ export async function PATCH(
     const updateFields: Record<string, unknown> = {};
     if (body.status) {
       updateFields.orderStatus = body.status;
+      // When an order is fulfilled and delivered (completed), payment is collected
+      if (body.status === "completed" && !body.paymentStatus) {
+        updateFields.paymentStatus = "paid";
+      }
     }
     if (body.paymentStatus) {
       updateFields.paymentStatus = body.paymentStatus;
@@ -40,6 +44,8 @@ export async function PATCH(
         ...updated,
         id: updated.orderNumber,
         status: updated.orderStatus,
+        paymentStatus: updated.paymentStatus,
+        payment_status: updated.paymentStatus,
       },
       { status: 200 }
     );

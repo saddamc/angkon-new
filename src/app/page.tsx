@@ -104,20 +104,21 @@ export default function HomePage() {
         )}
       </button>
 
-      {/* ── 1. Top Hero Banner (Mighto Activewear - Full Width Edge to Edge) ── */}
+      {/* ── 1. Top Hero Banner (ANGKON House of Modern Heritage - Full Width Edge to Edge) ── */}
       <section className="w-full overflow-hidden">
         <Link
-          href="/mighto"
-          className="group relative block w-full aspect-[2560/942] overflow-hidden bg-[#340402]"
+          href="/products"
+          className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
-            src="/banners/mighto-home-banner.webp"
-            alt="Mighto Performance Activewear"
-            fill
+            src="/banners/hero-banner.webp"
+            alt="ANGKON — House of Modern Heritage"
+            width={2048}
+            height={978}
             priority
             loading="eager"
             sizes="100vw"
-            className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+            className="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.008]"
           />
         </Link>
       </section>

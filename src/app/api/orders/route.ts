@@ -27,20 +27,26 @@ async function resolveOrderAccount(
   orderEmail: string,
   customer: { fullName: string; phone: string; address: string; city: string; district: string; postalCode: string },
 ): Promise<{ status: AccountStatus; user: IUser | null }> {
+  const normEmail = normalizeEmail(orderEmail);
+  if (!normEmail || !EMAIL_REGEX.test(normEmail)) return { status: "none", user: null };
+
+  // Only use current session if the signed-in user's email strictly matches this order's email!
   const sessionUserId = getSessionUserId(request);
   if (sessionUserId) {
-    const user = await User.findById(sessionUserId);
-    if (user) return { status: "signed_in", user };
+    const sessionUser = await User.findById(sessionUserId);
+    if (sessionUser && normalizeEmail(sessionUser.email) === normEmail) {
+      return { status: "signed_in", user: sessionUser };
+    }
   }
-  if (!orderEmail || !EMAIL_REGEX.test(orderEmail)) return { status: "none", user: null };
 
-  const existing = await User.findOne({ email: orderEmail });
+  // Look up existing customer account strictly by email
+  const existing = await User.findOne({ email: normEmail });
   if (existing) return { status: "existing", user: existing };
 
   try {
     const created = await User.create({
       name: customer.fullName,
-      email: orderEmail,
+      email: normEmail,
       password: "",
       phone: customer.phone,
       role: "customer",
@@ -51,7 +57,7 @@ async function resolveOrderAccount(
     return { status: "created", user: created };
   } catch {
     // Two orders with the same new email at once — the other request created it.
-    const raced = await User.findOne({ email: orderEmail });
+    const raced = await User.findOne({ email: normEmail });
     return raced ? { status: "existing", user: raced } : { status: "none", user: null };
   }
 }
@@ -125,14 +131,6 @@ export async function POST(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       getProductDeliveryRates(items.map((item: any) => Number(item.productId || 0))),
     ]);
-    const shippingQuote = calculateShipping({
-      subtotal,
-      district: resolvedDistrict,
-      city,
-      settings: shippingSettings,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      itemRates: items.map((item: any) => productRates.get(Number(item.productId || 0)) ?? {}),
-    });
     // Calculate Promo Code discount (verified on the server against active settings)
     let discount = 0;
     const submittedPromo = String(body.promoCode || "").trim().toUpperCase();
@@ -149,6 +147,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const shippingQuote = calculateShipping({
+      // Free delivery is judged on the amount payable for the goods, i.e. after any promo discount.
+      subtotal: Math.max(0, subtotal - discount),
+      district: resolvedDistrict,
+      city,
+      settings: shippingSettings,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      itemRates: items.map((item: any) => productRates.get(Number(item.productId || 0)) ?? {}),
+    });
     const shippingFee = shippingQuote.fee;
     const total = Math.max(0, subtotal - discount) + shippingFee;
 
@@ -197,9 +204,10 @@ export async function POST(request: NextRequest) {
       // Account linking must never block the order itself.
       let account: { status: AccountStatus; user: IUser | null } = { status: "none", user: null };
       try {
-        account = verifiedUser
-          ? { status: "signed_in", user: verifiedUser }
-          : await resolveOrderAccount(request, customerData.email, customerData);
+        account =
+          verifiedUser && normalizeEmail(verifiedUser.email) === customerData.email
+            ? { status: "signed_in", user: verifiedUser }
+            : await resolveOrderAccount(request, customerData.email, customerData);
       } catch (accountErr) {
         console.warn("Order account linking failed (order still placed):", accountErr);
       }
@@ -221,8 +229,8 @@ export async function POST(request: NextRequest) {
         notes: orderNotes ? String(orderNotes).trim() : "",
       });
 
-      // Synchronize complete customer profile in MongoDB so returning checkouts & admin panel have full records
-      if (accountUser) {
+      // Synchronize complete customer profile in MongoDB strictly for this email account
+      if (accountUser && normalizeEmail(accountUser.email) === customerData.email) {
         try {
           let updated = false;
 
@@ -335,9 +343,9 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
 
-      // Persist/refresh 30-day session cookie for the customer account so next time they visit
-      // checkout or my-account, they are already recognized as verified and their details are pre-filled!
-      if (accountUser) {
+      // Auto-login session cookie strictly for THIS order's email account so next time they visit
+      // checkout or my-account, they are already recognized and their details are pre-filled!
+      if (accountUser && normalizeEmail(accountUser.email) === customerData.email) {
         setSessionCookie(response, {
           id: String(accountUser._id),
           email: accountUser.email,

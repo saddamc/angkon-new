@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
+import { User } from "@/models/User";
 
 // GET /api/admin/orders — list orders from MongoDB Atlas (newest first)
 export async function GET(request: NextRequest) {
@@ -31,11 +32,28 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / perPage) || 1;
 
+    // Look up user emails for any orders where customer.email might be blank but userId is present
+    const userIds = orders
+      .map((o) => (o.userId ? String(o.userId) : ""))
+      .filter(Boolean);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const users: any[] = userIds.length
+      ? await User.find({ _id: { $in: userIds } })
+          .select("email")
+          .lean()
+      : [];
+    const userEmailMap = new Map<string, string>(
+      users.map((u) => [String(u._id), String(u.email || "")])
+    );
+
     // Format for admin dashboard table compatibility
     const formattedOrders = orders.map((o) => ({
       id: o.orderNumber,
       number: o.orderNumber,
       status: o.orderStatus,
+      paymentStatus: o.paymentStatus || (o.orderStatus === "completed" ? "paid" : "pending"),
+      payment_status: o.paymentStatus || (o.orderStatus === "completed" ? "paid" : "pending"),
+      paymentMethod: o.paymentMethod || "cod",
       date_created: o.createdAt,
       total: String(o.total),
       shipping_total: String(o.shippingFee),
@@ -44,7 +62,7 @@ export async function GET(request: NextRequest) {
       billing: {
         first_name: o.customer?.fullName || "Guest",
         last_name: "",
-        email: o.customer?.email || "",
+        email: o.customer?.email || (o.userId ? userEmailMap.get(String(o.userId)) || "" : ""),
         phone: o.customer?.phone || "",
         address_1: o.customer?.address || "",
         city: o.customer?.district || o.customer?.city || "",
@@ -53,6 +71,7 @@ export async function GET(request: NextRequest) {
         name: it.name,
         price: it.price,
         quantity: it.quantity,
+        image: it.image ? { src: it.image } : undefined,
         meta_data: it.size ? [{ key: "Size", value: it.size }] : [],
       })),
       raw: o,

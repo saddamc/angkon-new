@@ -4,6 +4,7 @@ import { getProducts } from "@/services/products.service";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import { ProductCard } from "@/components/product/product-card";
 import type { WooProduct } from "@/types/product";
+import { getShippingSettings } from "@/server/shipping";
 
 export const metadata: Metadata = {
   title: "On Sale — ANGKON",
@@ -13,15 +14,16 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function SalePage() {
-  let saleProducts: WooProduct[] = [];
-  try {
-    const fetched = await getProducts({ onSale: true, perPage: 100 });
-    if (Array.isArray(fetched) && fetched.length > 0) {
-      saleProducts = fetched;
-    }
-  } catch {
-    saleProducts = [];
-  }
+  const [shippingSettings, fetchedProducts] = await Promise.all([
+    getShippingSettings().catch(() => null),
+    getProducts({ onSale: true, perPage: 100 }).catch(() => [] as WooProduct[]),
+  ]);
+
+  const threshold = Number(shippingSettings?.freeDeliveryThreshold) || 0;
+  const thresholdText =
+    threshold > 0 ? `TK ${threshold.toLocaleString()}` : "ALL ORDERS";
+
+  let saleProducts: WooProduct[] = Array.isArray(fetchedProducts) ? fetchedProducts : [];
 
   // If no products are currently marked with discount, showcase latest updated catalog products
   if (saleProducts.length === 0) {
@@ -41,18 +43,39 @@ export default async function SalePage() {
 
   return (
     <div className="min-h-screen bg-[#400604] text-white">
-      {/* ── 1. Authentic ON SALE Header Banner ── */}
+      {/* ── 1. Authentic ON SALE Header Banner with Live Admin Threshold ── */}
       <section className="w-full">
         <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6">
-          <div className="relative w-full aspect-[1980/600] overflow-hidden">
+          <div className="relative w-full aspect-[1980/600] overflow-hidden select-none">
             <Image
-              src="/banners/on-sale-header.png?v=2"
+              src="/banners/on-sale-header.png?v=5"
               alt="On Sale"
               fill
               priority
               sizes="(max-width: 1200px) 100vw, 1200px"
               className="object-contain object-center"
             />
+            {/* Dynamic Free Shipping Threshold directly synced with Admin Settings */}
+            <div className="absolute top-[56.67%] left-[1.1%] w-[97.8%] h-[13.17%] flex items-center justify-center pointer-events-none px-2 sm:px-4">
+              <span
+                className="font-serif font-bold uppercase text-[#F5D79B] text-center tracking-[0.06em] sm:tracking-[0.08em] whitespace-nowrap overflow-hidden text-ellipsis"
+                style={{
+                  fontSize: "clamp(7px, 1.15vw, 19px)",
+                }}
+              >
+                • CASH ON DELIVERY NATIONWIDE (64 DISTRICTS) • FREE SHIPPING OVER {thresholdText} •
+              </span>
+            </div>
+          </div>
+
+          {/* Mobile readable announcement strip for small screens */}
+          <div className="mt-2.5 sm:hidden rounded-xl border border-[#E1B76F]/30 bg-[#2A0302] py-2 px-3 text-center shadow-sm">
+            <p className="text-[11px] font-serif font-bold uppercase text-[#F5D79B] tracking-wide">
+              Free Shipping Over {thresholdText}
+            </p>
+            <p className="text-[9px] text-[#E1B76F]/75 uppercase tracking-wider mt-0.5">
+              • Cash on Delivery Nationwide (64 Districts) •
+            </p>
           </div>
         </div>
       </section>

@@ -28,9 +28,10 @@ function isRevenueOrder(status: string, paymentStatus?: string): boolean {
 }
 
 interface Group {
+  key: string;
   ids: Set<string>;
   names: string[];
-  emails: Set<string>;
+  email: string;
   phones: Set<string>;
   addresses: { address: string; city: string; postalCode: string }[];
   user?: {
@@ -64,76 +65,44 @@ export async function GET() {
       User.find({ role: "customer" }).lean(),
     ]);
 
-    // ── Union-find: link records that share an account, phone or email ─────
-    const parent = new Map<string, string>();
-    const find = (x: string): string => {
-      if (!parent.has(x)) parent.set(x, x);
-      let root = x;
-      while (parent.get(root) !== root) root = parent.get(root)!;
-      parent.set(x, root);
-      return root;
-    };
-    const union = (a: string, b: string) => {
-      const ra = find(a);
-      const rb = find(b);
-      if (ra !== rb) parent.set(ra, rb);
-    };
-
-    const keysFor = (userId: string, phone: string, email: string) => {
-      const keys: string[] = [];
-      if (userId) keys.push(`u:${userId}`);
-      if (phone) keys.push(`p:${phone}`);
-      if (email) keys.push(`e:${email}`);
-      return keys;
-    };
-    const link = (keys: string[]) => {
-      keys.forEach((k) => find(k));
-      for (let i = 1; i < keys.length; i++) union(keys[0], keys[i]);
-    };
-
-    const userKeys = users.map((u) =>
-      keysFor(String(u._id), normalizePhone(u.phone), normalizeEmail(u.email)),
-    );
-    userKeys.forEach(link);
-
-    const orderKeys = orders.map((o) => {
-      const keys = keysFor(
-        o.userId ? String(o.userId) : "",
-        normalizePhone(o.customer?.phone),
-        normalizeEmail(o.customer?.email),
-      );
-      // Order with no identifiers at all: keep it as its own anonymous customer
-      return keys.length ? keys : [`o:${o.orderNumber}`];
+    // Map userId -> user for quick order fallback
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userById = new Map<string, any>();
+    users.forEach((u) => {
+      userById.set(String(u._id), u);
     });
-    orderKeys.forEach(link);
 
+    // ── Group strictly by unique customer EMAIL (or phone for guest checkouts without email) ──
     const groups = new Map<string, Group>();
-    const groupOf = (key: string): Group => {
-      const root = find(key);
-      let g = groups.get(root);
+    const getOrCreateGroup = (key: string, defaultEmail = ""): Group => {
+      let g = groups.get(key);
       if (!g) {
         g = {
+          key,
           ids: new Set(),
           names: [],
-          emails: new Set(),
+          email: defaultEmail,
           phones: new Set(),
           addresses: [],
           orders: [],
         };
-        groups.set(root, g);
+        groups.set(key, g);
       }
       return g;
     };
 
-    // Registered accounts (including those who never ordered)
-    users.forEach((u, i) => {
-      const g = groupOf(userKeys[i][0]);
+    // 1. Seed registered customer accounts strictly by their own email
+    users.forEach((u) => {
+      const email = normalizeEmail(u.email);
+      const key = email ? `email:${email}` : `user:${String(u._id)}`;
+      const g = getOrCreateGroup(key, email);
       g.ids.add(String(u._id));
       if (u.name) g.names.push(u.name);
-      if (u.email) g.emails.add(normalizeEmail(u.email));
       if (u.phone) g.phones.add(normalizePhone(u.phone));
       (u.addresses || []).forEach((a) => {
-        g.addresses.push({ address: a.address, city: a.district || a.city, postalCode: a.postalCode || "" });
+        if (a.address) {
+          g.addresses.push({ address: a.address, city: a.district || a.city, postalCode: a.postalCode || "" });
+        }
       });
       g.user = {
         emailVerified: !!u.emailVerified,
@@ -143,15 +112,29 @@ export async function GET() {
       };
     });
 
-    // Orders (oldest data is overwritten by newest since list is newest-first → use first seen as "latest")
-    orders.forEach((o, i) => {
-      const g = groupOf(orderKeys[i][0]);
+    // 2. Associate each order strictly with its customer email (or phone for guest phone-only checkouts)
+    orders.forEach((o) => {
+      let email = normalizeEmail(o.customer?.email);
+      if (!email && o.userId) {
+        const u = userById.get(String(o.userId));
+        if (u?.email) email = normalizeEmail(u.email);
+      }
+
+      let key: string;
+      if (email) {
+        key = `email:${email}`;
+      } else {
+        const phone = normalizePhone(o.customer?.phone);
+        key = phone ? `phone:${phone}` : `order:${o.orderNumber}`;
+      }
+
+      const g = getOrCreateGroup(key, email);
+      if (o.userId) g.ids.add(String(o.userId));
       const c = o.customer;
-      if (c?.fullName) g.names.push(c.fullName);
-      if (c?.email) g.emails.add(normalizeEmail(c.email));
+      if (c?.fullName) g.names.unshift(c.fullName); // newest order name takes priority
       if (c?.phone) g.phones.add(normalizePhone(c.phone));
       if (c?.address) {
-        g.addresses.push({
+        g.addresses.unshift({
           address: c.address,
           city: c.district || c.city || "",
           postalCode: c.postalCode || "",
@@ -161,8 +144,8 @@ export async function GET() {
         id: String(o._id),
         number: o.orderNumber,
         status: o.orderStatus,
-        paymentMethod: o.paymentMethod,
-        paymentStatus: o.paymentStatus,
+        paymentMethod: o.paymentMethod || "cod",
+        paymentStatus: o.paymentStatus || "pending",
         total: Number(o.total) || 0,
         itemCount: (o.items || []).reduce((n, it) => n + (it.quantity || 0), 0),
         items: (o.items || []).map((it) => ({ name: it.name, quantity: it.quantity, size: it.size || undefined })),
@@ -187,15 +170,14 @@ export async function GET() {
       });
 
       const phones = Array.from(g.phones).filter(Boolean);
-      const emails = Array.from(g.emails).filter(Boolean);
 
       return {
-        key: Array.from(g.ids)[0] || phones[0] || emails[0] || g.orders[0]?.number || "",
-        name: g.names[0] || "Guest",
-        email: emails[0] || "",
+        key: g.key,
+        name: g.names[0] || (g.email ? g.email.split("@")[0] : "Guest"),
+        email: g.email || "",
         phone: phones[0] || "",
         otherPhones: phones.slice(1),
-        otherEmails: emails.slice(1),
+        otherEmails: [], // Every account is strictly partitioned by email — no mixing
         city: addresses[0]?.city || "",
         address: addresses[0]?.address || "",
         postalCode: addresses[0]?.postalCode || "",

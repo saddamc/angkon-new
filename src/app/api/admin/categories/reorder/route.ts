@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
-import { invalidateCategoriesCache } from "@/lib/db/categories";
+import { publishCatalogChange } from "@/lib/catalog-sync";
+import { syncProductCategoryRefs } from "@/server/category-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Clear memory cache
-    invalidateCategoriesCache();
+    await syncProductCategoryRefs(items.map((i: { id: number }) => Number(i.id)));
+    await publishCatalogChange();
 
     return NextResponse.json(
       {

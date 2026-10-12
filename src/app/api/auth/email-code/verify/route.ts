@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       }
     }
     if (!user) {
-      return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+      return NextResponse.json({ error: "Unable to verify user account. Please try again." }, { status: 500 });
     }
 
     if (!user.emailVerified) {
@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Email code verify error:", error);
-    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Verification failed. Please try again.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -143,6 +143,7 @@ export default function MyAccountPage() {
 
   // Signed-out forms
   const [mode, setMode] = useState<"auth" | "forgot">("auth");
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [regName, setRegName] = useState("");
@@ -531,80 +532,147 @@ export default function MyAccountPage() {
             <button type="submit" disabled={submitting} className={primaryButton}>
               {submitting ? "Sending…" : "Send reset link"}
             </button>
-            <button type="button" onClick={() => setMode("auth")} className="w-full text-xs font-bold text-[#E1B76F] hover:underline">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("auth");
+                setAuthTab("login");
+              }}
+              className="w-full text-xs font-bold text-[#E1B76F] hover:underline"
+            >
               ← Back to sign in
             </button>
           </form>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-start">
-            {/* Sign in */}
-            <form onSubmit={handleLogin} className="space-y-5 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl">
-              <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Sign in</h2>
-              <div>
-                <Label required>Email address</Label>
-                <div className="relative">
-                  <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
-                  <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
-                </div>
-              </div>
-              <div>
-                <Label required>Password</Label>
-                <PasswordInput value={loginPass} onChange={setLoginPass} placeholder="••••••••" autoComplete="current-password" />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setForgotEmail(loginEmail);
-                    setNotice(null);
-                    setMode("forgot");
-                  }}
-                  className="text-xs font-bold text-[#E1B76F] hover:underline"
-                >
-                  Forgot password?
-                </button>
-              </div>
-              <button type="submit" disabled={submitting} className={primaryButton}>
-                {submitting ? "Signing in…" : "Sign in"}
+          <div className="mx-auto max-w-md">
+            {/* Tab switcher: Toggle between Sign in & Create account */}
+            <div className="flex rounded-2xl bg-[#1A0302] p-1.5 border border-[#400604] mb-6 shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab("login");
+                  setNotice(null);
+                }}
+                className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition ${
+                  authTab === "login"
+                    ? "bg-[#E1B76F] text-[#400604] shadow-md"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                Sign In
               </button>
-            </form>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab("register");
+                  setNotice(null);
+                }}
+                className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition ${
+                  authTab === "register"
+                    ? "bg-[#E1B76F] text-[#400604] shadow-md"
+                    : "text-white/70 hover:text-white"
+                }`}
+              >
+                Create Account
+              </button>
+            </div>
 
-            {/* Register */}
-            <form onSubmit={handleRegister} className="space-y-4 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl">
-              <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Create account</h2>
-              <div>
-                <Label required>Full name</Label>
-                <div className="relative">
-                  <input type="text" required value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="Your full name" autoComplete="name" className={inputClass} />
-                  <UserIcon className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+            {authTab === "login" ? (
+              /* Sign in Form */
+              <form onSubmit={handleLogin} className="space-y-5 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Sign in</h2>
+                <div>
+                  <Label required>Email address</Label>
+                  <div className="relative">
+                    <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
+                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <Label required>Email address</Label>
-                <div className="relative">
-                  <input type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
-                  <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                <div>
+                  <Label required>Password</Label>
+                  <PasswordInput value={loginPass} onChange={setLoginPass} placeholder="••••••••" autoComplete="current-password" />
                 </div>
-              </div>
-              <div>
-                <Label>Phone number</Label>
-                <div className="relative">
-                  <input type="tel" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} placeholder="017XXXXXXXX" autoComplete="tel" className={inputClass} />
-                  <Phone className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotEmail(loginEmail);
+                      setNotice(null);
+                      setMode("forgot");
+                    }}
+                    className="text-xs font-bold text-[#E1B76F] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
                 </div>
-              </div>
-              <div>
-                <Label required>Password</Label>
-                <PasswordInput value={regPass} onChange={setRegPass} placeholder={PASSWORD_HINT} autoComplete="new-password" />
-              </div>
-              <p className="text-[11px] text-white/80 leading-relaxed">
-                We&apos;ll email you a link to verify your address. By creating an account you agree to our{" "}
-                <Link href="/privacy-policy" className="text-[#E1B76F] underline">Privacy Policy</Link>.
-              </p>
-              <button type="submit" disabled={submitting} className={primaryButton}>
-                {submitting ? "Creating account…" : "Create account"}
-              </button>
-            </form>
+                <button type="submit" disabled={submitting} className={primaryButton}>
+                  {submitting ? "Signing in…" : "Sign in"}
+                </button>
+                <div className="pt-4 border-t border-[#400604] text-center text-xs text-white/70">
+                  Don&apos;t have an account yet?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab("register");
+                      setNotice(null);
+                    }}
+                    className="font-bold text-[#E1B76F] hover:underline cursor-pointer"
+                  >
+                    Create an account
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* Register Form */
+              <form onSubmit={handleRegister} className="space-y-4 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Create account</h2>
+                <div>
+                  <Label required>Full name</Label>
+                  <div className="relative">
+                    <input type="text" required value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="Your full name" autoComplete="name" className={inputClass} />
+                    <UserIcon className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                  </div>
+                </div>
+                <div>
+                  <Label required>Email address</Label>
+                  <div className="relative">
+                    <input type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
+                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Phone number</Label>
+                  <div className="relative">
+                    <input type="tel" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} placeholder="017XXXXXXXX" autoComplete="tel" className={inputClass} />
+                    <Phone className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                  </div>
+                </div>
+                <div>
+                  <Label required>Password</Label>
+                  <PasswordInput value={regPass} onChange={setRegPass} placeholder={PASSWORD_HINT} autoComplete="new-password" />
+                </div>
+                <p className="text-[11px] text-white/80 leading-relaxed">
+                  We&apos;ll email you a link to verify your address. By creating an account you agree to our{" "}
+                  <Link href="/privacy-policy" className="text-[#E1B76F] underline">Privacy Policy</Link>.
+                </p>
+                <button type="submit" disabled={submitting} className={primaryButton}>
+                  {submitting ? "Creating account…" : "Create account"}
+                </button>
+                <div className="pt-4 border-t border-[#400604] text-center text-xs text-white/70">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthTab("login");
+                      setNotice(null);
+                    }}
+                    className="font-bold text-[#E1B76F] hover:underline cursor-pointer"
+                  >
+                    Sign in
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         )}
       </div>

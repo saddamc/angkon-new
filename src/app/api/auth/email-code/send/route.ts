@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, expiresInMinutes: CODE_TTL_MS / 60000, resendAfterSeconds: 60 });
   } catch (error) {
     console.error("Email code send error:", error);
-    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unable to send verification code. Please try again.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

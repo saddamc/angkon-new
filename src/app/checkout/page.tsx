@@ -15,12 +15,16 @@ import {
   Tag,
   User,
   AlertCircle,
+  Loader2,
+  Mail,
+  ShieldCheck,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useShippingQuote } from "@/hooks/use-shipping-quote";
 import { EmailVerifyDialog, requestEmailCode, type VerifiedUser } from "@/components/checkout/email-verify-dialog";
 import { formatPrice } from "@/utils/price";
 import { DIVISIONS } from "@/data/bangladesh-districts";
+import { playCheckoutSuccessSound } from "@/lib/sound-alert";
 
 interface CheckoutFormValues {
   name: string;
@@ -66,8 +70,15 @@ export default function CheckoutPage() {
     emailVerified: boolean;
   } | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<number | null>(null);
+  const [orderId, setOrderId] = useState<string | number | null>(null);
   const [confirmedShippingFee, setConfirmedShippingFee] = useState<number | null>(null);
+  const [confirmedSubtotal, setConfirmedSubtotal] = useState<number | null>(null);
+  const [confirmedTotal, setConfirmedTotal] = useState<number | null>(null);
+  const [confirmedCustomer, setConfirmedCustomer] = useState<{
+    name: string;
+    phone: string;
+    address: string;
+  } | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "sslcommerz">("cod");
 
   // Accordion toggles for top notice bars (matches WooCommerce layout in screenshot)
@@ -101,6 +112,22 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [verifyDialog, setVerifyDialog] = useState<{ email: string; name: string; phone: string; resendAfter: number } | null>(null);
   const pendingOrder = useRef<CheckoutFormValues | null>(null);
+
+  // Inline Email Verification states
+  const [inlineVerifyOpen, setInlineVerifyOpen] = useState(false);
+  const [inlineCode, setInlineCode] = useState("");
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [inlineCountdown, setInlineCountdown] = useState(0);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [inlineSuccess, setInlineSuccess] = useState<string | null>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (inlineCountdown <= 0) return;
+    const timer = setTimeout(() => setInlineCountdown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [inlineCountdown]);
 
   // Load the checkout config once, and pre-fill from the signed-in account (never overwriting what's typed).
   useEffect(() => {
@@ -188,11 +215,19 @@ export default function CheckoutPage() {
         return;
       }
 
-      setOrderId(result.orderId);
+      setOrderId(result.orderNumber || result.orderId);
       if (result.account) setAccountInfo(result.account);
       if (typeof result.shippingFee === "number") setConfirmedShippingFee(result.shippingFee);
+      if (typeof result.subtotal === "number") setConfirmedSubtotal(result.subtotal);
+      if (typeof result.total === "number") setConfirmedTotal(result.total);
+      setConfirmedCustomer({
+        name: data.name,
+        phone: data.phone,
+        address: `${fullAddress}, ${data.city || data.district}`,
+      });
       setSubmitted(true);
       clearCart();
+      playCheckoutSuccessSound();
     } catch {
       setSubmitError("Network error. Please check your connection and try again.");
     } finally {
@@ -200,16 +235,99 @@ export default function CheckoutPage() {
     }
   };
 
-  /** Email the customer a 6-digit code and open the verification dialog. */
-  const startEmailVerification = async (data: CheckoutFormValues) => {
-    const email = data.email.trim().toLowerCase();
-    const sent = await requestEmailCode(email, data.name);
-    if (!sent.ok) {
-      setSubmitError(sent.error);
+  /** Send 6-digit code directly from the email address field */
+  const handleSendEmailCodeInline = async () => {
+    const rawEmail = getValues("email");
+    const email = (rawEmail || "").trim().toLowerCase();
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      setInlineError("Please enter a valid email address first.");
+      emailInputRef.current?.focus();
       return;
     }
+    setSendingCode(true);
+    setInlineError(null);
+    setInlineSuccess(null);
+    try {
+      const sent = await requestEmailCode(email, getValues("name"));
+      if (!sent.ok) {
+        setInlineError(sent.error);
+        return;
+      }
+      setInlineVerifyOpen(true);
+      setInlineCountdown(sent.resendAfter);
+      setInlineSuccess(`A 6-digit verification code has been sent to ${email}.`);
+    } catch {
+      setInlineError("Failed to send verification code. Please try again.");
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  /** Verify the 6-digit code entered in the inline input */
+  const handleVerifyCodeInline = async (codeToVerify?: string) => {
+    const code = (codeToVerify || inlineCode).trim();
+    if (!code || code.length !== 6) {
+      setInlineError("Please enter the complete 6-digit code.");
+      return;
+    }
+    const rawEmail = getValues("email");
+    const email = (rawEmail || "").trim().toLowerCase();
+    setVerifyingCode(true);
+    setInlineError(null);
+    try {
+      const res = await fetch("/api/auth/email-code/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          code,
+          name: getValues("name"),
+          phone: getValues("phone"),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setInlineError(data.error || "That code did not work. Please try again.");
+        return;
+      }
+      // Verified successfully!
+      setInlineVerifyOpen(false);
+      setInlineCode("");
+      setInlineError(null);
+      setInlineSuccess("Email verified successfully!");
+      setCheckoutConfig((c) => ({
+        requireEmailVerification: c?.requireEmailVerification ?? true,
+        user: {
+          ...(c?.user ?? { address: undefined }),
+          name: data.user?.name || getValues("name") || "",
+          email: data.user?.email || email,
+          phone: data.user?.phone || getValues("phone") || "",
+          emailVerified: true,
+        },
+      }));
+
+      // If customer was in the process of placing order, proceed immediately
+      const pending = pendingOrder.current;
+      if (pending) {
+        pendingOrder.current = null;
+        await placeOrder({ ...pending, email });
+      }
+    } catch {
+      setInlineError("Network error. Please try again.");
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  /** Email the customer a 6-digit code and open inline verification */
+  const startEmailVerification = async (data: CheckoutFormValues) => {
+    const email = data.email.trim().toLowerCase();
     pendingOrder.current = data;
-    setVerifyDialog({ email, name: data.name, phone: data.phone, resendAfter: sent.resendAfter });
+    setInlineVerifyOpen(true);
+    setInlineError("Please verify your email address to complete your order.");
+    emailInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    emailInputRef.current?.focus();
+    await handleSendEmailCodeInline();
   };
 
   const onSubmit = async (data: CheckoutFormValues) => {
@@ -227,7 +345,7 @@ export default function CheckoutPage() {
     await placeOrder(data);
   };
 
-  /** Code accepted: the customer is now signed in with a verified email — place the order straight away. */
+  /** Code accepted from dialog (fallback) */
   const handleVerified = async (user: VerifiedUser) => {
     setVerifyDialog(null);
     setCheckoutConfig((c) => ({
@@ -280,22 +398,61 @@ export default function CheckoutPage() {
             {orderId && <span className="font-bold text-white">Order #{orderId}</span>}{" "}
             has been placed successfully.
           </p>
-          <div className="mt-4 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-5 text-left w-full space-y-2 text-sm text-white/90">
-            <p>
-              <span className="text-white/70">Payment method:</span>{" "}
-              <strong className="text-white uppercase">
+          <div className="mt-5 rounded-2xl border border-[#E1B76F]/30 bg-[#2b0403] p-5 sm:p-6 text-left w-full space-y-3 text-sm text-white/90 shadow-xl">
+            {/* Payment method */}
+            <div className="flex justify-between items-center pb-3 border-b border-[#E1B76F]/20">
+              <span className="text-white/70 text-xs uppercase tracking-wider font-semibold">Payment method</span>
+              <strong className="text-white font-bold uppercase text-xs sm:text-sm">
                 {paymentMethod === "cod" ? "Cash on Delivery" : "Online Payment (SSLCOMMERZ)"}
               </strong>
-            </p>
-            {confirmedShippingFee !== null && (
-              <p>
-                <span className="text-white/70">Shipment fee:</span>{" "}
-                <strong className="text-white">
-                  {confirmedShippingFee === 0 ? "Free" : formatPrice(confirmedShippingFee)}
-                </strong>
-              </p>
+            </div>
+
+            {/* Subtotal */}
+            {confirmedSubtotal !== null && (
+              <div className="flex justify-between items-center text-xs sm:text-sm">
+                <span className="text-white/70">Items Subtotal:</span>
+                <span className="text-white font-semibold">{formatPrice(confirmedSubtotal)}</span>
+              </div>
             )}
-            <p className="text-xs text-white/70 pt-2 border-t border-[#E1B76F]/15">
+
+            {/* Shipment fee with free shipping reason badge */}
+            {confirmedShippingFee !== null && (
+              <div className="flex justify-between items-center text-xs sm:text-sm">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-white/70">Shipment fee:</span>
+                  {confirmedShippingFee === 0 && (
+                    <span className="text-[10px] bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 px-2 py-0.5 rounded font-bold uppercase">
+                      Free (Orders ≥ ৳1,500)
+                    </span>
+                  )}
+                </div>
+                <strong className={confirmedShippingFee === 0 ? "text-emerald-400 font-bold" : "text-white font-semibold"}>
+                  {confirmedShippingFee === 0 ? "৳0 (Free)" : formatPrice(confirmedShippingFee)}
+                </strong>
+              </div>
+            )}
+
+            {/* Total payable amount */}
+            {confirmedTotal !== null && (
+              <div className="flex justify-between items-center pt-3 pb-1 border-t border-[#E1B76F]/20 text-sm sm:text-base">
+                <span className="font-bold text-white">Total Amount:</span>
+                <span className="text-lg sm:text-xl font-black text-[#E1B76F]">
+                  {formatPrice(confirmedTotal)}
+                </span>
+              </div>
+            )}
+
+            {/* Delivery address details */}
+            {confirmedCustomer && (
+              <div className="pt-3 border-t border-[#E1B76F]/15 text-xs text-white/80 space-y-1">
+                <p>
+                  <strong className="text-white">Delivering to:</strong> {confirmedCustomer.name} ({confirmedCustomer.phone})
+                </p>
+                <p className="text-white/70">{confirmedCustomer.address}</p>
+              </div>
+            )}
+
+            <p className="text-xs text-white/60 pt-2 border-t border-[#E1B76F]/15">
               Our support team will contact you shortly to verify delivery details.
             </p>
           </div>
@@ -724,37 +881,159 @@ export default function CheckoutPage() {
 
                 {/* Email address * */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-white">
-                    Email address <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    placeholder=""
-                    readOnly={emailLocked}
-                    autoComplete="email"
-                    className={`h-11 w-full rounded-md border bg-[#2d0302] px-3.5 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
-                      errors.email ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
-                    }`}
-                    {...register("email", {
-                      required: "Email is required",
-                      pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email address" },
-                    })}
-                  />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-white">
+                      Email address <span className="text-red-400">*</span>
+                    </label>
+                    {emailLocked ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                        <CheckCircle className="h-3.5 w-3.5" /> Verified
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="email"
+                      placeholder="name@example.com"
+                      readOnly={emailLocked}
+                      autoComplete="email"
+                      className={`h-11 w-full rounded-md border bg-[#2d0302] pl-3.5 pr-28 text-sm text-white outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] ${
+                        errors.email ? "border-red-400 bg-red-950/20" : "border-[#E1B76F]/30"
+                      } ${emailLocked ? "border-emerald-500/50 text-emerald-200" : ""}`}
+                      {...register("email", {
+                        required: "Email is required",
+                        pattern: { value: /^\S+@\S+\.\S+$/, message: "Enter a valid email address" },
+                      })}
+                      ref={(e) => {
+                        register("email").ref(e);
+                        emailInputRef.current = e;
+                      }}
+                    />
+
+                    {/* Right side verification action */}
+                    {emailLocked ? (
+                      <div className="absolute right-2 flex items-center gap-1 rounded bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+                        <span>Verified</span>
+                      </div>
+                    ) : checkoutConfig?.requireEmailVerification !== false ? (
+                      <button
+                        type="button"
+                        onClick={handleSendEmailCodeInline}
+                        disabled={sendingCode || inlineCountdown > 0}
+                        className="absolute right-1.5 top-1.5 bottom-1.5 rounded-md bg-[#E1B76F] px-3 text-[11px] font-black uppercase tracking-wider text-[#400604] transition hover:bg-[#f3cb87] disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        {sendingCode ? (
+                          <>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Sending…</span>
+                          </>
+                        ) : inlineCountdown > 0 ? (
+                          <span>Resend ({inlineCountdown}s)</span>
+                        ) : (
+                          <span>Verify</span>
+                        )}
+                      </button>
+                    ) : null}
+                  </div>
+
                   {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>}
+
+                  {/* Inline Verification Box */}
+                  {inlineVerifyOpen && !emailLocked && (
+                    <div className="mt-3 p-4 rounded-xl border border-[#E1B76F]/40 bg-[#1e0202] space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 text-[#E1B76F]" /> Enter 6-digit verification code
+                          </p>
+                          <p className="text-[11px] text-white/70 mt-0.5">
+                            Sent to <strong className="text-white">{watch("email")}</strong>. Check your inbox and spam folder.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setInlineVerifyOpen(false)}
+                          className="text-white/50 hover:text-white text-xs font-bold cursor-pointer"
+                        >
+                          ✕ Close
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={inlineCode}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+                            setInlineCode(digits);
+                            setInlineError(null);
+                            if (digits.length === 6) {
+                              void handleVerifyCodeInline(digits);
+                            }
+                          }}
+                          placeholder="123456"
+                          className="h-10 w-36 text-center font-mono text-base tracking-[0.3em] font-bold rounded-lg border border-[#E1B76F]/50 bg-[#2d0302] text-white focus:border-[#E1B76F] outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleVerifyCodeInline(inlineCode)}
+                          disabled={verifyingCode || inlineCode.length !== 6}
+                          className="h-10 px-4 rounded-lg bg-[#E1B76F] text-[#400604] text-xs font-black uppercase tracking-wider hover:bg-[#f3cb87] transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                        >
+                          {verifyingCode ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Verifying…</span>
+                            </>
+                          ) : (
+                            <span>Confirm Code</span>
+                          )}
+                        </button>
+                      </div>
+
+                      {inlineError && (
+                        <p className="text-xs text-red-400 font-semibold">{inlineError}</p>
+                      )}
+                      {inlineSuccess && (
+                        <p className="text-xs text-emerald-400 font-semibold">{inlineSuccess}</p>
+                      )}
+
+                      <div className="flex items-center justify-between text-[11px] text-white/60 pt-1.5 border-t border-[#E1B76F]/15">
+                        <span>Didn&apos;t receive code?</span>
+                        {inlineCountdown > 0 ? (
+                          <span>Resend in {inlineCountdown}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSendEmailCodeInline}
+                            disabled={sendingCode}
+                            className="text-[#E1B76F] hover:underline font-bold cursor-pointer"
+                          >
+                            Resend code now
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {emailLocked ? (
-                    <p className="mt-1.5 text-xs text-emerald-300">
-                      ✓ Verified — you&apos;re signed in.{" "}
+                    <div className="mt-2 flex items-center justify-between text-xs text-emerald-300">
+                      <span>✓ Signed in with verified email: <strong className="text-white">{getValues("email")}</strong></span>
                       <button
                         type="button"
                         onClick={signOutOfCheckout}
-                        className="font-semibold text-[#E1B76F] underline underline-offset-4 hover:text-white"
+                        className="font-semibold text-[#E1B76F] underline underline-offset-4 hover:text-white cursor-pointer ml-2"
                       >
                         Not you? Sign out
                       </button>
-                    </p>
-                  ) : checkoutConfig?.requireEmailVerification !== false ? (
+                    </div>
+                  ) : checkoutConfig?.requireEmailVerification !== false && !inlineVerifyOpen ? (
                     <p className="mt-1.5 text-xs text-white/60">
-                      We&apos;ll email a 6-digit code to confirm this address before your order is placed.
+                      Click <strong>Verify</strong> to confirm your email before placing the order.
                     </p>
                   ) : null}
                 </div>

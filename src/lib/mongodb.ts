@@ -24,7 +24,7 @@ if (!global.mongooseCache) {
 }
 
 let lastFailureTime = 0;
-const FAILURE_COOLDOWN_MS = 15000;
+const FAILURE_COOLDOWN_MS = 5000;
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
@@ -36,7 +36,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     return cached.conn;
   }
 
-  // If connection failed within the last 15s, fail immediately without stalling requests
+  // If connection failed within the last 5s, fail immediately without stalling requests
   if (Date.now() - lastFailureTime < FAILURE_COOLDOWN_MS) {
     throw new Error("MONGODB_CONNECTION_COOLDOWN");
   }
@@ -45,8 +45,8 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 2000,
-      connectTimeoutMS: 2000,
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 8000,
     };
 
     cached.promise = mongoose.connect(uri, opts).then((m) => {

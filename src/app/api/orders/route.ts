@@ -309,6 +309,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("API /orders fatal error:", error);
-    return NextResponse.json({ error: "Failed to process order" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to process order";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

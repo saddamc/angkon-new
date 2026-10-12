@@ -19,7 +19,16 @@ import {
   BarChart3,
   FolderOpen,
   PanelLeft,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import {
+  isSoundEnabled,
+  setSoundEnabled,
+  playOrderAlertSound,
+  sendDesktopNotification,
+  requestDesktopNotificationPermission,
+} from "@/lib/sound-alert";
 
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -47,6 +56,38 @@ export default function AdminLayout({
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
+  // Sound alert & real-time notification states
+  const [soundActive, setSoundActive] = useState(true);
+  const [newOrderAlert, setNewOrderAlert] = useState<{
+    number: string;
+    total: string;
+    customer: string;
+  } | null>(null);
+  const lastOrderIdRef = useRef<string | null>(null);
+  const isFirstLoadRef = useRef(true);
+
+  useEffect(() => {
+    setSoundActive(isSoundEnabled());
+    void requestDesktopNotificationPermission();
+  }, []);
+
+  // Auto-dismiss new order banner after 15 seconds
+  useEffect(() => {
+    if (!newOrderAlert) return;
+    const t = setTimeout(() => setNewOrderAlert(null), 15_000);
+    return () => clearTimeout(t);
+  }, [newOrderAlert]);
+
+  const toggleSound = () => {
+    const next = !soundActive;
+    setSoundActive(next);
+    setSoundEnabled(next);
+    if (next) {
+      // Test chime so the user can verify computer speaker volume immediately
+      playOrderAlertSound(0.7);
+    }
+  };
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(SIDEBAR_KEY);
@@ -69,7 +110,7 @@ export default function AdminLayout({
     });
   };
 
-  // Fetch real pending order count from MongoDB-backed /api/admin/orders
+  // Fetch real pending order count & detect new orders to play sound
   const fetchPendingCount = useCallback(async () => {
     try {
       const res = await authFetch(
@@ -77,7 +118,39 @@ export default function AdminLayout({
       );
       if (res.ok) {
         const data = await res.json();
-        setPendingCount(data.total ?? 0);
+        const currentCount = data.total ?? 0;
+        setPendingCount(currentCount);
+
+        const latest = data.orders?.[0];
+        if (latest) {
+          const latestId = String(latest.number || latest.id);
+          if (isFirstLoadRef.current) {
+            // Initial load: record the latest order without playing alert
+            lastOrderIdRef.current = latestId;
+            isFirstLoadRef.current = false;
+          } else if (lastOrderIdRef.current && latestId !== lastOrderIdRef.current) {
+            // NEW ORDER RECEIVED! Play sound on computer and notify
+            lastOrderIdRef.current = latestId;
+
+            if (isSoundEnabled()) {
+              playOrderAlertSound(0.9);
+            }
+
+            setNewOrderAlert({
+              number: latest.number || latestId,
+              total: latest.total || "0",
+              customer: latest.billing?.first_name || "Customer",
+            });
+
+            sendDesktopNotification({
+              title: "🎉 New Order Placed!",
+              body: `Order #${latest.number || latestId} (৳${Number(latest.total || 0).toLocaleString("en-BD")}) from ${latest.billing?.first_name || "Customer"}`,
+              onClick: () => {
+                window.location.href = "/admin/orders?status=pending";
+              },
+            });
+          }
+        }
       }
     } catch {
       // ignore
@@ -87,8 +160,8 @@ export default function AdminLayout({
   useEffect(() => {
     if (pathname === "/admin") return;
     void fetchPendingCount();
-    // Refresh every 60 seconds
-    const timer = setInterval(() => void fetchPendingCount(), 60_000);
+    // Fast 12-second polling so new order sound fires promptly
+    const timer = setInterval(() => void fetchPendingCount(), 12_000);
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPendingCount]);
@@ -279,7 +352,40 @@ export default function AdminLayout({
             </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-3 sm:gap-4">
+            {/* Sound Alert Toggle & Test */}
+            <button
+              type="button"
+              onClick={toggleSound}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                soundActive
+                  ? "bg-[#400604]/10 text-[#400604] border border-[#E1B76F]/40 hover:bg-[#400604]/15"
+                  : "bg-stone-100 text-stone-400 border border-transparent hover:text-stone-600"
+              }`}
+              title={
+                soundActive
+                  ? "Order sound alert is ON. Click to test chime sound or toggle mute."
+                  : "Order sound alert is MUTED. Click to turn ON."
+              }
+              aria-label={soundActive ? "Order sound alert active" : "Order sound alert muted"}
+            >
+              {soundActive ? (
+                <>
+                  <Volume2 className="h-4 w-4 text-[#400604] animate-pulse" />
+                  <span className="hidden sm:inline text-[11px] font-semibold text-[#400604]">
+                    Sound ON
+                  </span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="h-4 w-4 text-stone-400" />
+                  <span className="hidden sm:inline text-[11px] font-semibold text-stone-400">
+                    Sound Muted
+                  </span>
+                </>
+              )}
+            </button>
+
             {/* Notifications — shows real pending order count */}
             <Link
               href="/admin/orders?status=pending"
@@ -346,6 +452,58 @@ export default function AdminLayout({
             </button>
           )}
         </header>
+
+        {/* Floating Real-time Order Alert Notification Banner */}
+        {newOrderAlert && (
+          <aside
+            aria-live="assertive"
+            className="fixed top-20 right-5 z-50 max-w-sm w-full bg-gradient-to-br from-[#400604] via-[#300403] to-[#1A0302] border-2 border-[#E1B76F] text-white p-4 rounded-2xl shadow-[0_12px_36px_rgba(64,6,4,0.35)] animate-in slide-in-from-top-4 duration-300"
+          >
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-[#E1B76F] text-[#400604] flex items-center justify-center shrink-0 shadow-md">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-[11px] font-black text-[#E1B76F] uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                    New Order Received!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setNewOrderAlert(null)}
+                    className="text-white/60 hover:text-white text-xs p-1 cursor-pointer"
+                    aria-label="Dismiss alert"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-sm font-bold text-white mt-1">
+                  #{newOrderAlert.number} — ৳{Number(newOrderAlert.total).toLocaleString("en-BD")}
+                </p>
+                <p className="text-xs text-white/80 mt-0.5 truncate">
+                  Customer: {newOrderAlert.customer}
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <Link
+                    href="/admin/orders?status=pending"
+                    onClick={() => setNewOrderAlert(null)}
+                    className="inline-flex items-center gap-1 bg-[#E1B76F] text-[#400604] px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider hover:bg-[#edd19b] transition shadow"
+                  >
+                    View Order <ChevronRight className="h-3 w-3" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => playOrderAlertSound(0.9)}
+                    className="text-[11px] text-[#E1B76F] underline px-2 py-1 hover:text-white cursor-pointer"
+                  >
+                    Replay Sound
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
 
         {/* Content Body */}
         <main className="flex-1 p-5 lg:p-7 overflow-auto">{children}</main>

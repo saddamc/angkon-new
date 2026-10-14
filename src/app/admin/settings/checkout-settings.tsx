@@ -122,7 +122,7 @@ export function CheckoutSettings() {
           requireEmailVerification: data.requireEmailVerification !== false,
           allowGuestCheckout: data.allowGuestCheckout !== false,
           enablePromoCodes: data.enablePromoCodes !== false,
-          promoCodes: Array.isArray(data.promoCodes) && data.promoCodes.length > 0 ? data.promoCodes : DEFAULT_SETTINGS.promoCodes,
+          promoCodes: Array.isArray(data?.promoCodes) ? data.promoCodes : DEFAULT_SETTINGS.promoCodes,
         };
         setSettings(normalized);
         setSavedSettings(normalized);
@@ -141,8 +141,9 @@ export function CheckoutSettings() {
       settings.enablePromoCodes !== savedSettings.enablePromoCodes ||
       JSON.stringify(settings.promoCodes) !== JSON.stringify(savedSettings.promoCodes));
 
-  const handleSave = async (e?: React.FormEvent) => {
+  const handleSave = async (e?: React.FormEvent, customSettings?: ICheckoutSettings) => {
     if (e) e.preventDefault();
+    const toSave = customSettings || settings;
     setSaving(true);
     setError(null);
     setJustSaved(false);
@@ -150,14 +151,15 @@ export function CheckoutSettings() {
       const res = await fetch("/api/admin/settings/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(toSave),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error || "Couldn't save checkout settings. Please try again.");
         return;
       }
-      setSavedSettings({ ...settings });
+      setSavedSettings({ ...toSave });
+      setSettings({ ...toSave });
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 4500);
     } catch {
@@ -196,11 +198,12 @@ export function CheckoutSettings() {
       description: newPromo.description.trim(),
     };
 
-    setSettings((prev) => ({
-      ...prev,
-      promoCodes: [item, ...prev.promoCodes],
-    }));
+    const updatedSettings: ICheckoutSettings = {
+      ...settings,
+      promoCodes: [item, ...settings.promoCodes],
+    };
 
+    setSettings(updatedSettings);
     setNewPromo({
       code: "",
       type: "percentage",
@@ -211,21 +214,24 @@ export function CheckoutSettings() {
     });
     setAddPromoError(null);
     setShowAddPromo(false);
+
+    // Save immediately so it persists even if page is refreshed
+    handleSave(undefined, updatedSettings);
   };
 
   const handleTogglePromoActive = (index: number) => {
-    setSettings((prev) => {
-      const updated = [...prev.promoCodes];
-      updated[index] = { ...updated[index], active: !updated[index].active };
-      return { ...prev, promoCodes: updated };
-    });
+    const updatedCodes = [...settings.promoCodes];
+    updatedCodes[index] = { ...updatedCodes[index], active: !updatedCodes[index].active };
+    const updatedSettings: ICheckoutSettings = { ...settings, promoCodes: updatedCodes };
+    setSettings(updatedSettings);
+    handleSave(undefined, updatedSettings);
   };
 
   const handleDeletePromo = (index: number) => {
-    setSettings((prev) => {
-      const updated = prev.promoCodes.filter((_, i) => i !== index);
-      return { ...prev, promoCodes: updated };
-    });
+    const updatedCodes = settings.promoCodes.filter((_, i) => i !== index);
+    const updatedSettings: ICheckoutSettings = { ...settings, promoCodes: updatedCodes };
+    setSettings(updatedSettings);
+    handleSave(undefined, updatedSettings);
   };
 
   if (loading) {

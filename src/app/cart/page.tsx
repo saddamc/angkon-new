@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowRight, Tag, Loader2, CheckCircle2 } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, Tag, Loader2, CheckCircle2, X } from "lucide-react";
 import { QuantitySelector } from "@/components/product/quantity-selector";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
@@ -209,20 +209,21 @@ export default function CartPage() {
 
               {appliedPromo && (
                 <div className="flex items-center justify-between text-emerald-300 font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <Tag className="h-3.5 w-3.5 text-emerald-400" /> Promo ({appliedPromo.code})
-                  </span>
                   <div className="flex items-center gap-2">
-                    <span>-{formatPrice(discountAmount)}</span>
+                    <span className="flex items-center gap-1.5">
+                      <Tag className="h-3.5 w-3.5 text-emerald-400" /> Promo ({appliedPromo.code})
+                    </span>
                     <button
                       type="button"
                       onClick={handleRemovePromo}
-                      className="text-white/50 hover:text-red-300 text-xs transition underline"
+                      className="inline-flex items-center justify-center h-4 w-4 rounded-full text-white/50 hover:text-red-300 hover:bg-white/10 transition cursor-pointer"
+                      title="Remove promo code"
                       aria-label="Remove promo code"
                     >
-                      Remove
+                      <X className="h-3 w-3 stroke-[2.5]" />
                     </button>
                   </div>
+                  <span className="font-bold text-emerald-300">-{formatPrice(discountAmount)}</span>
                 </div>
               )}
 
@@ -253,53 +254,37 @@ export default function CartPage() {
                 </div>
               )}
 
-              {/* Promo Code Input Box (if enabled by admin) */}
-              {enablePromo && (
+              {/* Promo Code Input Box (if enabled by admin and no promo currently applied) */}
+              {enablePromo && !appliedPromo && (
                 <div className="pt-2 border-t border-[#E1B76F]/15">
-                  {!appliedPromo ? (
-                    <form onSubmit={handleApplyPromo} className="space-y-1.5">
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
-                          <input
-                            type="text"
-                            placeholder="Promo code (e.g. ANGKON10)"
-                            value={promoInput}
-                            onChange={(e) => setPromoInput(e.target.value.toUpperCase().replace(/\s+/g, ""))}
-                            className="w-full rounded-xl border border-[#E1B76F]/30 bg-[#2d0302] pl-8 pr-3 py-2 text-xs font-mono font-bold uppercase tracking-wider text-white placeholder:text-white/40 focus:border-[#E1B76F] focus:outline-none"
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={promoLoading || !promoInput.trim()}
-                          className="rounded-xl border border-[#E1B76F]/50 bg-[#400604] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#520805] disabled:opacity-40"
-                        >
-                          {promoLoading ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E1B76F]" />
-                          ) : (
-                            "Apply"
-                          )}
-                        </button>
+                  <form onSubmit={handleApplyPromo} className="space-y-1.5">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/40" />
+                        <input
+                          type="text"
+                          placeholder="Promo code (e.g. ANGKON10)"
+                          value={promoInput}
+                          onChange={(e) => setPromoInput(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                          className="w-full rounded-xl border border-[#E1B76F]/30 bg-[#2d0302] pl-8 pr-3 py-2 text-xs font-mono font-bold uppercase tracking-wider text-white placeholder:text-white/40 focus:border-[#E1B76F] focus:outline-none"
+                        />
                       </div>
-                      {promoError && (
-                        <p className="text-[11.5px] text-red-300 font-medium">{promoError}</p>
-                      )}
-                    </form>
-                  ) : (
-                    <div className="rounded-xl border border-emerald-500/40 bg-[#2d0302] p-2.5 text-xs text-emerald-300 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                        {promoMessage || `Coupon ${appliedPromo.code} active`}
-                      </span>
                       <button
-                        type="button"
-                        onClick={handleRemovePromo}
-                        className="font-bold text-emerald-200 hover:text-red-300 ml-2 underline shrink-0"
+                        type="submit"
+                        disabled={promoLoading || !promoInput.trim()}
+                        className="rounded-xl border border-[#E1B76F]/50 bg-[#400604] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#520805] disabled:opacity-40"
                       >
-                        Remove
+                        {promoLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E1B76F]" />
+                        ) : (
+                          "Apply"
+                        )}
                       </button>
                     </div>
-                  )}
+                    {promoError && (
+                      <p className="text-[11.5px] text-red-300 font-medium">{promoError}</p>
+                    )}
+                  </form>
                 </div>
               )}
 

@@ -313,19 +313,6 @@
     }
   },
   {
-    "id": 644,
-    "name": "CO-ORD SET MALE",
-    "slug": "co-ord-set-male",
-    "parent": 162,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 112855,
-      "src": "/banners/tops.webp",
-      "alt": "CO-ORD SET MALE"
-    }
-  },
-  {
     "id": 803,
     "name": "Cord Pants",
     "slug": "cord-pants-male",

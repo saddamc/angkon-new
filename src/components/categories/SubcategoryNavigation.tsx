@@ -31,7 +31,6 @@ const PREFERRED_ORDER: Record<string, string[]> = {
     "turtleneck-men",
     "hoodie-men",
     "jacket-men",
-    "co-ord-set-male",
   ],
 };
 

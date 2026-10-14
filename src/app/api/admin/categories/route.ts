@@ -87,22 +87,34 @@ export async function POST(request: NextRequest) {
 
     const input = cleanCategoryInput(body);
     const name = input.name || "Category";
-    const baseSlug = input.slug || slugifyCategory(name) || "category";
+    const rawSlug = input.slug || slugifyCategory(name) || "category";
+    const baseSlug = rawSlug.replace(/^-+|-+$/g, "") || "category";
 
     // Unique slug: "kurti", "kurti-2", "kurti-3"...
     let slug = baseSlug;
-    for (let n = 2; await Category.exists({ slug }); n++) slug = `${baseSlug}-${n}`;
+    for (let n = 2; await Category.exists({ slug }); n++) {
+      slug = `${baseSlug}-${n}`;
+    }
 
-    // Generate unique category ID
+    // Generate guaranteed unique numeric category ID
     let catId = Number(body.id);
     if (!catId || isNaN(catId) || (await Category.exists({ id: catId }))) {
       const highest = await Category.findOne({}).sort({ id: -1 }).select("id").lean();
-      catId = (highest?.id || 1000) + 1;
+      catId = (highest?.id ? Number(highest.id) : 1000) + 1;
+    }
+    // Strict uniqueness check against database to avoid duplicate key errors on id_1
+    while (await Category.exists({ id: catId })) {
+      catId++;
     }
 
-    const imageObj = input.image
-      ? { id: input.image.id ?? 300000 + catId, src: input.image.src, alt: input.image.alt || name }
-      : null;
+    const imageObj =
+      input.image && typeof input.image === "object" && input.image.src && typeof input.image.src === "string" && input.image.src.trim()
+        ? {
+            id: input.image.id ? Number(input.image.id) : 300000 + catId,
+            src: input.image.src.trim(),
+            alt: input.image.alt?.trim() || name,
+          }
+        : null;
 
     const newCategory = await Category.create({
       id: catId,
@@ -119,30 +131,45 @@ export async function POST(request: NextRequest) {
     });
 
     // Synchronize to real-categories.json (local development convenience; no-op on read-only hosts)
-    syncRealCategoriesFile((cats) => {
-      const catData = {
-        id: catId,
-        name,
-        slug,
-        parent: input.parent ?? 0,
-        linked_parents: input.linked_parents ?? [],
-        menu_order: input.menu_order ?? 0,
-        description: input.description ?? "",
-        count: 0,
-        image: imageObj,
-      };
-      const existsIndex = cats.findIndex((c) => c.id === catId || c.slug === slug);
-      if (existsIndex >= 0) cats[existsIndex] = catData;
-      else cats.push(catData);
-      return cats;
-    });
+    try {
+      syncRealCategoriesFile((cats) => {
+        const catData = {
+          id: catId,
+          name,
+          slug,
+          parent: input.parent ?? 0,
+          linked_parents: input.linked_parents ?? [],
+          menu_order: input.menu_order ?? 0,
+          description: input.description ?? "",
+          count: 0,
+          image: imageObj,
+        };
+        const existsIndex = cats.findIndex((c) => c.id === catId || c.slug === slug);
+        if (existsIndex >= 0) cats[existsIndex] = catData;
+        else cats.push(catData);
+        return cats;
+      });
+    } catch (syncErr) {
+      console.warn("Failed to sync category to real-categories.json:", syncErr);
+    }
 
-    await publishCatalogChange();
+    try {
+      await publishCatalogChange();
+    } catch (pubErr) {
+      console.warn("Failed to publish catalog change:", pubErr);
+    }
 
     return NextResponse.json(newCategory, { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Create category failed:", err);
-    return NextResponse.json({ error: "Failed to create category" }, { status: 500 });
+    const message = err?.message || "Failed to create category";
+    return NextResponse.json(
+      {
+        error: message,
+        details: err?.code === 11000 ? "A category with this ID or slug already exists." : String(err?.message || err),
+      },
+      { status: 500 }
+    );
   }
 }
 

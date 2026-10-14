@@ -32,11 +32,18 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     throw new Error("Please define the MONGODB_URI, MONGODB_URL, or DATABASE_URL environment variable.");
   }
 
-  if (cached.conn) {
+  // Only return cached connection if it is actively connected (readyState === 1)
+  if (cached.conn && cached.conn.connection.readyState === 1) {
     return cached.conn;
   }
 
-  // If connection failed within the last 5s, fail immediately without stalling requests
+  // If connection is dead or dropped, reset cached handles
+  if (cached.conn && cached.conn.connection.readyState !== 1) {
+    cached.conn = null;
+    cached.promise = null;
+  }
+
+  // If connection failed within the last 3s, fail immediately without stalling requests
   if (Date.now() - lastFailureTime < FAILURE_COOLDOWN_MS) {
     throw new Error("MONGODB_CONNECTION_COOLDOWN");
   }
@@ -45,8 +52,8 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 2500,
-      connectTimeoutMS: 2500,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
     };
 
     cached.promise = mongoose.connect(uri, opts).then((m) => {

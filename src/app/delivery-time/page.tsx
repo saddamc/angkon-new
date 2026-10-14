@@ -16,7 +16,7 @@ export default async function DeliveryTimePage() {
   const taka = (n: number) => (n === 0 ? "Free" : `৳${n.toLocaleString("en-US")}`);
   // Dhaka uses the inside-Dhaka rate; every other district uses the outside-Dhaka rate.
   const deliveryEstimates = [
-    { area: "Dhaka Metro", time: "1 - 2 Days", fee: taka(settings.insideDhaka) },
+    { area: "Dhaka", time: "1 - 2 Days", fee: taka(settings.insideDhaka) },
     { area: "Gazipur, Narayanganj, Savar", time: "1 - 2 Days", fee: taka(settings.nearDhaka) },
     { area: "All Other Districts (Outside Dhaka)", time: "4 - 5 Days", fee: taka(settings.outsideDhaka) },
   ];

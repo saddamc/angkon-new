@@ -38,9 +38,6 @@ function resolveBrandBannerBySlug(slug?: string): string {
   if (s === "ethnic" || s.includes("ethnic")) return "/banners/ethnic-wear.webp";
   if (s === "men") return "/banners/men-banner.webp";
   if (s === "women") return "/banners/women-banner.webp";
-  if (s === "mighto") return "/banners/mighto-home-banner.webp";
-  if (s === "mighto-men") return "/banners/mighto-men-card.webp";
-  if (s === "mighto-women") return "/banners/mighto-women-card.webp";
   if (s.includes("polo")) return "/banners/polos.webp";
 
   if (s.includes("tee") || s.includes("tshirt") || s.includes("t-shirt") || s.includes("henley") || s.includes("basic") || s.includes("drop")) {
@@ -77,9 +74,8 @@ export function getCategoryImage(category: {
     return CATEGORY_IMAGE_OVERRIDES[category.slug];
   }
 
-  // Filter out any unwanted external domain references
-  if (category.image?.src && !category.image.src.includes("gorurghash")) {
-    return category.image.src;
+  if (category.image?.src && typeof category.image.src === "string" && category.image.src.trim()) {
+    return category.image.src.trim();
   }
 
   return resolveBrandBannerBySlug(category.slug);

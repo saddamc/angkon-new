@@ -83,7 +83,7 @@ export default async function ShippingPage() {
             <div className="space-y-2 text-[14px] text-white">
               <p><strong>Fee:</strong> {settings.insideDhaka === 0 ? "Free" : `${tk(settings.insideDhaka)} Flat Rate`}</p>
               <p><strong>Timeline:</strong> 2 to 3 Business Days</p>
-              <p><strong>Coverage:</strong> All postal zones within Dhaka Metro</p>
+              <p><strong>Coverage:</strong> All postal zones within Dhaka</p>
             </div>
           </div>
 

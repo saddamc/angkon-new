@@ -6,9 +6,10 @@ import {
   Plus, Pencil, Trash2, RefreshCw, ChevronRight, ChevronLeft, X, Loader2,
   FolderOpen, Tag, ImageIcon, Check, AlertCircle, UploadCloud,
   Search, Filter, GripVertical, CheckCircle2, XCircle, SearchX, ChevronDown, ChevronUp,
-  ArrowRightLeft, Sparkles, ExternalLink, ArrowLeft, Layers
+  ArrowRightLeft, Sparkles, ExternalLink, ArrowLeft, Layers, MoreVertical
 } from "lucide-react";
 import { decodeHtmlCharCodes } from "@/utils/category-display";
+import { CreateCategoryModal } from "./CreateCategoryModal";
 
 /* ─── Types ─────────────────────────────────────────────────────────── */
 interface WCCategory {
@@ -426,6 +427,20 @@ function PositionPicker({
   );
 }
 
+/* ─── Luxury Category Banner Presets ─────────────────────────────────── */
+const LUXURY_PRESETS = [
+  { name: "Half Sleeves", src: "/banners/half-sleeves.webp" },
+  { name: "Full Sleeves", src: "/banners/full-sleeves.webp" },
+  { name: "Tees", src: "/banners/tees.webp" },
+  { name: "Polo", src: "/banners/polos.webp" },
+  { name: "Pants", src: "/banners/pants.webp" },
+  { name: "Tops", src: "/banners/tops.webp" },
+  { name: "Men Banner", src: "/banners/men-banner.webp" },
+  { name: "Women Banner", src: "/banners/women-banner.webp" },
+  { name: "Accessories", src: "/banners/accessories.webp" },
+  { name: "Ethnic Wear", src: "/banners/ethnic-wear.webp" },
+];
+
 /* ─── Curated Category Icons ─────────────────────────────────────────── */
 const ICON_CATEGORIES = [
   "All",
@@ -507,8 +522,8 @@ const CURATED_ICONS: CuratedIcon[] = [
   { label: "Floral / Perfume", icon: "🌸", category: "Beauty", tags: ["scent", "fragrance", "perfume", "cologne", "flower"] },
   { label: "Herbal / Natural", icon: "🌺", category: "Beauty", tags: ["organic", "botanical", "natural beauty", "flower"] },
 
-  // PlainStitch, Sewing & Craft
-  { label: "Sewing Thread", icon: "🧵", category: "Sewing & Craft", tags: ["thread", "spool", "stitch", "plainstitch", "yarn"] },
+  // Sewing, Tailoring & Craft
+  { label: "Sewing Thread", icon: "🧵", category: "Sewing & Craft", tags: ["thread", "spool", "stitch", "tailor", "yarn"] },
   { label: "Needle", icon: "🪡", category: "Sewing & Craft", tags: ["sewing needle", "stitch", "tailor", "embroidery"] },
   { label: "Scissors", icon: "✂️", category: "Sewing & Craft", tags: ["cutting", "tailor", "fabric", "craft"] },
   { label: "Yarn", icon: "🧶", category: "Sewing & Craft", tags: ["wool", "knitting", "crochet", "craft"] },
@@ -656,13 +671,35 @@ function CategoryStudio({
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [activeTab, setActiveTab] = useState<"details" | "visuals" | "subcategories">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "media" | "subcategories" | "crosslisting">("details");
   const [iconTab, setIconTab] = useState<"library" | "custom">("library");
   const [iconSearch, setIconSearch] = useState("");
   const [iconCategory, setIconCategory] = useState<string>("All");
 
   const [linkingChildId, setLinkingChildId] = useState<number | "">("");
   const [linkingActionLoading, setLinkingActionLoading] = useState(false);
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (mode === "add") {
+      return Boolean(form.name.trim() || form.imageUrl || form.description.trim());
+    }
+    const initLinked = (initial.linkedParents || []).slice().sort().join(",");
+    const currLinked = (form.linkedParents || []).slice().sort().join(",");
+    return (
+      form.name !== initial.name ||
+      form.slug !== initial.slug ||
+      form.parent !== initial.parent ||
+      form.type !== initial.type ||
+      (form.description || "") !== (initial.description || "") ||
+      Boolean(form.isActive) !== Boolean(initial.isActive) ||
+      (form.imageUrl || "") !== (initial.imageUrl || "") ||
+      (form.imageAlt || "") !== (initial.imageAlt || "") ||
+      (form.icon || "") !== (initial.icon || "") ||
+      (form.bgTheme || "blue") !== (initial.bgTheme || "blue") ||
+      form.sortOrder !== initial.sortOrder ||
+      currLinked !== initLinked
+    );
+  }, [form, initial, mode]);
 
   useEffect(() => {
     setForm({ ...initial, linkedParents: initial.linkedParents || [] });
@@ -920,9 +957,9 @@ function CategoryStudio({
   const parentName = form.parent ? catName(flat.find((c) => c.id === form.parent) || { name: "" }) : "";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/90 shadow-md overflow-hidden sticky top-4 lg:top-6 flex flex-col max-h-[calc(100vh-2rem)]">
-      {/* Studio Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/90 via-amber-50/20 to-white shrink-0">
+    <div className="bg-white rounded-2xl border border-gray-200/90 shadow-md sticky top-4 lg:top-6 flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+      {/* Studio Header (Sticky) */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 bg-white/95 backdrop-blur shrink-0 z-20">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             type="button"
@@ -936,7 +973,7 @@ function CategoryStudio({
             <FolderOpen className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-[15px] sm:text-[16px] font-black text-gray-900 truncate">
                 {mode === "add"
                   ? form.parent
@@ -949,6 +986,19 @@ function CategoryStudio({
                   #{initial.id}
                 </span>
               ) : null}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
+                form.parent === 0
+                  ? "bg-amber-100/70 text-amber-950 border border-amber-200"
+                  : "bg-blue-50 text-blue-800 border border-blue-200"
+              }`}>
+                {form.parent === 0 ? "Root Collection" : "Subcategory"}
+              </span>
+              {hasUnsavedChanges && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-600 animate-pulse" />
+                  Unsaved changes
+                </span>
+              )}
             </div>
             <p className="text-[12px] text-gray-500 font-mono truncate mt-0.5">
               /{form.slug || slugify(form.name) || "category-slug"}
@@ -977,8 +1027,8 @@ function CategoryStudio({
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-1 px-4 sm:px-6 pt-2 border-b border-gray-100 bg-white shrink-0 overflow-x-auto">
+      {/* Navigation Sub-Tabs (Sticky) */}
+      <div className="flex items-center gap-1 px-4 sm:px-6 pt-2 border-b border-gray-100 bg-white shrink-0 overflow-x-auto z-10">
         <button
           type="button"
           onClick={() => setActiveTab("details")}
@@ -989,13 +1039,13 @@ function CategoryStudio({
           }`}
         >
           <Tag className="h-3.5 w-3.5" />
-          Details & Hierarchy
+          Details
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("visuals")}
+          onClick={() => setActiveTab("media")}
           className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-bold border-b-2 transition -mb-px whitespace-nowrap ${
-            activeTab === "visuals"
+            activeTab === "media"
               ? "border-[#400604] text-[#400604]"
               : "border-transparent text-gray-500 hover:text-gray-700"
           }`}
@@ -1003,20 +1053,30 @@ function CategoryStudio({
           <ImageIcon className="h-3.5 w-3.5" />
           Image & Icon
         </button>
-        {mode === "edit" && initial.id ? (
-          <button
-            type="button"
-            onClick={() => setActiveTab("subcategories")}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-bold border-b-2 transition -mb-px whitespace-nowrap ${
-              activeTab === "subcategories"
-                ? "border-[#400604] text-[#400604]"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Layers className="h-3.5 w-3.5" />
-            Subcategories ({totalSubCount})
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => setActiveTab("subcategories")}
+          className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-bold border-b-2 transition -mb-px whitespace-nowrap ${
+            activeTab === "subcategories"
+              ? "border-[#400604] text-[#400604]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <Layers className="h-3.5 w-3.5" />
+          Subcategories {directChildCats.length > 0 ? `(${directChildCats.length})` : ""}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("crosslisting")}
+          className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] font-bold border-b-2 transition -mb-px whitespace-nowrap ${
+            activeTab === "crosslisting"
+              ? "border-[#400604] text-[#400604]"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          Cross-listing {((form.linkedParents?.length || 0) + crossListedChildCats.length) > 0 ? `(${((form.linkedParents?.length || 0) + crossListedChildCats.length)})` : ""}
+        </button>
       </div>
 
       {/* Form Content */}
@@ -1027,121 +1087,10 @@ function CategoryStudio({
           </div>
         )}
 
-        {/* Tab 1: Details & Placement */}
+        {/* ─── TAB 1: DETAILS ─────────────────────────────────────────── */}
         {activeTab === "details" && (
           <div className="space-y-5">
-            {/* Category Type */}
-            <div>
-              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Category Type
-              </label>
-              <div className="flex bg-gray-100 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => {
-                    set("type", "main");
-                    set("parent", 0);
-                    set("sortOrder", siblingsOf(flat, 0, initial.id).length);
-                  }}
-                  className={`flex-1 py-2 text-[13px] font-bold rounded-lg transition ${
-                    form.type === "main" ? "bg-white shadow-xs text-[#400604]" : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Main Category (Root)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => set("type", "sub")}
-                  className={`flex-1 py-2 text-[13px] font-bold rounded-lg transition ${
-                    form.type === "sub" ? "bg-white shadow-xs text-[#400604]" : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  Sub-Category (Nested)
-                </button>
-              </div>
-            </div>
-
-            {/* If Sub Category -> Select Primary Parent */}
-            {form.type === "sub" && (
-              <div>
-                <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                  Parent Category <span className="text-red-500">*</span>
-                </label>
-                <ParentCategoryPicker
-                  value={form.parent}
-                  options={parentOptions}
-                  allCats={flat}
-                  onChange={(id) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      parent: id,
-                      sortOrder: siblingsOf(flat, id, initial.id).length,
-                    }));
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Multi-Parent Cross-Listing ("Also Show Under") */}
-            <div className="rounded-2xl border border-amber-200/90 bg-gradient-to-br from-amber-50/50 via-white to-amber-50/20 p-4 space-y-3">
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-amber-100 text-amber-900 shrink-0 mt-0.5 shadow-xs">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="text-[13px] font-black text-gray-900">
-                    Also Show Under (Cross-Listing)
-                  </h4>
-                  <p className="text-[12px] text-gray-600 leading-relaxed mt-0.5">
-                    Cross-list this category under additional parent categories so shoppers browsing those sections can easily discover and shop its products (e.g. show <span className="font-bold text-gray-800">{form.name || "Ethnic Wear"}</span> under <span className="font-bold text-gray-800">Women</span>).
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-1">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {mainCategoryOptions.filter((m) => m.id !== form.parent).map((mainCat) => {
-                    const isChecked = (form.linkedParents || []).includes(mainCat.id);
-                    return (
-                      <label
-                        key={mainCat.id}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
-                          isChecked
-                            ? "bg-amber-100/70 border-amber-300 text-amber-950 font-bold shadow-xs"
-                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            const current = form.linkedParents || [];
-                            const next = e.target.checked
-                              ? [...current, mainCat.id]
-                              : current.filter((id) => id !== mainCat.id);
-                            set("linkedParents", next);
-                          }}
-                          className="h-4 w-4 rounded border-gray-300 text-[#400604] focus:ring-[#400604]"
-                        />
-                        <span className="truncate">{catName(mainCat)}</span>
-                        {mainCat.image?.src && (
-                          <img
-                            src={mainCat.image.src}
-                            alt=""
-                            className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
-                          />
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-                {mainCategoryOptions.filter((m) => m.id !== form.parent).length === 0 && (
-                  <p className="text-[12px] text-gray-400 italic">No other main categories available to link under.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Name */}
+            {/* Category Name */}
             <div>
               <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                 Category Name <span className="text-red-500">*</span>
@@ -1150,7 +1099,7 @@ function CategoryStudio({
                 type="text"
                 value={form.name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Ethnic Wear, Polos, Women"
+                placeholder="e.g. Men, Shirts, Half Sleeves"
                 className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 font-semibold"
                 required
               />
@@ -1159,49 +1108,88 @@ function CategoryStudio({
             {/* Slug */}
             <div>
               <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Slug (URL Identifier)
+                URL Slug <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={form.slug}
-                onChange={(e) => set("slug", slugify(e.target.value))}
-                placeholder="e.g. ethnic-wear"
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-[13px] font-mono text-gray-700 bg-gray-50 outline-none focus:border-[#400604]"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={form.slug}
+                  onChange={(e) => set("slug", slugify(e.target.value))}
+                  placeholder="e.g. half-sleeves"
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-[13px] font-mono text-gray-700 bg-gray-50 outline-none focus:border-[#400604] focus:bg-white transition"
+                />
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Storefront URL: <span className="font-mono text-gray-600">/product-category/{form.slug || "slug"}</span>
+              </p>
             </div>
 
-            {/* Position / Order */}
-            <div>
-              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Display Position in List
-              </label>
-              <PositionPicker
-                siblings={positionSiblings}
-                value={form.sortOrder}
-                onChange={(index) => set("sortOrder", index)}
-              />
+            {/* Parent Category & Hierarchy Placement */}
+            <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4 space-y-3.5">
+              <div>
+                <label className="block text-[12px] font-bold text-gray-800 uppercase tracking-wider mb-1.5">
+                  Hierarchy Placement
+                </label>
+                <div className="flex bg-gray-200/70 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      set("type", "main");
+                      set("parent", 0);
+                      set("sortOrder", siblingsOf(flat, 0, initial.id).length);
+                    }}
+                    className={`flex-1 py-2 text-[13px] font-bold rounded-lg transition ${
+                      form.type === "main" ? "bg-white shadow-xs text-[#400604]" : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Main Category (Root)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => set("type", "sub")}
+                    className={`flex-1 py-2 text-[13px] font-bold rounded-lg transition ${
+                      form.type === "sub" ? "bg-white shadow-xs text-[#400604]" : "text-gray-600 hover:text-gray-900"
+                    }`}
+                  >
+                    Subcategory (Nested)
+                  </button>
+                </div>
+              </div>
+
+              {form.type === "sub" ? (
+                <div>
+                  <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Parent Category <span className="text-red-500">*</span>
+                  </label>
+                  <ParentCategoryPicker
+                    value={form.parent}
+                    options={parentOptions}
+                    allCats={flat}
+                    onChange={(id) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        parent: id,
+                        sortOrder: siblingsOf(flat, id, initial.id).length,
+                      }));
+                    }}
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1.5">
+                    Sets the primary structural home and storefront breadcrumb. For secondary placements, use the <b>Cross-listing</b> tab.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 bg-white rounded-xl border border-gray-200/70 text-[12px] text-gray-600">
+                  <span className="font-bold text-gray-800">Root Category:</span> Appears at the top level of storefront menus and navigation.
+                </div>
+              )}
             </div>
 
-            {/* Description */}
-            <div>
-              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Description
-              </label>
-              <textarea
-                value={form.description}
-                onChange={(e) => set("description", e.target.value)}
-                rows={3}
-                placeholder="Brief description for SEO and category headers..."
-                className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-[13px] text-gray-700 outline-none focus:border-[#400604]"
-              />
-            </div>
-
-            {/* Status (Active / Inactive) */}
-            <div className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 bg-gray-50/60">
+            {/* Visibility Toggle */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl border border-gray-200 bg-white">
               <div>
                 <p className="text-[13px] font-bold text-gray-900">Category Visibility</p>
                 <p className="text-[11px] text-gray-500">
-                  {form.isActive ? "Visible on storefront menus and search" : "Hidden from customer storefront"}
+                  {form.isActive ? "Visible in storefront menus, search, and navigation" : "Hidden from customer storefront"}
                 </p>
               </div>
               <button
@@ -1218,11 +1206,37 @@ function CategoryStudio({
                 />
               </button>
             </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Description (Storefront Header & SEO)
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => set("description", e.target.value)}
+                rows={3}
+                placeholder="Brief description for category banner and SEO meta..."
+                className="w-full resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-[13px] text-gray-700 outline-none focus:border-[#400604]"
+              />
+            </div>
+
+            {/* Position / Order */}
+            <div>
+              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                Display Position in Sibling List
+              </label>
+              <PositionPicker
+                siblings={positionSiblings}
+                value={form.sortOrder}
+                onChange={(index) => set("sortOrder", index)}
+              />
+            </div>
           </div>
         )}
 
-        {/* Tab 2: Visuals & Icon */}
-        {activeTab === "visuals" && (
+        {/* ─── TAB 2: IMAGE & ICON ────────────────────────────────────── */}
+        {activeTab === "media" && (
           <div className="space-y-5">
             {/* Category Image */}
             <div>
@@ -1264,7 +1278,7 @@ function CategoryStudio({
                       <img
                         src={form.imageUrl}
                         alt="Category"
-                        className="h-28 w-28 object-cover rounded-xl border border-gray-200 shadow-sm"
+                        className="h-32 w-32 object-cover rounded-xl border border-gray-200 shadow-sm"
                       />
                       <button
                         type="button"
@@ -1291,9 +1305,36 @@ function CategoryStudio({
                           browse files
                         </button>
                       </p>
-                      <p className="text-[10px] text-gray-400 mt-1">Recommended: 1000×1000px · large photos are resized automatically</p>
+                      <p className="text-[10px] text-gray-400 mt-1">Recommended: 1000×1000px · auto-optimized</p>
                     </>
                   )}
+                </div>
+              </div>
+
+              {/* Curated Luxury Presets */}
+              <div className="mt-3">
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  Or Pick Curated Collection Banner Preset:
+                </p>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {LUXURY_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => {
+                        set("imageUrl", preset.src);
+                        set("imageAlt", preset.name);
+                      }}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border shrink-0 transition text-left ${
+                        form.imageUrl === preset.src
+                          ? "border-[#400604] bg-amber-50 ring-1 ring-[#400604]"
+                          : "border-gray-200 bg-gray-50/80 hover:bg-white"
+                      }`}
+                    >
+                      <img src={preset.src} alt="" className="h-7 w-7 rounded-lg object-cover border border-gray-200 shrink-0" />
+                      <span className="text-[12px] font-bold text-gray-800">{preset.name}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1462,7 +1503,7 @@ function CategoryStudio({
             {/* Live Preview */}
             <div className="pt-2">
               <label className="block text-[11px] font-bold text-gray-400 mb-2 text-center uppercase tracking-widest">
-                Live Homepage Circle Preview
+                Live Storefront Circle Preview
               </label>
               <div className="flex justify-center p-4 rounded-xl border border-gray-100 bg-gray-50/60">
                 <div className="flex flex-col items-center gap-2">
@@ -1511,202 +1552,298 @@ function CategoryStudio({
           </div>
         )}
 
-        {/* Tab 3: Subcategories & Cross-Listed Collections (In Edit Mode) */}
-        {activeTab === "subcategories" && mode === "edit" && initial.id && (
+        {/* ─── TAB 3: SUBCATEGORIES ───────────────────────────────────── */}
+        {activeTab === "subcategories" && (
           <div className="space-y-6">
-            {/* Section 1: Direct Subcategories */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                <div>
-                  <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
-                    <FolderOpen className="h-4 w-4 text-[#400604]" />
-                    Direct Subcategories ({directChildCats.length})
-                  </h4>
-                  <p className="text-[11px] text-gray-500">
-                    Subcategories whose primary parent is {catName(form)}
-                  </p>
-                </div>
-                {onAddChild && (
-                  <button
-                    type="button"
-                    onClick={() => onAddChild(initial.id!)}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#400604] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5a0906] transition shadow-xs"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add Sub
-                  </button>
-                )}
-              </div>
-
-              {directChildCats.length === 0 ? (
-                <div className="p-6 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
-                  <FolderOpen className="h-7 w-7 text-gray-300 mx-auto mb-1.5" />
-                  <p className="text-[12px] font-semibold text-gray-700">No direct subcategories</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    Click &ldquo;Add Sub&rdquo; above to create a subcategory directly under {catName(form)}.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {directChildCats.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/70 hover:bg-white transition shadow-xs"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {sub.image?.src ? (
-                          <img
-                            src={sub.image.src}
-                            alt=""
-                            className="h-8 w-8 rounded-lg object-cover border border-gray-100 shrink-0"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
-                            <FolderOpen className="h-4 w-4" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
-                          <p className="text-[11px] text-gray-400 font-mono truncate">
-                            /{sub.slug} · {sub.count} items
-                          </p>
-                        </div>
-                      </div>
-                      {onEditChild && (
-                        <button
-                          type="button"
-                          onClick={() => onEditChild(sub)}
-                          className="text-[12px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
-                        >
-                          Edit
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Section 2: Cross-Listed Collections */}
-            <div className="space-y-3 pt-2 border-t border-gray-100">
-              <div className="pb-2 border-b border-gray-100">
-                <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-amber-600" />
-                  Cross-Listed Collections ({crossListedChildCats.length})
-                </h4>
-                <p className="text-[11px] text-gray-500">
-                  Categories displayed under {catName(form)} for easy browsing while keeping their own root status
+            {!initial.id ? (
+              <div className="p-8 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                <FolderOpen className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                <p className="text-[13px] font-bold text-gray-800">Save category first</p>
+                <p className="text-[12px] text-gray-500 max-w-xs mx-auto mt-1">
+                  Once this category is created and saved, you can add and manage direct subcategories under it.
                 </p>
               </div>
-
-              {crossListedChildCats.length === 0 ? (
-                <div className="p-5 text-center rounded-xl border border-dashed border-amber-200 bg-amber-50/20">
-                  <p className="text-[12px] font-semibold text-gray-700">No cross-listed categories linked yet</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    Use the selector below to link any category (e.g. Ethnic Wear) to also display under {catName(form)}.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {crossListedChildCats.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-200/70 bg-amber-50/40 hover:bg-amber-50/70 transition shadow-2xs"
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <div>
+                    <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                      <FolderOpen className="h-4 w-4 text-[#400604]" />
+                      Direct Subcategories ({directChildCats.length})
+                    </h4>
+                    <p className="text-[11px] text-gray-500">
+                      Child categories whose primary parent is {catName(form)}
+                    </p>
+                  </div>
+                  {onAddChild && (
+                    <button
+                      type="button"
+                      onClick={() => onAddChild(initial.id!)}
+                      className="inline-flex items-center gap-1 rounded-lg bg-[#400604] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#5a0906] transition shadow-xs"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {sub.image?.src ? (
-                          <img
-                            src={sub.image.src}
-                            alt=""
-                            className="h-8 w-8 rounded-lg object-cover border border-amber-200 shrink-0"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-lg bg-amber-100/70 flex items-center justify-center shrink-0 text-amber-800">
-                            <Sparkles className="h-4 w-4" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                      <Plus className="h-3.5 w-3.5" /> Add Subcategory
+                    </button>
+                  )}
+                </div>
+
+                {directChildCats.length === 0 ? (
+                  <div className="p-8 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                    <FolderOpen className="h-7 w-7 text-gray-300 mx-auto mb-1.5" />
+                    <p className="text-[13px] font-bold text-gray-700">No direct subcategories</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5 mb-3">
+                      Click &ldquo;Add Subcategory&rdquo; above to create a child category directly under {catName(form)}.
+                    </p>
+                    {onAddChild && (
+                      <button
+                        type="button"
+                        onClick={() => onAddChild(initial.id!)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#400604] text-[#400604] hover:bg-amber-50 text-[12px] font-bold transition"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Create Subcategory
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {directChildCats.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/70 hover:bg-white transition shadow-xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {sub.image?.src ? (
+                            <img
+                              src={sub.image.src}
+                              alt=""
+                              className="h-8 w-8 rounded-lg object-cover border border-gray-100 shrink-0"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-gray-400">
+                              <FolderOpen className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
                             <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
-                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200">
-                              ✨ Cross-listed
-                            </span>
+                            <p className="text-[11px] text-gray-400 font-mono truncate">
+                              /{sub.slug} · {sub.count} items
+                            </p>
                           </div>
-                          <p className="text-[11px] text-gray-500 font-mono truncate">
-                            /{sub.slug} · {sub.count} items
-                          </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
                         {onEditChild && (
                           <button
                             type="button"
                             onClick={() => onEditChild(sub)}
-                            className="text-[11px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
+                            className="text-[12px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
                           >
                             Edit
                           </button>
                         )}
-                        <button
-                          type="button"
-                          disabled={linkingActionLoading}
-                          onClick={() => handleUnlinkChild(sub)}
-                          className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
-                          title={`Remove from ${catName(form)}`}
-                        >
-                          Unlink
-                        </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Inline Link Existing Category Control */}
-              {linkableCandidates.length > 0 && (
-                <div className="mt-3 p-3 rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/40 to-white flex flex-col sm:flex-row sm:items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-950 mb-1">
-                      + Cross-Link Another Category Under {catName(form)}
-                    </label>
-                    <select
-                      value={linkingChildId}
-                      onChange={(e) => setLinkingChildId(e.target.value ? Number(e.target.value) : "")}
-                      className="w-full rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-800 focus:outline-none focus:border-[#400604]"
-                    >
-                      <option value="">Select category to cross-list...</option>
-                      {linkableCandidates.map((cand) => (
-                        <option key={cand.id} value={cand.id}>
-                          {catName(cand)} (/{cand.slug}) — {cand.count} items
-                        </option>
-                      ))}
-                    </select>
+                    ))}
                   </div>
-                  <button
-                    type="button"
-                    disabled={!linkingChildId || linkingActionLoading}
-                    onClick={() => {
-                      if (typeof linkingChildId === "number") {
-                        void handleLinkExistingChild(linkingChildId);
-                      }
-                    }}
-                    className="sm:self-end px-3.5 py-1.5 rounded-lg bg-[#400604] text-white text-[12px] font-bold hover:bg-[#5a0906] transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-2xs"
-                  >
-                    {linkingActionLoading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    )}
-                    <span>Link Under This</span>
-                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── TAB 4: CROSS-LISTING ───────────────────────────────────── */}
+        {activeTab === "crosslisting" && (
+          <div className="space-y-6">
+            {/* Informational Explainer Callout */}
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/60 via-white to-amber-50/30 p-4 space-y-2 shadow-2xs">
+              <div className="flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-amber-100 text-amber-900 shrink-0 mt-0.5">
+                  <Sparkles className="h-4 w-4" />
                 </div>
+                <div>
+                  <h4 className="text-[13px] font-black text-gray-900">
+                    Understanding Cross-Listing vs. Primary Parent
+                  </h4>
+                  <p className="text-[12px] text-gray-600 leading-relaxed mt-1">
+                    A category&apos;s <b>Parent Category</b> defines its primary structural home and canonical URL breadcrumb.
+                    <b> Cross-Listing</b> allows you to mirror this category under additional parent departments so customers can discover it across multiple sections without duplicating records or breaking URLs.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Section A: Mirror THIS Category Under Other Parents */}
+            <div className="space-y-3">
+              <div className="pb-1 border-b border-gray-100">
+                <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-amber-600" />
+                  Mirror &ldquo;{catName(form)}&rdquo; Under Other Departments
+                </h4>
+                <p className="text-[11px] text-gray-500">
+                  Select other main departments where this category should also appear in menus
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {mainCategoryOptions.filter((m) => m.id !== form.parent).map((mainCat) => {
+                  const isChecked = (form.linkedParents || []).includes(mainCat.id);
+                  return (
+                    <label
+                      key={mainCat.id}
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
+                        isChecked
+                          ? "bg-amber-100/70 border-amber-300 text-amber-950 font-bold shadow-xs"
+                          : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const current = form.linkedParents || [];
+                          const next = e.target.checked
+                            ? [...current, mainCat.id]
+                            : current.filter((id) => id !== mainCat.id);
+                          set("linkedParents", next);
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-[#400604] focus:ring-[#400604]"
+                      />
+                      <span className="truncate">{catName(mainCat)}</span>
+                      {mainCat.image?.src && (
+                        <img
+                          src={mainCat.image.src}
+                          alt=""
+                          className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
+                        />
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+              {mainCategoryOptions.filter((m) => m.id !== form.parent).length === 0 && (
+                <p className="text-[12px] text-gray-400 italic">No other main categories available to link under.</p>
               )}
             </div>
+
+            {/* Section B: Collections Cross-Listed Under THIS Category */}
+            {mode === "edit" && initial.id && (
+              <div className="space-y-3 pt-3 border-t border-gray-100">
+                <div className="pb-1 border-b border-gray-100">
+                  <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                    <Layers className="h-4 w-4 text-[#400604]" />
+                    Collections Cross-Listed Under &ldquo;{catName(form)}&rdquo; ({crossListedChildCats.length})
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    Categories mirrored inside {catName(form)} while retaining their own primary parents
+                  </p>
+                </div>
+
+                {crossListedChildCats.length === 0 ? (
+                  <div className="p-4 text-center rounded-xl border border-dashed border-amber-200 bg-amber-50/20">
+                    <p className="text-[12px] font-semibold text-gray-700">No cross-listed categories linked under this category yet</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Use the picker below to mirror another category under {catName(form)}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {crossListedChildCats.map((sub) => (
+                      <div
+                        key={sub.id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl border border-amber-200/70 bg-amber-50/40 hover:bg-amber-50/70 transition shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {sub.image?.src ? (
+                            <img
+                              src={sub.image.src}
+                              alt=""
+                              className="h-8 w-8 rounded-lg object-cover border border-amber-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-lg bg-amber-100/70 flex items-center justify-center shrink-0 text-amber-800">
+                              <Sparkles className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
+                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                                ✨ Cross-listed
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-500 font-mono truncate">
+                              /{sub.slug} · {sub.count} items
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {onEditChild && (
+                            <button
+                              type="button"
+                              onClick={() => onEditChild(sub)}
+                              className="text-[11px] font-bold text-[#400604] hover:bg-[#400604]/10 px-2.5 py-1 rounded-lg transition"
+                            >
+                              Edit
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={linkingActionLoading}
+                            onClick={() => handleUnlinkChild(sub)}
+                            className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
+                            title={`Remove from ${catName(form)}`}
+                          >
+                            Unlink
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Inline Link Existing Category Control */}
+                {linkableCandidates.length > 0 && (
+                  <div className="mt-3 p-3 rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/40 to-white flex flex-col sm:flex-row sm:items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-950 mb-1">
+                        + Cross-Link Another Category Under {catName(form)}
+                      </label>
+                      <select
+                        value={linkingChildId}
+                        onChange={(e) => setLinkingChildId(e.target.value ? Number(e.target.value) : "")}
+                        className="w-full rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-800 focus:outline-none focus:border-[#400604]"
+                      >
+                        <option value="">Select category to cross-list...</option>
+                        {linkableCandidates.map((cand) => (
+                          <option key={cand.id} value={cand.id}>
+                            {catName(cand)} (/{cand.slug}) — {cand.count} items
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!linkingChildId || linkingActionLoading}
+                      onClick={() => {
+                        if (typeof linkingChildId === "number") {
+                          void handleLinkExistingChild(linkingChildId);
+                        }
+                      }}
+                      className="sm:self-end px-3.5 py-1.5 rounded-lg bg-[#400604] text-white text-[12px] font-bold hover:bg-[#5a0906] transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-2xs"
+                    >
+                      {linkingActionLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      )}
+                      <span>Link Under This</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Studio Footer */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-t border-gray-100 bg-gray-50/80 shrink-0">
+      {/* Studio Footer (Sticky) */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/95 backdrop-blur shrink-0 z-20">
         <div>
           {mode === "edit" && form.slug ? (
             <a
@@ -2027,6 +2164,11 @@ export default function AdminCategoriesPage() {
   const [mobileTab, setMobileTab] = useState<"explorer" | "studio">("explorer");
   const [moveCat, setMoveCat] = useState<WCCategory | null>(null);
   const [deleteCat, setDeleteCat] = useState<WCCategory | null>(null);
+  const [createModal, setCreateModal] = useState<{
+    isOpen: boolean;
+    initialType?: "main" | "sub";
+    initialParentId?: number;
+  } | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   // Filters
@@ -2035,6 +2177,15 @@ export default function AdminCategoriesPage() {
   const [filterStatus, setFilterStatus] = useState<"all"|"active"|"inactive">("all");
 
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set());
+  const [activeMenuCatId, setActiveMenuCatId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (activeMenuCatId !== null) setActiveMenuCatId(null);
+    };
+    window.addEventListener("click", handleGlobalClick);
+    return () => window.removeEventListener("click", handleGlobalClick);
+  }, [activeMenuCatId]);
 
   const toggleCollapse = (id: number) => {
     setCollapsedIds((prev) => {
@@ -2196,7 +2347,7 @@ export default function AdminCategoriesPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || err.error || "Failed to create category");
+        throw new Error(err.details || err.message || err.error || "Failed to create category");
       }
       const created = await res.json();
       categoryId = created.id;
@@ -2404,33 +2555,19 @@ export default function AdminCategoriesPage() {
   };
 
   const openAdd = () => {
-    selectedCatIdRef.current = null;
-    setSelectedCatId(null);
-    setStudio({
-      mode: "add",
-      initial: {
-        ...EMPTY_FORM,
-        linkedParents: [],
-        sortOrder: siblingsOf(flat, 0).length,
-      },
+    setCreateModal({
+      isOpen: true,
+      initialType: "main",
+      initialParentId: 0,
     });
-    setMobileTab("studio");
   };
 
   const openAddUnder = (parentId: number) => {
-    selectedCatIdRef.current = null;
-    setSelectedCatId(null);
-    setStudio({
-      mode: "add",
-      initial: {
-        ...EMPTY_FORM,
-        type: "sub",
-        parent: parentId,
-        linkedParents: [],
-        sortOrder: siblingsOf(flat, parentId).length,
-      },
+    setCreateModal({
+      isOpen: true,
+      initialType: "sub",
+      initialParentId: parentId,
     });
-    setMobileTab("studio");
   };
 
   const openEdit = (cat: WCCategory) => {
@@ -2443,6 +2580,7 @@ export default function AdminCategoriesPage() {
     const isCollapsed = collapsedIds.has(cat.id);
     const childCount = cat.children.length;
     const isSelected = selectedCatId === cat.id;
+    const isMenuOpen = activeMenuCatId === cat.id;
 
     const linkedParentNames = Array.isArray(cat.linked_parents) && cat.linked_parents.length > 0
       ? cat.linked_parents
@@ -2451,7 +2589,7 @@ export default function AdminCategoriesPage() {
       : [];
 
     return (
-      <div key={`${cat.id}-${depth}-${cat.is_linked ? 'linked' : 'direct'}`}>
+      <div key={`${cat.id}-${depth}-${cat.is_linked ? 'linked' : 'direct'}`} className={isMenuOpen ? "relative z-30" : "relative"}>
         <div
           draggable={dndEnabled && !cat.is_linked}
           onDragStart={(e) => handleDragStart(e, cat)}
@@ -2459,7 +2597,7 @@ export default function AdminCategoriesPage() {
           onDrop={(e) => handleDrop(e, cat)}
           onDragEnd={endDrag}
           onClick={() => openEdit(cat)}
-          className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b border-gray-100/90 transition cursor-pointer group select-none ${
+          className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-gray-100 transition cursor-pointer group select-none ${
             dragId === cat.id ? "opacity-40" : ""
           } ${
             dropTarget && "pos" in dropTarget && dropTarget.id === cat.id
@@ -2475,53 +2613,37 @@ export default function AdminCategoriesPage() {
               : cat.is_linked
               ? "bg-amber-50/30 hover:bg-amber-50/60"
               : depth > 0
-              ? "bg-slate-50/60 hover:bg-amber-50/30"
+              ? "bg-slate-50/40 hover:bg-amber-50/30"
               : "bg-white hover:bg-gray-50/90"
           }`}
         >
-          {/* Drag + order badge + expand + indent */}
-          <div className="flex items-center gap-1 shrink-0" style={{ paddingLeft: `${Math.min(depth * 18, 54)}px` }}>
+          {/* Drag Handle + Expand + Tree Indentation Guide */}
+          <div
+            className="flex items-center gap-1 shrink-0"
+            style={{ paddingLeft: `${Math.min(depth * 20, 60)}px` }}
+          >
+            {/* Visual branch guide for subcategories */}
+            {depth > 0 && (
+              <span className="w-2.5 h-4 border-l-2 border-b-2 border-gray-200 rounded-bl-sm -ml-2 mr-1 inline-block" />
+            )}
+
+            {/* Drag Grip */}
             <div
-              className={`w-4 text-gray-300 transition flex items-center justify-center ${cat.is_linked ? "opacity-30 cursor-not-allowed" : "cursor-grab hover:text-gray-700"}`}
-              title={cat.is_linked ? "Cross-listed category" : dndEnabled ? "Drag to reorder, or drop onto a category to nest it" : "Clear search and filters to drag"}
+              className={`w-4 text-gray-300 transition flex items-center justify-center ${
+                cat.is_linked ? "opacity-20 cursor-not-allowed" : "cursor-grab hover:text-gray-700"
+              }`}
+              title={
+                cat.is_linked
+                  ? "Cross-listed category"
+                  : dndEnabled
+                  ? "Drag to reorder, or drop onto another category to nest"
+                  : "Clear search and filters to drag"
+              }
             >
               <GripVertical className="h-3.5 w-3.5" />
             </div>
 
-            <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-              {cat.is_linked ? (
-                <span className="text-[10px] font-bold rounded px-1.5 py-0.5 bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-0.5" title="Cross-listed collection">
-                  <Sparkles className="h-2.5 w-2.5 text-amber-700" /> Linked
-                </span>
-              ) : (
-                <>
-                  <span className={`text-[10px] font-mono font-bold rounded px-1.5 py-0.5 ${
-                    depth === 0 ? "bg-amber-50 text-amber-950 border border-amber-200/80" : "bg-gray-100 text-gray-500"
-                  }`} title={`Display Order: #${index + 1}`}>
-                    #{index + 1}
-                  </span>
-                  <div className="flex flex-col">
-                    <button
-                      type="button"
-                      onClick={() => moveCategory(cat.id, cat.parent, "up")}
-                      className="p-0.5 text-gray-400 hover:text-[#400604] hover:bg-amber-50 rounded transition"
-                      title="Move Up"
-                    >
-                      <ChevronUp className="h-2.5 w-2.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveCategory(cat.id, cat.parent, "down")}
-                      className="p-0.5 text-gray-400 hover:text-[#400604] hover:bg-amber-50 rounded transition"
-                      title="Move Down"
-                    >
-                      <ChevronDown className="h-2.5 w-2.5" />
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
+            {/* Expand / Collapse Chevron */}
             {hasChildren ? (
               <button
                 type="button"
@@ -2529,41 +2651,43 @@ export default function AdminCategoriesPage() {
                   e.stopPropagation();
                   toggleCollapse(cat.id);
                 }}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200/80 hover:text-gray-900 transition"
+                className="flex h-6 w-6 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition"
                 aria-label={isCollapsed ? "Expand subcategories" : "Collapse subcategories"}
                 title={isCollapsed ? "Expand" : "Collapse"}
               >
                 <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-200 ${isCollapsed ? "" : "rotate-90"}`} />
               </button>
             ) : (
-              <span className="w-7" />
+              <span className="w-6" />
             )}
           </div>
 
-          {/* Thumbnail / Icon */}
+          {/* Thumbnail / Category Icon */}
           <div className="relative shrink-0 flex items-center justify-center">
             {cat.image?.src ? (
               <img
                 src={cat.image.src}
                 alt={catName(cat)}
-                className={`rounded-xl object-cover border border-gray-200 shadow-2xs bg-white ${depth === 0 ? "h-10 w-10 sm:h-11 sm:w-11" : "h-8 w-8 sm:h-9 sm:w-9"}`}
+                className={`rounded-xl object-cover border border-gray-200 shadow-2xs bg-white ${
+                  depth === 0 ? "h-10 w-10 sm:h-11 sm:w-11" : "h-8 w-8 sm:h-9 sm:w-9"
+                }`}
               />
             ) : (
-              <div className={`rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200/60 ${depth === 0 ? "h-10 w-10 sm:h-11 sm:w-11" : "h-8 w-8 sm:h-9 sm:w-9"}`}>
+              <div
+                className={`rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200/60 ${
+                  depth === 0 ? "h-10 w-10 sm:h-11 sm:w-11" : "h-8 w-8 sm:h-9 sm:w-9"
+                }`}
+              >
                 <FolderOpen className="h-4 w-4" />
               </div>
             )}
             {(() => {
-              const iconMeta = cat.meta_data?.find(m => (m.key === "_angkon_icon" || m.key === "_plainstitch_icon"))?.value;
+              const iconMeta = cat.meta_data?.find((m) => m.key === "_angkon_icon" || m.key === "_plainstitch_icon")?.value;
               if (iconMeta && typeof iconMeta === "string" && iconMeta.trim() !== "") {
                 const isUrl = isIconUrl(iconMeta);
                 return (
                   <div className="absolute -bottom-1 -right-1 bg-white rounded-full shadow-2xs border border-gray-100 text-[11px] leading-none p-[2px] z-10 flex items-center justify-center overflow-hidden">
-                    {isUrl ? (
-                      <img src={iconMeta} alt="" className="h-3 w-3 object-contain" />
-                    ) : (
-                      iconMeta
-                    )}
+                    {isUrl ? <img src={iconMeta} alt="" className="h-3 w-3 object-contain" /> : iconMeta}
                   </div>
                 );
               }
@@ -2571,29 +2695,42 @@ export default function AdminCategoriesPage() {
             })()}
           </div>
 
-          {/* Title & Info */}
+          {/* Category Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className={`font-bold ${depth === 0 ? "text-[14px] text-gray-900" : "text-[12px] text-gray-800"}`}>
+              <span
+                className={`font-bold truncate ${
+                  depth === 0 ? "text-[14px] text-gray-900" : "text-[13px] text-gray-800"
+                }`}
+              >
                 {catName(cat)}
               </span>
-              {cat.is_linked && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded-md shrink-0">
+
+              {cat.is_linked ? (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.2 rounded-md shrink-0"
+                  title="Cross-listed under this collection (primary parent remains unchanged)"
+                >
                   <Sparkles className="h-2.5 w-2.5 text-amber-700" />
                   Cross-listed
                 </span>
+              ) : depth === 0 ? (
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-gray-100 text-gray-600 shrink-0">
+                  Root
+                </span>
+              ) : (
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 uppercase tracking-wide shrink-0">
+                  Sub
+                </span>
               )}
+
               {hasChildren && (
-                <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md shrink-0">
+                <span className="text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200/70 px-1.5 py-0.2 rounded-md shrink-0">
                   {childCount} {childCount === 1 ? "sub" : "subs"}
                 </span>
               )}
-              {depth > 0 && !cat.is_linked && (
-                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide px-1 py-0.2 rounded bg-gray-50 border border-gray-100 shrink-0">
-                  sub
-                </span>
-              )}
             </div>
+
             <div className="flex items-center gap-2 flex-wrap mt-0.5">
               <span className="text-[11px] text-gray-400 font-mono truncate">/{cat.slug}</span>
               {!cat.is_linked && linkedParentNames.length > 0 && (
@@ -2605,57 +2742,108 @@ export default function AdminCategoriesPage() {
             </div>
           </div>
 
-          {/* Item count badge */}
+          {/* Item count */}
           <div className="shrink-0 text-center hidden md:block">
             <span className="text-[11px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
               {cat.count} items
             </span>
           </div>
 
-          {/* Status icon */}
-          <div className="shrink-0 flex justify-center">
+          {/* Storefront Status Badge */}
+          <div className="shrink-0 hidden sm:flex items-center">
             {active ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Active
+              </span>
             ) : (
-              <XCircle className="h-4 w-4 text-gray-300" />
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                Hidden
+              </span>
             )}
           </div>
 
-          {/* Row Actions */}
-          <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => openAddUnder(cat.id)}
-              className="p-1.5 rounded-lg hover:bg-[#400604]/10 text-gray-400 hover:text-[#400604] transition"
-              title="Add subcategory under this category"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setMoveCat(cat)}
-              className="p-1.5 rounded-lg hover:bg-violet-100 text-gray-400 hover:text-violet-600 transition"
-              title="Move category or products"
-            >
-              <ArrowRightLeft className="h-3.5 w-3.5" />
-            </button>
+          {/* Primary Action: Clear Edit Button */}
+          <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => openEdit(cat)}
-              className="p-1.5 rounded-lg hover:bg-amber-100 text-gray-400 hover:text-amber-800 transition"
+              className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[12px] font-bold text-[#400604] bg-[#400604]/5 hover:bg-[#400604] hover:text-white transition shadow-2xs"
               title="Edit in Studio"
             >
               <Pencil className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Edit</span>
             </button>
-            <button
-              type="button"
-              onClick={(e) => handleDelete(e, cat)}
-              disabled={deleting === cat.id}
-              className="p-1.5 rounded-lg hover:bg-red-100 text-gray-400 hover:text-red-600 transition disabled:opacity-50"
-              title="Delete category"
-            >
-              {deleting === cat.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-            </button>
+
+            {/* Secondary Actions: Accessible Three-Dot Overflow Menu */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActiveMenuCatId(isMenuOpen ? null : cat.id)}
+                className={`p-1.5 rounded-xl transition ${
+                  isMenuOpen
+                    ? "bg-[#400604] text-white shadow-xs"
+                    : "text-gray-400 hover:text-gray-800 hover:bg-gray-100"
+                }`}
+                title="More actions"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+
+              {isMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveMenuCatId(null);
+                      openAddUnder(cat.id);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-[12px] font-semibold text-gray-700 hover:bg-amber-50/70 hover:text-[#400604] transition"
+                  >
+                    <Plus className="h-4 w-4 text-[#400604]" />
+                    <span>Add Subcategory</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveMenuCatId(null);
+                      setMoveCat(cat);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <ArrowRightLeft className="h-4 w-4 text-gray-500" />
+                    <span>Move / Relocate</span>
+                  </button>
+                  <a
+                    href={`/product-category/${cat.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setActiveMenuCatId(null)}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-[12px] font-semibold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <ExternalLink className="h-4 w-4 text-gray-500" />
+                    <span>View on Storefront</span>
+                  </a>
+                  <div className="my-1 border-t border-gray-100" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      setActiveMenuCatId(null);
+                      handleDelete(e, cat);
+                    }}
+                    disabled={deleting === cat.id}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-left text-[12px] font-semibold text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                  >
+                    {deleting === cat.id ? <Loader2 className="h-4 w-4 animate-spin text-red-600" /> : <Trash2 className="h-4 w-4 text-red-500" />}
+                    <span>Delete Category</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2826,13 +3014,14 @@ export default function AdminCategoriesPage() {
           </div>
 
           {/* Tree Card */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs overflow-hidden">
-            <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xs">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-500 rounded-t-2xl">
               <div className="flex items-center gap-2">
                 <span>Category Hierarchy</span>
                 <span className="text-[10px] font-mono text-gray-400">({filteredTree.length} roots)</span>
               </div>
-              <div>Actions</div>
+              <div className="hidden sm:block">Storefront Status & Actions</div>
+              <div className="sm:hidden">Actions</div>
             </div>
 
             {loading ? (
@@ -2857,7 +3046,7 @@ export default function AdminCategoriesPage() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col max-h-[calc(100vh-280px)] overflow-y-auto divide-y divide-gray-100/80">
+              <div className="flex flex-col divide-y divide-gray-100/80">
                 {filteredTree.map((cat, i) => renderRow(cat, 0, i))}
                 {dndEnabled && dragId !== null && (
                   <div
@@ -2934,6 +3123,22 @@ export default function AdminCategoriesPage() {
           authFetch={authFetch}
           onClose={() => setMoveCat(null)}
           onDone={load}
+          showToast={showToast}
+        />
+      )}
+      {createModal?.isOpen && (
+        <CreateCategoryModal
+          isOpen={createModal.isOpen}
+          initialType={createModal.initialType || "main"}
+          initialParentId={createModal.initialParentId || 0}
+          flat={flat}
+          authFetch={authFetch}
+          onClose={() => setCreateModal(null)}
+          onCreated={async (newId) => {
+            selectedCatIdRef.current = newId;
+            setSelectedCatId(newId);
+            await load(true);
+          }}
           showToast={showToast}
         />
       )}

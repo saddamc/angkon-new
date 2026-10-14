@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 const DELIVERY_TIMES = [
-  { area: "Dhaka Metro", time: "1–2 Days", note: "Direct home delivery via express courier" },
+  { area: "Dhaka", time: "1–2 Days", note: "Direct home delivery via express courier" },
   { area: "Chittagong City", time: "2–3 Days", note: "Standard courier service" },
   { area: "Dhaka Suburbs (Savar, Gazipur, Narayanganj)", time: "2–3 Days", note: "Sub-urban transit" },
   { area: "Outside Dhaka Home Delivery (All 64 Districts)", time: "3–4 Days", note: "Steadfast / RedX door-to-door" },

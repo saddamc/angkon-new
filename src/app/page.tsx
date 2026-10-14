@@ -12,7 +12,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { getCategoryImage } from "@/config/category-images";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
-const EXCLUDED_GRID_SLUGS = new Set(["mighto", "kids", "unisex"]);
+const EXCLUDED_GRID_SLUGS = new Set(["uncategorized", "kids", "unisex"]);
 
 function filterHomepageCategories(cats: WooCategory[]): WooCategory[] {
   const seen = new Set<string>();
@@ -133,23 +133,33 @@ export default function HomePage() {
               pair.length === 1 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"
             }`}
           >
-            {pair.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group relative block w-full aspect-[1700/700] overflow-hidden bg-[#340402] border border-[#E1B76F]/15 shadow-sm transition hover:opacity-95"
-              >
-                <Image
-                  src={item.image}
-                  alt={item.alt}
-                  fill
-                  priority={pIdx < 2}
-                  loading={pIdx < 2 ? "eager" : "lazy"}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-              </Link>
-            ))}
+            {pair.map((item) => {
+              const hasBakedText = typeof item.image === "string" && item.image.startsWith("/banners/");
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group relative block w-full aspect-[1700/700] overflow-hidden bg-[#340402] border border-[#E1B76F]/15 shadow-sm transition hover:opacity-95"
+                >
+                  <Image
+                    src={item.image}
+                    alt={item.alt}
+                    fill
+                    priority={pIdx < 2}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
+                  />
+                  {/* Dynamic Admin Upload Overlay: When category image is updated via Admin Panel (unbaked), display title with localized contrast under text & zero side blur */}
+                  {!hasBakedText && (
+                    <div className="absolute inset-0 flex items-center justify-start pl-6 sm:pl-10 md:pl-14 pointer-events-none z-10">
+                      <span className="font-heading font-black text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white uppercase tracking-[0.22em] drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                        {item.title}
+                      </span>
+                    </div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         ))}
       </section>

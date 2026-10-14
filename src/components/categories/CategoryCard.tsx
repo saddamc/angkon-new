@@ -32,7 +32,6 @@ export function CategoryCard({
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             priority={priority}
-            loading={priority ? "eager" : "lazy"}
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (

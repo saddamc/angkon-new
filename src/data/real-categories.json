@@ -979,46 +979,6 @@
     }
   },
   {
-    "id": 963,
-    "name": "Mighto",
-    "slug": "mighto",
-    "parent": 0,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 963001,
-      "src": "/banners/mighto-home-banner.webp",
-      "alt": "Mighto"
-    },
-    "menu_order": 10
-  },
-  {
-    "id": 964,
-    "name": "Mighto Men",
-    "slug": "mighto-men",
-    "parent": 963,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 266275,
-      "src": "/banners/mighto-men-card.webp",
-      "alt": "Mighto Men"
-    }
-  },
-  {
-    "id": 965,
-    "name": "Mighto Women",
-    "slug": "mighto-women",
-    "parent": 963,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 266276,
-      "src": "/banners/mighto-women-card.webp",
-      "alt": "Mighto Women"
-    }
-  },
-  {
     "id": 680,
     "name": "Military Cap",
     "slug": "military-cap",
@@ -1555,20 +1515,6 @@
     }
   },
   {
-    "id": 165,
-    "name": "Tees",
-    "slug": "tees",
-    "parent": 0,
-    "description": "Drop Shoulder & Heavyweight Cotton T-Shirts",
-    "count": 0,
-    "image": {
-      "id": 165001,
-      "src": "/banners/tees.webp",
-      "alt": "T-Shirts & Drop Tees"
-    },
-    "menu_order": 6
-  },
-  {
     "id": 164,
     "name": "T-shirts",
     "slug": "tshirt",
@@ -1632,20 +1578,6 @@
       "src": "/banners/full-sleeves.webp",
       "alt": "Textured Jackets"
     }
-  },
-  {
-    "id": 173,
-    "name": "Tops",
-    "slug": "tops",
-    "parent": 0,
-    "description": "Women Tops, Silk Blouses & Kimonos",
-    "count": 0,
-    "image": {
-      "id": 173001,
-      "src": "/banners/tops.webp",
-      "alt": "Women Tops & Kimonos"
-    },
-    "menu_order": 8
   },
   {
     "id": 169,

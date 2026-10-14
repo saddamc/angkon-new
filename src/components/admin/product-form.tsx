@@ -2302,7 +2302,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
               </p>
             )}
 
-            {/* Optional size measurements — stored as WC meta _plainstitch_size_chart */}
+            {/* Optional size measurements — stored as WC meta _angkon_size_chart */}
             {sizes.length > 0 && (
               <div className="mt-5 pt-5 border-t border-purple-50 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">

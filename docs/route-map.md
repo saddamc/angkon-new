@@ -46,7 +46,7 @@ Every storefront route renders inside `RootShell` → **Navbar** (announcement b
 
 ## Known gaps to fix
 
-1. Nav/footer still link to a `Mighto` activewear collection (carried over from the other store) — rename or replace with your own collection.
+1. ~~Nav/footer still link to a `Mighto` activewear collection~~ (Removed: Mighto routes and footer links have been fully removed).
 2. Product data and photos in `src/data/real-products.json` come from another store — replace with ANGKON's own catalog.
 3. `Navbar.tsx` comment mentions the other store; reword.
 4. No account/login route in the storefront nav — decide whether to add `/account`.

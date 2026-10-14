@@ -39,9 +39,9 @@ export function cleanCategoryInput(body: any): CleanCategoryInput {
   if (Array.isArray(body?.meta_data)) {
     out.meta_data = body.meta_data
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .filter((m: any) => m && typeof m.key === "string")
+      .filter((m: any) => m && typeof m.key === "string" && m.key.trim().length > 0)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((m: any) => ({ key: m.key, value: String(m.value ?? "") }));
+      .map((m: any) => ({ key: m.key.trim(), value: String(m.value ?? "") }));
     const active = out.meta_data?.find((m) => m.key === "_is_active");
     if (active) out.is_active = active.value !== "false";
   }

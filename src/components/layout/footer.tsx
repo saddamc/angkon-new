@@ -82,7 +82,6 @@ const SHOP_LINKS = [
   { label: "New Arrivals & Tawakkal Wada", href: "/products" },
   { label: "Women's Ethnic Collection", href: "/product-category/women" },
   { label: "Men's Heritage Collection", href: "/product-category/men" },
-  { label: "Mighto Performance Wear", href: "/mighto" },
   { label: "Exclusive Accessories", href: "/product-category/accessories" },
   { label: "Festive Offers & Sale", href: "/sale" },
 ];

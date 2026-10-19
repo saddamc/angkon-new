@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import sharp from "sharp";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -52,19 +53,52 @@ export async function POST(request: NextRequest) {
     const filename = (file as File).name ?? "upload.jpg";
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    const result = await uploadToCloudinary(buffer, {
+    // Category and product images are converted to WebP (preserve SVG vector and animated GIF)
+    const isSvg = file.type === "image/svg+xml" || filename.toLowerCase().endsWith(".svg");
+    const isGif = file.type === "image/gif" || filename.toLowerCase().endsWith(".gif");
+    const shouldConvertToWebP = !isSvg && !isGif;
+
+    let uploadBuffer = buffer;
+    if (shouldConvertToWebP) {
+      try {
+        const sharpInstance = sharp(buffer).rotate();
+        const meta = await sharpInstance.metadata();
+        const maxSide = 1800;
+        let pipeline = sharpInstance;
+        if (meta.width && meta.height && (meta.width > maxSide || meta.height > maxSide)) {
+          pipeline = pipeline.resize({
+            width: meta.width >= meta.height ? maxSide : undefined,
+            height: meta.height > meta.width ? maxSide : undefined,
+            fit: "inside",
+            withoutEnlargement: true,
+          });
+        }
+        uploadBuffer = await pipeline.webp({ quality: 88, effort: 4 }).toBuffer();
+      } catch (sharpErr) {
+        console.warn("Sharp WebP conversion failed/skipped, using original buffer:", sharpErr);
+        uploadBuffer = buffer;
+      }
+    }
+
+    const result = await uploadToCloudinary(uploadBuffer, {
       folder,
       overwrite: true,
+      format: shouldConvertToWebP ? "webp" : undefined,
     });
+
+    // Ensure id is always a numeric timestamp (not Cloudinary's hex asset_id string)
+    // so Mongoose and frontend Number schemas never encounter NaN casting errors.
+    const numericId = Date.now();
 
     return NextResponse.json({
       url: result.secure_url,
       public_id: result.public_id,
-      id: result.asset_id || Date.now(),
+      id: numericId,
+      asset_id: result.asset_id,
       alt: (formData.get("alt") as string) || filename.replace(/\.[^.]+$/, ""),
       width: result.width,
       height: result.height,
-      format: result.format,
+      format: result.format || (shouldConvertToWebP ? "webp" : undefined),
       folder,
     });
   } catch (err: unknown) {

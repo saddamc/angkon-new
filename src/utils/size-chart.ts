@@ -91,16 +91,18 @@ export function getSizeChartFromMeta(
 export const DEFAULT_SHIRT_CHART: SizeChartData = {
   columns: ["Chest", "Length", "Sleeve"],
   rows: {
+    XS: { Chest: '36"', Length: '26"', Sleeve: '7.5"' },
     S: { Chest: '38"', Length: '27"', Sleeve: '8"' },
     M: { Chest: '40"', Length: '28"', Sleeve: '8.5"' },
     L: { Chest: '42"', Length: '29"', Sleeve: '9"' },
     XL: { Chest: '44"', Length: '30"', Sleeve: '9.5"' },
     XXL: { Chest: '46"', Length: '31"', Sleeve: '10"' },
+    "3XL": { Chest: '48"', Length: '32"', Sleeve: '10.5"' },
   },
 };
 
-/** True when any selected size matches S–XXL clothing labels. */
+/** True when any selected size matches XS–3XL clothing labels. */
 export function isClothingSizeLabel(size: string): boolean {
   const u = size.trim().toUpperCase();
-  return u === "S" || u === "M" || u === "L" || u === "XL" || u === "XXL";
+  return ["XS", "S", "M", "L", "XL", "XXL", "3XL"].includes(u);
 }

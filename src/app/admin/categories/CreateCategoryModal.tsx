@@ -59,34 +59,71 @@ function categoryPath(flat: WCCategory[], id: number): string {
   return parts.join(" > ");
 }
 
-async function shrinkImageForUpload(file: File): Promise<File> {
-  const MAX_SIDE = 1600;
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+async function convertImageToWebP(file: File, maxDimension = 1600, quality = 0.90): Promise<File> {
+  // If not an image (or SVG/GIF where animations or vectors should be preserved), return as-is
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml" || file.type === "image/gif") {
+    return file;
+  }
+
   try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-    if (scale === 1 && file.size <= 1.5 * 1024 * 1024) {
-      bitmap.close();
+    let sourceWidth = 0;
+    let sourceHeight = 0;
+    let imageSource: ImageBitmap | HTMLImageElement;
+
+    if (typeof createImageBitmap === "function") {
+      const bitmap = await createImageBitmap(file);
+      sourceWidth = bitmap.width;
+      sourceHeight = bitmap.height;
+      imageSource = bitmap;
+    } else {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = url;
+      });
+      URL.revokeObjectURL(url);
+      sourceWidth = img.naturalWidth || img.width;
+      sourceHeight = img.naturalHeight || img.height;
+      imageSource = img;
+    }
+
+    const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+    const targetWidth = Math.round(sourceWidth * scale);
+    const targetHeight = Math.round(sourceHeight * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      if ("close" in imageSource && typeof imageSource.close === "function") imageSource.close();
       return file;
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    const keepAlpha = file.type !== "image/jpeg";
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(imageSource, 0, 0, targetWidth, targetHeight);
+
+    if ("close" in imageSource && typeof imageSource.close === "function") {
+      imageSource.close();
+    }
+
     const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob(resolve, keepAlpha ? "image/webp" : "image/jpeg", 0.88)
+      canvas.toBlob(resolve, "image/webp", quality)
     );
-    if (!blob || blob.size >= file.size) return file;
-    const ext = keepAlpha ? "webp" : "jpg";
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + ext, { type: blob.type });
-  } catch {
+
+    if (!blob) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "category";
+    return new File([blob], `${baseName}.webp`, { type: "image/webp" });
+  } catch (err) {
+    console.warn("Client WebP conversion failed, falling back to original file:", err);
     return file;
   }
 }
+
 
 const LUXURY_PRESETS = [
   { name: "Half Sleeves", src: "/banners/half-sleeves.webp" },
@@ -130,6 +167,7 @@ export function CreateCategoryModal({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [dragActive, setDragActive] = useState(false);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const parentDropdownRef = useRef<HTMLDivElement>(null);
@@ -221,15 +259,14 @@ export function CreateCategoryModal({
   };
 
   // Image Upload handler
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const uploadFile = async (file: File) => {
     if (!file) return;
     setError("");
     setUploading(true);
     try {
-      const prepared = await shrinkImageForUpload(file);
-      if (prepared.size > 4 * 1024 * 1024) {
-        throw new Error("Image exceeds 4MB after compression. Please choose a smaller photo.");
+      const prepared = await convertImageToWebP(file);
+      if (prepared.size > 8 * 1024 * 1024) {
+        throw new Error("Image exceeds 8MB. Please choose a smaller photo.");
       }
 
       const catSlugClean = (slug || slugify(name) || "category").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
@@ -256,15 +293,21 @@ export function CreateCategoryModal({
       }
       const data = await res.json();
       setImageUrl(data.url);
-      setImageId(data.id ?? null);
+      const numericId = data.id && Number.isFinite(Number(data.id)) ? Number(data.id) : null;
+      setImageId(numericId);
       if (!imageAlt) setImageAlt(name.trim());
-      showToast("Cover image uploaded successfully!");
+      showToast("Cover image uploaded in WebP format successfully!");
     } catch (err: any) {
       setError(err.message || "Failed to upload image.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) void uploadFile(file);
   };
 
   // Form Submission
@@ -296,19 +339,20 @@ export function CreateCategoryModal({
         linked_parents: linkedParents,
         menu_order: sortOrder,
         imageUrl: imageUrl.trim(),
-        imageId: imageId || null,
+        imageId: imageId && Number.isFinite(Number(imageId)) ? Number(imageId) : null,
         imageAlt: imageAlt.trim() || trimmedName,
         icon: "",
         bgTheme: "blue",
         meta_data: [
           { key: "_is_active", value: String(isActive) },
           { key: "ps_category_image", value: imageUrl.trim() },
+          { key: "angkon_category_image", value: imageUrl.trim() },
           { key: "_angkon_icon", value: "" },
           { key: "_angkon_bgTheme", value: "blue" },
         ],
         image: imageUrl.trim()
           ? {
-              id: imageId || Date.now(),
+              id: imageId && Number.isFinite(Number(imageId)) && Number(imageId) > 0 ? Number(imageId) : Date.now(),
               src: imageUrl.trim(),
               alt: imageAlt.trim() || trimmedName,
             }
@@ -755,16 +799,28 @@ export function CreateCategoryModal({
             ) : (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-200 hover:border-[#400604] rounded-2xl p-5 text-center cursor-pointer bg-gray-50/50 hover:bg-amber-50/20 transition flex flex-col items-center justify-center"
+                onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
+                onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(false); }}
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragActive(true); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setDragActive(false);
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) void uploadFile(f);
+                }}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center ${
+                  dragActive ? "border-[#400604] bg-amber-50/40" : "border-gray-200 hover:border-[#400604] bg-gray-50/50 hover:bg-amber-50/20"
+                }`}
               >
                 <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 mb-2">
                   {uploading ? <Loader2 className="h-5 w-5 animate-spin text-[#400604]" /> : <UploadCloud className="h-5 w-5" />}
                 </div>
                 <p className="text-[13px] font-bold text-gray-800">
-                  {uploading ? "Uploading to Cloudinary..." : "Click to upload banner or drag & drop"}
+                  {uploading ? "Uploading to Cloudinary (WebP)..." : "Click to upload banner or drag & drop"}
                 </p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
-                  WebP, PNG, or JPG (auto-compressed on upload)
+                  Any image format · Auto-converted to optimized WebP
                 </p>
               </div>
             )}

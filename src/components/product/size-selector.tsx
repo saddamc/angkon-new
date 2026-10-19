@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-const ALL_SIZES = ["S", "M", "L", "XL", "XXL"];
+const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
 
 export function SizeSelector({
   value,

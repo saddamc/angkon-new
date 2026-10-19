@@ -152,7 +152,7 @@ const STOCK_OPTIONS = [
   { value: "onbackorder", label: "On Backorder" },
 ];
 
-const CLOTHING_SIZES = ["S", "M", "L", "XL", "XXL"];
+const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
 const SHOE_SIZES = ["38", "39", "40", "41", "42", "43", "44"];
 export function resolveColorStyle(name: string): {
   bg: string;
@@ -639,11 +639,13 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
           ? prev.columns
           : [...DEFAULT_SIZE_CHART_COLUMNS];
       const defaults: Record<string, Record<string, string>> = {
+        XS: { Chest: '36"', Length: '26"', Sleeve: '7.5"' },
         S: { Chest: '38"', Length: '27"', Sleeve: '8"' },
         M: { Chest: '40"', Length: '28"', Sleeve: '8.5"' },
         L: { Chest: '42"', Length: '29"', Sleeve: '9"' },
         XL: { Chest: '44"', Length: '30"', Sleeve: '9.5"' },
         XXL: { Chest: '46"', Length: '31"', Sleeve: '10"' },
+        "3XL": { Chest: '48"', Length: '32"', Sleeve: '10.5"' },
       };
       const rows = { ...prev.rows };
       for (const s of sizes) {

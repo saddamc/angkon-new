@@ -119,6 +119,8 @@ export interface UploadOptions {
   publicId?: string;
   tags?: string[];
   overwrite?: boolean;
+  /** Convert the stored asset to this format (e.g. "webp"). */
+  format?: string;
 }
 
 /**
@@ -138,6 +140,11 @@ export async function uploadToCloudinary(
 
   if (options.publicId) {
     uploadOptions.public_id = options.publicId;
+  }
+
+  if (options.format) {
+    uploadOptions.format = options.format;
+    uploadOptions.transformation = [{ quality: "auto:good" }];
   }
 
   if (options.tags && options.tags.length > 0) {

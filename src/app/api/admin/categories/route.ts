@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const imageObj =
       input.image && typeof input.image === "object" && input.image.src && typeof input.image.src === "string" && input.image.src.trim()
         ? {
-            id: input.image.id ? Number(input.image.id) : 300000 + catId,
+            id: input.image.id && Number.isFinite(Number(input.image.id)) && Number(input.image.id) > 0 ? Number(input.image.id) : 300000 + catId,
             src: input.image.src.trim(),
             alt: input.image.alt?.trim() || name,
           }

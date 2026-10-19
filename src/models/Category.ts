@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ICategoryImage {
-  id?: number;
+  id?: number | string;
   src: string;
   alt?: string;
 }
@@ -24,9 +24,9 @@ export interface ICategory extends Document {
   updatedAt: Date;
 }
 
-const CategoryImageSchema = new Schema<ICategoryImage>(
+const CategoryImageSchema = new Schema(
   {
-    id: { type: Number, default: 0 },
+    id: { type: Schema.Types.Mixed, default: 0 },
     src: { type: String, default: "" },
     alt: { type: String, default: "" },
   },

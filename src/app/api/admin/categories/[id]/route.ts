@@ -27,9 +27,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
+    const input = cleanCategoryInput(body);
+
     // If category image changed or was cleared, delete old Cloudinary image
     if (oldCategory.image?.src && oldCategory.image.src.includes("res.cloudinary.com")) {
-      const newImgSrc = body.image?.src;
+      const newImgSrc = input.image?.src;
       if (!newImgSrc || newImgSrc !== oldCategory.image.src) {
         try {
           await deleteFromCloudinary(oldCategory.image.src);
@@ -39,7 +41,11 @@ export async function PATCH(
       }
     }
 
-    const input = cleanCategoryInput(body);
+    if (input.image && (!input.image.id || input.image.id === 0)) {
+      const parsedId = Number(oldCategory.image?.id);
+      input.image.id = Number.isFinite(parsedId) && parsedId > 0 ? parsedId : 300000 + Number(oldCategory.id);
+    }
+
     if (input.linked_parents) {
       input.linked_parents = input.linked_parents.filter((pid) => pid !== oldCategory.id);
     }

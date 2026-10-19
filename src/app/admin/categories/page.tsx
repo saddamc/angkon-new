@@ -615,32 +615,67 @@ function isIconUrl(val?: string | null): boolean {
  * roughly 4.5 MB and over, so a 5 MB phone photo would fail there; category images never need more
  * than ~1600px anyway. Small files and unsupported formats (SVG, GIF) are sent unchanged.
  */
-async function shrinkImageForUpload(file: File): Promise<File> {
-  const MAX_SIDE = 1600;
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+async function convertImageToWebP(file: File, maxDimension = 1600, quality = 0.90): Promise<File> {
+  // If not an image (or SVG/GIF where animations or vectors should be preserved), return as-is
+  if (!file.type.startsWith("image/") || file.type === "image/svg+xml" || file.type === "image/gif") {
+    return file;
+  }
+
   try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-    if (scale === 1 && file.size <= 1.5 * 1024 * 1024) {
-      bitmap.close();
+    let sourceWidth = 0;
+    let sourceHeight = 0;
+    let imageSource: ImageBitmap | HTMLImageElement;
+
+    if (typeof createImageBitmap === "function") {
+      const bitmap = await createImageBitmap(file);
+      sourceWidth = bitmap.width;
+      sourceHeight = bitmap.height;
+      imageSource = bitmap;
+    } else {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = url;
+      });
+      URL.revokeObjectURL(url);
+      sourceWidth = img.naturalWidth || img.width;
+      sourceHeight = img.naturalHeight || img.height;
+      imageSource = img;
+    }
+
+    const scale = Math.min(1, maxDimension / Math.max(sourceWidth, sourceHeight));
+    const targetWidth = Math.round(sourceWidth * scale);
+    const targetHeight = Math.round(sourceHeight * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      if ("close" in imageSource && typeof imageSource.close === "function") imageSource.close();
       return file;
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    // Keep transparency for PNG/WebP, use JPEG for photos.
-    const keepAlpha = file.type !== "image/jpeg";
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(imageSource, 0, 0, targetWidth, targetHeight);
+
+    if ("close" in imageSource && typeof imageSource.close === "function") {
+      imageSource.close();
+    }
+
     const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob(resolve, keepAlpha ? "image/webp" : "image/jpeg", 0.88),
+      canvas.toBlob(resolve, "image/webp", quality)
     );
-    if (!blob || blob.size >= file.size) return file;
-    const ext = keepAlpha ? "webp" : "jpg";
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + "." + ext, { type: blob.type });
-  } catch {
+
+    if (!blob) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, "") || "category";
+    return new File([blob], `${baseName}.webp`, { type: "image/webp" });
+  } catch (err) {
+    console.warn("Client WebP conversion failed, falling back to original file:", err);
     return file;
   }
 }
@@ -909,9 +944,9 @@ function CategoryStudio({
         folder = `ANGKON/CATEGORIES/${catSlugClean}`;
       }
 
-      const prepared = await shrinkImageForUpload(file);
-      if (prepared.size > 4 * 1024 * 1024) {
-        throw new Error("Image is still over 4MB after compression. Please choose a smaller image.");
+      const prepared = await convertImageToWebP(file);
+      if (prepared.size > 8 * 1024 * 1024) {
+        throw new Error("Image is still over 8MB. Please choose a smaller image.");
       }
 
       const fd = new FormData();
@@ -936,12 +971,13 @@ function CategoryStudio({
         throw new Error((d.error || `Upload failed (${res.status})`) + detail);
       }
       const data = await res.json();
+      const numericId = data.id && Number.isFinite(Number(data.id)) ? Number(data.id) : null;
       set("imageUrl", data.url);
-      set("imageId", data.id ?? null);
+      set("imageId", numericId);
       set("imageAlt", data.alt ?? form.name);
 
       // Track uploaded in session
-      sessionUploadedRef.current.push({ id: data.id ?? null, url: data.url });
+      sessionUploadedRef.current.push({ id: numericId, url: data.url });
 
       // If replacing an existing image, delete the old one from Cloudinary
       if ((prevId || prevUrl) && (prevId !== data.id || prevUrl !== data.url)) {
@@ -1274,20 +1310,40 @@ function CategoryStudio({
                       <span className="text-[13px] font-medium">Uploading to Cloudinary...</span>
                     </div>
                   ) : form.imageUrl ? (
-                    <div className="relative group">
-                      <img
-                        src={form.imageUrl}
-                        alt="Category"
-                        className="h-32 w-32 object-cover rounded-xl border border-gray-200 shadow-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        title="Remove image and delete from Cloudinary"
-                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full cursor-pointer hover:bg-red-600 shadow-md transition"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                    <div className="relative group flex flex-col items-center">
+                      <div className="relative">
+                        <img
+                          src={form.imageUrl}
+                          alt="Category"
+                          className="h-32 w-32 object-cover rounded-xl border border-gray-200 shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          title="Remove image and delete from Cloudinary"
+                          className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full cursor-pointer hover:bg-red-600 shadow-md transition"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-[12px] font-bold shadow-2xs transition flex items-center gap-1.5"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Change Image
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-[12px] font-bold transition flex items-center gap-1.5"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -2309,19 +2365,20 @@ export default function AdminCategoriesPage() {
       linked_parents: data.linkedParents || [],
       menu_order: data.sortOrder,
       imageUrl: data.imageUrl || "",
-      imageId: data.imageId,
+      imageId: data.imageId && Number.isFinite(Number(data.imageId)) ? Number(data.imageId) : null,
       imageAlt: data.imageAlt || data.name,
       icon: data.icon || "",
       bgTheme: data.bgTheme || "blue",
       meta_data: [
         { key: "_is_active", value: String(data.isActive) },
         { key: "ps_category_image", value: data.imageUrl || "" },
+        { key: "angkon_category_image", value: data.imageUrl || "" },
         { key: "_angkon_icon", value: data.icon },
         { key: "_angkon_bgTheme", value: data.bgTheme },
       ],
       image: data.imageUrl
         ? {
-            id: data.imageId || Date.now(),
+            id: data.imageId && Number.isFinite(Number(data.imageId)) && Number(data.imageId) > 0 ? Number(data.imageId) : Date.now(),
             src: data.imageUrl,
             alt: data.imageAlt || data.name,
           }

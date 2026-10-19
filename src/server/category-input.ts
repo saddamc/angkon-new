@@ -8,7 +8,7 @@ export interface CleanCategoryInput {
   menu_order?: number;
   is_active?: boolean;
   meta_data?: { key: string; value: string }[];
-  image?: { id?: number; src: string; alt?: string } | null;
+  image?: { id?: number | string; src: string; alt?: string } | null;
 }
 
 export function slugifyCategory(name: string): string {
@@ -47,13 +47,38 @@ export function cleanCategoryInput(body: any): CleanCategoryInput {
   }
   if (typeof body?.is_active === "boolean") out.is_active = body.is_active;
 
-  if (body?.image === null) {
+  const rawImage =
+    body?.image !== undefined
+      ? body.image
+      : body?.imageUrl
+      ? {
+          src: body.imageUrl,
+          alt: body.imageAlt || body.name || "",
+          id: body.imageId,
+        }
+      : undefined;
+
+  if (rawImage === null) {
     out.image = null;
-  } else if (body?.image && typeof body.image === "object" && body.image.src) {
+  } else if (typeof rawImage === "string" && rawImage.trim()) {
+    const imageId = Number(body?.imageId);
     out.image = {
-      id: body.image.id ? Number(body.image.id) : undefined,
-      src: String(body.image.src),
-      alt: String(body.image.alt || body.name || ""),
+      id: Number.isFinite(imageId) && imageId > 0 ? imageId : undefined,
+      src: rawImage.trim(),
+      alt: String(body?.imageAlt || body?.name || "").trim(),
+    };
+  } else if (
+    rawImage &&
+    typeof rawImage === "object" &&
+    rawImage.src &&
+    typeof rawImage.src === "string" &&
+    rawImage.src.trim()
+  ) {
+    const imageId = Number(rawImage.id ?? body?.imageId);
+    out.image = {
+      id: Number.isFinite(imageId) && imageId > 0 ? imageId : undefined,
+      src: String(rawImage.src).trim(),
+      alt: String(rawImage.alt || body?.imageAlt || body?.name || "").trim(),
     };
   }
   return out;

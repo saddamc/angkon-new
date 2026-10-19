@@ -8,6 +8,7 @@ import type { WooProduct } from "@/types/product";
 import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { useCartStore } from "@/store/cart-store";
 import { decodeEntities } from "@/utils/html";
+import { trackAddToCart } from "@/lib/fpixel";
 
 interface QuickViewModalProps {
   product: WooProduct;
@@ -46,6 +47,12 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
       shippingClassId: product.shipping_class_id ?? 0,
       deliveryInside: insideFee,
       deliveryOutside: outsideFee,
+    });
+    trackAddToCart({
+      content_name: product.name,
+      content_ids: [product.id],
+      value: pricing.current * quantity,
+      currency: "BDT",
     });
     setAdded(true);
     setTimeout(() => {

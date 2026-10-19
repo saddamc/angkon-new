@@ -9,6 +9,7 @@ import { getDisplayPrice } from "@/utils/price";
 import { useCartStore } from "@/store/cart-store";
 import { QuickViewModal } from "@/components/product/quick-view-modal";
 import { decodeEntities } from "@/utils/html";
+import { trackAddToCart } from "@/lib/fpixel";
 
 interface ProductCardProps {
   product: WooProduct;
@@ -60,6 +61,13 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       deliveryOutside: outsideFee,
     });
     
+    trackAddToCart({
+      content_name: product.name,
+      content_ids: [product.id],
+      value: pricing.current,
+      currency: "BDT",
+    });
+
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

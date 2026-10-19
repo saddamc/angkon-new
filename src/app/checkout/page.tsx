@@ -33,6 +33,7 @@ import { AuthModal, type AuthModalUser } from "@/components/checkout/auth-modal"
 import { EmailVerifyDialog, requestEmailCode, type VerifiedUser } from "@/components/checkout/email-verify-dialog";
 import { formatPrice } from "@/utils/price";
 import { DIVISIONS } from "@/data/bangladesh-districts";
+import { trackInitiateCheckout, trackPurchase } from "@/lib/fpixel";
 import { playCheckoutSuccessSound } from "@/lib/sound-alert";
 
 interface CheckoutFormValues {
@@ -199,6 +200,19 @@ export default function CheckoutPage() {
     appliedPromo?.discount ?? 0,
   );
   const SHIPPING_FEE = shippingQuote?.zoneKnown ? shippingQuote.fee : 0;
+
+  // Track InitiateCheckout on checkout mount
+  useEffect(() => {
+    if (items.length > 0) {
+      trackInitiateCheckout({
+        num_items: items.reduce((acc, i) => acc + i.quantity, 0),
+        value: subtotal,
+        currency: "BDT",
+        content_ids: items.map((i) => i.productId),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Restore coupon from localStorage or Cart on mount
   useEffect(() => {
@@ -404,6 +418,13 @@ export default function CheckoutPage() {
       });
 
       setSubmitted(true);
+      trackPurchase({
+        order_id: result.orderNumber || result.orderId || orderId,
+        value: typeof result.total === "number" ? result.total : FINAL_TOTAL,
+        currency: "BDT",
+        num_items: items.reduce((acc, item) => acc + item.quantity, 0),
+        content_ids: items.map((item) => item.productId),
+      });
       clearCart();
       try {
         localStorage.removeItem("angkon_applied_promo");

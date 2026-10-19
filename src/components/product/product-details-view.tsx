@@ -26,6 +26,7 @@ import type { WooProduct } from "@/types/product";
 import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
 import { saveRecentlyViewed } from "@/utils/recently-viewed";
+import { trackViewContent, trackAddToCart } from "@/lib/fpixel";
 
 /* ── ShareStrip ─────────────────────────────────────────────────────── */
 
@@ -253,6 +254,18 @@ export function ProductDetailsView({
     [product.price, product.regular_price, product.sale_price],
   );
 
+  useEffect(() => {
+    if (product?.id) {
+      trackViewContent({
+        content_name: product.name,
+        content_category: product.categories?.[0]?.name || "Apparel",
+        content_ids: [product.id],
+        value: pricing.current,
+        currency: "BDT",
+      });
+    }
+  }, [product?.id, product?.name, product?.categories, pricing.current]);
+
   const images =
     product.images.length > 0
       ? product.images
@@ -321,6 +334,12 @@ export function ProductDetailsView({
       shippingClassId: product.shipping_class_id ?? 0,
       deliveryInside: insideFee,
       deliveryOutside: outsideFee,
+    });
+    trackAddToCart({
+      content_name: product.name,
+      content_ids: [product.id],
+      value: pricing.current * quantity,
+      currency: "BDT",
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2400);

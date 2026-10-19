@@ -3,6 +3,7 @@ import { Poppins, Lato } from "next/font/google";
 import "./globals.css";
 import { RootShell } from "@/components/layout/root-shell";
 import { getCategoryTree } from "@/lib/woocommerce/categories";
+import { FacebookPixel } from "@/components/analytics/facebook-pixel";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${poppins.variable} ${lato.variable}`}>
       <body className="font-sans antialiased text-white bg-[#400604]" suppressHydrationWarning>
+        <FacebookPixel />
         <RootShell categoryTree={categoryTree}>{children}</RootShell>
       </body>
     </html>

@@ -306,6 +306,7 @@ export function ProductDetailsView({
       ) ||
       product.name.toLowerCase().includes("tawakkal") ||
       product.name.toLowerCase().includes("wada") ||
+      product.name.toLowerCase().includes("safaidah") ||
       (product.sizes && product.sizes.length > 0) ||
       Boolean(product.attributes?.some((a) => a.name.toLowerCase() === "size"));
     return Boolean(isApparel);
@@ -731,6 +732,7 @@ export function ProductDetailsView({
             {activeTab === "Size Guide" && (
               <div className="max-w-4xl">
                 <ReadyToWearSizeGuideContent
+                  product={product}
                   selectedSize={size}
                   onSelectSize={(newSize) => {
                     setSize(newSize);
@@ -930,6 +932,7 @@ export function ProductDetailsView({
       <ReadyToWearSizeGuideModal
         isOpen={sizeGuideOpen}
         onClose={() => setSizeGuideOpen(false)}
+        product={product}
         selectedSize={size}
         onSelectSize={(newSize) => {
           setSize(newSize);

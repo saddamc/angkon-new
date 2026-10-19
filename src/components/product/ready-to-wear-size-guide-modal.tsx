@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import { X, Ruler, Check, Info, Sparkles } from "lucide-react";
+import {
+  getProductSizeChart,
+  isMultiSectionSizeChart,
+  MultiSectionSizeChart,
+  SizeChartData,
+} from "@/utils/size-chart";
 
 export type MeasurementUnit = "in" | "cm";
 
@@ -78,25 +84,32 @@ export const READY_TO_WEAR_SIZE_DATA: SizeMeasurementRow[] = [
  * Formats single values or ranges like "37/38" cleanly.
  */
 export function formatMeasurement(value: string, unit: MeasurementUnit): string {
+  if (!value || value === "-") return "-";
+  const trimmed = value.trim();
+
+  // If value is non-numeric text (e.g. "According to Design" or "Same as shirt size")
+  if (isNaN(Number(trimmed)) && !trimmed.includes("/")) {
+    return trimmed;
+  }
+
   if (unit === "in") {
-    return `${value}″`;
+    return `${trimmed}″`;
   }
 
   // Handle ranges like "37/38"
-  if (value.includes("/")) {
-    const parts = value.split("/").map((part) => {
+  if (trimmed.includes("/")) {
+    const parts = trimmed.split("/").map((part) => {
       const num = parseFloat(part.trim());
       if (isNaN(num)) return part;
       const cm = num * 2.54;
-      // Round to 1 decimal place or whole number
       const rounded = Math.round(cm * 10) / 10;
       return rounded.toString();
     });
     return `${parts.join("/")} cm`;
   }
 
-  const num = parseFloat(value.trim());
-  if (isNaN(num)) return `${value} cm`;
+  const num = parseFloat(trimmed);
+  if (isNaN(num)) return trimmed;
   const cm = num * 2.54;
   const rounded = Math.round(cm * 10) / 10;
   return `${rounded} cm`;
@@ -149,22 +162,58 @@ function GarmentSilhouette() {
   );
 }
 
-export function ReadyToWearSizeGuideContent({
-  selectedSize,
-  onSelectSize,
-}: {
+const SIZE_LABELS: Record<string, { label: string; sub: string }> = {
+  XS: { label: "X-Small", sub: "XS" },
+  S: { label: "Small", sub: "S" },
+  M: { label: "Medium", sub: "M" },
+  L: { label: "Large", sub: "L" },
+  XL: { label: "X-Large", sub: "XL" },
+  XXL: { label: "2X-Large", sub: "XXL" },
+  "3XL": { label: "3X-Large", sub: "3XL" },
+};
+
+export interface ReadyToWearSizeGuideProps {
+  product?: {
+    id?: number;
+    name?: string;
+    slug?: string;
+    meta_data?: Array<{ key: string; value?: unknown }>;
+  } | null;
+  customChart?: MultiSectionSizeChart | SizeChartData | null;
   selectedSize?: string;
   onSelectSize?: (size: string) => void;
-}) {
+}
+
+export function ReadyToWearSizeGuideContent({
+  product,
+  customChart,
+  selectedSize,
+  onSelectSize,
+}: ReadyToWearSizeGuideProps) {
   const [activeTab, setActiveTab] = useState<"table" | "guide">("table");
   const [unit, setUnit] = useState<MeasurementUnit>("in");
 
-  const sizes = [
-    { key: "S", label: "Small", sub: "S" },
-    { key: "M", label: "Medium", sub: "M" },
-    { key: "L", label: "Large", sub: "L" },
-    { key: "XL", label: "XL", sub: "XL" },
-  ];
+  const resolvedChart = useMemo(() => {
+    return customChart ?? (product ? getProductSizeChart(product) : null);
+  }, [customChart, product]);
+
+  const isSectioned = isMultiSectionSizeChart(resolvedChart);
+
+  const sizes = useMemo(() => {
+    if (isSectioned) {
+      return resolvedChart.sizes.map((k) => ({
+        key: k,
+        label: SIZE_LABELS[k.toUpperCase()]?.label || k,
+        sub: k,
+      }));
+    }
+    return [
+      { key: "S", label: "Small", sub: "S" },
+      { key: "M", label: "Medium", sub: "M" },
+      { key: "L", label: "Large", sub: "L" },
+      { key: "XL", label: "XL", sub: "XL" },
+    ];
+  }, [isSectioned, resolvedChart]);
 
   const normalizedSelectedSize = selectedSize?.toUpperCase().trim();
 
@@ -180,14 +229,16 @@ export function ReadyToWearSizeGuideContent({
                 Angkon Heritage
               </span>
               <span className="text-xs font-semibold uppercase tracking-wider text-white/80">
-                Ready-to-Wear (Stitched)
+                {isSectioned ? "Custom Ensemble Size Chart" : "Ready-to-Wear (Stitched)"}
               </span>
             </div>
             <h3 id="size-guide-modal-title" className="text-lg sm:text-xl font-bold text-white tracking-tight">
-              Ready-to-Wear Size Guide
+              {isSectioned && product?.name ? product.name : "Ready-to-Wear Size Guide"}
             </h3>
             <p className="mt-1 text-xs sm:text-[13px] text-white/90 leading-relaxed max-w-xl">
-              Standard garment measurements for Stitched Kurti, 2-Piece, and 3-Piece Pakistani & Bangladeshi suits.
+              {isSectioned
+                ? "Accurate measurements for Shirt, Maxi & Trouser (laid flat). All measurements shown in inches or centimeters."
+                : "Standard garment measurements for Stitched Kurti, 2-Piece, and 3-Piece Pakistani & Bangladeshi suits."}
             </p>
           </div>
 
@@ -327,65 +378,131 @@ export function ReadyToWearSizeGuideContent({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-white/90">
-                  {READY_TO_WEAR_SIZE_DATA.map((row, idx) => (
-                    <tr
-                      key={row.area}
-                      className={`transition-colors hover:bg-[#400604]/80 ${
-                        idx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
-                      }`}
-                    >
-                      {/* Area label */}
-                      <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
-                        <div className="flex flex-col">
-                          <span>{row.area}</span>
-                        </div>
-                      </td>
+                  {isSectioned ? (
+                    resolvedChart.sections.map((section) => (
+                      <Fragment key={section.title}>
+                        {/* Section Header Row */}
+                        <tr className="bg-[#400604] border-t-2 border-b border-[#E1B76F]/30">
+                          <td
+                            colSpan={sizes.length + 1}
+                            className="py-2.5 px-4 font-black text-xs sm:text-sm tracking-widest uppercase text-[#E1B76F] shadow-inner"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="h-2 w-2 rounded-full bg-[#E1B76F]" />
+                              <span>{section.title}</span>
+                            </div>
+                          </td>
+                        </tr>
 
-                      {/* Small */}
-                      <td
-                        className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
-                          normalizedSelectedSize === "S"
-                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
-                            : ""
+                        {/* Section Rows */}
+                        {section.rows.map((row, rowIdx) => (
+                          <tr
+                            key={`${section.title}-${row.number ?? row.area}`}
+                            className={`transition-colors hover:bg-[#400604]/80 ${
+                              rowIdx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
+                            }`}
+                          >
+                            <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)] whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                {row.number ? (
+                                  <span className="inline-block w-4 text-white/50 text-[11px] font-mono">
+                                    {row.number}
+                                  </span>
+                                ) : null}
+                                <span>{row.area}</span>
+                              </div>
+                            </td>
+
+                            {row.colSpanText ? (
+                              <td
+                                colSpan={sizes.length}
+                                className="py-3 px-4 text-center text-xs sm:text-sm font-semibold tracking-wide italic text-[#E1B76F] bg-[#400604]/50 border-r border-[#E1B76F]/15"
+                              >
+                                {row.colSpanText}
+                              </td>
+                            ) : (
+                              sizes.map((s) => {
+                                const isSelected = normalizedSelectedSize === s.key;
+                                const val = row.values?.[s.key] ?? "-";
+                                return (
+                                  <td
+                                    key={s.key}
+                                    className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
+                                      isSelected
+                                        ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
+                                        : ""
+                                    }`}
+                                  >
+                                    {formatMeasurement(val, unit)}
+                                  </td>
+                                );
+                              })
+                            )}
+                          </tr>
+                        ))}
+                      </Fragment>
+                    ))
+                  ) : (
+                    READY_TO_WEAR_SIZE_DATA.map((row, idx) => (
+                      <tr
+                        key={row.area}
+                        className={`transition-colors hover:bg-[#400604]/80 ${
+                          idx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
                         }`}
                       >
-                        {formatMeasurement(row.s, unit)}
-                      </td>
+                        {/* Area label */}
+                        <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
+                          <div className="flex flex-col">
+                            <span>{row.area}</span>
+                          </div>
+                        </td>
 
-                      {/* Medium */}
-                      <td
-                        className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
-                          normalizedSelectedSize === "M"
-                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
-                            : ""
-                        }`}
-                      >
-                        {formatMeasurement(row.m, unit)}
-                      </td>
+                        {/* Small */}
+                        <td
+                          className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
+                            normalizedSelectedSize === "S"
+                              ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
+                              : ""
+                          }`}
+                        >
+                          {formatMeasurement(row.s, unit)}
+                        </td>
 
-                      {/* Large */}
-                      <td
-                        className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
-                          normalizedSelectedSize === "L"
-                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
-                            : ""
-                        }`}
-                      >
-                        {formatMeasurement(row.l, unit)}
-                      </td>
+                        {/* Medium */}
+                        <td
+                          className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
+                            normalizedSelectedSize === "M"
+                              ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
+                              : ""
+                          }`}
+                        >
+                          {formatMeasurement(row.m, unit)}
+                        </td>
 
-                      {/* XL */}
-                      <td
-                        className={`py-3 px-3 text-center text-sm font-semibold transition-colors ${
-                          normalizedSelectedSize === "XL"
-                            ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
-                            : ""
-                        }`}
-                      >
-                        {formatMeasurement(row.xl, unit)}
-                      </td>
-                    </tr>
-                  ))}
+                        {/* Large */}
+                        <td
+                          className={`py-3 px-3 text-center text-sm font-semibold border-r border-[#E1B76F]/15 transition-colors ${
+                            normalizedSelectedSize === "L"
+                              ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
+                              : ""
+                          }`}
+                        >
+                          {formatMeasurement(row.l, unit)}
+                        </td>
+
+                        {/* XL */}
+                        <td
+                          className={`py-3 px-3 text-center text-sm font-semibold transition-colors ${
+                            normalizedSelectedSize === "XL"
+                              ? "bg-[#E1B76F]/20 text-white font-bold border-x border-[#E1B76F]/40"
+                              : ""
+                          }`}
+                        >
+                          {formatMeasurement(row.xl, unit)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -410,24 +527,54 @@ export function ReadyToWearSizeGuideContent({
       {activeTab === "guide" && (
         <div className="space-y-4 pt-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {READY_TO_WEAR_SIZE_DATA.map((item) => (
-              <div
-                key={item.area}
-                className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-white border border-[#E1B76F]/40 shadow-xs">
-                  {item.area.slice(0, 2)}
-                </span>
-                <div>
-                  <h4 className="text-sm font-bold text-white tracking-wide">
-                    {item.area}
-                  </h4>
-                  <p className="mt-1 text-xs text-white/90 leading-relaxed">
-                    {item.guide}
-                  </p>
+            {isSectioned ? (
+              resolvedChart.sections.flatMap((section) =>
+                section.rows
+                  .filter((r) => r.guide)
+                  .map((item) => (
+                    <div
+                      key={`${section.title}-${item.number ?? item.area}`}
+                      className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-[#E1B76F] border border-[#E1B76F]/40 shadow-xs">
+                        {item.number ? item.number : item.area.slice(0, 2)}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#400604] text-[#E1B76F]/90 border border-[#E1B76F]/20">
+                            {section.title}
+                          </span>
+                          <h4 className="text-sm font-bold text-white tracking-wide">
+                            {item.area}
+                          </h4>
+                        </div>
+                        <p className="mt-1 text-xs text-white/90 leading-relaxed">
+                          {item.guide}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+              )
+            ) : (
+              READY_TO_WEAR_SIZE_DATA.map((item) => (
+                <div
+                  key={item.area}
+                  className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-white border border-[#E1B76F]/40 shadow-xs">
+                    {item.area.slice(0, 2)}
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-white tracking-wide">
+                      {item.area}
+                    </h4>
+                    <p className="mt-1 text-xs text-white/90 leading-relaxed">
+                      {item.guide}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="rounded-xl border border-[#E1B76F]/20 bg-[#260302] p-4 text-xs text-white/90 flex items-start gap-3">
@@ -448,11 +595,20 @@ export function ReadyToWearSizeGuideContent({
 export function ReadyToWearSizeGuideModal({
   isOpen,
   onClose,
+  product,
+  customChart,
   selectedSize,
   onSelectSize,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  product?: {
+    id?: number;
+    name?: string;
+    slug?: string;
+    meta_data?: Array<{ key: string; value?: unknown }>;
+  } | null;
+  customChart?: MultiSectionSizeChart | SizeChartData | null;
   selectedSize?: string;
   onSelectSize?: (size: string) => void;
 }) {
@@ -526,6 +682,8 @@ export function ReadyToWearSizeGuideModal({
         {/* Scrollable Content Body */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           <ReadyToWearSizeGuideContent
+            product={product}
+            customChart={customChart}
             selectedSize={selectedSize}
             onSelectSize={(size) => {
               if (onSelectSize) onSelectSize(size);

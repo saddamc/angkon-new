@@ -100,7 +100,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
           {/* Thumbnail row */}
           {product.images.length > 1 && (
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {product.images.slice(0, 5).map((img, i) => (
+              {product.images.slice(0, 6).map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}

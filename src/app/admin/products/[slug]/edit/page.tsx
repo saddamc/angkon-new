@@ -7,7 +7,12 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductFormSkeleton } from "@/components/admin/product-form-skeleton";
-import { getSizeChartFromMeta, emptySizeChart } from "@/utils/size-chart";
+import {
+  getSizeChartFromMeta,
+  emptySizeChart,
+  isMultiSectionSizeChart,
+  flattenMultiSectionChart,
+} from "@/utils/size-chart";
 
 /* ─── Raw WC / MongoDB product shape ── */
 interface WCProductRaw {
@@ -134,7 +139,9 @@ export default function EditProductBySlugPage() {
     })),
     sizes: sizeAttr?.options || [],
     colors: colorAttr?.options || [],
-    sizeChart: sizeChart ?? emptySizeChart(),
+    sizeChart: isMultiSectionSizeChart(sizeChart)
+      ? flattenMultiSectionChart(sizeChart)
+      : (sizeChart ?? emptySizeChart()),
     sizeChartMetaId,
     otherAttributes: (product.attributes || []).filter((a) => {
       const n = a.name.toLowerCase();

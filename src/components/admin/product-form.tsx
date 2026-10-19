@@ -386,7 +386,7 @@ async function cropImageCanvas(
 export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
   const router = useRouter();
   const { authFetch } = useAuth();
-  const MAX_IMAGES = 5;
+  const MAX_IMAGES = 6;
 
   // Track images uploaded in this editing session for server cleanup if cancelled
   const sessionUploadedRef = useRef<{ id?: number; url: string }[]>([]);
@@ -1581,7 +1581,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 <div className="w-28 aspect-[3/4] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 p-2 text-center select-none">
                   <Check className="h-5 w-5 text-emerald-500" />
                   <span className="text-[11px] font-bold text-gray-700">Max Limit</span>
-                  <span className="text-[9px] text-gray-400 leading-tight">5/5 photos added</span>
+                  <span className="text-[9px] text-gray-400 leading-tight">{MAX_IMAGES}/{MAX_IMAGES} photos added</span>
                 </div>
               ) : null}
             </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
-import { deleteFromCloudinary } from "@/lib/cloudinary";
+import { deleteFromCloudinary, syncProductImagesToCategoryFolder } from "@/lib/cloudinary";
 import { publishCatalogChange } from "@/lib/catalog-sync";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
@@ -148,6 +148,15 @@ export async function PUT(
       body.categories = await resolveProductCategories(body.categories, localCategory);
     }
 
+    // Automatically ensure product images are organized in the matching category-wise Cloudinary folder
+    if (Array.isArray(body.images) && body.images.length > 0) {
+      body.images = await syncProductImagesToCategoryFolder({
+        images: body.images,
+        categories: body.categories || [],
+        productSlug: body.slug || decoded,
+      });
+    }
+
     let updated = await Product.findOneAndUpdate(
       query,
       { $set: body },
@@ -201,13 +210,19 @@ export async function DELETE(
 
     await publishCatalogChange();
 
-    // Clean up Cloudinary images if present
+    // Clean up Cloudinary images only if NOT used by any other product (e.g. duplicated products or templates)
     if (product.images && Array.isArray(product.images)) {
       for (const img of product.images) {
         const src = typeof img === "string" ? img : img?.src;
         if (src && src.includes("res.cloudinary.com")) {
           try {
-            await deleteFromCloudinary(src);
+            const isUsedElsewhere = await Product.exists({
+              _id: { $ne: product._id },
+              "images.src": src,
+            });
+            if (!isUsedElsewhere) {
+              await deleteFromCloudinary(src);
+            }
           } catch (e) {
             console.warn("Cloudinary cleanup error on product deletion:", e);
           }

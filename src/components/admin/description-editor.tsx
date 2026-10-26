@@ -166,9 +166,9 @@ export function DescriptionEditor({
   };
 
   return (
-    <div className={`rounded-xl border border-stone-200 bg-white overflow-hidden shadow-2xs focus-within:border-[#400604] focus-within:ring-2 focus-within:ring-[#E1B76F]/20 transition ${className}`}>
+    <div className={`rounded-xl border border-purple-100/60 bg-white overflow-hidden shadow-xs focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-100 transition ${className}`}>
       {/* Editor Header Toolbar */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-stone-100 bg-stone-50/70 text-stone-600 flex-wrap gap-1">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-purple-100/60 bg-gray-50/70 text-gray-600 flex-wrap gap-1">
         {/* Formatting Actions (Visible in Visual Mode) */}
         {mode === "visual" ? (
           <div className="flex items-center gap-0.5 flex-wrap">
@@ -274,7 +274,7 @@ export function DescriptionEditor({
           </div>
         ) : (
           <div className="flex items-center gap-1 text-[11px] font-mono text-stone-500">
-            <Code className="h-3.5 w-3.5 text-[#400604]" />
+            <Code className="h-3.5 w-3.5 text-purple-600" />
             <span>Raw HTML / Code Mode — paste supplier tags or edit markup directly</span>
           </div>
         )}
@@ -284,7 +284,7 @@ export function DescriptionEditor({
           <button
             type="button"
             onClick={handleCopy}
-            className="p-1 rounded text-stone-400 hover:text-stone-700 hover:bg-stone-200/70 transition"
+            className="p-1 rounded text-stone-400 hover:text-stone-700 hover:bg-stone-200/70 transition cursor-pointer"
             title="Copy content to clipboard"
           >
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
@@ -294,9 +294,9 @@ export function DescriptionEditor({
             <button
               type="button"
               onClick={() => setMode("visual")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition cursor-pointer ${
                 mode === "visual"
-                  ? "bg-white text-[#400604] shadow-2xs font-bold"
+                  ? "bg-white text-purple-700 shadow-2xs font-bold"
                   : "text-stone-500 hover:text-stone-800"
               }`}
             >
@@ -305,9 +305,9 @@ export function DescriptionEditor({
             <button
               type="button"
               onClick={() => setMode("html")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition cursor-pointer ${
                 mode === "html"
-                  ? "bg-white text-[#400604] shadow-2xs font-bold"
+                  ? "bg-white text-purple-700 shadow-2xs font-bold"
                   : "text-stone-500 hover:text-stone-800"
               }`}
             >
@@ -338,7 +338,7 @@ export function DescriptionEditor({
             onPaste={handlePaste}
             onBlur={handleBlur}
             className="admin-prose w-full p-4 text-[13px] text-stone-900 focus:outline-none transition overflow-y-auto leading-relaxed bg-white"
-            style={{ minHeight, color: "#1c1917", caretColor: "#400604" }}
+            style={{ minHeight, color: "#1c1917", caretColor: "#9333ea" }}
             data-placeholder={placeholder}
           />
         </div>

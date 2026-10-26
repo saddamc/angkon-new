@@ -27,10 +27,19 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
     [product.price, product.regular_price, product.sale_price],
   );
 
-  const primaryImage =
-    product.images[0]?.src || "https://placehold.co/800x800/f5f5f5/999.png?text=Product";
-  const hoverImage =
-    product.images[1]?.src || primaryImage;
+  const [primaryFailed, setPrimaryFailed] = useState(false);
+  const [hoverFailed, setHoverFailed] = useState(false);
+  const FALLBACK_IMAGE = "/placeholder.webp";
+
+  const rawPrimary = product.images[0]?.src;
+  const rawHover = product.images[1]?.src;
+
+  const primaryImage = primaryFailed || !rawPrimary
+    ? FALLBACK_IMAGE
+    : rawPrimary;
+  const hoverImage = hoverFailed || !rawHover
+    ? primaryImage
+    : rawHover;
 
   const inStock = product.stock_status === "instock";
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
@@ -112,6 +121,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               priority={eager}
               loading={eager ? "eager" : "lazy"}
               fetchPriority={eager ? "high" : "auto"}
+              onError={() => setPrimaryFailed(true)}
               className={`object-cover object-top transition-opacity duration-300 ${
                 isHovered && product.images.length > 1 ? "opacity-0" : "opacity-100"
               }`}
@@ -122,6 +132,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                 alt=""
                 fill
                 loading="lazy"
+                onError={() => setHoverFailed(true)}
                 className={`object-cover object-top transition-opacity duration-300 ${
                   isHovered ? "opacity-100" : "opacity-0"
                 }`}

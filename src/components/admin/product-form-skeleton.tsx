@@ -76,7 +76,7 @@ export function ProductFormSkeleton({
 
       {/* Progress bar */}
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-stone-100">
-        <div className="absolute inset-y-0 w-1/3 animate-pulse rounded-full bg-gradient-to-r from-[#400604] via-[#E1B76F] to-[#400604]" />
+        <div className="absolute inset-y-0 w-1/3 animate-pulse rounded-full bg-gradient-to-r from-purple-600 via-indigo-500 to-purple-600" />
       </div>
 
       {/* Page header */}
@@ -89,12 +89,12 @@ export function ProductFormSkeleton({
             <Bone className="h-3 w-48" />
           </div>
         </div>
-        <div className="ml-auto hidden sm:flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 border border-amber-200">
+        <div className="ml-auto hidden sm:flex items-center gap-2 rounded-full bg-purple-50 px-3 py-1.5 border border-purple-200">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#E1B76F] opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#400604]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-60" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-purple-600" />
           </span>
-          <span className="text-[11px] font-semibold text-[#400604]">
+          <span className="text-[11px] font-semibold text-purple-700">
             {subtitle}
           </span>
         </div>

@@ -90,13 +90,13 @@ export default function EditProductBySlugPage() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 border border-rose-100">
           <Pencil className="h-6 w-6 text-rose-500" />
         </div>
-        <p className="text-[15px] font-serif font-bold text-stone-800">Product not found</p>
-        <p className="mt-1.5 text-[13px] text-stone-500 leading-relaxed">
+        <p className="text-[15px] font-bold text-gray-900">Product not found</p>
+        <p className="mt-1.5 text-[13px] text-gray-500 leading-relaxed">
           This product may have been removed or relocated in the catalog.
         </p>
         <Link
           href="/admin/products"
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#400604] px-4 py-2.5 text-[13px] font-bold text-white hover:bg-[#250302] transition shadow-sm"
+          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-purple-700 transition shadow-md shadow-purple-200"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to products
@@ -183,17 +183,17 @@ export default function EditProductBySlugPage() {
       <div className="flex items-center gap-3">
         <Link
           href="/admin/products"
-          className="h-9 w-9 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 hover:text-[#400604] hover:bg-stone-200 transition"
+          className="h-9 w-9 rounded-xl bg-white border border-purple-100 flex items-center justify-center text-stone-600 hover:text-purple-600 hover:bg-purple-50 shadow-2xs transition"
           title="Back to products"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
         <div className="flex items-center gap-2.5">
-          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-            <Pencil className="h-5 w-5 text-[#400604]" />
+          <div className="h-10 w-10 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center">
+            <Pencil className="h-5 w-5 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Edit Product</h1>
+            <h1 className="text-xl font-bold text-gray-800">Edit Product</h1>
           </div>
         </div>
       </div>

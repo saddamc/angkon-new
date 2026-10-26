@@ -94,9 +94,9 @@ export function ProductSection({
                     <div className="relative mb-3 aspect-[3/4] overflow-hidden bg-[#2b0403] rounded-xl animate-pulse"></div>
                   </div>
                 ))
-              : products.map((product) => (
+              : products.map((product, index) => (
                   <div key={product.id} className="snap-start min-w-[220px] max-w-[220px] shrink-0">
-                    <ProductCard product={product} />
+                    <ProductCard product={product} eager={index < 4} />
                   </div>
                 ))}
           </div>

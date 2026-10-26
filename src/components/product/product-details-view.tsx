@@ -267,12 +267,27 @@ export function ProductDetailsView({
     }
   }, [product?.id, product?.name, product?.categories, pricing.current]);
 
+  const FALLBACK_PRODUCT_IMAGE = "/placeholder.webp";
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
+  const markImageFailed = (src: string | undefined) => {
+    if (!src) return;
+    setFailedImages((prev) => (prev[src] ? prev : { ...prev, [src]: true }));
+  };
+
+  const resolveImageSrc = (src: string | undefined): string => {
+    if (!src) return FALLBACK_PRODUCT_IMAGE;
+    return failedImages[src] ? FALLBACK_PRODUCT_IMAGE : src;
+  };
+
   const images =
     product.images.length > 0
       ? product.images
-      : [{ id: 0, src: "https://placehold.co/1200x1500/f4f4f5/18181b.png?text=Product", alt: product.name, name: product.name }];
-  const activeImg = images[activeImage]?.src ?? images[0]?.src;
-  const lightboxImg = images[lightboxIndex]?.src ?? images[0]?.src;
+      : [{ id: 0, src: FALLBACK_PRODUCT_IMAGE, alt: product.name, name: product.name }];
+  const rawActiveImg = images[activeImage]?.src ?? images[0]?.src;
+  const rawLightboxImg = images[lightboxIndex]?.src ?? images[0]?.src;
+  const activeImg = resolveImageSrc(rawActiveImg);
+  const lightboxImg = resolveImageSrc(rawLightboxImg);
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
   const infoAttributes = product.attributes.filter((a) => a.visible && a.name.toLowerCase() !== "size");
   const brandAttr = product.attributes.find((a) => a.name.toLowerCase() === "brand");
@@ -401,6 +416,7 @@ export function ProductDetailsView({
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   className="object-cover pointer-events-none"
                   priority
+                  onError={() => markImageFailed(rawActiveImg)}
                 />
               </div>
 
@@ -428,26 +444,30 @@ export function ProductDetailsView({
             {/* Thumbnails */}
             {images.length > 1 && (
               <div className="grid grid-cols-4 gap-2.5 sm:gap-3 mt-3 sm:mt-4">
-                {images.map((img, i) => (
-                  <button
-                    key={img.id ?? i}
-                    type="button"
-                    onClick={() => setActiveImage(i)}
-                    className={`relative aspect-[4/5] w-full overflow-hidden bg-[#340402] transition-all cursor-pointer ${
-                      activeImage === i
-                        ? "border border-[#E1B76F] opacity-100 ring-1 ring-[#E1B76F]"
-                        : "border border-transparent opacity-75 hover:opacity-100 hover:border-[#E1B76F]/40"
-                    }`}
-                  >
-                    <Image
-                      src={img.src}
-                      alt={img.alt || product.name}
-                      fill
-                      sizes="120px"
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+                {images.map((img, i) => {
+                  const thumbSrc = resolveImageSrc(img.src);
+                  return (
+                    <button
+                      key={img.id ?? i}
+                      type="button"
+                      onClick={() => setActiveImage(i)}
+                      className={`relative aspect-[4/5] w-full overflow-hidden bg-[#340402] transition-all cursor-pointer ${
+                        activeImage === i
+                          ? "border border-[#E1B76F] opacity-100 ring-1 ring-[#E1B76F]"
+                          : "border border-transparent opacity-75 hover:opacity-100 hover:border-[#E1B76F]/40"
+                      }`}
+                    >
+                      <Image
+                        src={thumbSrc}
+                        alt={img.alt || product.name}
+                        fill
+                        sizes="120px"
+                        className="object-cover"
+                        onError={() => markImageFailed(img.src)}
+                      />
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -771,6 +791,7 @@ export function ProductDetailsView({
                   fill
                   sizes="(max-width: 640px) 40px, 48px"
                   className="object-cover"
+                  onError={() => markImageFailed(rawActiveImg)}
                 />
               </div>
               <span className="truncate text-[13px] sm:text-[15px] font-normal text-white/90 leading-normal min-w-0">
@@ -919,6 +940,7 @@ export function ProductDetailsView({
                 className="object-contain"
                 priority
                 sizes="100vw"
+                onError={() => markImageFailed(rawLightboxImg)}
               />
             </div>
           </div>

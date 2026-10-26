@@ -44,12 +44,23 @@ export async function POST(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _id, __v, createdAt, updatedAt, ...sourceData } = (source as unknown) as Record<string, unknown>;
 
+    // Clone images with fresh unique numeric IDs so they don't collide
+    const clonedImages = Array.isArray(source.images)
+      ? source.images.map((img: { id?: number; src: string; name?: string; alt?: string }, idx: number) => ({
+          id: Date.now() + idx,
+          src: img.src,
+          name: img.name || "",
+          alt: img.alt || `${source.name} (Copy)`,
+        }))
+      : [];
+
     const clonedProduct = await Product.create({
       ...sourceData,
       id: newId,
       name: `${source.name} (Copy)`,
       slug: uniqueSlug(source.slug, source.name),
       sku: uniqueSku(source.sku),
+      images: clonedImages,
       stock_status: source.stock_status || "instock",
     });
 

@@ -50,6 +50,27 @@ interface WCProductRaw {
   meta_data?: { id?: number; key: string; value: any }[];
 }
 
+function ProductTableThumb({ src, name }: { src?: string; name: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-stone-100 text-[#400604] text-xs font-bold">
+        {name.charAt(0)}
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={src}
+      alt={name}
+      width={56}
+      height={56}
+      className="object-cover w-full h-full"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 function getBuyPrice(product: WCProductRaw): number {
   if (product.buy_price) {
     const parsed = parseFloat(product.buy_price);
@@ -348,17 +369,17 @@ export default function AdminProductsPage() {
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-            <Package className="h-5 w-5 text-[#400604]" />
+          <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm">
+            <Package className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Products Catalog</h1>
+            <h1 className="text-xl font-bold text-gray-800">Products Catalog</h1>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => void load()}
-            className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 hover:text-[#400604] hover:border-[#400604] transition"
+            className="flex items-center gap-2 rounded-xl border border-purple-100 bg-white px-3 py-2.5 text-[13px] text-gray-600 hover:text-purple-600 hover:border-purple-300 transition shadow-sm"
             title="Refresh product list"
           >
             <RefreshCw
@@ -367,73 +388,73 @@ export default function AdminProductsPage() {
           </button>
           <Link
             href="/admin/products/new"
-            className="flex items-center gap-2 rounded-xl bg-[#400604] hover:bg-[#250302] px-4 py-2.5 text-[13px] font-bold text-white transition shadow-sm"
+            className="flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 px-4 py-2.5 text-[13px] font-bold text-white transition shadow-md shadow-purple-200"
           >
-            <Plus className="h-4 w-4 text-[#E1B76F]" /> Add Product
+            <Plus className="h-4 w-4" /> Add Product
           </Link>
         </div>
       </div>
 
       {/* ── Inventory & Valuation Summary Cards ────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-2xl bg-white border border-[#E1B76F]/25 p-4 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Total Products</p>
-          <p className="text-xl font-serif font-bold text-[#1A0302] mt-1">{products.length}</p>
-          <p className="text-[11px] text-emerald-700 mt-0.5">{inventorySummary.inStockCount} active in catalog</p>
+        <div className="rounded-2xl bg-white border border-purple-100/60 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Products</p>
+          <p className="text-xl font-bold text-gray-800 mt-1">{products.length}</p>
+          <p className="text-[11px] text-emerald-600 font-medium mt-0.5">{inventorySummary.inStockCount} active in catalog</p>
         </div>
-        <div className="rounded-2xl bg-white border border-amber-200 bg-amber-50/20 p-4 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Tracked Stock Units</p>
-          <p className="text-xl font-serif font-bold text-[#1A0302] mt-1">{inventorySummary.totalUnits.toLocaleString()}</p>
-          <p className="text-[11px] text-stone-500 mt-0.5">Physical items in inventory</p>
+        <div className="rounded-2xl bg-white border border-purple-100/60 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Tracked Stock Units</p>
+          <p className="text-xl font-bold text-gray-800 mt-1">{inventorySummary.totalUnits.toLocaleString()}</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">Physical items in inventory</p>
         </div>
-        <div className="rounded-2xl bg-white border border-[#400604]/20 bg-[#400604]/5 p-4 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Stock Value (Buy Price)</p>
-          <p className="text-xl font-serif font-bold text-[#400604] mt-1">
+        <div className="rounded-2xl bg-white border border-purple-100/60 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Stock Value (Buy Price)</p>
+          <p className="text-xl font-bold text-purple-600 mt-1">
             {inventorySummary.costVal > 0 ? `৳${Math.round(inventorySummary.costVal).toLocaleString()}` : "—"}
           </p>
-          <p className="text-[11px] text-stone-500 mt-0.5">
+          <p className="text-[11px] text-gray-500 mt-0.5">
             {inventorySummary.itemsWithCost > 0 ? `${inventorySummary.itemsWithCost} products with buy price` : "No buy price provided"}
           </p>
         </div>
-        <div className="rounded-2xl bg-white border border-stone-200 p-4 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-400">Stock Availability</p>
-          <p className="text-xl font-serif font-bold text-stone-900 mt-1">
-            <span className="text-emerald-700">{inventorySummary.inStockCount}</span>
-            <span className="text-stone-400 text-sm font-normal mx-1">in</span>
-            <span className="text-stone-300">/</span>
-            <span className="text-rose-600 ml-1">{inventorySummary.outOfStockCount}</span>
-            <span className="text-stone-400 text-sm font-normal ml-1">out</span>
+        <div className="rounded-2xl bg-white border border-purple-100/60 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Stock Availability</p>
+          <p className="text-xl font-bold text-gray-800 mt-1">
+            <span className="text-emerald-600">{inventorySummary.inStockCount}</span>
+            <span className="text-gray-400 text-sm font-normal mx-1">in</span>
+            <span className="text-gray-300">/</span>
+            <span className="text-rose-500 ml-1">{inventorySummary.outOfStockCount}</span>
+            <span className="text-gray-400 text-sm font-normal ml-1">out</span>
           </p>
-          <p className="text-[11px] text-stone-500 mt-0.5">Catalog availability status</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">Catalog availability status</p>
         </div>
       </div>
 
       {/* ── Search ─────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-4 shadow-sm">
+      <div className="bg-white rounded-2xl border border-purple-100/60 p-4 shadow-sm">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name, SKU, or category..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#400604] focus:ring-1 focus:ring-[#400604]/20 transition"
+            className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
           />
         </div>
       </div>
 
       {/* ── Selection / Bulk Actions Banner ─────────────── */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-[#400604] to-[#1A0302] text-white px-5 py-3.5 rounded-2xl shadow-xl border border-[#E1B76F]/30 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-purple-900 to-indigo-900 text-white px-5 py-3.5 rounded-2xl shadow-xl shadow-purple-900/15 border border-purple-800 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-[#E1B76F]/20 border border-[#E1B76F]/40 flex items-center justify-center text-xs font-black text-[#E1B76F]">
+            <div className="h-8 w-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xs font-black text-white shadow-inner">
               {selectedIds.size}
             </div>
             <div>
               <span className="text-[13px] font-bold">
                 {selectedIds.size} {selectedIds.size === 1 ? "product" : "products"} selected
               </span>
-              <span className="text-[#E1B76F] text-[12px] ml-2">
+              <span className="text-purple-300 text-[12px] ml-2">
                 (out of {filteredProducts.length})
               </span>
             </div>
@@ -441,7 +462,7 @@ export default function AdminProductsPage() {
               <button
                 type="button"
                 onClick={() => setSelectedIds(new Set(filteredProducts.map((p) => p.id)))}
-                className="text-[12px] font-semibold underline underline-offset-2 text-[#E1B76F] hover:text-white transition ml-1"
+                className="text-[12px] font-semibold underline underline-offset-2 text-purple-200 hover:text-white transition ml-1"
               >
                 Select all {filteredProducts.length}
               </button>
@@ -468,11 +489,11 @@ export default function AdminProductsPage() {
       )}
 
       {/* ── Products Table ─────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-purple-100/60 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <div className="min-w-[1150px]">
             {/* Table header */}
-            <div className="grid grid-cols-[40px_45px_64px_1fr_120px_115px_80px_80px_90px_130px_95px_65px] items-center gap-3 px-5 py-3.5 bg-[#FDFBF7] text-[10px] font-bold uppercase tracking-widest text-[#400604] border-b border-stone-100">
+            <div className="grid grid-cols-[40px_45px_64px_1fr_120px_115px_80px_80px_90px_130px_95px_65px] items-center gap-3 px-5 py-3.5 bg-purple-50/70 text-[10px] font-bold uppercase tracking-widest text-purple-600 border-b border-purple-100/50">
               <div className="flex items-center justify-center">
                 <input
                   type="checkbox"
@@ -481,7 +502,7 @@ export default function AdminProductsPage() {
                     if (el) el.indeterminate = someSelected;
                   }}
                   onChange={toggleSelectAll}
-                  className="h-4 w-4 rounded border-stone-300 text-[#400604] focus:ring-[#400604] cursor-pointer transition"
+                  className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer transition"
                   title={allSelected ? "Deselect all" : "Select all"}
                 />
               </div>
@@ -499,37 +520,37 @@ export default function AdminProductsPage() {
             </div>
 
             {loading ? (
-              <div className="divide-y divide-stone-100" role="status" aria-busy="true">
+              <div className="divide-y divide-purple-50/80" role="status" aria-busy="true">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
                     className="grid grid-cols-[40px_45px_64px_1fr_120px_115px_80px_80px_90px_130px_95px_65px] items-center gap-3 px-5 py-3.5 animate-pulse"
                   >
-                    <div className="h-4 w-4 mx-auto rounded bg-stone-200" />
-                    <div className="h-3 w-5 rounded bg-stone-200" />
-                    <div className="h-14 w-14 rounded-xl bg-stone-200" />
-                    <div className="h-4 w-3/4 rounded bg-stone-200" />
-                    <div className="h-4 w-16 rounded bg-stone-200" />
-                    <div className="h-4 w-16 rounded bg-stone-200" />
-                    <div className="h-4 w-12 rounded bg-stone-200" />
-                    <div className="h-4 w-12 rounded bg-stone-200" />
-                    <div className="h-4 w-16 rounded bg-stone-200" />
-                    <div className="h-4 w-16 rounded bg-stone-200" />
-                    <div className="h-6 w-16 rounded bg-stone-200 mx-auto" />
-                    <div className="h-6 w-6 rounded bg-stone-200 mx-auto" />
+                    <div className="h-4 w-4 mx-auto rounded bg-purple-100/80" />
+                    <div className="h-3 w-5 rounded bg-purple-100/80" />
+                    <div className="h-14 w-14 rounded-xl bg-purple-100/70" />
+                    <div className="h-4 w-3/4 rounded bg-purple-100/80" />
+                    <div className="h-4 w-16 rounded bg-purple-100/70" />
+                    <div className="h-4 w-16 rounded bg-purple-100/70" />
+                    <div className="h-4 w-12 rounded bg-purple-100/60" />
+                    <div className="h-4 w-12 rounded bg-purple-100/60" />
+                    <div className="h-4 w-16 rounded bg-purple-100/60" />
+                    <div className="h-4 w-16 rounded bg-purple-100/60" />
+                    <div className="h-6 w-16 rounded bg-purple-100/70 mx-auto" />
+                    <div className="h-6 w-6 rounded bg-purple-100/70 mx-auto" />
                   </div>
                 ))}
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="py-24 text-center">
-                <Package className="h-12 w-12 mx-auto text-stone-300 mb-3" />
-                <p className="text-[15px] font-bold text-stone-700">No products found</p>
-                <p className="text-[12px] text-stone-400 mt-1">
+                <Package className="h-12 w-12 mx-auto text-purple-200 mb-3" />
+                <p className="text-[15px] font-bold text-gray-700">No products found</p>
+                <p className="text-[12px] text-gray-400 mt-1">
                   Try adjusting your search criteria or add a new product.
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-stone-100">
+              <div className="divide-y divide-purple-50">
                 {filteredProducts.map((product, idx) => {
                   const isSelected = selectedIds.has(product.id);
                   const thumb = product.images?.[0]?.src;
@@ -538,8 +559,8 @@ export default function AdminProductsPage() {
                   return (
                     <div
                       key={product.id}
-                      className={`grid grid-cols-[40px_45px_64px_1fr_120px_115px_80px_80px_90px_130px_95px_65px] items-center gap-3 px-5 py-3.5 hover:bg-stone-50/70 transition ${
-                        isSelected ? "bg-[#400604]/5" : ""
+                      className={`grid grid-cols-[40px_45px_64px_1fr_120px_115px_80px_80px_90px_130px_95px_65px] items-center gap-3 px-5 py-3.5 hover:bg-purple-50/40 transition ${
+                        isSelected ? "bg-purple-50/70" : ""
                       }`}
                     >
                       {/* Checkbox */}
@@ -548,43 +569,31 @@ export default function AdminProductsPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelect(product.id)}
-                          className="h-4 w-4 rounded border-stone-300 text-[#400604] focus:ring-[#400604] cursor-pointer"
+                          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
                         />
                       </div>
 
                       {/* SL */}
-                      <span className="text-[11px] font-bold text-stone-400">
+                      <span className="text-[11px] font-bold text-gray-400">
                         {idx + 1}
                       </span>
 
                       {/* Image */}
-                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200 relative">
-                        {thumb ? (
-                          <Image
-                            src={thumb}
-                            alt={product.name}
-                            width={56}
-                            height={56}
-                            className="object-cover w-full h-full"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-stone-400 text-xs font-bold">
-                            {product.name.charAt(0)}
-                          </div>
-                        )}
+                      <div className="h-14 w-14 rounded-xl overflow-hidden bg-purple-50/50 flex-shrink-0 border border-purple-100 relative">
+                        <ProductTableThumb src={thumb} name={product.name} />
                       </div>
 
                       {/* Name & Categories */}
                       <div className="min-w-0 pr-2">
                         <Link
                           href={`/admin/products/${encodeURIComponent(product.slug || String(product.id))}/edit`}
-                          className="text-[13px] font-semibold text-stone-800 hover:text-[#400604] transition truncate block"
+                          className="text-[13px] font-semibold text-gray-800 hover:text-purple-600 transition truncate block"
                           title={product.name}
                         >
                           {product.name}
                         </Link>
                         {product.categories && product.categories.length > 0 && (
-                          <p className="text-[11px] text-stone-400 truncate mt-0.5">
+                          <p className="text-[11px] text-gray-400 truncate mt-0.5">
                             {product.categories.map((c) => c.name).join(", ")}
                           </p>
                         )}
@@ -592,8 +601,8 @@ export default function AdminProductsPage() {
 
                       {/* SKU */}
                       <div>
-                        <div className="inline-flex items-center gap-1.5 bg-stone-50 px-2 py-1 rounded-lg border border-stone-200/80">
-                          <span className="text-[11px] text-stone-700 font-mono font-medium truncate max-w-[70px]" title={product.sku || undefined}>
+                        <div className="inline-flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200/80">
+                          <span className="text-[11px] text-gray-700 font-mono font-medium truncate max-w-[70px]" title={product.sku || undefined}>
                             {product.sku || "—"}
                           </span>
                           {product.sku && (
@@ -601,7 +610,7 @@ export default function AdminProductsPage() {
                               type="button"
                               onClick={() => copyToClipboard(product.sku, `col-sku-${product.id}`)}
                               title="Copy SKU"
-                              className="p-0.5 rounded text-stone-400 hover:text-[#400604] transition"
+                              className="p-0.5 rounded text-gray-400 hover:text-purple-600 transition"
                             >
                               {copiedKey === `col-sku-${product.id}` ? (
                                 <Check className="h-3 w-3 text-emerald-600" />
@@ -615,16 +624,16 @@ export default function AdminProductsPage() {
 
                       {/* Price */}
                       <div>
-                        <span className="text-[13px] font-bold text-stone-900">
+                        <span className="text-[13px] font-bold text-gray-900">
                           ৳{Number(product.price || 0).toLocaleString()}
                         </span>
                         {product.on_sale && product.regular_price && (
-                          <span className="block text-[10px] text-stone-400 line-through">
+                          <span className="block text-[10px] text-gray-400 line-through">
                             ৳{Number(product.regular_price).toLocaleString()}
                           </span>
                         )}
                         {getBuyPrice(product) > 0 && (
-                          <span className="block text-[10.5px] text-emerald-700 font-medium">
+                          <span className="block text-[10.5px] text-purple-700 font-medium">
                             Cost: ৳{getBuyPrice(product).toLocaleString()}
                           </span>
                         )}
@@ -632,7 +641,7 @@ export default function AdminProductsPage() {
 
                       {/* Quantity */}
                       <div>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-stone-50 text-stone-600 border border-stone-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-50 text-gray-600 border border-gray-200">
                           {product.manage_stock
                             ? product.stock_quantity ?? "0"
                             : "∞ In Stock"}
@@ -646,7 +655,7 @@ export default function AdminProductsPage() {
                             product.status === "publish"
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               : product.status === "draft"
-                              ? "bg-stone-100 text-stone-600 border border-stone-200"
+                              ? "bg-gray-100 text-gray-600 border border-gray-200"
                               : "bg-amber-50 text-amber-700 border border-amber-200"
                           }`}
                         >
@@ -660,7 +669,7 @@ export default function AdminProductsPage() {
 
                       {/* Added On */}
                       <div>
-                        <span className="text-[11px] text-stone-500 whitespace-nowrap">
+                        <span className="text-[11px] text-gray-500 whitespace-nowrap">
                           {product.date_created
                             ? new Date(product.date_created).toLocaleDateString("en-GB", {
                                 day: "2-digit",
@@ -674,11 +683,11 @@ export default function AdminProductsPage() {
                       {/* Delivery */}
                       <div>
                         <div className="space-y-0.5">
-                          <p className="text-[11px] text-stone-600 leading-tight">
-                            Inside: <span className="font-semibold text-[#400604]">{fees.inside === null ? "Store rate" : fees.inside === 0 ? "Free" : `${fees.inside} TK`}</span>
+                          <p className="text-[11px] text-gray-600 leading-tight">
+                            Inside: <span className="font-semibold text-purple-700">{fees.inside === null ? "Store rate" : fees.inside === 0 ? "Free" : `${fees.inside} TK`}</span>
                           </p>
-                          <p className="text-[11px] text-stone-600 leading-tight">
-                            Outside: <span className="font-semibold text-[#400604]">{fees.outside === null ? "Store rate" : fees.outside === 0 ? "Free" : `${fees.outside} TK`}</span>
+                          <p className="text-[11px] text-gray-600 leading-tight">
+                            Outside: <span className="font-semibold text-purple-700">{fees.outside === null ? "Store rate" : fees.outside === 0 ? "Free" : `${fees.outside} TK`}</span>
                           </p>
                         </div>
                       </div>
@@ -687,7 +696,7 @@ export default function AdminProductsPage() {
                       <div className="flex justify-center">
                         <Link
                           href={`/admin/products/${encodeURIComponent(product.slug || String(product.id))}/edit`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-100 text-[#400604] hover:bg-[#400604] hover:text-white text-[12px] font-semibold transition border border-stone-200 shadow-sm"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white text-[12px] font-semibold transition border border-purple-200/70 shadow-sm"
                           title="Edit Product"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -700,7 +709,7 @@ export default function AdminProductsPage() {
                         <button
                           type="button"
                           onClick={(e) => toggleMenu(product.id, e.currentTarget)}
-                          className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition"
                           title="More options"
                         >
                           <MoreVertical className="h-4 w-4" />
@@ -737,16 +746,16 @@ export default function AdminProductsPage() {
                 <p className="text-[12px] font-semibold text-stone-800 truncate">{product.name}</p>
               </div>
 
-              <div className="py-1 border-b border-stone-100">
+              <div className="py-1 border-b border-gray-100">
                 <Link
                   href={`/admin/products/${encodeURIComponent(product.slug || String(product.id))}/edit`}
                   onClick={() => {
                     setActionMenu(null);
                     setMenuPos(null);
                   }}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-stone-700 hover:bg-stone-50 hover:text-[#400604] transition"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition"
                 >
-                  <Pencil className="h-4 w-4 text-stone-400" />
+                  <Pencil className="h-4 w-4 text-gray-400" />
                   <span>Edit Product</span>
                 </Link>
 
@@ -754,12 +763,12 @@ export default function AdminProductsPage() {
                   type="button"
                   disabled={duplicating === product.id}
                   onClick={() => void handleDuplicate(product)}
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-stone-700 hover:bg-stone-50 hover:text-[#400604] transition text-left disabled:opacity-50"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition text-left disabled:opacity-50"
                 >
                   {duplicating === product.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-[#400604]" />
+                    <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
                   ) : (
-                    <CopyPlus className="h-4 w-4 text-stone-400" />
+                    <CopyPlus className="h-4 w-4 text-gray-400" />
                   )}
                   <span>{duplicating === product.id ? "Duplicating…" : "Duplicate as Draft"}</span>
                 </button>
@@ -768,11 +777,11 @@ export default function AdminProductsPage() {
                   href={getProductPageUrl(product.slug || product.name, { fromName: !product.slug })}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center gap-2.5 px-4 py-2 text-stone-700 hover:bg-stone-50 hover:text-[#400604] transition"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-gray-700 hover:bg-purple-50 hover:text-purple-600 transition"
                 >
-                  <Eye className="h-4 w-4 text-stone-400" />
+                  <Eye className="h-4 w-4 text-gray-400" />
                   <span>View on Store</span>
-                  <ExternalLink className="h-3 w-3 text-stone-400 ml-auto" />
+                  <ExternalLink className="h-3 w-3 text-gray-400 ml-auto" />
                 </a>
               </div>
 
@@ -838,7 +847,7 @@ export default function AdminProductsPage() {
                 <Trash2 className="h-6 w-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-lg font-serif font-bold text-stone-900">
+                <h3 className="text-lg font-bold text-gray-900">
                   {deleteTarget.ids.length === 1
                     ? "Delete Product?"
                     : `Delete ${deleteTarget.ids.length} Products?`}

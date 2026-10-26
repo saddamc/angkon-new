@@ -71,16 +71,16 @@ export function PromoSettings() {
   if (loading) {
     return (
       <div className="text-[13px] text-stone-500 py-4">
-        <Loader2 className="w-4 h-4 animate-spin inline mr-2 text-[#400604]" />
+        <Loader2 className="w-4 h-4 animate-spin inline mr-2 text-purple-600" />
         Loading promo configuration…
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 border-t border-stone-100 pt-6 mt-6">
+    <div className="space-y-4 border-t border-purple-100/60 pt-6 mt-6">
       <div>
-        <h3 className="text-[15px] font-serif font-bold text-[#1A0302]">Storefront Promotional Popup</h3>
+        <h3 className="text-[15px] font-bold text-gray-800">Storefront Promotional Popup</h3>
         <p className="text-[12px] text-stone-500">
           Display an exclusive modal campaign to visitors on first visit.
         </p>
@@ -94,7 +94,7 @@ export function PromoSettings() {
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
           />
-          <div className="peer h-6 w-11 rounded-full bg-stone-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-stone-300 after:bg-white after:transition-all peer-checked:bg-[#400604] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+          <div className="peer h-6 w-11 rounded-full bg-stone-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-stone-300 after:bg-white after:transition-all peer-checked:bg-purple-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
         </label>
         <span className="text-[13px] font-semibold text-stone-700">Enable Promotional Modal</span>
       </div>
@@ -109,7 +109,7 @@ export function PromoSettings() {
             <button
               type="button"
               onClick={() => setImage("")}
-              className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition"
+              className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition cursor-pointer"
               title="Remove image"
             >
               <X className="w-4 h-4" />
@@ -117,9 +117,9 @@ export function PromoSettings() {
           </div>
         ) : (
           <div className="relative">
-            <label className="flex h-[140px] w-[280px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 bg-[#FDFBF7] transition hover:bg-[#400604]/5 hover:border-[#E1B76F]">
+            <label className="flex h-[140px] w-[280px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 bg-stone-50/50 transition hover:bg-purple-50/40 hover:border-purple-300">
               {uploading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-[#400604]" />
+                <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
               ) : (
                 <>
                   <UploadCloud className="h-7 w-7 text-stone-400 mb-1" />
@@ -142,7 +142,7 @@ export function PromoSettings() {
           value={link}
           onChange={(e) => setLink(e.target.value)}
           placeholder="e.g. /category/new-arrivals or /products/royal-sherwani"
-          className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 outline-none focus:border-[#400604] focus:ring-1 focus:ring-[#400604]/20"
+          className="w-full rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200"
         />
       </div>
 
@@ -151,11 +151,11 @@ export function PromoSettings() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 rounded-xl bg-[#400604] hover:bg-[#250302] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 px-6 py-2.5 text-[13px] font-bold text-white shadow-md shadow-purple-200 transition disabled:opacity-50 cursor-pointer"
         >
           {saving ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-[#E1B76F]" />
+              <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
               Saving to MongoDB…
             </>
           ) : (

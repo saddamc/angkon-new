@@ -174,9 +174,31 @@ export function CreateCategoryModal({
   const crossDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Session uploaded images tracking for automatic Cloudinary cleanup if modal is dismissed
+  const sessionUploadedRef = useRef<Array<{ id: number | null; url: string }>>([]);
+  const isSavedRef = useRef(false);
+
+  const handleClose = async () => {
+    if (!isSavedRef.current && sessionUploadedRef.current.length > 0) {
+      const toDelete = [...sessionUploadedRef.current];
+      sessionUploadedRef.current = [];
+      try {
+        await authFetch("/api/admin/upload", {
+          method: "DELETE",
+          body: JSON.stringify({ items: toDelete }),
+        });
+      } catch {
+        // ignore
+      }
+    }
+    onClose();
+  };
+
   // Sync state whenever modal opens or props change
   useEffect(() => {
     if (isOpen) {
+      isSavedRef.current = false;
+      sessionUploadedRef.current = [];
       const targetType = initialParentId ? "sub" : initialType;
       setType(targetType);
       setParent(initialParentId);
@@ -207,7 +229,7 @@ export function CreateCategoryModal({
       if (e.key === "Escape") {
         if (parentDropdownOpen) setParentDropdownOpen(false);
         else if (crossDropdownOpen) setCrossDropdownOpen(false);
-        else onClose();
+        else void handleClose();
       } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
         void handleSubmit(false);
@@ -269,11 +291,17 @@ export function CreateCategoryModal({
         throw new Error("Image exceeds 8MB. Please choose a smaller photo.");
       }
 
-      const catSlugClean = (slug || slugify(name) || "category").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+      const catSlugClean = (slug || slugify(name) || "category")
+        .toUpperCase()
+        .replace(/[^A-Z0-9_\s-]/g, "")
+        .replace(/[\s-]+/g, "_");
       let folder = `ANGKON/CATEGORIES/${catSlugClean}`;
       if (type === "sub" && parent) {
         const parentCat = flat.find((c) => c.id === parent);
-        const pSlug = (parentCat?.slug || "parent").replace(/[^a-z0-9_-]/gi, "").toLowerCase();
+        const pSlug = (parentCat?.slug || "parent")
+          .toUpperCase()
+          .replace(/[^A-Z0-9_\s-]/g, "")
+          .replace(/[\s-]+/g, "_");
         folder = `ANGKON/CATEGORIES/${pSlug}/${catSlugClean}`;
       }
 
@@ -295,6 +323,7 @@ export function CreateCategoryModal({
       setImageUrl(data.url);
       const numericId = data.id && Number.isFinite(Number(data.id)) ? Number(data.id) : null;
       setImageId(numericId);
+      sessionUploadedRef.current.push({ id: numericId, url: data.url });
       if (!imageAlt) setImageAlt(name.trim());
       showToast("Cover image uploaded in WebP format successfully!");
     } catch (err: any) {
@@ -389,8 +418,12 @@ export function CreateCategoryModal({
           : `Category "${trimmedName}" created successfully!`
       );
 
+      isSavedRef.current = true;
+      sessionUploadedRef.current = [];
+
       if (addAnother) {
         // Reset form but keep parent selected for rapid sequential entry
+        isSavedRef.current = false;
         setName("");
         setSlug("");
         setAutoSlug(true);
@@ -434,14 +467,14 @@ export function CreateCategoryModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-gray-100 bg-gradient-to-r from-amber-50/40 via-white to-gray-50/30 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4.5 border-b border-purple-100 bg-gradient-to-r from-purple-50/50 via-white to-purple-50/20 shrink-0">
           <div className="flex items-center gap-3.5">
-            <div className="h-11 w-11 rounded-2xl bg-[#400604]/10 text-[#400604] border border-[#400604]/20 flex items-center justify-center shrink-0 shadow-2xs">
+            <div className="h-11 w-11 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0 shadow-2xs">
               {type === "sub" ? <Layers className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[#400604] bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60 shadow-2xs">
+                <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200/60 shadow-2xs">
                   {type === "sub" ? "Subcategory" : "Main Category"}
                 </span>
                 {type === "sub" && selectedParentCategory && (
@@ -459,7 +492,7 @@ export function CreateCategoryModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => void handleClose()}
             className="h-9 w-9 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition shadow-2xs"
             title="Close (Esc)"
           >
@@ -487,13 +520,13 @@ export function CreateCategoryModal({
                 onClick={() => handleTypeChange("main")}
                 className={`p-3.5 rounded-2xl border-2 text-left flex items-start gap-3 transition cursor-pointer ${
                   type === "main"
-                    ? "border-[#400604] bg-amber-50/30 ring-2 ring-[#400604]/10 shadow-xs"
+                    ? "border-purple-600 bg-purple-50/50 ring-2 ring-purple-100 shadow-xs"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
                 }`}
               >
                 <div
                   className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    type === "main" ? "bg-[#400604] text-white shadow-xs" : "bg-gray-100 text-gray-500"
+                    type === "main" ? "bg-purple-600 text-white shadow-xs" : "bg-gray-100 text-gray-500"
                   }`}
                 >
                   <FolderOpen className="h-4.5 w-4.5" />
@@ -503,7 +536,7 @@ export function CreateCategoryModal({
                     <p className={`text-[13px] font-black ${type === "main" ? "text-gray-900" : "text-gray-700"}`}>
                       Main Category
                     </p>
-                    {type === "main" && <Check className="h-4 w-4 text-[#400604]" />}
+                    {type === "main" && <Check className="h-4 w-4 text-purple-600" />}
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
                     Root storefront collection (e.g., Men, Women, Accessories).
@@ -516,13 +549,13 @@ export function CreateCategoryModal({
                 onClick={() => handleTypeChange("sub")}
                 className={`p-3.5 rounded-2xl border-2 text-left flex items-start gap-3 transition cursor-pointer ${
                   type === "sub"
-                    ? "border-[#400604] bg-amber-50/30 ring-2 ring-[#400604]/10 shadow-xs"
+                    ? "border-purple-600 bg-purple-50/50 ring-2 ring-purple-100 shadow-xs"
                     : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
                 }`}
               >
                 <div
                   className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    type === "sub" ? "bg-[#400604] text-white shadow-xs" : "bg-gray-100 text-gray-500"
+                    type === "sub" ? "bg-purple-600 text-white shadow-xs" : "bg-gray-100 text-gray-500"
                   }`}
                 >
                   <Layers className="h-4.5 w-4.5" />
@@ -532,7 +565,7 @@ export function CreateCategoryModal({
                     <p className={`text-[13px] font-black ${type === "sub" ? "text-gray-900" : "text-gray-700"}`}>
                       Subcategory
                     </p>
-                    {type === "sub" && <Check className="h-4 w-4 text-[#400604]" />}
+                    {type === "sub" && <Check className="h-4 w-4 text-purple-600" />}
                   </div>
                   <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
                     Nested child collection (e.g., Half Sleeves, Tees, Pants).
@@ -544,7 +577,7 @@ export function CreateCategoryModal({
 
           {/* 2. Parent Category Picker (Visible when Subcategory) */}
           {type === "sub" && (
-            <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-200/60 space-y-3">
+            <div className="p-4 rounded-2xl bg-purple-50/40 border border-purple-100 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-[11px] font-black text-gray-700 uppercase tracking-widest">
                   Parent Category *
@@ -569,7 +602,7 @@ export function CreateCategoryModal({
                           className="h-8 w-8 rounded-lg object-cover border border-gray-200 shrink-0"
                         />
                       ) : (
-                        <div className="h-8 w-8 rounded-lg bg-amber-100 text-[#400604] flex items-center justify-center shrink-0 font-bold text-xs">
+                        <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 font-bold text-xs">
                           <FolderOpen className="h-4 w-4" />
                         </div>
                       )}
@@ -605,7 +638,7 @@ export function CreateCategoryModal({
                           placeholder="Search parent categories..."
                           value={parentSearch}
                           onChange={(e) => setParentSearch(e.target.value)}
-                          className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-[12px] bg-white outline-none focus:border-[#400604]"
+                          className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-[12px] bg-white outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
                         />
                       </div>
                     </div>
@@ -619,7 +652,7 @@ export function CreateCategoryModal({
                             type="button"
                             onClick={() => handleParentChange(cat.id)}
                             className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition ${
-                              parent === cat.id ? "bg-amber-50 text-[#400604]" : "hover:bg-gray-50 text-gray-800"
+                              parent === cat.id ? "bg-purple-50 text-purple-700" : "hover:bg-gray-50 text-gray-800"
                             }`}
                           >
                             {cat.image?.src ? (
@@ -631,7 +664,7 @@ export function CreateCategoryModal({
                               <p className="text-[12px] font-bold truncate">{catName(cat)}</p>
                               <p className="text-[10px] text-gray-400 font-mono truncate">/{cat.slug}</p>
                             </div>
-                            {parent === cat.id && <Check className="h-3.5 w-3.5 text-[#400604] shrink-0" />}
+                            {parent === cat.id && <Check className="h-3.5 w-3.5 text-purple-600 shrink-0" />}
                           </button>
                         ))
                       )}
@@ -641,16 +674,16 @@ export function CreateCategoryModal({
               </div>
 
               {/* Multi-Parent Cross-Listing Option */}
-              <div className="pt-2 border-t border-amber-200/50">
+              <div className="pt-2 border-t border-purple-100">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
-                    <Sparkles className="h-3 w-3 text-amber-600" />
+                    <Sparkles className="h-3 w-3 text-purple-600" />
                     Also display under additional categories (Cross-listing)
                   </span>
                   <button
                     type="button"
                     onClick={() => setCrossDropdownOpen((prev) => !prev)}
-                    className="text-[11px] font-bold text-[#400604] hover:underline"
+                    className="text-[11px] font-bold text-purple-600 hover:underline"
                   >
                     + Add Cross-Parent
                   </button>
@@ -663,7 +696,7 @@ export function CreateCategoryModal({
                       return (
                         <span
                           key={pid}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-amber-300/80 text-[11px] font-bold text-amber-900 shadow-2xs"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-purple-200 text-[11px] font-bold text-purple-800 shadow-2xs"
                         >
                           {pCat ? catName(pCat) : `#${pid}`}
                           <button
@@ -722,7 +755,7 @@ export function CreateCategoryModal({
                 placeholder={type === "sub" ? "e.g. Half Sleeves, Polos, Denim Pants" : "e.g. Men, Women, Accessories"}
                 value={name}
                 onChange={(e) => handleNameChange(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-[14px] font-bold text-gray-900 outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition shadow-2xs"
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-[14px] font-bold text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition shadow-2xs"
               />
             </div>
 
@@ -734,7 +767,7 @@ export function CreateCategoryModal({
                 <button
                   type="button"
                   onClick={() => setAutoSlug((prev) => !prev)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-[#400604] transition"
+                  className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-purple-600 transition"
                   title={autoSlug ? "Unlock to customize slug manually" : "Lock to auto-generate from category name"}
                 >
                   {autoSlug ? <Lock className="h-3 w-3 text-emerald-600" /> : <Unlock className="h-3 w-3 text-amber-600" />}
@@ -742,7 +775,7 @@ export function CreateCategoryModal({
                 </button>
               </div>
 
-              <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50/50 overflow-hidden focus-within:border-[#400604] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#400604]/10 transition shadow-2xs">
+              <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50/50 overflow-hidden focus-within:border-purple-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-purple-100 transition shadow-2xs">
                 <span className="px-3.5 py-2.5 text-[12px] font-mono font-medium text-gray-400 bg-gray-100/70 border-r border-gray-200 shrink-0">
                   {type === "sub" && selectedParentCategory ? `/${selectedParentCategory.slug}/` : "/"}
                 </span>
@@ -787,8 +820,19 @@ export function CreateCategoryModal({
                   <button
                     type="button"
                     onClick={() => {
+                      const toDeleteUrl = imageUrl;
+                      const toDeleteId = imageId;
                       setImageUrl("");
                       setImageId(null);
+                      if (toDeleteUrl) {
+                        sessionUploadedRef.current = sessionUploadedRef.current.filter(
+                          (item) => item.url !== toDeleteUrl
+                        );
+                        void authFetch("/api/admin/upload", {
+                          method: "DELETE",
+                          body: JSON.stringify({ url: toDeleteUrl, id: toDeleteId }),
+                        }).catch(() => {});
+                      }
                     }}
                     className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold shadow-md hover:bg-red-700 transition"
                   >
@@ -810,11 +854,11 @@ export function CreateCategoryModal({
                   if (f) void uploadFile(f);
                 }}
                 className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center ${
-                  dragActive ? "border-[#400604] bg-amber-50/40" : "border-gray-200 hover:border-[#400604] bg-gray-50/50 hover:bg-amber-50/20"
+                  dragActive ? "border-purple-600 bg-purple-50/40" : "border-gray-200 hover:border-purple-400 bg-gray-50/50 hover:bg-purple-50/20"
                 }`}
               >
-                <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 mb-2">
-                  {uploading ? <Loader2 className="h-5 w-5 animate-spin text-[#400604]" /> : <UploadCloud className="h-5 w-5" />}
+                <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 mb-2">
+                  {uploading ? <Loader2 className="h-5 w-5 animate-spin text-purple-600" /> : <UploadCloud className="h-5 w-5" />}
                 </div>
                 <p className="text-[13px] font-bold text-gray-800">
                   {uploading ? "Uploading to Cloudinary (WebP)..." : "Click to upload banner or drag & drop"}
@@ -846,8 +890,8 @@ export function CreateCategoryModal({
                     }}
                     className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition shadow-2xs ${
                       imageUrl === preset.src
-                        ? "bg-[#400604] text-white border-[#400604]"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        ? "bg-purple-600 text-white border-purple-600"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:bg-purple-50/30"
                     }`}
                   >
                     {preset.name}
@@ -933,7 +977,7 @@ export function CreateCategoryModal({
                     placeholder="Short description displayed on category pages and used for search engines..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-[12px] text-gray-800 bg-white outline-none focus:border-[#400604]"
+                    className="w-full p-3 rounded-xl border border-gray-200 text-[12px] text-gray-800 bg-white outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
                   />
                 </div>
               </div>
@@ -942,7 +986,7 @@ export function CreateCategoryModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-t border-purple-100 bg-purple-50/20 shrink-0">
           <div className="text-[11px] text-gray-400 font-mono hidden sm:block">
             Path: <span className="text-gray-700 font-bold">{type === "sub" && selectedParentCategory ? `${catName(selectedParentCategory)} > ` : ""}{name || "New Category"}</span>
           </div>
@@ -950,7 +994,7 @@ export function CreateCategoryModal({
           <div className="flex items-center justify-end gap-2.5">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => void handleClose()}
               disabled={saving}
               className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-[13px] font-bold text-gray-700 transition shadow-2xs"
             >
@@ -961,7 +1005,7 @@ export function CreateCategoryModal({
               type="button"
               onClick={() => void handleSubmit(true)}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#400604]/20 bg-amber-50 hover:bg-amber-100 text-[13px] font-bold text-[#400604] transition shadow-2xs disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[13px] font-bold text-purple-700 transition shadow-2xs disabled:opacity-60"
               title="Save this category and immediately start another without closing (Ctrl+Enter)"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
@@ -972,7 +1016,7 @@ export function CreateCategoryModal({
               type="button"
               onClick={() => void handleSubmit(false)}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#400604] hover:bg-[#5a0906] text-[13px] font-bold text-white transition shadow-sm hover:shadow-md disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-[13px] font-bold text-white transition shadow-md shadow-purple-200 disabled:opacity-60"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
               <span>{type === "sub" ? "Create Subcategory" : "Create Category"}</span>

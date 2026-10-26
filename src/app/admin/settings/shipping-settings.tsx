@@ -140,7 +140,7 @@ export function ShippingSettings() {
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-8 text-[13px] text-stone-500">
-        <Loader2 className="h-4 w-4 animate-spin text-[#400604]" />
+        <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
         Loading delivery settings…
       </div>
     );
@@ -148,13 +148,13 @@ export function ShippingSettings() {
 
   const preview = parsed.ok ? parsed.value : saved ?? DEFAULT_SHIPPING_SETTINGS;
   const inputClass =
-    "w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-9 pr-4 text-[14px] font-semibold text-stone-800 outline-none focus:border-[#400604] focus:ring-1 focus:ring-[#400604]/20";
+    "w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-4 text-[14px] font-semibold text-gray-800 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100";
 
   return (
     <form onSubmit={handleSave} className="space-y-6" noValidate>
       <div>
-        <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-1">Shipping &amp; Delivery Rates</h2>
-        <p className="text-[13px] text-stone-500">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Shipping &amp; Delivery Rates</h2>
+        <p className="text-[13px] text-gray-500">
           These rates are used by the cart, checkout and every new order. Changes apply to customers straight away.
         </p>
       </div>
@@ -186,7 +186,7 @@ export function ShippingSettings() {
             type="button"
             onClick={clearOverrides}
             disabled={clearing}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#400604] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#5a0906] disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-purple-700 shadow-md shadow-purple-200 disabled:opacity-60 cursor-pointer"
           >
             {clearing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Use store-wide rates for all products
@@ -250,37 +250,37 @@ export function ShippingSettings() {
       </div>
 
       {/* What customers will actually see */}
-      <div className="rounded-2xl border border-[#E1B76F]/40 bg-[#FDFBF7] p-5">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-[#400604] mb-3">What customers will pay</p>
+      <div className="rounded-2xl border border-purple-100 bg-purple-50/30 p-5">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-3">What customers will pay</p>
         <dl className="grid gap-2 text-[13px] sm:grid-cols-4">
-          <div className="rounded-xl bg-white border border-stone-200 p-3">
-            <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Inside Dhaka</dt>
-            <dd className="mt-0.5 font-bold text-stone-900">{preview.insideDhaka === 0 ? "Free" : money(preview.insideDhaka)}</dd>
+          <div className="rounded-xl bg-white border border-purple-100/60 p-3 shadow-2xs">
+            <dt className="text-gray-500 text-[11px] uppercase tracking-wide">Inside Dhaka</dt>
+            <dd className="mt-0.5 font-bold text-gray-900">{preview.insideDhaka === 0 ? "Free" : money(preview.insideDhaka)}</dd>
           </div>
-          <div className="rounded-xl bg-white border border-stone-200 p-3">
-            <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Gazipur / Narayanganj / Savar</dt>
-            <dd className="mt-0.5 font-bold text-stone-900">{preview.nearDhaka === 0 ? "Free" : money(preview.nearDhaka)}</dd>
+          <div className="rounded-xl bg-white border border-purple-100/60 p-3 shadow-2xs">
+            <dt className="text-gray-500 text-[11px] uppercase tracking-wide">Gazipur / Narayanganj / Savar</dt>
+            <dd className="mt-0.5 font-bold text-gray-900">{preview.nearDhaka === 0 ? "Free" : money(preview.nearDhaka)}</dd>
           </div>
-          <div className="rounded-xl bg-white border border-stone-200 p-3">
-            <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Outside Dhaka</dt>
-            <dd className="mt-0.5 font-bold text-stone-900">{preview.outsideDhaka === 0 ? "Free" : money(preview.outsideDhaka)}</dd>
+          <div className="rounded-xl bg-white border border-purple-100/60 p-3 shadow-2xs">
+            <dt className="text-gray-500 text-[11px] uppercase tracking-wide">Outside Dhaka</dt>
+            <dd className="mt-0.5 font-bold text-gray-900">{preview.outsideDhaka === 0 ? "Free" : money(preview.outsideDhaka)}</dd>
           </div>
-          <div className="rounded-xl bg-white border border-stone-200 p-3">
-            <dt className="text-stone-500 text-[11px] uppercase tracking-wide">Free delivery</dt>
-            <dd className="mt-0.5 font-bold text-stone-900">
+          <div className="rounded-xl bg-white border border-purple-100/60 p-3 shadow-2xs">
+            <dt className="text-gray-500 text-[11px] uppercase tracking-wide">Free delivery</dt>
+            <dd className="mt-0.5 font-bold text-gray-900">
               {preview.freeDeliveryThreshold > 0 ? `Orders of ${money(preview.freeDeliveryThreshold)}+` : "Off"}
             </dd>
           </div>
         </dl>
       </div>
 
-      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
         <div className="flex items-start gap-3">
-          <Sparkles className="h-5 w-5 shrink-0 text-[#E1B76F] mt-0.5" />
-          <ul className="list-disc pl-4 space-y-0.5 text-[12.5px] text-stone-600 leading-relaxed">
+          <Sparkles className="h-5 w-5 shrink-0 text-purple-600 mt-0.5" />
+          <ul className="list-disc pl-4 space-y-0.5 text-[12.5px] text-gray-600 leading-relaxed">
             <li>An order pays <strong>one</strong> delivery charge — the highest among its products.</li>
             <li>A product can have its own delivery fee in the product editor; it replaces the rates above for that product.</li>
-            <li>A product fee of <code className="bg-stone-200/80 px-1.5 py-0.5 rounded font-mono font-bold text-[#400604]">0</code> makes that product ship free. Leave the field empty to use these rates.</li>
+            <li>A product fee of <code className="bg-gray-200/80 px-1.5 py-0.5 rounded font-mono font-bold text-purple-700">0</code> makes that product ship free. Leave the field empty to use these rates.</li>
           </ul>
         </div>
       </div>
@@ -289,16 +289,16 @@ export function ShippingSettings() {
         <button
           type="submit"
           disabled={saving || !dirty || !parsed.ok}
-          className="flex items-center gap-2 rounded-xl bg-[#400604] hover:bg-[#250302] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
+          className="flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 px-6 py-2.5 text-[13px] font-bold text-white shadow-md shadow-purple-200 transition disabled:cursor-not-allowed disabled:opacity-50 active:scale-95"
         >
           {saving ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin text-[#E1B76F]" />
+              <Loader2 className="h-4 w-4 animate-spin text-white" />
               Saving…
             </>
           ) : (
             <>
-              <Truck className="h-4 w-4 text-[#E1B76F]" />
+              <Truck className="h-4 w-4 text-white" />
               Save shipping rates
             </>
           )}

@@ -50,41 +50,41 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-          <Settings className="h-5 w-5 text-[#400604]" />
+        <div className="h-10 w-10 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center">
+          <Settings className="h-5 w-5 text-purple-600" />
         </div>
         <div>
-          <h1 className="text-xl font-serif font-bold text-[#1A0302]">Settings & Configuration</h1>
+          <h1 className="text-xl font-bold text-gray-800">Settings & Configuration</h1>
           <p className="text-[12px] text-stone-500">ANGKON Executive Suite parameters</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-3 shadow-sm h-fit">
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-3 shadow-sm h-fit">
           <div className="space-y-1">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-200 cursor-pointer ${
                   activeTab === tab.key
-                    ? "bg-[#400604] text-white shadow-sm"
-                    : "text-stone-600 hover:bg-[#400604]/5 hover:text-[#400604]"
+                    ? "bg-purple-600 text-white shadow-md shadow-purple-200"
+                    : "text-stone-600 hover:bg-purple-50 hover:text-purple-600"
                 }`}
               >
-                <tab.icon className={`h-4 w-4 flex-shrink-0 ${activeTab === tab.key ? "text-[#E1B76F]" : ""}`} />
+                <tab.icon className={`h-4 w-4 flex-shrink-0 ${activeTab === tab.key ? "text-purple-200" : ""}`} />
                 {tab.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-6 shadow-sm">
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-6 shadow-sm">
           {activeTab === "general" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-1">General Information</h2>
+                <h2 className="text-lg font-bold text-gray-800 mb-1">General Information</h2>
                 <p className="text-[13px] text-stone-500">Storefront core metadata</p>
               </div>
 
@@ -138,7 +138,7 @@ export default function AdminSettingsPage() {
           {activeTab === "notifications" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-1">Notification Dispatchers</h2>
+                <h2 className="text-lg font-bold text-gray-800 mb-1">Notification Dispatchers</h2>
                 <p className="text-[13px] text-stone-500">
                   Transactional order emails powered by <strong>Resend</strong> (sent from <code className="text-[12px] bg-stone-100 px-1 py-0.5 rounded">{mail?.senderEmail ?? "…"}</code>)
                   {mail && !mail.emailServiceConfigured && (
@@ -156,14 +156,14 @@ export default function AdminSettingsPage() {
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between p-4 rounded-xl border border-stone-200 bg-[#FDFBF7]"
+                    className="flex items-center justify-between p-4 rounded-xl border border-purple-100/60 bg-stone-50/50"
                   >
                     <div>
-                      <p className="text-[13px] font-bold text-[#1A0302]">{item.label}</p>
+                      <p className="text-[13px] font-bold text-gray-800">{item.label}</p>
                       <p className="text-[11px] text-stone-500">{item.desc}</p>
                     </div>
                     <div
-                      className={`w-11 h-6 rounded-full relative ${item.enabled ? "bg-[#400604]" : "bg-stone-300"}`}
+                      className={`w-11 h-6 rounded-full relative transition-colors ${item.enabled ? "bg-purple-600" : "bg-stone-300"}`}
                       aria-hidden
                     >
                       <span
@@ -185,25 +185,25 @@ export default function AdminSettingsPage() {
           {activeTab === "appearance" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-1">Brand Aesthetics</h2>
+                <h2 className="text-lg font-bold text-gray-800 mb-1">Brand Aesthetics</h2>
                 <p className="text-[13px] text-stone-500">ANGKON official luxury theme configuration</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-xl p-4 border-2 border-[#400604] bg-[#400604]/5 text-center">
+                <div className="rounded-xl p-4 border border-purple-100/60 bg-white text-center shadow-xs">
                   <div className="h-9 w-9 rounded-full bg-[#400604] border-2 border-[#E1B76F] mx-auto mb-2 shadow-sm" />
-                  <p className="text-[13px] font-bold text-[#400604]">Royal Wine Maroon</p>
-                  <p className="text-[11px] text-stone-500">#400604 / Primary Brand</p>
+                  <p className="text-[13px] font-bold text-gray-900">Royal Wine Maroon</p>
+                  <p className="text-[11px] text-gray-500">#400604 / Primary Brand</p>
                 </div>
-                <div className="rounded-xl p-4 border border-stone-200 bg-white text-center">
+                <div className="rounded-xl p-4 border border-purple-100/60 bg-white text-center shadow-xs">
                   <div className="h-9 w-9 rounded-full bg-[#E1B76F] border border-amber-300 mx-auto mb-2 shadow-sm" />
-                  <p className="text-[13px] font-bold text-stone-800">Imperial Gold</p>
-                  <p className="text-[11px] text-stone-500">#E1B76F / Accents</p>
+                  <p className="text-[13px] font-bold text-gray-900">Imperial Gold</p>
+                  <p className="text-[11px] text-gray-500">#E1B76F / Accents</p>
                 </div>
-                <div className="rounded-xl p-4 border border-stone-200 bg-white text-center">
+                <div className="rounded-xl p-4 border border-purple-100/60 bg-white text-center shadow-xs">
                   <div className="h-9 w-9 rounded-full bg-[#1A0302] border border-stone-400 mx-auto mb-2 shadow-sm" />
-                  <p className="text-[13px] font-bold text-stone-800">Deep Obsidian</p>
-                  <p className="text-[11px] text-stone-500">#1A0302 / Luxury Footer</p>
+                  <p className="text-[13px] font-bold text-gray-900">Deep Obsidian</p>
+                  <p className="text-[11px] text-gray-500">#1A0302 / Luxury Footer</p>
                 </div>
               </div>
 
@@ -214,22 +214,22 @@ export default function AdminSettingsPage() {
           {activeTab === "security" && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-1">Access Control & Security</h2>
+                <h2 className="text-lg font-bold text-gray-800 mb-1">Access Control & Security</h2>
                 <p className="text-[13px] text-stone-500">
                   Authentication secured by HttpOnly session tokens and server-side middleware verification
                 </p>
               </div>
 
-              <div className="rounded-xl border border-stone-200 bg-[#FDFBF7] p-4 text-[13px] text-stone-700 leading-relaxed">
-                Credentials are systematically managed via <code className="bg-stone-200 px-1.5 py-0.5 rounded font-mono font-bold">ADMIN_USERNAME</code> and{" "}
-                <code className="bg-stone-200 px-1.5 py-0.5 rounded font-mono font-bold">ADMIN_PASSWORD</code> in your secure environment. HttpOnly cookies prevent XSS credential interception.
+              <div className="rounded-xl border border-purple-100/60 bg-stone-50/50 p-4 text-[13px] text-stone-700 leading-relaxed">
+                Credentials are systematically managed via <code className="bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded font-mono font-bold">ADMIN_USERNAME</code> and{" "}
+                <code className="bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded font-mono font-bold">ADMIN_PASSWORD</code> in your secure environment. HttpOnly cookies prevent XSS credential interception.
               </div>
 
               <div className="pt-4 border-t border-stone-100">
                 <button
                   type="button"
                   onClick={logout}
-                  className="rounded-xl bg-rose-50 border border-rose-200 px-5 py-2.5 text-[13px] font-bold text-rose-700 hover:bg-rose-100 transition"
+                  className="rounded-xl bg-rose-50 border border-rose-200 px-5 py-2.5 text-[13px] font-bold text-rose-700 hover:bg-rose-100 transition cursor-pointer"
                 >
                   Terminate Admin Session
                 </button>

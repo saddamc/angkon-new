@@ -157,16 +157,16 @@ export default function ReportsPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-[#400604]" />
+          <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm">
+            <BarChart3 className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Analytics &amp; Reports</h1>
+            <h1 className="text-xl font-bold text-gray-800">Analytics &amp; Reports</h1>
           </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-28 rounded-2xl bg-stone-100/60 animate-pulse" />
+            <div key={i} className="h-28 rounded-2xl bg-purple-50/60 animate-pulse" />
           ))}
         </div>
       </div>
@@ -178,17 +178,17 @@ export default function ReportsPage() {
       {/* ── Header ───────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-[#400604]" />
+          <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm">
+            <BarChart3 className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Reports &amp; Sales Intelligence</h1>
+            <h1 className="text-xl font-bold text-gray-800">Reports &amp; Sales Intelligence</h1>
           </div>
         </div>
 
         {/* Period Pills & Refresh */}
         <div className="flex items-center gap-2">
-          <div className="flex bg-stone-100 p-1 rounded-xl gap-1">
+          <div className="flex bg-gray-100 p-1 rounded-xl gap-1">
             {PERIODS.map((p) => (
               <button
                 key={p.key}
@@ -196,8 +196,8 @@ export default function ReportsPage() {
                 onClick={() => handlePeriod(p.key)}
                 className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition ${
                   period === p.key
-                    ? "bg-[#400604] text-white shadow-sm"
-                    : "text-stone-600 hover:text-[#400604] hover:bg-white"
+                    ? "bg-purple-600 text-white shadow-md shadow-purple-200"
+                    : "text-gray-600 hover:text-purple-600 hover:bg-white"
                 }`}
               >
                 {p.label}
@@ -208,7 +208,7 @@ export default function ReportsPage() {
           <button
             type="button"
             onClick={() => void load(period, true)}
-            className="flex items-center justify-center h-9 w-9 rounded-xl border border-stone-200 bg-white text-stone-600 hover:text-[#400604] transition"
+            className="flex items-center justify-center h-9 w-9 rounded-xl border border-purple-100 bg-white text-gray-600 hover:text-purple-600 hover:border-purple-300 transition shadow-sm"
             title="Refresh metrics"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -218,16 +218,16 @@ export default function ReportsPage() {
 
       {/* ── KPI Grid ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm">
-          <div className="h-9 w-9 rounded-xl bg-[#400604]/10 flex items-center justify-center mb-3">
-            <TrendingUp className="h-5 w-5 text-[#400604]" />
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="h-9 w-9 rounded-xl bg-purple-50 flex items-center justify-center mb-3 text-purple-600">
+            <TrendingUp className="h-5 w-5" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Total Sales</p>
-          <p className="text-2xl font-bold text-[#1A0302] mt-1">{fmt(s?.total_sales ?? "0")}</p>
-          <p className="text-[11px] text-stone-400 mt-1">Active order volume</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Total Sales</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{fmt(s?.total_sales ?? "0")}</p>
+          <p className="text-[11px] text-gray-400 mt-1">Active order volume</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-emerald-200/60 bg-emerald-50/20 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-emerald-200/60 bg-emerald-50/20 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="h-9 w-9 rounded-xl bg-emerald-100 flex items-center justify-center mb-3">
             <Percent className="h-5 w-5 text-emerald-800" />
           </div>
@@ -236,7 +236,7 @@ export default function ReportsPage() {
           <p className="text-[11px] text-emerald-700/80 mt-1">Delivered &amp; collected in cash</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-amber-200/60 bg-amber-50/20 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-amber-200/60 bg-amber-50/20 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center mb-3">
             <Truck className="h-5 w-5 text-amber-800" />
           </div>
@@ -245,13 +245,13 @@ export default function ReportsPage() {
           <p className="text-[11px] text-amber-700/80 mt-1">In-transit COD awaiting delivery</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm">
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center mb-3">
             <ShoppingCart className="h-5 w-5 text-blue-700" />
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Active Orders</p>
-          <p className="text-2xl font-bold text-[#1A0302] mt-1">{s?.total_orders ?? 0}</p>
-          <p className="text-[11px] text-stone-400 mt-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Active Orders</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{s?.total_orders ?? 0}</p>
+          <p className="text-[11px] text-gray-400 mt-1">
             Avg ticket: {fmt(s?.average_sales ?? "0")}
           </p>
         </div>
@@ -259,34 +259,34 @@ export default function ReportsPage() {
 
       {/* ── Financial Details & Shipping ─────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-stone-100 flex items-center justify-center text-stone-700 flex-shrink-0">
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-700 flex-shrink-0">
             <Percent className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Net Sales</p>
-            <p className="text-xl font-bold text-[#1A0302] mt-0.5">{fmt(s?.net_sales ?? "0")}</p>
-            <p className="text-[10px] text-stone-400">Excluding delivery</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Net Sales</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">{fmt(s?.net_sales ?? "0")}</p>
+            <p className="text-[10px] text-gray-400">Excluding delivery</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm flex items-center gap-4">
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-700 flex-shrink-0">
             <Truck className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Shipping Collected</p>
-            <p className="text-xl font-bold text-[#1A0302] mt-0.5">{fmt(s?.total_shipping ?? "0")}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Shipping Collected</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">{fmt(s?.total_shipping ?? "0")}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-5 shadow-sm flex items-center gap-4">
+        <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm flex items-center gap-4">
           <div className="h-12 w-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-700 flex-shrink-0">
             <Users className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Unique Clients</p>
-            <p className="text-xl font-bold text-[#1A0302] mt-0.5">{s?.total_customers ?? 0}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Unique Clients</p>
+            <p className="text-xl font-bold text-gray-900 mt-0.5">{s?.total_customers ?? 0}</p>
           </div>
         </div>
 
@@ -303,35 +303,35 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Inventory Health ─────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-6 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl border border-purple-100/60 p-6 shadow-sm space-y-4">
         <div>
-          <h2 className="text-lg font-serif font-bold text-[#1A0302]">Catalog Inventory Health</h2>
-          <p className="text-[12px] text-stone-500">Live stock statuses across all garment listings</p>
+          <h2 className="text-lg font-bold text-gray-900">Catalog Inventory Health</h2>
+          <p className="text-[12px] text-gray-500">Live stock statuses across all garment listings</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-200">
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">In Stock</p>
+          <div className="bg-purple-50/30 p-4 rounded-xl border border-purple-100/60">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">In Stock</p>
             <p className="text-xl font-bold text-emerald-700 mt-1">{inStock.length}</p>
-            <p className="text-[11px] text-stone-400">Ready for fulfillment</p>
+            <p className="text-[11px] text-gray-400">Ready for fulfillment</p>
           </div>
 
-          <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-200">
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Low Stock (&le; 5)</p>
+          <div className="bg-purple-50/30 p-4 rounded-xl border border-purple-100/60">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Low Stock (&le; 5)</p>
             <p className="text-xl font-bold text-amber-700 mt-1">{lowStock.length}</p>
-            <p className="text-[11px] text-stone-400">Replenish soon</p>
+            <p className="text-[11px] text-gray-400">Replenish soon</p>
           </div>
 
-          <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-200">
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Out of Stock</p>
+          <div className="bg-purple-50/30 p-4 rounded-xl border border-purple-100/60">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Out of Stock</p>
             <p className="text-xl font-bold text-rose-700 mt-1">{outOfStock.length}</p>
-            <p className="text-[11px] text-stone-400">Zero inventory</p>
+            <p className="text-[11px] text-gray-400">Zero inventory</p>
           </div>
 
-          <div className="bg-[#FDFBF7] p-4 rounded-xl border border-stone-200">
-            <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Stock Value (Buy Price)</p>
-            <p className="text-xl font-bold text-[#400604] mt-1">{totalStockCost > 0 ? fmt(totalStockCost) : "—"}</p>
-            <p className="text-[11px] text-stone-500 mt-0.5 truncate">
+          <div className="bg-purple-50/30 p-4 rounded-xl border border-purple-100/60">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Stock Value (Buy Price)</p>
+            <p className="text-xl font-bold text-purple-700 mt-1">{totalStockCost > 0 ? fmt(totalStockCost) : "—"}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5 truncate">
               {totalStockCost > 0 ? `${productsWithCostCount} products with buy price` : "No buy price provided"}
             </p>
           </div>

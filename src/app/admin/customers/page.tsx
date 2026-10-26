@@ -127,19 +127,19 @@ export default function AdminCustomersPage() {
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-            <Users className="h-5 w-5 text-[#400604]" />
+          <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm">
+            <Users className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Clientele Directory</h1>
-            <p className="text-[11px] text-stone-400">
+            <h1 className="text-xl font-bold text-gray-800">Clientele Directory</h1>
+            <p className="text-[11px] text-gray-400">
               Every customer — registered accounts and guest buyers — across all orders
             </p>
           </div>
         </div>
         <button
           onClick={() => void load()}
-          className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 hover:text-[#400604] hover:border-[#400604] transition"
+          className="flex items-center gap-2 rounded-xl border border-purple-100 bg-white px-3 py-2.5 text-[13px] text-gray-600 hover:text-purple-600 hover:border-purple-300 transition shadow-sm"
           title="Refresh customers"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -154,30 +154,30 @@ export default function AdminCustomersPage() {
           { label: "Repeat Buyers", value: summary.repeat.toLocaleString(), icon: ShoppingBag },
           { label: "Net Revenue", value: `৳ ${summary.revenue.toLocaleString()}`, icon: Wallet },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-2xl border border-[#E1B76F]/25 p-4 shadow-sm">
+          <div key={s.label} className="bg-white rounded-2xl border border-purple-100/60 p-4 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-1.5 mb-1">
-              <s.icon className="h-3.5 w-3.5 text-[#400604]" />
-              <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold">{s.label}</span>
+              <s.icon className="h-3.5 w-3.5 text-purple-600" />
+              <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">{s.label}</span>
             </div>
-            <p className="text-lg font-bold text-[#1A0302]">{s.value}</p>
+            <p className="text-lg font-bold text-gray-900">{s.value}</p>
           </div>
         ))}
       </div>
 
       {/* ── Search ─────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-4 shadow-sm">
+      <div className="bg-white rounded-2xl border border-purple-100/60 p-4 shadow-sm">
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search by name, phone, email, city, order #..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#400604] focus:ring-1 focus:ring-[#400604]/20 transition"
+            className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
           />
         </div>
         {!loading && (
-          <p className="mt-2 text-[11px] text-stone-400">
+          <p className="mt-2 text-[11px] text-gray-400">
             Showing {filteredCustomers.length} of {customers.length} customers
           </p>
         )}
@@ -188,8 +188,8 @@ export default function AdminCustomersPage() {
       )}
 
       {/* ── Customers Table ────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
-        <div className="hidden lg:grid grid-cols-[50px_1fr_160px_140px_130px_110px_40px] gap-3 px-5 py-3.5 bg-[#FDFBF7] text-[10px] font-bold uppercase tracking-widest text-[#400604] border-b border-stone-100">
+      <div className="bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
+        <div className="hidden lg:grid grid-cols-[50px_1fr_160px_140px_130px_110px_40px] gap-3 px-5 py-3.5 bg-purple-50/70 text-[10px] font-bold uppercase tracking-widest text-purple-600 border-b border-purple-100/50">
           <span>SL</span>
           <span>Customer</span>
           <span>Phone</span>
@@ -202,19 +202,19 @@ export default function AdminCustomersPage() {
         {loading ? (
           <div className="space-y-1 p-2">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-xl bg-stone-100/60 animate-pulse" />
+              <div key={i} className="h-16 rounded-xl bg-purple-50/60 animate-pulse" />
             ))}
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="py-24 text-center">
-            <Users className="h-12 w-12 mx-auto text-stone-300 mb-3" />
-            <p className="text-[15px] font-bold text-stone-700">No customers found</p>
-            <p className="text-[12px] text-stone-400 mt-1">
+            <Users className="h-12 w-12 mx-auto text-purple-200 mb-3" />
+            <p className="text-[15px] font-bold text-gray-700">No customers found</p>
+            <p className="text-[12px] text-gray-400 mt-1">
               Customers appear here automatically when they register or place an order.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-stone-100">
+          <div className="divide-y divide-purple-50">
             {filteredCustomers.map((customer, idx) => {
               const isOpen = expanded === customer.key;
 
@@ -223,55 +223,55 @@ export default function AdminCustomersPage() {
                   <button
                     type="button"
                     onClick={() => setExpanded(isOpen ? null : customer.key)}
-                    className="w-full grid grid-cols-[1fr_auto] lg:grid-cols-[50px_1fr_160px_140px_130px_110px_40px] items-center gap-3 px-5 py-4 text-left hover:bg-stone-50/70 transition"
+                    className="w-full grid grid-cols-[1fr_auto] lg:grid-cols-[50px_1fr_160px_140px_130px_110px_40px] items-center gap-3 px-5 py-4 text-left hover:bg-purple-50/30 transition"
                   >
-                    <span className="hidden lg:block text-[12px] text-stone-400 font-bold">{idx + 1}</span>
+                    <span className="hidden lg:block text-[12px] text-gray-400 font-bold">{idx + 1}</span>
 
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#400604] to-[#1A0302] border border-[#E1B76F]/30 flex items-center justify-center text-[#E1B76F] text-xs font-serif font-bold flex-shrink-0 shadow-sm">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
                         {customer.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-stone-900 truncate">
+                        <p className="text-[13px] font-semibold text-gray-900 truncate">
                           {customer.name}
                           {customer.registered && (
-                            <span className="ml-2 align-middle rounded-full bg-[#400604]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#400604]">
+                            <span className="ml-2 align-middle rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-purple-700">
                               Member
                             </span>
                           )}
                         </p>
                         {customer.email && (
-                          <p className="text-[11px] text-stone-400 truncate">{customer.email}</p>
+                          <p className="text-[11px] text-gray-400 truncate">{customer.email}</p>
                         )}
                       </div>
                     </div>
 
                     <div className="hidden lg:flex items-center gap-1.5">
-                      <Phone className="h-3 w-3 text-stone-400" />
-                      <span className="text-[12px] text-stone-600 font-mono">{customer.phone || "—"}</span>
+                      <Phone className="h-3 w-3 text-gray-400" />
+                      <span className="text-[12px] text-gray-600 font-mono">{customer.phone || "—"}</span>
                     </div>
 
                     <div className="hidden lg:flex items-center gap-1.5">
-                      <MapPin className="h-3 w-3 text-stone-400" />
-                      <span className="text-[12px] text-stone-600 truncate">{customer.city || "—"}</span>
+                      <MapPin className="h-3 w-3 text-gray-400" />
+                      <span className="text-[12px] text-gray-600 truncate">{customer.city || "—"}</span>
                     </div>
 
-                    <span className="hidden lg:block text-[13px] font-bold text-[#400604]">
+                    <span className="hidden lg:block text-[13px] font-bold text-purple-600">
                       ৳ {customer.totalSpent.toLocaleString()}
                     </span>
 
-                    <span className="hidden lg:inline-flex items-center justify-center h-7 min-w-[28px] rounded-full bg-stone-100 text-stone-700 text-[11px] font-bold px-2">
+                    <span className="hidden lg:inline-flex items-center justify-center h-7 min-w-[28px] rounded-full bg-purple-100 text-purple-700 text-[11px] font-bold px-2">
                       {customer.totalOrders}
                     </span>
 
-                    <span className="text-stone-400 flex justify-end">
+                    <span className="text-gray-400 flex justify-end">
                       {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </span>
                   </button>
 
                   {/* Expanded details */}
                   {isOpen && (
-                    <div className="border-t border-stone-100 bg-[#FDFBF7] px-5 py-4">
+                    <div className="border-t border-purple-100 bg-purple-50/20 px-5 py-4">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                         <Info icon={Mail} label="Email">
                           <span className="inline-flex items-center gap-1 break-all">
@@ -281,13 +281,13 @@ export default function AdminCustomersPage() {
                             )}
                           </span>
                           {customer.otherEmails.map((e) => (
-                            <span key={e} className="block text-stone-400 break-all">{e}</span>
+                            <span key={e} className="block text-gray-400 break-all">{e}</span>
                           ))}
                         </Info>
                         <Info icon={Phone} label="Phone">
                           <span className="font-mono">{customer.phone || "—"}</span>
                           {customer.otherPhones.map((p) => (
-                            <span key={p} className="block font-mono text-stone-400">{p}</span>
+                            <span key={p} className="block font-mono text-gray-400">{p}</span>
                           ))}
                         </Info>
                         <Info icon={MapPin} label="Address">
@@ -295,7 +295,7 @@ export default function AdminCustomersPage() {
                             "—"
                           ) : (
                             customer.addresses.slice(0, 3).map((a, i) => (
-                              <span key={i} className={`block ${i ? "text-stone-400 mt-1" : ""}`}>
+                              <span key={i} className={`block ${i ? "text-gray-400 mt-1" : ""}`}>
                                 {a.address}, {a.city}
                                 {a.postalCode ? ` - ${a.postalCode}` : ""}
                               </span>
@@ -306,7 +306,7 @@ export default function AdminCustomersPage() {
                           {customer.registered
                             ? `Registered (${customer.source}) · ${customer.emailVerified ? "email verified" : "email unverified"}`
                             : "Guest buyer"}
-                          <span className="block text-stone-400">Since {fmtDate(customer.joinedAt)}</span>
+                          <span className="block text-gray-400">Since {fmtDate(customer.joinedAt)}</span>
                         </Info>
                       </div>
 
@@ -318,29 +318,29 @@ export default function AdminCustomersPage() {
                         <Stat label="Last Order" value={fmtDate(customer.lastOrderDate)} />
                       </div>
 
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#400604] mb-2">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-purple-700 mb-2">
                         Order History ({customer.orders.length})
                       </p>
                       {customer.orders.length === 0 ? (
-                        <p className="text-[12px] text-stone-400">No orders placed yet.</p>
+                        <p className="text-[12px] text-gray-400">No orders placed yet.</p>
                       ) : (
                         <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
                           {customer.orders.map((order) => (
                             <div
                               key={order.id}
-                              className="bg-white rounded-xl px-3.5 py-2.5 border border-stone-200 text-[12px]"
+                              className="bg-white rounded-xl px-3.5 py-2.5 border border-purple-100/70 text-[12px] shadow-2xs"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-bold text-[#400604]">#{order.number}</span>
-                                <span className="text-stone-400">{fmtDate(order.date)}</span>
-                                <span className="text-stone-500 uppercase text-[10px]">
+                                <span className="font-bold text-purple-600">#{order.number}</span>
+                                <span className="text-gray-400">{fmtDate(order.date)}</span>
+                                <span className="text-gray-500 uppercase text-[10px]">
                                   {order.paymentMethod} · {order.paymentStatus}
                                 </span>
                                 <span
                                   className={`font-bold ${
                                     ["cancelled", "failed", "refunded"].includes(order.status)
-                                      ? "text-stone-400 line-through"
-                                      : "text-stone-800"
+                                      ? "text-gray-400 line-through"
+                                      : "text-gray-800"
                                   }`}
                                 >
                                   ৳ {order.total.toLocaleString()}
@@ -354,7 +354,7 @@ export default function AdminCustomersPage() {
                                 </span>
                               </div>
                               {order.items.length > 0 && (
-                                <p className="mt-1 text-[11px] text-stone-400 truncate">
+                                <p className="mt-1 text-[11px] text-gray-400 truncate">
                                   {order.items
                                     .map((it) => `${it.name}${it.size ? ` (${it.size})` : ""} × ${it.quantity}`)
                                     .join(", ")}
@@ -386,21 +386,21 @@ function Info({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-xl p-3 border border-stone-200">
+    <div className="bg-white rounded-xl p-3 border border-purple-100/60 shadow-2xs">
       <div className="flex items-center gap-1.5 mb-1">
-        <Icon className="h-3 w-3 text-[#400604]" />
-        <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold">{label}</span>
+        <Icon className="h-3 w-3 text-purple-600" />
+        <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">{label}</span>
       </div>
-      <div className="text-[12px] text-stone-700">{children}</div>
+      <div className="text-[12px] text-gray-700">{children}</div>
     </div>
   );
 }
 
 function Stat({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="bg-white rounded-xl p-3 border border-stone-200">
-      <span className="text-[10px] uppercase tracking-wide text-stone-400 font-bold block mb-1">{label}</span>
-      <span className={`text-[13px] ${strong ? "font-bold text-[#400604]" : "text-stone-700"}`}>{value}</span>
+    <div className="bg-white rounded-xl p-3 border border-purple-100/60 shadow-2xs">
+      <span className="text-[10px] uppercase tracking-wide text-gray-400 font-bold block mb-1">{label}</span>
+      <span className={`text-[13px] ${strong ? "font-bold text-purple-700" : "text-gray-700"}`}>{value}</span>
     </div>
   );
 }

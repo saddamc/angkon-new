@@ -38,15 +38,50 @@ export async function POST(request: NextRequest) {
     const category = (formData.get("category") as string) || undefined;
     const subcategory = (formData.get("subcategory") as string) || undefined;
     const product = (formData.get("product") as string) || (formData.get("productSlug") as string) || undefined;
+    const sku = (formData.get("sku") as string) || undefined;
     const uploadType = (formData.get("uploadType") as string) || (formData.get("type") as string) || undefined;
     const customFolder = (formData.get("folder") as string) || undefined;
+
+    let finalCat = category;
+    let finalSub = subcategory;
+    const finalProd = product || (sku ? sku.toLowerCase().replace(/[^a-z0-9]+/g, "-") : undefined);
+
+    // Automatically resolve full category/subcategory hierarchy from database if only one level was passed
+    if (uploadType !== "category" && (!finalCat || !finalSub)) {
+      try {
+        const { connectToDatabase } = await import("@/lib/mongodb");
+        await connectToDatabase();
+        const Category = (await import("@/models/Category")).default;
+
+        const targetCat = (finalSub || finalCat || "").trim().toLowerCase().replace(/_/g, "-");
+        if (targetCat) {
+          const catDoc = await Category.findOne({
+            $or: [{ slug: targetCat }, { name: new RegExp(`^${targetCat}$`, "i") }],
+          }).lean();
+
+          if (catDoc && catDoc.parent && catDoc.parent > 0) {
+            const parentDoc = await Category.findOne({ id: catDoc.parent }).lean();
+            if (parentDoc) {
+              finalCat = parentDoc.slug || parentDoc.name;
+              finalSub = catDoc.slug || catDoc.name;
+            }
+          }
+        }
+      } catch (catLookupErr) {
+        console.warn("Failed to lookup category hierarchy for upload folder:", catLookupErr);
+      }
+    }
 
     let folder = customFolder;
     if (!folder) {
       if (uploadType === "category") {
-        folder = buildCategoryFolderPath({ category, subcategory });
+        folder = buildCategoryFolderPath({ category: finalCat, subcategory: finalSub });
       } else {
-        folder = buildCloudinaryFolderPath({ category, subcategory, product });
+        folder = buildCloudinaryFolderPath({
+          category: finalCat || (finalProd ? "PRODUCTS" : undefined),
+          subcategory: finalSub,
+          product: finalProd,
+        });
       }
     }
 

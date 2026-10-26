@@ -137,7 +137,7 @@ export default async function HomePage() {
       <section className="w-full px-2 sm:px-3 md:px-4 lg:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 md:gap-x-5 gap-y-8 sm:gap-y-10 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8">
           {products.slice(0, 16).map((product, index) => (
-            <ProductCard key={product.id} product={product} eager={index < 4} />
+            <ProductCard key={product.id} product={product} eager={index < 8} />
           ))}
         </div>
       </section>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
+import { deleteFromCloudinary, syncProductImagesToCategoryFolder } from "@/lib/cloudinary";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
@@ -144,11 +145,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Automatically ensure product images are organized into the matching category-wise Cloudinary folder
+    let productImages = Array.isArray(body.images) ? body.images : [];
+    if (productImages.length > 0) {
+      productImages = await syncProductImagesToCategoryFolder({
+        images: productImages,
+        categories: resolvedCategories,
+        productSlug: slug,
+      });
+    }
+
     const newProduct = await Product.create({
       ...body,
       id: productId,
       name,
       slug,
+      images: productImages,
       categories: resolvedCategories,
       price,
       regular_price: regularPrice,
@@ -167,5 +179,60 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Create product failed:", err);
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
+}
+
+// DELETE /api/admin/products — bulk delete products
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const ids: number[] = Array.isArray(body?.ids) ? body.ids.map(Number).filter(Boolean) : [];
+
+    if (ids.length === 0) {
+      return NextResponse.json({ error: "No product IDs provided" }, { status: 400 });
+    }
+
+    await connectToDatabase();
+
+    const products = await Product.find({ id: { $in: ids } });
+    if (products.length === 0) {
+      return NextResponse.json({ ok: true, deletedCount: 0, deletedIds: [] });
+    }
+
+    // Delete products from MongoDB
+    const result = await Product.deleteMany({ id: { $in: ids } });
+
+    // Clean up images from Cloudinary ONLY if no other product uses them
+    for (const prod of products) {
+      if (Array.isArray(prod.images)) {
+        for (const img of prod.images) {
+          const src = typeof img === "string" ? img : img?.src;
+          if (src && src.includes("res.cloudinary.com")) {
+            try {
+              const isUsedElsewhere = await Product.exists({
+                id: { $nin: ids },
+                "images.src": src,
+              });
+              if (!isUsedElsewhere) {
+                await deleteFromCloudinary(src);
+              }
+            } catch (delErr) {
+              console.warn("Cloudinary cleanup error on bulk product deletion:", delErr);
+            }
+          }
+        }
+      }
+    }
+
+    await publishCatalogChange();
+
+    return NextResponse.json({
+      ok: true,
+      deletedCount: result.deletedCount,
+      deletedIds: ids,
+    });
+  } catch (err) {
+    console.error("Bulk delete products failed:", err);
+    return NextResponse.json({ error: "Failed to delete products" }, { status: 500 });
   }
 }

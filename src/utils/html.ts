@@ -30,7 +30,8 @@ export function decodeEntities(value: string): string {
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCharCode(Number(n)));
 }
 
-const decodeBasicEntities = decodeEntities;
+export const decodeBasicEntities = decodeEntities;
+export const decodeHtmlCharCodes = decodeEntities;
 
 
 /**

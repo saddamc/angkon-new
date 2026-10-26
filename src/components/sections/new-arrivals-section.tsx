@@ -95,9 +95,9 @@ export function NewArrivalsSection({
               ? Array.from({ length: CARD_COUNT }).map((_, i) => (
                   <NewArrivalSkeletonCard key={`new-arrival-skeleton-${i}`} />
                 ))
-              : visibleProducts.map((product) => (
+              : visibleProducts.map((product, index) => (
                   <div key={product.id} className="snap-start min-w-[240px] max-w-[240px] sm:min-w-[260px] sm:max-w-[260px] shrink-0">
-                    <ProductCard product={product} />
+                    <ProductCard product={product} eager={index < 4} />
                   </div>
                 ))}
           </div>

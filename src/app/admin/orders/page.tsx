@@ -326,18 +326,18 @@ export default function AdminOrdersPage() {
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center">
-            <ShoppingCart className="h-5 w-5 text-[#400604]" />
+          <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm">
+            <ShoppingCart className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-serif font-bold text-[#1A0302]">Orders Processing</h1>
+            <h1 className="text-xl font-bold text-gray-800">Orders Processing</h1>
           </div>
         </div>
       </div>
 
       {/* ── Status Filter Pills ────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-4 shadow-sm">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-3">
+      <div className="bg-white rounded-2xl border border-purple-100/60 p-4 shadow-sm">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">
           Filter by Status
         </p>
         <div className="flex flex-wrap gap-2">
@@ -350,16 +350,16 @@ export default function AdminOrdersPage() {
                 onClick={() => handleFilterChange(f.key)}
                 className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-medium transition-all duration-200 border ${
                   active
-                    ? "bg-[#400604] text-white border-[#400604] shadow-sm"
-                    : "bg-white text-stone-600 border-stone-200 hover:border-[#E1B76F] hover:text-[#400604]"
+                    ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-600"
                 }`}
               >
                 {f.label}
                 <span
                   className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full text-[10px] font-bold px-1 ${
                     active
-                      ? "bg-white/20 text-[#E1B76F]"
-                      : "bg-stone-100 text-stone-600"
+                      ? "bg-white/20 text-white"
+                      : "bg-purple-100 text-purple-600"
                   }`}
                 >
                   {count}
@@ -376,18 +376,18 @@ export default function AdminOrdersPage() {
         <div className="flex items-center gap-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search by order #, phone, customer..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#400604] focus:ring-1 focus:ring-[#400604]/20 transition w-64"
+              className="rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-[13px] text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition w-64"
             />
           </div>
           <button
             onClick={() => load(filterStatus)}
-            className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-[13px] text-stone-600 hover:text-[#400604] hover:border-[#400604] transition"
+            className="inline-flex items-center gap-2 rounded-xl border border-purple-100 bg-white px-3 py-2.5 text-[13px] text-gray-600 hover:text-purple-600 hover:border-purple-300 transition shadow-sm"
             title="Refresh Orders"
           >
             <RefreshCw
@@ -398,9 +398,9 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* ── Orders Table ───────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
         {/* Table header */}
-        <div className="hidden lg:grid grid-cols-[45px_150px_minmax(190px,1.4fr)_minmax(180px,1.2fr)_120px_100px_90px_105px] gap-3 px-5 py-3.5 bg-[#FDFBF7] text-[10px] font-bold uppercase tracking-widest text-[#400604] border-b border-stone-100 items-center">
+        <div className="hidden lg:grid grid-cols-[45px_150px_minmax(190px,1.4fr)_minmax(180px,1.2fr)_120px_100px_90px_105px] gap-3 px-5 py-3.5 bg-purple-50/70 text-[10px] font-bold uppercase tracking-widest text-purple-600 border-b border-purple-100/50 items-center">
           <span>SL</span>
           <span>Order No & Date</span>
           <span>Customer Info</span>
@@ -416,23 +416,23 @@ export default function AdminOrdersPage() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="h-16 rounded-xl bg-stone-100/60 animate-pulse"
+                className="h-16 rounded-xl bg-purple-50/60 animate-pulse"
               />
             ))}
           </div>
         ) : filteredOrders.length === 0 ? (
-          <p className="text-center py-24 text-stone-400 text-sm">
+          <p className="text-center py-24 text-gray-400 text-sm">
             No orders found.
           </p>
         ) : (
-          <div className="divide-y divide-stone-100">
+          <div className="divide-y divide-purple-50">
             {filteredOrders.map((order, idx) => {
               const custName =
                 `${order.billing?.first_name || ""} ${order.billing?.last_name || ""}`.trim() ||
                 "Guest";
               const statusColor =
                 STATUS_BADGE[order.status] ??
-                "bg-stone-50 text-stone-600 border-stone-200";
+                "bg-gray-50 text-gray-600 border-gray-200";
               const firstItem = order.line_items?.[0];
               const productName = firstItem?.name ?? "—";
               const productQty = (order.line_items || []).reduce(
@@ -451,19 +451,19 @@ export default function AdminOrdersPage() {
                 <div key={order.id} className="group">
                   {/* Summary row */}
                   <div
-                    className="w-full grid grid-cols-[auto_1fr] lg:grid-cols-[45px_150px_minmax(190px,1.4fr)_minmax(180px,1.2fr)_120px_100px_90px_105px] items-center gap-3 px-5 py-4 text-left hover:bg-stone-50/70 transition"
+                    className="w-full grid grid-cols-[auto_1fr] lg:grid-cols-[45px_150px_minmax(190px,1.4fr)_minmax(180px,1.2fr)_120px_100px_90px_105px] items-center gap-3 px-5 py-4 text-left hover:bg-purple-50/40 transition"
                   >
                     {/* SL */}
-                    <span className="hidden lg:block text-[12px] text-stone-400 font-bold">
+                    <span className="hidden lg:block text-[12px] text-gray-400 font-bold">
                       {idx + 1}
                     </span>
 
                     {/* Order No & Date */}
                     <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-[#400604] whitespace-nowrap font-mono tracking-tight">
+                      <p className="text-[12px] font-bold text-purple-600 whitespace-nowrap font-mono tracking-tight">
                         #{order.number || order.id}
                       </p>
-                      <p className="text-[10px] text-stone-400">
+                      <p className="text-[10px] text-gray-400">
                         {order.date_created
                           ? new Date(order.date_created).toLocaleDateString("en-GB", {
                               day: "2-digit",
@@ -472,7 +472,7 @@ export default function AdminOrdersPage() {
                             })
                           : "—"}
                       </p>
-                      <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-[#E1B76F] bg-[#400604]/5 px-1.5 py-0.2 rounded border border-[#E1B76F]/20">
+                      <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200/50">
                         Online
                       </span>
                     </div>
@@ -480,38 +480,38 @@ export default function AdminOrdersPage() {
                     {/* Customer Info */}
                     <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-1.5">
-                        <Users className="h-3 w-3 text-stone-400 flex-shrink-0" />
-                        <span className="text-[12px] font-semibold text-stone-800 truncate">
+                        <Users className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                        <span className="text-[12px] font-semibold text-gray-800 truncate">
                           {custName}
                         </span>
                       </div>
                       {order.billing?.email && (
                         <div className="flex items-center gap-1.5 min-w-0" title={order.billing.email}>
-                          <Mail className="h-3 w-3 text-stone-400 flex-shrink-0" />
-                          <span className="text-[11px] text-stone-500 truncate hover:text-[#400604] transition select-all">
+                          <Mail className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span className="text-[11px] text-gray-500 truncate hover:text-purple-600 transition select-all">
                             {order.billing.email}
                           </span>
                         </div>
                       )}
                       {order.billing?.phone && (
                         <div className="flex items-center gap-1.5">
-                          <Phone className="h-3 w-3 text-stone-400 flex-shrink-0" />
-                          <span className="text-[11px] text-stone-500 font-mono">
+                          <Phone className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span className="text-[11px] text-gray-500 font-mono">
                             {order.billing.phone}
                           </span>
                         </div>
                       )}
                       {order.billing?.address_1 && (
                         <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3 w-3 text-stone-400 flex-shrink-0" />
-                          <span className="text-[10px] text-stone-400 truncate">
+                          <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                          <span className="text-[10px] text-gray-400 truncate">
                             {order.billing.address_1}
                           </span>
                         </div>
                       )}
                       {/* Mobile Row Info */}
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap lg:hidden">
-                        <span className="text-[11px] font-bold text-[#1A0302]">
+                        <span className="text-[11px] font-bold text-gray-900">
                           {formatBDT(order.total)}
                         </span>
                         <span
@@ -527,7 +527,7 @@ export default function AdminOrdersPage() {
                           {order.status.replace("-", " ")}
                         </span>
                         {isCancelled ? (
-                          <span className="text-[9px] font-medium text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                          <span className="text-[9px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
                             Void
                           </span>
                         ) : isPaid ? (
@@ -545,7 +545,7 @@ export default function AdminOrdersPage() {
                     {/* Product Info */}
                     <div className="hidden lg:flex items-center gap-2.5 min-w-0">
                       {thumb ? (
-                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
+                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-purple-50/50 flex-shrink-0 border border-purple-100">
                           <Image
                             src={thumb}
                             alt={productName}
@@ -555,15 +555,15 @@ export default function AdminOrdersPage() {
                           />
                         </div>
                       ) : (
-                        <div className="h-10 w-10 rounded-lg bg-stone-100 flex-shrink-0 border border-stone-200 flex items-center justify-center text-stone-300">
+                        <div className="h-10 w-10 rounded-lg bg-purple-50/50 flex-shrink-0 border border-purple-100 flex items-center justify-center text-purple-300">
                           <ShoppingCart className="h-4 w-4" />
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-[12px] font-medium text-stone-700 truncate" title={productName}>
+                        <p className="text-[12px] font-medium text-gray-700 truncate" title={productName}>
                           {productName}
                         </p>
-                        <p className="text-[10px] text-stone-400">
+                        <p className="text-[10px] text-gray-400">
                           Qty: {productQty}
                         </p>
                       </div>
@@ -572,13 +572,13 @@ export default function AdminOrdersPage() {
                     {/* Payment & Collection Status */}
                     <div className="hidden lg:flex flex-col items-start gap-1">
                       <span
-                        className="text-[11px] font-medium text-stone-600 truncate max-w-[110px]"
+                        className="text-[11px] font-medium text-gray-600 truncate max-w-[110px]"
                         title={order.payment_method_title || order.paymentMethod || "COD"}
                       >
                         {order.payment_method_title || order.paymentMethod || "COD"}
                       </span>
                       {isCancelled ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-medium bg-stone-100 text-stone-500 border border-stone-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-medium bg-gray-100 text-gray-500 border border-gray-200">
                           Void
                         </span>
                       ) : isPaid ? (
@@ -613,18 +613,18 @@ export default function AdminOrdersPage() {
                     </div>
 
                     {/* Total Price */}
-                    <span className="hidden lg:block text-[13px] font-bold text-[#1A0302]">
+                    <span className="hidden lg:block text-[13px] font-bold text-gray-900">
                       {formatBDT(order.total)}
                     </span>
 
                     {/* Due */}
                     <div className="hidden lg:block">
                       {isCancelled ? (
-                        <span className="text-[11px] font-medium text-stone-400">Void</span>
+                        <span className="text-[11px] font-medium text-gray-400">Void</span>
                       ) : isPaid ? (
                         <span className="text-[12px] font-bold text-emerald-600">৳ 0</span>
                       ) : (
-                        <span className="text-[13px] font-bold text-[#400604]">
+                        <span className="text-[13px] font-bold text-purple-700">
                           {formatBDT(order.total)}
                         </span>
                       )}
@@ -670,12 +670,12 @@ export default function AdminOrdersPage() {
               setSelectedStatus(null);
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-stone-200 w-full max-w-lg overflow-hidden">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-purple-100 w-full max-w-lg overflow-hidden">
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-[#FDFBF7]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-purple-100 bg-purple-50/50">
               <div>
-                <h3 className="text-[16px] font-serif font-bold text-[#1A0302]">Update Order Status</h3>
-                <p className="text-[12px] text-stone-500">
+                <h3 className="text-[16px] font-bold text-gray-900">Update Order Status</h3>
+                <p className="text-[12px] text-gray-500">
                   Order #{statusModal.number || statusModal.id} · {statusModal.billing?.first_name || "Guest"}
                 </p>
               </div>
@@ -684,7 +684,7 @@ export default function AdminOrdersPage() {
                   setStatusModal(null);
                   setSelectedStatus(null);
                 }}
-                className="p-2 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition"
+                className="p-2 rounded-xl hover:bg-white text-gray-400 hover:text-gray-600 transition"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -728,13 +728,13 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Modal footer with Confirm */}
-            <div className="px-6 py-4 border-t border-stone-100 bg-[#FDFBF7] flex items-center justify-between">
+            <div className="px-6 py-4 border-t border-purple-100 bg-purple-50/30 flex items-center justify-between">
               <button
                 onClick={() => {
                   setStatusModal(null);
                   setSelectedStatus(null);
                 }}
-                className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition"
+                className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
               >
                 Cancel
               </button>
@@ -752,7 +752,7 @@ export default function AdminOrdersPage() {
                     void handleStatusChange(statusModal.id, selectedStatus);
                   }
                 }}
-                className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white bg-[#400604] hover:bg-[#250302] disabled:opacity-40 disabled:cursor-not-allowed transition shadow-md flex items-center gap-2"
+                className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-md shadow-purple-200 flex items-center gap-2"
               >
                 {updating === statusModal.id && <Loader2 className="h-4 w-4 animate-spin" />}
                 Confirm Status Change
@@ -774,10 +774,10 @@ export default function AdminOrdersPage() {
               <div className="mx-auto h-16 w-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
                 <AlertTriangle className="h-8 w-8 text-rose-600" />
               </div>
-              <h3 className="text-[18px] font-serif font-bold text-stone-900 mb-2">
+              <h3 className="text-[18px] font-bold text-gray-900 mb-2">
                 Permanent Status Warning
               </h3>
-              <p className="text-[13px] text-stone-600 mb-1">
+              <p className="text-[13px] text-gray-600 mb-1">
                 You are about to change Order <strong>#{warningModal.orderNumber}</strong> to:
               </p>
               <p
@@ -801,7 +801,7 @@ export default function AdminOrdersPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setWarningModal(null)}
-                  className="flex-1 px-4 py-3 rounded-xl text-[13px] font-medium text-stone-600 bg-stone-100 hover:bg-stone-200 transition"
+                  className="flex-1 px-4 py-3 rounded-xl text-[13px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
                 >
                   Go Back
                 </button>
@@ -813,7 +813,7 @@ export default function AdminOrdersPage() {
                     setStatusModal(null);
                     setSelectedStatus(null);
                   }}
-                  className="flex-1 px-4 py-3 rounded-xl text-[13px] font-bold text-white bg-[#400604] hover:bg-[#250302] disabled:opacity-50 transition shadow-md flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 rounded-xl text-[13px] font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition shadow-md flex items-center justify-center gap-2"
                 >
                   {updating === warningModal.orderId && <Loader2 className="h-4 w-4 animate-spin" />}
                   Yes, Confirm

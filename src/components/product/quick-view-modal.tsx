@@ -24,12 +24,26 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   const addItem = useCartStore((s) => s.addItem);
 
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const FALLBACK_IMAGE = "/placeholder.webp";
+
+  const markFailed = (src: string | undefined) => {
+    if (!src) return;
+    setFailedImages((prev) => ({ ...prev, [src]: true }));
+  };
+
+  const resolveSrc = (src: string | undefined) => {
+    if (!src || failedImages[src]) return FALLBACK_IMAGE;
+    return src;
+  };
+
   if (!isOpen) return null;
 
   const pricing = getDisplayPrice(product.regular_price || product.price, product.sale_price);
   const inStock = product.stock_status === "instock";
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
-  const primaryImage = product.images[selectedImage]?.src || product.images[0]?.src || "/placeholder.png";
+  const rawPrimary = product.images[selectedImage]?.src || product.images[0]?.src;
+  const primaryImage = resolveSrc(rawPrimary);
 
   const insideFee = parseInt(product.meta_data?.slice().reverse().find((m) => m.key === "_delivery_inside")?.value || "60");
   const outsideFee = parseInt(product.meta_data?.slice().reverse().find((m) => m.key === "_delivery_outside")?.value || "100");
@@ -89,6 +103,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               fill
               className="object-cover object-top"
               sizes="(max-width: 768px) 100vw, 50vw"
+              onError={() => markFailed(rawPrimary)}
             />
             {discountPct > 0 && (
               <span className="absolute left-3 top-3 rounded-full bg-[#400604] border border-[#E1B76F]/50 px-2.5 py-1 text-[11px] font-black uppercase text-white">
@@ -108,7 +123,14 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                     selectedImage === i ? "border-[#E1B76F] ring-1 ring-[#E1B76F]" : "border-[#E1B76F]/20 opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <Image src={img.src} alt="" fill sizes="56px" className="object-cover object-top" />
+                  <Image
+                    src={resolveSrc(img.src)}
+                    alt=""
+                    fill
+                    sizes="56px"
+                    className="object-cover object-top"
+                    onError={() => markFailed(img.src)}
+                  />
                 </button>
               ))}
             </div>

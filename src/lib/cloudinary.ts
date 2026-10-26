@@ -87,7 +87,7 @@ export function buildCloudinaryFolderPath({
       .trim()
       .toUpperCase()
       .replace(/[^A-Z0-9_\s-]/g, "")
-      .replace(/\s+/g, "_");
+      .replace(/[\s-]+/g, "_");
     parts.push(catClean);
   }
 
@@ -97,7 +97,7 @@ export function buildCloudinaryFolderPath({
       .trim()
       .toUpperCase()
       .replace(/[^A-Z0-9_\s-]/g, "")
-      .replace(/\s+/g, "_");
+      .replace(/[\s-]+/g, "_");
     parts.push(subClean);
   }
 
@@ -241,4 +241,108 @@ export async function deleteCloudinaryFolder(
     console.error("Error deleting Cloudinary folder:", error);
     throw error;
   }
+}
+
+/**
+ * Pre-creates a folder in Cloudinary so it immediately appears in the Media Library.
+ * Safe no-op / warning if the folder already exists or creation fails.
+ */
+export async function createCloudinaryFolder(
+  folderPath: string
+): Promise<{ success: boolean; path: string }> {
+  try {
+    if (!folderPath || !folderPath.trim()) return { success: false, path: "" };
+    const cleanPath = folderPath.trim().replace(/^\/+|\/+$/g, "");
+    await cloudinary.api.create_folder(cleanPath);
+    return { success: true, path: cleanPath };
+  } catch (error) {
+    // If folder already exists or network issue, log warning and gracefully continue
+    console.warn(`Could not pre-create Cloudinary folder "${folderPath}":`, error);
+    return { success: false, path: folderPath };
+  }
+}
+
+/**
+ * Automatically ensures all product images are located inside the matching
+ * Cloudinary category folder: ANGKON / <CATEGORY> / [SUBCATEGORY] / <PRODUCT_SLUG>
+ * If an image is located elsewhere (e.g. in root ANGKON/ or a previous category),
+ * it renames/relocates the image in Cloudinary and updates its URL.
+ */
+export async function syncProductImagesToCategoryFolder({
+  images,
+  categories,
+  productSlug,
+}: {
+  images: Array<{ id?: number | string; src: string; alt?: string; name?: string }>;
+  categories: Array<{ id?: number; name?: string; slug?: string; parent?: number }>;
+  productSlug: string;
+}): Promise<Array<{ id?: number | string; src: string; alt?: string; name?: string }>> {
+  if (!images || !Array.isArray(images) || images.length === 0) return images;
+
+  let catSlug = "";
+  let subSlug = "";
+
+  const subCat = categories.find((c) => c.parent && Number(c.parent) > 0);
+  if (subCat) {
+    subSlug = subCat.slug || subCat.name || "";
+    const parentCat = categories.find((c) => c.id === subCat.parent);
+    if (parentCat) {
+      catSlug = parentCat.slug || parentCat.name || "";
+    }
+  } else if (categories.length > 0) {
+    catSlug = categories[0].slug || categories[0].name || "";
+  }
+
+  const cleanProdSlug = (productSlug || "").trim();
+  if (!cleanProdSlug) return images;
+
+  const targetFolder = buildCloudinaryFolderPath({
+    category: catSlug || undefined,
+    subcategory: subSlug || undefined,
+    product: cleanProdSlug,
+  });
+
+  const updatedImages = [];
+  for (const img of images) {
+    if (!img?.src || typeof img.src !== "string" || !img.src.includes("res.cloudinary.com")) {
+      updatedImages.push(img);
+      continue;
+    }
+
+    const currentPublicId = extractPublicIdFromUrl(img.src);
+    if (!currentPublicId) {
+      updatedImages.push(img);
+      continue;
+    }
+
+    // Already in correct folder
+    if (currentPublicId.startsWith(targetFolder + "/")) {
+      updatedImages.push(img);
+      continue;
+    }
+
+    const fileName = currentPublicId.split("/").pop();
+    if (!fileName) {
+      updatedImages.push(img);
+      continue;
+    }
+
+    const newPublicId = `${targetFolder}/${fileName}`;
+    try {
+      const renameRes = await cloudinary.uploader.rename(currentPublicId, newPublicId, {
+        overwrite: true,
+        invalidate: true,
+      });
+      updatedImages.push({
+        ...img,
+        src: renameRes.secure_url,
+      });
+    } catch (err: any) {
+      // If image doesn't exist on Cloudinary or failed to rename, preserve original img
+      console.warn(`Could not relocate image "${currentPublicId}" to "${newPublicId}":`, err?.message || err);
+      updatedImages.push(img);
+    }
+  }
+
+  return updatedImages;
 }

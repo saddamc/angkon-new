@@ -51,13 +51,13 @@ export default function ProductSlugRedirectPage() {
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 border border-rose-100">
           <Package className="h-6 w-6 text-rose-500" />
         </div>
-        <p className="text-[15px] font-serif font-bold text-stone-800">Product not found</p>
+        <p className="text-[15px] font-bold text-gray-800">Product not found</p>
         <p className="mt-1.5 text-[13px] text-stone-500 leading-relaxed">
           This product may have been removed or relocated in the catalog.
         </p>
         <Link
           href="/admin/products"
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#400604] px-4 py-2.5 text-[13px] font-bold text-white hover:bg-[#250302] transition shadow-sm"
+          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2.5 text-[13px] font-bold text-white hover:bg-purple-700 shadow-md shadow-purple-200 transition"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to products

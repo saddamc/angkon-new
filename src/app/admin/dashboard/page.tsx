@@ -80,7 +80,7 @@ function DonutChart({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="#F5EFE6"
+          stroke="#f0ebff"
           strokeWidth={10}
         />
         <circle
@@ -97,10 +97,10 @@ function DonutChart({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-serif font-bold text-[#1A0302]">
+        <span className="text-xl font-bold text-gray-800">
           {pct.toFixed(0)}%
         </span>
-        <span className="text-[10px] font-bold tracking-wider uppercase text-stone-400">
+        <span className="text-[10px] font-bold tracking-wider uppercase text-gray-400">
           {label}
         </span>
       </div>
@@ -274,15 +274,15 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-8 w-48 bg-[#400604]/10 rounded-xl" />
+        <div className="h-8 w-48 bg-purple-100/60 rounded-xl" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-52 bg-white rounded-2xl shadow-sm border border-[#E1B76F]/20" />
+            <div key={i} className="h-52 bg-white rounded-2xl shadow-sm border border-purple-100/60" />
           ))}
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-          <div className="xl:col-span-2 h-80 bg-white rounded-2xl shadow-sm border border-[#E1B76F]/20" />
-          <div className="h-80 bg-white rounded-2xl shadow-sm border border-[#E1B76F]/20" />
+          <div className="xl:col-span-2 h-80 bg-white rounded-2xl shadow-sm border border-purple-100/60" />
+          <div className="h-80 bg-white rounded-2xl shadow-sm border border-purple-100/60" />
         </div>
       </div>
     );
@@ -292,7 +292,8 @@ export default function AdminDashboard() {
     <div className="space-y-7">
       {/* ── Page title ───────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl font-serif font-bold text-[#1A0302]">Store Overview</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <p className="text-sm text-gray-400 mt-0.5">Welcome back, here&apos;s your store overview.</p>
       </div>
 
       {/* ── Donut Charts Row (Today / Monthly / All Time) ── */}
@@ -303,7 +304,7 @@ export default function AdminDashboard() {
             revenue: stats.todayRevenue,
             paid: stats.todayPaid,
             pending: stats.todayRevenue - stats.todayPaid,
-            color: "#E1B76F",
+            color: "#9333ea",
             orders: stats.todayOrders,
           },
           {
@@ -311,7 +312,7 @@ export default function AdminDashboard() {
             revenue: stats.monthRevenue,
             paid: stats.monthPaid,
             pending: stats.monthRevenue - stats.monthPaid,
-            color: "#400604",
+            color: "#ef4444",
             orders: stats.monthOrders,
           },
           {
@@ -319,15 +320,15 @@ export default function AdminDashboard() {
             revenue: stats.totalRevenue,
             paid: stats.paidRevenue,
             pending: stats.pendingRevenue,
-            color: "#1A0302",
+            color: "#7c3aed",
             orders: stats.totalActiveOrders,
           },
         ].map((item) => (
           <div
             key={item.title}
-            className="bg-white rounded-2xl border border-[#E1B76F]/25 p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300"
+            className="bg-white rounded-2xl border border-purple-100/60 p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300"
           >
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
               {item.title}
             </h3>
             <DonutChart
@@ -342,29 +343,29 @@ export default function AdminDashboard() {
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ background: item.color }}
                 />
-                <span className="text-stone-500">Gross Sales</span>
-                <span className="ml-auto font-bold text-[#1A0302]">
+                <span className="text-gray-500">Gross Sales</span>
+                <span className="ml-auto font-bold text-gray-800">
                   {fmt(item.revenue)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                <span className="text-stone-500">Payment Received</span>
-                <span className="ml-auto font-bold text-emerald-700">
+                <span className="text-gray-500">Payment Received</span>
+                <span className="ml-auto font-bold text-emerald-600">
                   {fmt(item.paid)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                <span className="text-stone-500">Pending (COD)</span>
-                <span className="ml-auto font-semibold text-amber-700">
+                <span className="text-gray-500">Pending (COD)</span>
+                <span className="ml-auto font-semibold text-amber-600">
                   {fmt(item.pending)}
                 </span>
               </div>
-              <div className="flex items-center gap-2 pt-1 border-t border-stone-100">
-                <span className="h-2.5 w-2.5 rounded-full bg-stone-300" />
-                <span className="text-stone-500">Active Orders</span>
-                <span className="ml-auto font-semibold text-stone-700">
+              <div className="flex items-center gap-2 pt-1 border-t border-purple-50">
+                <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+                <span className="text-gray-500">Active Orders</span>
+                <span className="ml-auto font-semibold text-gray-700">
                   {item.orders}
                 </span>
               </div>
@@ -381,9 +382,9 @@ export default function AdminDashboard() {
             value: fmt(stats.totalRevenue),
             subtext: "Net store sales",
             icon: TrendingUp,
-            color: "text-[#400604]",
-            bg: "bg-[#400604]/10",
-            border: "border-[#E1B76F]/30",
+            color: "text-purple-600",
+            bg: "bg-purple-50",
+            border: "border-purple-100/80",
           },
           {
             label: "Stock Value",
@@ -393,45 +394,45 @@ export default function AdminDashboard() {
                 ? `${inventoryStats.itemsWithBuyPrice} products with buy price`
                 : "No buy price provided",
             icon: Package,
-            color: "text-amber-800",
+            color: "text-amber-600",
             bg: "bg-amber-50",
-            border: "border-amber-200",
+            border: "border-amber-100",
           },
           {
             label: "Total Orders",
             value: orders.length,
             subtext: "All customer orders",
             icon: ShoppingBag,
-            color: "text-stone-800",
-            bg: "bg-stone-100",
-            border: "border-stone-200",
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+            border: "border-blue-100",
           },
           {
             label: "Pending",
             value: stats.pendingCount,
             subtext: "Awaiting action",
             icon: Clock,
-            color: "text-orange-600",
-            bg: "bg-orange-50",
-            border: "border-orange-200",
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            border: "border-amber-100",
           },
           {
             label: "Delivered",
             value: stats.deliveredCount,
             subtext: "Fulfilled successfully",
             icon: CheckCircle2,
-            color: "text-emerald-700",
+            color: "text-emerald-600",
             bg: "bg-emerald-50",
-            border: "border-emerald-200",
+            border: "border-emerald-100",
           },
           {
             label: "Cancelled",
             value: stats.cancelledCount,
             subtext: "Voided or returned",
             icon: XCircle,
-            color: "text-rose-700",
+            color: "text-rose-600",
             bg: "bg-rose-50",
-            border: "border-rose-200",
+            border: "border-rose-100",
           },
         ].map((s) => (
           <div
@@ -443,14 +444,14 @@ export default function AdminDashboard() {
             >
               <s.icon className={`h-4.5 w-4.5 ${s.color}`} />
             </div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
               {s.label}
             </div>
-            <div className="text-lg font-serif font-bold text-[#1A0302] mt-0.5 truncate">
+            <div className="text-lg font-bold text-gray-800 mt-0.5 truncate">
               {s.value}
             </div>
             {s.subtext && (
-              <div className="text-[10px] text-stone-500 mt-0.5 truncate">
+              <div className="text-[10px] text-gray-500 mt-0.5 truncate">
                 {s.subtext}
               </div>
             )}
@@ -460,34 +461,34 @@ export default function AdminDashboard() {
 
       {/* ── Order Analytics Section ─────────────────────── */}
       <div>
-        <h2 className="text-lg font-serif font-bold text-[#1A0302] mb-4">
-          Order & Product Activity
+        <h2 className="text-lg font-bold text-gray-800 mb-4">
+          Order &amp; Product Activity
         </h2>
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
           {/* ── Recent Orders ─────────────────────────────── */}
-          <div className="xl:col-span-3 bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-              <h3 className="text-[15px] font-serif font-bold text-[#1A0302]">
+          <div className="xl:col-span-3 bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
+              <h3 className="text-[15px] font-bold text-gray-800">
                 Recent Orders
               </h3>
               <Link
                 href="/admin/orders"
-                className="flex items-center gap-1 text-[12px] text-[#400604] hover:text-[#E1B76F] font-semibold transition"
+                className="flex items-center gap-1 text-[12px] text-purple-600 hover:text-purple-700 font-semibold transition"
               >
                 View all <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {/* Table header */}
-            <div className="hidden md:grid grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3 bg-[#FDFBF7] text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
-              <span>Order No & Date</span>
+            <div className="hidden md:grid grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3 bg-purple-50/50 text-[11px] font-bold uppercase tracking-wider text-purple-600 border-b border-purple-100/40">
+              <span>Order No &amp; Date</span>
               <span>Customer Info</span>
               <span>Product Info</span>
             </div>
 
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-purple-50">
               {recentOrders.length === 0 ? (
-                <p className="text-center py-12 text-stone-400 text-sm">
+                <p className="text-center py-12 text-gray-400 text-sm">
                   No orders yet
                 </p>
               ) : (
@@ -502,14 +503,14 @@ export default function AdminDashboard() {
                   return (
                     <div
                       key={order.id}
-                      className="grid grid-cols-1 md:grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3.5 hover:bg-stone-50/60 transition items-center"
+                      className="grid grid-cols-1 md:grid-cols-[120px_1fr_1fr] gap-3 px-5 py-3.5 hover:bg-purple-50/30 transition items-center"
                     >
                       {/* Order # & Date */}
                       <div>
-                        <p className="text-[13px] font-bold text-[#400604]">
+                        <p className="text-[13px] font-bold text-purple-600 hover:text-purple-700">
                           #{order.number || order.id}
                         </p>
-                        <p className="text-[11px] text-stone-400">
+                        <p className="text-[11px] text-gray-400">
                           {order.date_created ? new Date(order.date_created).toLocaleDateString(
                             "en-GB",
                             {
@@ -525,15 +526,15 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-2">
                         <div className="space-y-0.5">
                           <div className="flex items-center gap-1.5">
-                            <Users className="h-3 w-3 text-stone-400" />
-                            <span className="text-[12px] font-semibold text-stone-800">
+                            <Users className="h-3 w-3 text-gray-400" />
+                            <span className="text-[12px] font-semibold text-gray-800">
                               {name}
                             </span>
                           </div>
                           {order.billing?.phone && (
                             <div className="flex items-center gap-1.5">
-                              <Phone className="h-3 w-3 text-stone-400" />
-                              <span className="text-[11px] text-stone-500 font-mono">
+                              <Phone className="h-3 w-3 text-gray-400" />
+                              <span className="text-[11px] text-gray-500 font-mono">
                                 {order.billing.phone}
                               </span>
                             </div>
@@ -544,7 +545,7 @@ export default function AdminDashboard() {
                       {/* Product */}
                       <div className="flex items-center gap-2 min-w-0">
                         {thumb && (
-                          <div className="h-9 w-9 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
+                          <div className="h-9 w-9 rounded-lg overflow-hidden bg-purple-50 flex-shrink-0 border border-purple-100">
                             <Image
                               src={thumb}
                               alt={productName}
@@ -554,7 +555,7 @@ export default function AdminDashboard() {
                             />
                           </div>
                         )}
-                        <p className="text-[12px] text-stone-700 truncate">
+                        <p className="text-[12px] text-gray-700 truncate">
                           {productName}
                         </p>
                       </div>
@@ -566,37 +567,37 @@ export default function AdminDashboard() {
           </div>
 
           {/* ── Top Selling Products ──────────────────────── */}
-          <div className="xl:col-span-2 bg-white rounded-2xl border border-[#E1B76F]/25 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
-              <h3 className="text-[15px] font-serif font-bold text-[#1A0302]">
+          <div className="xl:col-span-2 bg-white rounded-2xl border border-purple-100/60 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
+              <h3 className="text-[15px] font-bold text-gray-800">
                 Top Selling
               </h3>
               <Link
                 href="/admin/products"
-                className="flex items-center gap-1 text-[12px] text-[#400604] hover:text-[#E1B76F] font-semibold transition"
+                className="flex items-center gap-1 text-[12px] text-purple-600 hover:text-purple-700 font-semibold transition"
               >
                 View all <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {/* Table header */}
-            <div className="hidden md:flex items-center justify-between px-5 py-3 bg-[#FDFBF7] text-[11px] font-bold uppercase tracking-wider text-stone-400 border-b border-stone-100">
+            <div className="hidden md:flex items-center justify-between px-5 py-3 bg-purple-50/50 text-[11px] font-bold uppercase tracking-wider text-purple-600 border-b border-purple-100/40">
               <span>Product Info</span>
               <span>Total Sold</span>
             </div>
 
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-purple-50">
               {topProducts.length === 0 ? (
-                <p className="text-center py-12 text-stone-400 text-sm">
+                <p className="text-center py-12 text-gray-400 text-sm">
                   No products yet
                 </p>
               ) : (
                 topProducts.map((p) => (
                   <div
                     key={p.id}
-                    className="flex items-center gap-3 px-5 py-3 hover:bg-stone-50/60 transition"
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-purple-50/30 transition"
                   >
-                    <div className="h-10 w-10 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0 border border-stone-200">
+                    <div className="h-10 w-10 rounded-lg overflow-hidden bg-purple-50 flex-shrink-0 border border-purple-100">
                       {p.images?.[0]?.src ? (
                         <Image
                           src={p.images[0].src}
@@ -606,15 +607,15 @@ export default function AdminDashboard() {
                           className="object-cover w-full h-full"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-stone-400 text-[10px]">
+                        <div className="flex h-full items-center justify-center text-purple-400 text-[10px]">
                           {p.name?.charAt(0) || "P"}
                         </div>
                       )}
                     </div>
-                    <p className="text-[12px] font-medium text-stone-700 flex-1 truncate">
+                    <p className="text-[12px] font-medium text-gray-700 flex-1 truncate">
                       {p.name}
                     </p>
-                    <span className="flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-[#400604] text-[#E1B76F] text-[11px] font-bold">
+                    <span className="flex-shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-full bg-purple-100 text-purple-700 text-[11px] font-bold">
                       {p.total_sales || 0}
                     </span>
                   </div>
@@ -626,8 +627,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Order Status Overview ──────────────────────── */}
-      <div className="bg-white rounded-2xl border border-[#E1B76F]/25 p-6 shadow-sm">
-        <h3 className="text-[15px] font-serif font-bold text-[#1A0302] mb-4">
+      <div className="bg-white rounded-2xl border border-purple-100/60 p-6 shadow-sm">
+        <h3 className="text-[15px] font-bold text-gray-800 mb-4">
           Order Status Pipeline
         </h3>
         <div className="flex flex-wrap gap-3">
@@ -663,19 +664,19 @@ export default function AdminDashboard() {
             href: "/admin/products/new",
             label: "Add Product",
             desc: "Create new catalog entry",
-            color: "from-[#400604] to-[#250302]",
+            color: "from-purple-600 to-indigo-600",
           },
           {
             href: "/admin/orders",
             label: "Process Orders",
             desc: "Update status & delivery",
-            color: "from-stone-800 to-stone-900",
+            color: "from-indigo-600 to-blue-600",
           },
           {
             href: "/admin/products",
             label: "Manage Catalog",
             desc: "Prices, stock, measurements",
-            color: "from-[#B38838] to-[#8C621E]",
+            color: "from-purple-700 to-purple-900",
           },
         ].map((a) => (
           <Link
@@ -683,9 +684,9 @@ export default function AdminDashboard() {
             href={a.href}
             className={`rounded-2xl bg-gradient-to-br ${a.color} p-5 flex flex-col gap-2 hover:opacity-95 transition shadow-sm hover:shadow-md`}
           >
-            <p className="text-[14px] font-serif font-bold text-white">{a.label}</p>
+            <p className="text-[14px] font-bold text-white">{a.label}</p>
             <p className="text-[12px] text-white/80">{a.desc}</p>
-            <ArrowUpRight className="h-4 w-4 text-[#E1B76F] self-end mt-auto" />
+            <ArrowUpRight className="h-4 w-4 text-white/80 self-end mt-auto" />
           </Link>
         ))}
       </div>

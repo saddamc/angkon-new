@@ -3,7 +3,13 @@ import fs from "fs";
 import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
-import { deleteFromCloudinary, deleteCloudinaryFolder } from "@/lib/cloudinary";
+import {
+  deleteFromCloudinary,
+  deleteCloudinaryFolder,
+  createCloudinaryFolder,
+  buildCategoryFolderPath,
+  buildCloudinaryFolderPath,
+} from "@/lib/cloudinary";
 import { getAllDbCategoriesIncludingInactive } from "@/lib/db/categories";
 import { Product } from "@/models/Product";
 import { cleanCategoryInput, slugifyCategory } from "@/server/category-input";
@@ -151,6 +157,29 @@ export async function POST(request: NextRequest) {
       });
     } catch (syncErr) {
       console.warn("Failed to sync category to real-categories.json:", syncErr);
+    }
+
+    // Automatically pre-create category & product folder in Cloudinary
+    try {
+      if (input.parent && Number(input.parent) > 0) {
+        const parentDoc = await Category.findOne({ id: Number(input.parent) }).select("slug name").lean();
+        const parentSlug = parentDoc?.slug || parentDoc?.name || "parent";
+        const catFolder = buildCategoryFolderPath({ category: parentSlug, subcategory: slug });
+        const prodFolder = buildCloudinaryFolderPath({ category: parentSlug, subcategory: slug });
+        await Promise.allSettled([
+          createCloudinaryFolder(catFolder),
+          createCloudinaryFolder(prodFolder),
+        ]);
+      } else {
+        const catFolder = buildCategoryFolderPath({ category: slug });
+        const prodFolder = buildCloudinaryFolderPath({ category: slug });
+        await Promise.allSettled([
+          createCloudinaryFolder(catFolder),
+          createCloudinaryFolder(prodFolder),
+        ]);
+      }
+    } catch (folderErr) {
+      console.warn("Could not pre-create Cloudinary folder:", folderErr);
     }
 
     try {

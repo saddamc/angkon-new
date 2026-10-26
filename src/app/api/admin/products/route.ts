@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { deleteFromCloudinary, syncProductImagesToCategoryFolder } from "@/lib/cloudinary";
+import {
+  deleteFromCloudinary,
+  syncProductImagesToCategoryFolder,
+  extractProductFolderFromUrl,
+  deleteProductCloudinaryFolder,
+  buildCloudinaryFolderPath,
+} from "@/lib/cloudinary";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
@@ -202,24 +208,95 @@ export async function DELETE(request: NextRequest) {
     // Delete products from MongoDB
     const result = await Product.deleteMany({ id: { $in: ids } });
 
-    // Clean up images from Cloudinary ONLY if no other product uses them
+    // 1. Gather all candidate product folders and image sources
+    const candidateFolders = new Set<string>();
+    const imageSrcs: string[] = [];
+
     for (const prod of products) {
+      const productIdentifiers = [
+        prod.slug,
+        prod.sku,
+        prod.name,
+        String(prod.id),
+      ].filter(Boolean) as string[];
+
       if (Array.isArray(prod.images)) {
         for (const img of prod.images) {
           const src = typeof img === "string" ? img : img?.src;
-          if (src && src.includes("res.cloudinary.com")) {
-            try {
-              const isUsedElsewhere = await Product.exists({
-                id: { $nin: ids },
-                "images.src": src,
-              });
-              if (!isUsedElsewhere) {
-                await deleteFromCloudinary(src);
-              }
-            } catch (delErr) {
-              console.warn("Cloudinary cleanup error on bulk product deletion:", delErr);
+          if (src && typeof src === "string" && src.includes("res.cloudinary.com")) {
+            imageSrcs.push(src);
+            const folder = extractProductFolderFromUrl(src, productIdentifiers);
+            if (folder) {
+              candidateFolders.add(folder);
             }
           }
+        }
+      }
+
+      if (prod.slug) {
+        let catSlug = "";
+        let subSlug = "";
+        if (Array.isArray(prod.categories) && prod.categories.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const subCat = prod.categories.find((c: any) => c.parent && Number(c.parent) > 0);
+          if (subCat) {
+            subSlug = subCat.slug || subCat.name || "";
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const parentCat = prod.categories.find((c: any) => c.id === subCat.parent);
+            if (parentCat) catSlug = parentCat.slug || parentCat.name || "";
+          } else {
+            catSlug = prod.categories[0].slug || prod.categories[0].name || "";
+          }
+        }
+
+        const expectedFolder = buildCloudinaryFolderPath({
+          category: catSlug || undefined,
+          subcategory: subSlug || undefined,
+          product: prod.slug,
+        });
+
+        if (expectedFolder && expectedFolder.split("/").length >= 3) {
+          candidateFolders.add(expectedFolder);
+        }
+      }
+    }
+
+    const deletedFolders = new Set<string>();
+    const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+
+    // 2. Delete product-level Cloudinary folders ONLY IF no other remaining product references them
+    for (const folder of candidateFolders) {
+      try {
+        const isFolderUsedElsewhere = await Product.exists({
+          id: { $nin: ids },
+          "images.src": new RegExp(escapeRegex(folder)),
+        });
+
+        if (!isFolderUsedElsewhere) {
+          await deleteProductCloudinaryFolder(folder);
+          deletedFolders.add(folder);
+        } else {
+          console.warn(`Preserving Cloudinary folder "${folder}" as another product references it.`);
+        }
+      } catch (fErr) {
+        console.warn(`Error cleaning up Cloudinary folder "${folder}":`, fErr);
+      }
+    }
+
+    // 3. For any images not inside a deleted folder, clean up individually if unreferenced
+    for (const src of imageSrcs) {
+      const wasFolderDeleted = Array.from(deletedFolders).some((f) => src.includes(f));
+      if (!wasFolderDeleted) {
+        try {
+          const isUsedElsewhere = await Product.exists({
+            id: { $nin: ids },
+            "images.src": src,
+          });
+          if (!isUsedElsewhere) {
+            await deleteFromCloudinary(src);
+          }
+        } catch (delErr) {
+          console.warn("Cloudinary cleanup error on bulk product deletion:", delErr);
         }
       }
     }

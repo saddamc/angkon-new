@@ -72,14 +72,14 @@ export function buildCategoryFolderPath({
 
 /**
  * Builds standard Cloudinary folder path adhering to:
- * Project Name (ANGKON) -> Category (e.g. MEN/WOMEN) -> Subcategory (e.g. ETHNIC) -> Product (e.g. product-slug)
+ * Project Name (ANGKON) -> PRODUCTS -> Category (e.g. WOMEN/MEN) -> Subcategory (e.g. ETHNIC_WEAR) -> Product (e.g. product-slug)
  */
 export function buildCloudinaryFolderPath({
   category,
   subcategory,
   product,
 }: CloudinaryFolderOptions = {}): string {
-  const parts: string[] = ["ANGKON"];
+  const parts: string[] = ["ANGKON", "PRODUCTS"];
 
   if (category && category.trim()) {
     // Sanitize category to clean uppercase identifier e.g. "MEN", "WOMEN"
@@ -88,7 +88,9 @@ export function buildCloudinaryFolderPath({
       .toUpperCase()
       .replace(/[^A-Z0-9_\s-]/g, "")
       .replace(/[\s-]+/g, "_");
-    parts.push(catClean);
+    if (catClean && catClean !== "PRODUCTS") {
+      parts.push(catClean);
+    }
   }
 
   if (subcategory && subcategory.trim()) {
@@ -98,7 +100,9 @@ export function buildCloudinaryFolderPath({
       .toUpperCase()
       .replace(/[^A-Z0-9_\s-]/g, "")
       .replace(/[\s-]+/g, "_");
-    parts.push(subClean);
+    if (subClean && !parts.includes(subClean)) {
+      parts.push(subClean);
+    }
   }
 
   if (product && product.trim()) {
@@ -223,24 +227,126 @@ export async function deleteFromCloudinary(
 }
 
 /**
- * Delete an entire folder and all assets under it in Cloudinary.
+ * Safely extracts the dedicated product folder from a Cloudinary image URL or public_id.
+ * E.g.:
+ * "https://res.cloudinary.com/.../ANGKON/PRODUCTS/WOMEN/ETHNIC_WEAR/product-slug/file_xxx.webp"
+ * -> "ANGKON/PRODUCTS/WOMEN/ETHNIC_WEAR/product-slug"
+ *
+ * If productIdentifiers is provided (e.g. slug, sku, name), verifies that the last folder
+ * segment belongs to this product, preventing accidental deletion of category folders.
+ */
+export function extractProductFolderFromUrl(
+  urlOrId: string,
+  productIdentifiers?: string | string[]
+): string | null {
+  const publicId = extractPublicIdFromUrl(urlOrId);
+  if (!publicId || !publicId.includes("/")) return null;
+
+  const folder = publicId.substring(0, publicId.lastIndexOf("/"));
+  const segments = folder.split("/").filter(Boolean);
+
+  // Safety rules:
+  // 1. Must be inside ANGKON
+  if (segments[0] !== "ANGKON") return null;
+  // 2. Must never delete root or top-level containers
+  if (segments.length <= 1) return null; // "ANGKON"
+  if (segments.length === 2 && (segments[1] === "PRODUCTS" || segments[1] === "CATEGORIES")) return null;
+  // 3. If under PRODUCTS, must have at least ANGKON/PRODUCTS/<product> (segments >= 3)
+  if (segments[1] === "PRODUCTS" && segments.length < 3) return null;
+  // 4. Must not be just a category folder
+  if (segments[1] === "CATEGORIES") return null;
+
+  // 5. If product identifiers are provided, verify that the last folder segment matches
+  if (productIdentifiers) {
+    const list = (Array.isArray(productIdentifiers) ? productIdentifiers : [productIdentifiers])
+      .filter(Boolean)
+      .map((s) => String(s).trim().toLowerCase());
+
+    if (list.length > 0) {
+      const lastSegment = segments[segments.length - 1].toLowerCase();
+      const isMatch = list.some((item) => {
+        const cleanItem = item.replace(/[^a-z0-9_\s-]/g, "").replace(/\s+/g, "-");
+        return (
+          lastSegment === item ||
+          lastSegment === cleanItem ||
+          (cleanItem.length > 3 && (lastSegment.includes(cleanItem) || cleanItem.includes(lastSegment)))
+        );
+      });
+
+      if (!isMatch) {
+        return null;
+      }
+    }
+  }
+
+  return folder;
+}
+
+/**
+ * Delete an entire folder and all assets under it in Cloudinary with safety guards.
  */
 export async function deleteCloudinaryFolder(
   folderPath: string
 ): Promise<{ resourcesDeleted: number; folderDeleted: boolean }> {
+  const cleanPath = (folderPath || "").trim().replace(/\/+$/, "");
+  const protectedPaths = ["", "ANGKON", "ANGKON/PRODUCTS", "ANGKON/CATEGORIES"];
+  if (protectedPaths.includes(cleanPath)) {
+    throw new Error(`Refusing to delete protected Cloudinary root/category path: "${folderPath}"`);
+  }
+
   try {
     // 1. Delete all assets with this prefix
-    const delRes = await cloudinary.api.delete_resources_by_prefix(folderPath);
-    // 2. Delete the empty folder
-    await cloudinary.api.delete_folder(folderPath).catch(() => {});
+    const delRes = await cloudinary.api.delete_resources_by_prefix(cleanPath + "/", {
+      resource_type: "image",
+      invalidate: true,
+    });
+    const resourcesDeleted = Object.keys(delRes?.deleted || {}).length;
+
+    // 2. Delete the empty folder (with retry if indexing has a short propagation delay)
+    let folderDeleted = false;
+    try {
+      await cloudinary.api.delete_folder(cleanPath);
+      folderDeleted = true;
+    } catch {
+      await new Promise((r) => setTimeout(r, 400));
+      try {
+        await cloudinary.api.delete_folder(cleanPath);
+        folderDeleted = true;
+      } catch (err: any) {
+        console.warn(`Could not delete folder "${cleanPath}" (may already be deleted or non-empty):`, err?.message || err);
+      }
+    }
+
     return {
-      resourcesDeleted: Object.keys(delRes.deleted || {}).length,
-      folderDeleted: true,
+      resourcesDeleted,
+      folderDeleted,
     };
   } catch (error) {
     console.error("Error deleting Cloudinary folder:", error);
     throw error;
   }
+}
+
+/**
+ * Safely deletes a product's dedicated Cloudinary folder and all image assets inside it.
+ */
+export async function deleteProductCloudinaryFolder(
+  folderPath: string
+): Promise<{ resourcesDeleted: number; folderDeleted: boolean }> {
+  const cleanPath = (folderPath || "").trim().replace(/\/+$/, "");
+  const segments = cleanPath.split("/").filter(Boolean);
+
+  if (segments.length < 3) {
+    console.warn(`Skipping product folder deletion: "${folderPath}" is too broad.`);
+    return { resourcesDeleted: 0, folderDeleted: false };
+  }
+
+  if (segments[0] !== "ANGKON") {
+    console.warn(`Skipping product folder deletion: "${folderPath}" is outside ANGKON.`);
+    return { resourcesDeleted: 0, folderDeleted: false };
+  }
+
+  return deleteCloudinaryFolder(cleanPath);
 }
 
 /**
@@ -285,7 +391,18 @@ export async function syncProductImagesToCategoryFolder({
   const subCat = categories.find((c) => c.parent && Number(c.parent) > 0);
   if (subCat) {
     subSlug = subCat.slug || subCat.name || "";
-    const parentCat = categories.find((c) => c.id === subCat.parent);
+    let parentCat = categories.find((c) => c.id === subCat.parent);
+    if (!parentCat && subCat.parent) {
+      try {
+        const { default: CategoryModel } = await import("@/models/Category");
+        const found = await CategoryModel.findOne({ id: subCat.parent }).lean();
+        if (found) {
+          parentCat = { id: found.id, name: found.name, slug: found.slug, parent: found.parent };
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     if (parentCat) {
       catSlug = parentCat.slug || parentCat.name || "";
     }

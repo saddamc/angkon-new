@@ -6,6 +6,8 @@ import { Category } from "@/models/Category";
 import {
   deleteFromCloudinary,
   deleteCloudinaryFolder,
+  deleteProductCloudinaryFolder,
+  extractProductFolderFromUrl,
   createCloudinaryFolder,
   buildCategoryFolderPath,
   buildCloudinaryFolderPath,
@@ -246,11 +248,10 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    // 3. If delete_products=true, delete products and their Cloudinary images
+    // 3. If delete_products=true, delete products and their Cloudinary folders/images
     let deletedProductsCount = 0;
     if (deleteProducts) {
       try {
-        const Product = (await import("@/models/Product")).default;
         const productsToDelete = await Product.find({
           $or: [
             { "categories.id": { $in: categoryIdsToDelete } },
@@ -258,22 +259,67 @@ export async function DELETE(request: NextRequest) {
           ],
         });
 
+        const deletedProductIds = productsToDelete.map((p) => p._id);
+        const candidateFolders = new Set<string>();
+        const imageSrcs: string[] = [];
+
         for (const prod of productsToDelete) {
+          const productIdentifiers = [
+            prod.slug,
+            prod.sku,
+            prod.name,
+            String(prod.id),
+          ].filter(Boolean) as string[];
+
           if (Array.isArray(prod.images)) {
             for (const img of prod.images) {
-              if (img?.src && img.src.includes("res.cloudinary.com")) {
-                try {
-                  await deleteFromCloudinary(img.src);
-                } catch (prodImgErr) {
-                  console.warn(`Failed to delete Cloudinary image for product "${prod.name}":`, prodImgErr);
-                }
+              const src = typeof img === "string" ? img : img?.src;
+              if (src && typeof src === "string" && src.includes("res.cloudinary.com")) {
+                imageSrcs.push(src);
+                const folder = extractProductFolderFromUrl(src, productIdentifiers);
+                if (folder) candidateFolders.add(folder);
               }
             }
           }
         }
 
+        const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+        const deletedFolders = new Set<string>();
+
+        for (const folder of candidateFolders) {
+          try {
+            const isFolderUsedElsewhere = await Product.exists({
+              _id: { $nin: deletedProductIds },
+              "images.src": new RegExp(escapeRegex(folder)),
+            });
+            if (!isFolderUsedElsewhere) {
+              await deleteProductCloudinaryFolder(folder);
+              deletedFolders.add(folder);
+            }
+          } catch (fErr) {
+            console.warn(`Failed to delete product Cloudinary folder "${folder}":`, fErr);
+          }
+        }
+
+        for (const src of imageSrcs) {
+          const wasFolderDeleted = Array.from(deletedFolders).some((f) => src.includes(f));
+          if (!wasFolderDeleted) {
+            try {
+              const isUsedElsewhere = await Product.exists({
+                _id: { $nin: deletedProductIds },
+                "images.src": src,
+              });
+              if (!isUsedElsewhere) {
+                await deleteFromCloudinary(src);
+              }
+            } catch (prodImgErr) {
+              console.warn(`Failed to delete Cloudinary image:`, prodImgErr);
+            }
+          }
+        }
+
         const prodDelRes = await Product.deleteMany({
-          _id: { $in: productsToDelete.map((p) => p._id) },
+          _id: { $in: deletedProductIds },
         });
         deletedProductsCount = prodDelRes.deletedCount || 0;
       } catch (prodErr) {

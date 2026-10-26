@@ -37,11 +37,6 @@ export function CategoryHero({
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#E1B76F]/20 border border-[#E1B76F]/40 text-[#E1B76F] text-[10px] sm:text-xs font-bold tracking-widest uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
             ANGKON LUXURY
           </span>
-          {productCount !== undefined && (
-            <span className="text-white text-xs font-medium tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-              • {productCount} {productCount === 1 ? "Product" : "Products"} Available
-            </span>
-          )}
         </div>
 
         {/* Category Title: when image has baked text, keep accessible sr-only; when admin uploads custom image, render with localized drop shadow & zero blur */}

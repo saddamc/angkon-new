@@ -8,6 +8,8 @@ import { issueVerificationEmail } from "@/server/account";
 import { calculateShipping } from "@/lib/shipping";
 import { getProductDeliveryRates, getShippingSettings } from "@/server/shipping";
 import { getCheckoutSettings } from "@/server/checkout-settings";
+import { clientIp, rateLimit } from "@/server/rate-limit";
+import { getAllDbProducts } from "@/lib/db/products";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 
@@ -96,6 +98,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A valid email address is required to place an order." }, { status: 400 });
     }
 
+    // ── Active Rate Limiting: Prevent spam order attacks and bot floods ──
+    const ip = clientIp(request);
+    const [perIp, perEmail] = await Promise.all([
+      rateLimit(`order:ip:${ip}`, 15, 60 * 60), // max 15 orders / hour per IP
+      rateLimit(`order:email:${orderEmail}`, 6, 60 * 60), // max 6 orders / hour per email
+    ]);
+    if (!perIp.allowed || !perEmail.allowed) {
+      const wait = Math.max(perIp.retryAfterSeconds, perEmail.retryAfterSeconds);
+      return NextResponse.json(
+        {
+          error: "Too many orders placed in a short period. Please wait a while before trying again.",
+          retryAfterSeconds: wait,
+        },
+        { status: 429 }
+      );
+    }
+
     let sessionUser: IUser | null = null;
     try {
       const sessionUserId = getSessionUserId(request);
@@ -126,19 +145,75 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Calculate subtotal
+    // ── Authoritative Server-Side Product Price & Catalog Resolution (Defeats Client-Side Price Tampering) ──
+    const allDbCatalog = await getAllDbProducts();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const subtotal = items.reduce((sum: number, item: any) => {
-      const price = parseFloat(item.price || "0");
-      const qty = parseInt(item.quantity || "1", 10);
-      return sum + (isNaN(price) ? 0 : price) * (isNaN(qty) ? 1 : qty);
-    }, 0);
+    const fallbackCatalog = REAL_PRODUCTS as any[];
+
+    interface ResolvedItem {
+      productId: number;
+      slug: string;
+      name: string;
+      price: number;
+      quantity: number;
+      size: string;
+      image: string;
+    }
+
+    const itemsData: ResolvedItem[] = [];
+    let subtotal = 0;
+
+    for (const rawItem of items) {
+      const pId = Number(rawItem.productId || 0);
+      const rawSlug = String(rawItem.slug || "").trim().toLowerCase();
+
+      // Look up in DB catalog first, then fallback catalog
+      const matched =
+        allDbCatalog.find((p) => p.id === pId || (rawSlug && p.slug.toLowerCase() === rawSlug)) ||
+        fallbackCatalog.find((p) => p.id === pId || (rawSlug && p.slug.toLowerCase() === rawSlug));
+
+      if (!matched) {
+        return NextResponse.json(
+          { error: `Item "${rawItem.name || pId}" is not available in our current catalog.` },
+          { status: 400 }
+        );
+      }
+
+      // Quantity must be an integer between 1 and 99
+      const qty = Math.max(1, Math.min(99, parseInt(String(rawItem.quantity || "1"), 10) || 1));
+
+      // Resolve true authoritative price strictly from catalog (ignoring whatever browser sent)
+      const rawPriceStr = String(matched.price || matched.sale_price || matched.regular_price || "0").trim();
+      const unitPrice = parseFloat(rawPriceStr);
+      if (isNaN(unitPrice) || unitPrice <= 0) {
+        return NextResponse.json(
+          { error: `Invalid pricing for item "${matched.name}". Please contact support.` },
+          { status: 400 }
+        );
+      }
+
+      subtotal += unitPrice * qty;
+
+      let resolvedImage = rawItem.image ? String(rawItem.image) : "";
+      if (!resolvedImage && Array.isArray(matched.images) && matched.images[0]?.src) {
+        resolvedImage = matched.images[0].src;
+      }
+
+      itemsData.push({
+        productId: matched.id,
+        slug: matched.slug,
+        name: matched.name,
+        price: unitPrice,
+        quantity: qty,
+        size: rawItem.size ? String(rawItem.size).trim() : "",
+        image: resolvedImage,
+      });
+    }
 
     // Delivery is decided here on the server (admin settings + product fees), never trusted from the browser.
     const [shippingSettings, productRates] = await Promise.all([
       getShippingSettings(),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      getProductDeliveryRates(items.map((item: any) => Number(item.productId || 0))),
+      getProductDeliveryRates(itemsData.map((item) => item.productId)),
     ]);
     // Calculate Promo Code discount (verified on the server against active settings)
     let discount = 0;
@@ -162,8 +237,7 @@ export async function POST(request: NextRequest) {
       district: resolvedDistrict,
       city,
       settings: shippingSettings,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      itemRates: items.map((item: any) => productRates.get(Number(item.productId || 0)) ?? {}),
+      itemRates: itemsData.map((item) => productRates.get(item.productId) ?? {}),
     });
     const shippingFee = shippingQuote.fee;
     const total = Math.max(0, subtotal - discount) + shippingFee;
@@ -172,7 +246,7 @@ export async function POST(request: NextRequest) {
     const randomSuffix = Math.floor(100 + Math.random() * 900);
     const orderNumber = `ANG-${Date.now().toString().slice(-6)}-${randomSuffix}`;
 
-    // Normalize customer & line items
+    // Normalize customer
     const customerData = {
       fullName: String(fullName).trim(),
       email: normalizeEmail(email),
@@ -182,30 +256,6 @@ export async function POST(request: NextRequest) {
       district: String(resolvedDistrict).trim(),
       postalCode: postalCode ? String(postalCode).trim() : "",
     };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const itemsData = items.map((item: any) => {
-      let resolvedImage = item.image ? String(item.image) : "";
-      if (!resolvedImage) {
-        // Fallback to real products catalog if image wasn't sent
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const matched = (REAL_PRODUCTS as any[]).find(
-          (p) => p.id === Number(item.productId) || (item.slug && p.slug === item.slug)
-        );
-        if (matched?.images?.[0]?.src) {
-          resolvedImage = matched.images[0].src;
-        }
-      }
-      return {
-        productId: Number(item.productId || 0),
-        slug: item.slug ? String(item.slug) : "",
-        name: String(item.name || "Item"),
-        price: parseFloat(item.price || "0"),
-        quantity: parseInt(item.quantity || "1", 10),
-        size: item.size ? String(item.size) : "",
-        image: resolvedImage,
-      };
-    });
 
     try {
       await connectToDatabase();

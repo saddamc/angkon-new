@@ -15,9 +15,10 @@ export function SizeSelector({
   availableSizes?: string[];
   disabledSizes?: string[];
 }) {
-  const sizes = availableSizes && availableSizes.length > 0
-    ? ALL_SIZES.filter((s) => availableSizes.includes(s))
-    : ALL_SIZES;
+  const sizes =
+    availableSizes && availableSizes.length > 0
+      ? availableSizes
+      : ALL_SIZES;
 
   return (
     <div className="flex flex-wrap gap-2.5" role="radiogroup" aria-label="Choose size">

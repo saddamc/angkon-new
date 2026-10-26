@@ -15,8 +15,6 @@ export function CategoryCard({
 }) {
   const imageUrl = getCategoryImage(category);
   const name = categoryDisplayName(category.name);
-  const count = typeof category.count === "number" ? category.count : 0;
-  const countLabel = `${count} ${count === 1 ? "PRODUCT" : "PRODUCTS"}`;
 
   return (
     <Link
@@ -45,11 +43,6 @@ export function CategoryCard({
           <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-white leading-snug line-clamp-1">
             {name}
           </h2>
-          {count > 0 && (
-            <span className="block text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/70 mt-0.5 leading-snug">
-              {countLabel}
-            </span>
-          )}
         </div>
       </div>
     </Link>

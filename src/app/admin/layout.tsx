@@ -191,7 +191,12 @@ export default function AdminLayout({
   const PageIcon = currentNav ? currentNav.icon : LayoutDashboard;
 
   return (
-    <div className="flex min-h-screen bg-[#FDFBF7] font-sans antialiased text-[#1A0302]">
+    <div
+      style={{
+        ["--admin-sidebar-width" as string]: sidebarExpanded ? "230px" : "78px",
+      }}
+      className="flex min-h-screen bg-[#FDFBF7] font-sans antialiased text-[#1A0302]"
+    >
       {/* ── Sidebar ────────────────────────────────────────── */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-[#E1B76F]/20 shadow-[2px_0_24px_rgba(64,6,4,0.04)] transition-all duration-300 ease-in-out

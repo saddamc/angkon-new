@@ -12,6 +12,7 @@ import {
   emptySizeChart,
   isMultiSectionSizeChart,
   flattenMultiSectionChart,
+  normalizeToMultiSectionChart,
 } from "@/utils/size-chart";
 
 /* ─── Raw WC / MongoDB product shape ── */
@@ -30,6 +31,7 @@ interface WCProductRaw {
   stock_status: string;
   stock_quantity: number | null;
   manage_stock: boolean;
+  sizes?: string[];
   images: { id: number; src: string; alt: string }[];
   categories: { id: number; name: string; slug: string; parent?: number }[];
   attributes: { name: string; options: string[]; visible?: boolean; variation?: boolean; id?: number }[];
@@ -102,13 +104,23 @@ export default function EditProductBySlugPage() {
       </div>
     );
 
-  const sizeAttr = product.attributes?.find(
-    (a) => a.name.toLowerCase() === "size",
-  );
+  const sizeAttr = product.attributes?.find((a) => {
+    const n = (a?.name || "").toLowerCase();
+    return n === "size" || n === "sizes";
+  });
   const colorAttr = product.attributes?.find((a) => {
-    const n = a.name.toLowerCase();
+    const n = (a?.name || "").toLowerCase();
     return n === "color" || n === "colour";
   });
+
+  const docSizes: string[] = Array.isArray(product.sizes)
+    ? product.sizes.map(String).map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  const resolvedSizes: string[] =
+    docSizes.length > 0
+      ? docSizes
+      : (sizeAttr?.options && sizeAttr.options.length > 0 ? sizeAttr.options : []);
 
   const { chart: sizeChart, metaId: sizeChartMetaId } = getSizeChartFromMeta(
     product.meta_data,
@@ -137,11 +149,9 @@ export default function EditProductBySlugPage() {
       slug: c.slug,
       parent: c.parent || 0,
     })),
-    sizes: sizeAttr?.options || [],
+    sizes: resolvedSizes,
     colors: colorAttr?.options || [],
-    sizeChart: isMultiSectionSizeChart(sizeChart)
-      ? flattenMultiSectionChart(sizeChart)
-      : (sizeChart ?? emptySizeChart()),
+    sizeChart: normalizeToMultiSectionChart(sizeChart, resolvedSizes),
     sizeChartMetaId,
     otherAttributes: (product.attributes || []).filter((a) => {
       const n = a.name.toLowerCase();

@@ -20,6 +20,7 @@ import {
   ReadyToWearSizeGuideModal,
   ReadyToWearSizeGuideContent,
 } from "@/components/product/ready-to-wear-size-guide-modal";
+import { getProductSizeChart, isMultiSectionSizeChart } from "@/utils/size-chart";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { WooProduct } from "@/types/product";
@@ -279,14 +280,14 @@ export function ProductDetailsView({
 
   // Genuine customer selectable variation attributes (e.g. Size)
   const variationAttrs = useMemo(() => {
+    if (product.sizes && product.sizes.length > 0) {
+      return [{ id: 0, name: "Size", options: product.sizes, visible: true }];
+    }
     const sizeAttr = product.attributes?.find(
       (a) => a.name.toLowerCase() === "size" || a.name.toLowerCase() === "sizes"
     );
     if (sizeAttr && sizeAttr.options && sizeAttr.options.length > 0) {
       return [sizeAttr];
-    }
-    if (product.sizes && product.sizes.length > 0) {
-      return [{ id: 0, name: "Size", options: product.sizes, visible: true }];
     }
     const nonSpecAttrs = (product.attributes || []).filter((a) => {
       const name = a.name.toLowerCase().trim();
@@ -300,6 +301,10 @@ export function ProductDetailsView({
   }, [product.attributes, product.sizes]);
 
   const hasSizeGuide = useMemo(() => {
+    const metaChart = getProductSizeChart(product);
+    if (metaChart && isMultiSectionSizeChart(metaChart) && metaChart.enabled === false) {
+      return false;
+    }
     const isApparel =
       product.categories?.some((c) =>
         /women|men|ethnic|suit|dress|clothing|kameez|sharee|panjabi/i.test(c.name || c.slug)
@@ -512,10 +517,18 @@ export function ProductDetailsView({
                   return (
                     <div key={attr.name} className="mt-4">
                       <div className="flex items-center justify-between mb-2.5">
-                        <label className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                          {attr.name}
-                          {isSize && size ? <span className="font-semibold text-white">({size})</span> : null}
-                        </label>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[14px] font-bold text-white tracking-wide">
+                            {isSize ? "Select Size:" : attr.name}
+                          </label>
+                          {isSize && size ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#E1B76F] text-[#400604] font-black text-xs shadow-xs">
+                              <Check className="h-3 w-3" /> {size}
+                            </span>
+                          ) : isSize ? (
+                            <span className="text-white/50 text-xs font-normal">(Please choose)</span>
+                          ) : null}
+                        </div>
                         {isSize && hasSizeGuide && (
                           <button
                             type="button"
@@ -523,15 +536,15 @@ export function ProductDetailsView({
                             className="inline-flex items-center gap-1.5 text-xs sm:text-[13px] font-bold text-[#E1B76F] hover:text-white underline underline-offset-4 decoration-[#E1B76F]/60 hover:decoration-white transition cursor-pointer rounded px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
                             aria-label="Open size guide"
                           >
-                            <Ruler className="h-4 w-4 text-white" />
+                            <Ruler className="h-4 w-4 text-[#E1B76F]" />
                             Size Guide
                           </button>
                         )}
                       </div>
 
-                      {/* Instant Size Pill Buttons */}
-                      {isSize && attr.options.length > 0 && (
-                        <div className="flex flex-wrap gap-2.5 mb-3" role="radiogroup" aria-label="Choose size">
+                      {/* Instant Size Pill Buttons (Industry Standard) */}
+                      {isSize && attr.options.length > 0 ? (
+                        <div className="flex flex-wrap gap-2.5 mb-2" role="radiogroup" aria-label="Choose size">
                           {attr.options.map((opt) => {
                             const isSelected = size === opt;
                             return (
@@ -545,9 +558,9 @@ export function ProductDetailsView({
                                   setSize(opt);
                                   setOptionError(false);
                                 }}
-                                className={`flex min-h-[42px] min-w-[46px] items-center justify-center px-4 rounded-lg border text-xs uppercase transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#400604] ${
+                                className={`flex min-h-[44px] min-w-[50px] items-center justify-center px-4 rounded-xl border text-[13px] font-bold tracking-wide transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#400604] ${
                                   isSelected
-                                    ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-extrabold shadow-md ring-1 ring-[#E1B76F]"
+                                    ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-black shadow-lg shadow-[#E1B76F]/20 scale-105"
                                     : "border-[#E1B76F]/30 bg-[#340402] text-white/90 font-bold hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]"
                                 }`}
                               >
@@ -556,40 +569,40 @@ export function ProductDetailsView({
                             );
                           })}
                         </div>
+                      ) : (
+                        /* Dropdown Selector for non-size attributes */
+                        <div className="relative max-w-[340px]">
+                          <select
+                            value={size}
+                            onChange={(e) => {
+                              setSize(e.target.value);
+                              setOptionError(false);
+                            }}
+                            className={`w-full appearance-none rounded border bg-[#2d0302] px-3.5 py-2.5 pr-10 text-[14px] text-white outline-none transition cursor-pointer ${
+                              optionError && !size
+                                ? "border-red-500 ring-1 ring-red-500"
+                                : "border-[#E1B76F]/40 focus:border-[#E1B76F]"
+                            }`}
+                          >
+                            <option value="" className="bg-[#2d0302] text-white">Choose an option</option>
+                            {attr.options.map((opt) => (
+                              <option key={opt} value={opt} className="bg-[#2d0302] text-white">
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white" />
+                        </div>
                       )}
 
-                      {/* Dropdown Selector */}
-                      <div className="relative max-w-[340px]">
-                        <select
-                          value={size}
-                          onChange={(e) => {
-                            setSize(e.target.value);
-                            setOptionError(false);
-                          }}
-                          className={`w-full appearance-none rounded border bg-[#2d0302] px-3.5 py-2.5 pr-10 text-[14px] text-white outline-none transition cursor-pointer ${
-                            optionError && !size
-                              ? "border-red-500 ring-1 ring-red-500"
-                              : "border-[#E1B76F]/40 focus:border-[#E1B76F]"
-                          }`}
-                        >
-                          <option value="" className="bg-[#2d0302] text-white">Choose an option</option>
-                          {attr.options.map((opt) => (
-                            <option key={opt} value={opt} className="bg-[#2d0302] text-white">
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white" />
-                      </div>
-
                       {optionError && !size && (
-                        <p className="mt-1 text-xs text-red-400 font-medium">Please choose a size</p>
+                        <p className="mt-1 text-xs text-red-400 font-medium">Please choose a size to continue</p>
                       )}
                       {size && (
                         <button
                           type="button"
                           onClick={() => setSize("")}
-                          className="mt-1.5 block text-xs text-[#E1B76F]/70 hover:text-white underline underline-offset-2 transition"
+                          className="mt-1.5 block text-xs text-[#E1B76F]/70 hover:text-white underline underline-offset-2 transition cursor-pointer"
                         >
                           Clear
                         </button>

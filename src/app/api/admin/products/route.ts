@@ -110,6 +110,40 @@ export async function POST(request: NextRequest) {
         ? "outofstock"
         : (body.stock_status || "instock");
 
+    // Keep sizes array and attributes[Size] completely synchronized
+    let productSizes: string[] = [];
+    if (Array.isArray(body.sizes)) {
+      productSizes = body.sizes.map(String).map((s: string) => s.trim()).filter(Boolean);
+    } else if (Array.isArray(body.attributes)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sizeAttr = body.attributes.find((a: any) => {
+        const n = String(a?.name || "").toLowerCase();
+        return n === "size" || n === "sizes";
+      });
+      if (sizeAttr && Array.isArray(sizeAttr.options)) {
+        productSizes = sizeAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean);
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let attributes = Array.isArray(body.attributes) ? [...body.attributes] : [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sizeAttrIdx = attributes.findIndex((a: any) => {
+      const n = String(a?.name || "").toLowerCase();
+      return n === "size" || n === "sizes";
+    });
+    if (sizeAttrIdx >= 0) {
+      attributes[sizeAttrIdx].options = productSizes;
+    } else if (productSizes.length > 0) {
+      attributes.push({
+        id: 0,
+        name: "Size",
+        visible: true,
+        variation: false,
+        options: productSizes,
+      });
+    }
+
     const newProduct = await Product.create({
       ...body,
       id: productId,
@@ -124,7 +158,8 @@ export async function POST(request: NextRequest) {
       stock_status: stockStatus,
       manage_stock: manageStock,
       stock_quantity: stockQuantity,
-      sizes: Array.isArray(body.sizes) ? body.sizes : [],
+      sizes: productSizes,
+      attributes,
     });
 
     await publishCatalogChange();

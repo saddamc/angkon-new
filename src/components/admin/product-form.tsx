@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Upload,
+  UploadCloud,
+  GripVertical,
   X,
   Plus,
+  Folder,
   FolderPlus,
+  FolderTree,
+  ChevronRight,
+  ChevronDown,
+  CornerDownRight,
+  Layers,
   Check,
   Loader2,
   Save,
@@ -29,6 +37,7 @@ import {
   Boxes,
   Coins,
   AlertTriangle,
+  Truck,
 } from "lucide-react";
 import type { WooCategory } from "@/types/product";
 import { toWpDescription } from "@/utils/html";
@@ -41,7 +50,11 @@ import {
   sizeChartHasValues,
   SIZE_CHART_META_KEY,
   type SizeChartData,
+  type MultiSectionSizeChart,
+  normalizeToMultiSectionChart,
+  GARMENT_PRESETS,
 } from "@/utils/size-chart";
+import { SizeMeasurementBuilder } from "@/components/admin/size-measurement-builder";
 
 interface ImageItem {
   src: string;
@@ -122,7 +135,7 @@ interface ProductFormData {
   categories: { id: number; name: string; slug: string; parent?: number }[];
   sizes: string[];
   colors: string[];
-  sizeChart?: SizeChartData;
+  sizeChart?: MultiSectionSizeChart | SizeChartData;
   sizeChartMetaId?: number;
   /** Preserve Brand / other WC attrs that this form does not edit */
   otherAttributes?: Array<{
@@ -152,8 +165,10 @@ const STOCK_OPTIONS = [
   { value: "onbackorder", label: "On Backorder" },
 ];
 
-const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
-const SHOE_SIZES = ["38", "39", "40", "41", "42", "43", "44"];
+const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"];
+const ETHNIC_SIZES = ["36", "38", "40", "42", "44", "46", "48"];
+const WAIST_SIZES = ["28", "30", "32", "34", "36", "38", "40"];
+const UNIVERSAL_SIZES = ["Free Size", "One Size"];
 export function resolveColorStyle(name: string): {
   bg: string;
   isLight: boolean;
@@ -257,25 +272,34 @@ export function resolveColorStyle(name: string): {
 }
 
 const COLOR_OPTIONS = [
+  "Black",
   "White",
   "Off-White",
   "Cream",
-  "Black",
+  "Ivory",
+  "Beige",
   "Maroon",
   "Red",
   "Navy",
   "Blue",
+  "Sky Blue",
+  "Emerald Green",
   "Green",
   "Olive",
   "Yellow",
+  "Mustard",
   "Pink",
-  "Grey",
-  "Beige",
-  "Gold",
-  "Brown",
+  "Baby Pink",
+  "Peach",
+  "Lavender",
   "Purple",
-  "Orange",
-  "Sky Blue",
+  "Gold",
+  "Silver",
+  "Rust",
+  "Brown",
+  "Burgundy",
+  "Grey",
+  "Teal",
 ];
 
 const POPULAR_SUGGESTIONS = [
@@ -440,11 +464,38 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
   >(initialData?.categories || []);
   const [sizes, setSizes] = useState<string[]>(initialData?.sizes || []);
   const [colors, setColors] = useState<string[]>(initialData?.colors || []);
-  const [sizeChart, setSizeChart] = useState<SizeChartData>(
-    initialData?.sizeChart ?? emptySizeChart([...DEFAULT_SIZE_CHART_COLUMNS]),
+  const [sizeChart, setSizeChart] = useState<MultiSectionSizeChart>(() =>
+    normalizeToMultiSectionChart(initialData?.sizeChart, initialData?.sizes)
   );
-  const [newMeasureField, setNewMeasureField] = useState("");
+
   const [customColor, setCustomColor] = useState("");
+  const [colorModalOpen, setColorModalOpen] = useState(false);
+  const [sizeModalOpen, setSizeModalOpen] = useState(false);
+  const [colorSearch, setColorSearch] = useState("");
+
+  useEffect(() => {
+    if (!colorModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setColorModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [colorModalOpen]);
+
+  useEffect(() => {
+    if (!sizeModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSizeModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [sizeModalOpen]);
+
+  const filteredColors = useMemo(() => {
+    const query = colorSearch.trim().toLowerCase();
+    if (!query) return COLOR_OPTIONS;
+    return COLOR_OPTIONS.filter((c) => c.toLowerCase().includes(query));
+  }, [colorSearch]);
   // Keep existing WP slug on edit until admin resets from name
   const [slugManual, setSlugManual] = useState(Boolean(initialData?.slug));
   const [slug, setSlug] = useState(
@@ -475,6 +526,13 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
   const uploading = pendingUploads.some(
     (u) => u.phase === "uploading" || u.phase === "processing",
   );
+
+  // Custom size & drag-and-drop state
+  const [newCustomSize, setNewCustomSize] = useState("");
+  const [isDragOverDropzone, setIsDragOverDropzone] = useState(false);
+  const dragCounterRef = useRef(0);
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
+  const [dragOverImageIndex, setDragOverImageIndex] = useState<number | null>(null);
 
   const fetchCategories = async (): Promise<WooCategory[] | null> => {
     const res = await authFetch("/api/admin/categories");
@@ -572,105 +630,80 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
 
   const primaryCategory = selectedCategories[0];
 
-  const toggleSize = (s: string) =>
+  const sortSizes = (list: string[]): string[] => {
+    const clothingOrder: Record<string, number> = {
+      xs: 1,
+      s: 2,
+      m: 3,
+      l: 4,
+      xl: 5,
+      xxl: 6,
+      "2xl": 6,
+      "3xl": 7,
+      "4xl": 8,
+      "5xl": 9,
+    };
+    return [...list].sort((a, b) => {
+      const numA = Number(a);
+      const numB = Number(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      if (!isNaN(numA)) return -1;
+      if (!isNaN(numB)) return 1;
+      const ordA = clothingOrder[a.toLowerCase()];
+      const ordB = clothingOrder[b.toLowerCase()];
+      if (ordA && ordB) return ordA - ordB;
+      if (ordA) return -1;
+      if (ordB) return 1;
+      return a.localeCompare(b);
+    });
+  };
+
+  const toggleSize = (s: string) => {
+    const clean = s.trim();
+    if (!clean) return;
     setSizes((prev) => {
-      if (prev.includes(s)) {
-        setSizeChart((chart) => {
-          const rows = { ...chart.rows };
-          delete rows[s];
-          return { ...chart, rows };
-        });
-        return prev.filter((x) => x !== s);
-      }
-      return [...prev, s];
-    });
+      const exists = prev.some((x) => x.toLowerCase() === clean.toLowerCase());
+      const nextSizes = exists
+        ? prev.filter((x) => x.toLowerCase() !== clean.toLowerCase())
+        : sortSizes([...prev, clean]);
 
-  const setMeasureValue = (size: string, column: string, value: string) => {
-    setSizeChart((prev) => ({
-      ...prev,
-      rows: {
-        ...prev.rows,
-        [size]: {
-          ...(prev.rows[size] || {}),
-          [column]: value,
-        },
-      },
-    }));
-  };
+      setSizeChart((prevChart) => {
+        const chartSizes = exists
+          ? prevChart.sizes.filter((x) => x.toLowerCase() !== clean.toLowerCase())
+          : prevChart.sizes.includes(clean)
+            ? prevChart.sizes
+            : [...prevChart.sizes, clean];
 
-  const addMeasureColumn = () => {
-    const label = newMeasureField.trim();
-    if (!label) return;
-    const exists = sizeChart.columns.some(
-      (c) => c.toLowerCase() === label.toLowerCase(),
-    );
-    if (exists) {
-      setNewMeasureField("");
-      return;
-    }
-    setSizeChart((prev) => ({
-      ...prev,
-      columns: [...prev.columns, label],
-    }));
-    setNewMeasureField("");
-  };
-
-  const removeMeasureColumn = (column: string) => {
-    setSizeChart((prev) => {
-      if (prev.columns.length <= 1) {
-        // Keep at least the default measurement fields
-        return emptySizeChart([...DEFAULT_SIZE_CHART_COLUMNS]);
-      }
-      const columns = prev.columns.filter((c) => c !== column);
-      const rows: SizeChartData["rows"] = {};
-      for (const [size, vals] of Object.entries(prev.rows)) {
-        const next = { ...vals };
-        delete next[column];
-        rows[size] = next;
-      }
-      return { columns, rows };
-    });
-  };
-
-  const fillDefaultShirtMeasurements = () => {
-    setSizeChart((prev) => {
-      const columns =
-        prev.columns.length > 0
-          ? prev.columns
-          : [...DEFAULT_SIZE_CHART_COLUMNS];
-      const defaults: Record<string, Record<string, string>> = {
-        XS: { Chest: '36"', Length: '26"', Sleeve: '7.5"' },
-        S: { Chest: '38"', Length: '27"', Sleeve: '8"' },
-        M: { Chest: '40"', Length: '28"', Sleeve: '8.5"' },
-        L: { Chest: '42"', Length: '29"', Sleeve: '9"' },
-        XL: { Chest: '44"', Length: '30"', Sleeve: '9.5"' },
-        XXL: { Chest: '46"', Length: '31"', Sleeve: '10"' },
-        "3XL": { Chest: '48"', Length: '32"', Sleeve: '10.5"' },
-      };
-      const rows = { ...prev.rows };
-      for (const s of sizes) {
-        const defKey = Object.keys(defaults).find(
-          (k) => k.toUpperCase() === s.toUpperCase(),
-        );
-        if (!defKey) continue;
-        const defRow = defaults[defKey];
-        rows[s] = {
-          ...(rows[s] || {}),
-          ...Object.fromEntries(
-            columns.map((col) => {
-              const defCol = Object.keys(defRow).find(
-                (k) => k.toLowerCase() === col.toLowerCase(),
-              );
-              return [
-                col,
-                rows[s]?.[col] || (defCol ? defRow[defCol] : "") || "",
-              ];
-            }),
-          ),
+        return {
+          ...prevChart,
+          sizes: chartSizes,
         };
-      }
-      return { columns, rows };
+      });
+
+      return nextSizes;
     });
+  };
+
+  const addCustomSize = (custom?: string) => {
+    const raw = (custom !== undefined ? custom : newCustomSize).trim();
+    if (!raw) return;
+    const exists = sizes.some((x) => x.toLowerCase() === raw.toLowerCase());
+    if (!exists) {
+      setSizes((prev) => sortSizes([...prev, raw]));
+      setSizeChart((prevChart) => ({
+        ...prevChart,
+        sizes: prevChart.sizes.includes(raw) ? prevChart.sizes : [...prevChart.sizes, raw],
+      }));
+    }
+    setNewCustomSize("");
+  };
+
+  const clearAllSizes = () => {
+    setSizes([]);
+    setSizeChart((prevChart) => ({
+      ...prevChart,
+      sizes: [],
+    }));
   };
 
   const toggleColor = (c: string) =>
@@ -776,7 +809,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
     });
   };
 
-  const handleImageUpload = async (files: FileList) => {
+  const handleImageUpload = async (files: FileList | File[]) => {
     setError("");
     const currentCount = images.length + pendingUploads.filter(
       (u) => u.phase === "uploading" || u.phase === "processing",
@@ -790,7 +823,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
 
     const fileList = Array.from(files).filter((f) => f.type.startsWith("image/"));
     if (fileList.length === 0) {
-      setError("Please select image files only.");
+      setError("Please select or drop valid image files (JPG, PNG, WEBP, etc.).");
       return;
     }
 
@@ -884,6 +917,104 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
       newArr[targetIdx] = temp;
       return newArr;
     });
+  };
+
+  // Drag and Drop File Upload Event Handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current += 1;
+    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+      setIsDragOverDropzone(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragOverDropzone(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+      e.dataTransfer.dropEffect = "copy";
+      setIsDragOverDropzone(true);
+    }
+  };
+
+  const handleDropFiles = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragOverDropzone(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      void handleImageUpload(e.dataTransfer.files);
+    }
+  };
+
+  // Drag and Drop Thumbnail Reordering Handlers
+  const handleImageDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedImageIndex(index);
+    e.dataTransfer.setData("text/plain", String(index));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleImageDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes("Files")) {
+      e.dataTransfer.dropEffect = "copy";
+      setIsDragOverDropzone(true);
+      return;
+    }
+    if (draggedImageIndex !== null && draggedImageIndex !== index) {
+      setDragOverImageIndex(index);
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleImageDragLeave = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragOverImageIndex === index) {
+      setDragOverImageIndex(null);
+    }
+  };
+
+  const handleImageDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current = 0;
+    setIsDragOverDropzone(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && Array.from(e.dataTransfer.types).includes("Files")) {
+      setDragOverImageIndex(null);
+      setDraggedImageIndex(null);
+      void handleImageUpload(e.dataTransfer.files);
+      return;
+    }
+
+    if (draggedImageIndex !== null && draggedImageIndex !== dropIndex) {
+      setImages((prev) => {
+        const next = [...prev];
+        const [moved] = next.splice(draggedImageIndex, 1);
+        next.splice(dropIndex, 0, moved);
+        return next;
+      });
+    }
+    setDraggedImageIndex(null);
+    setDragOverImageIndex(null);
+  };
+
+  const handleImageDragEnd = () => {
+    setDraggedImageIndex(null);
+    setDragOverImageIndex(null);
   };
 
   const applyCrop = async () => {
@@ -1020,6 +1151,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
         slug: c.slug,
         parent: c.parent || 0,
       })),
+      sizes,
       meta_data: [
         ...(buyPrice ? [{ key: "_buy_price", value: buyPrice }] : []),
         { ...(initialData?.deliveryInsideId ? { id: initialData.deliveryInsideId } : {}), key: "_delivery_inside", value: deliveryInside },
@@ -1027,23 +1159,11 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
         {
           ...(initialData?.sizeChartMetaId ? { id: initialData.sizeChartMetaId } : {}),
           key: SIZE_CHART_META_KEY,
-          value: (() => {
-            // Only keep rows for currently selected sizes
-            const pruned: SizeChartData = {
-              columns:
-                sizeChart.columns.length > 0
-                  ? sizeChart.columns
-                  : [...DEFAULT_SIZE_CHART_COLUMNS],
-              rows: Object.fromEntries(
-                sizes
-                  .filter((s) => sizeChart.rows[s])
-                  .map((s) => [s, sizeChart.rows[s]]),
-              ),
-            };
-            return sizeChartHasValues(pruned)
-              ? serializeSizeChart(pruned)
-              : "";
-          })(),
+          value: sizeChartHasValues(sizeChart) ? serializeSizeChart(sizeChart) : "",
+        },
+        {
+          key: "_plainstitch_size_chart",
+          value: sizeChartHasValues(sizeChart) ? serializeSizeChart(sizeChart) : "",
         },
       ],
       attributes,
@@ -1076,7 +1196,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-28">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Left Column — Main Info ────────────────────── */}
         <div className="lg:col-span-2 space-y-5">
@@ -1175,13 +1295,43 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
             {/* Selected categories */}
             {selectedCategories.length > 0 ? (
               <div className="mb-4 rounded-xl border border-amber-200/80 bg-[#FAF7F2] p-3.5">
+                {/* ── Category Line Breadcrumb Bar ── */}
+                {primaryCategory && (
+                  <div className="mb-3 rounded-lg border border-amber-300/80 bg-white px-3 py-2 shadow-2xs">
+                    <div className="flex items-center gap-2 flex-wrap text-[12px]">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#400604] text-[#E1B76F] text-[10px] font-bold uppercase tracking-wider shrink-0 shadow-2xs">
+                        <FolderTree className="h-3 w-3 text-[#E1B76F]" />
+                        Category Line
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap font-medium text-stone-700">
+                        {(formattedCategories.find((c) => c.id === primaryCategory.id)?.path || primaryCategory.name)
+                          .split(" → ")
+                          .map((crumb, idx, arr) => (
+                            <span key={idx} className="flex items-center gap-1.5">
+                              {idx > 0 && <ChevronRight className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                              <span
+                                className={
+                                  idx === arr.length - 1
+                                    ? "font-bold text-[#400604] bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200"
+                                    : "text-stone-600"
+                                }
+                              >
+                                {crumb}
+                              </span>
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-2">
                   {selectedCategories.map((cat, i) => {
                     const path = formattedCategories.find((c) => c.id === cat.id)?.path || cat.name;
                     return (
                       <span
                         key={cat.id}
-                        title={path}
+                        title={`Category Line: ${path}`}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-[#400604]/20 bg-white pl-2.5 pr-1 py-1 text-[12px] font-semibold text-[#400604] shadow-xs"
                       >
                         {i === 0 ? (
@@ -1192,13 +1342,19 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                           <button
                             type="button"
                             onClick={() => makePrimaryCategory(cat.id)}
-                            className="rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-400 hover:bg-stone-100 hover:text-[#400604]"
+                            className="rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-400 hover:bg-stone-100 hover:text-[#400604]"
                             title="Make this the primary category"
                           >
                             Make primary
                           </button>
                         )}
-                        {cat.name}
+                        <Folder className="h-3 w-3 text-amber-700/60 shrink-0" />
+                        <span>{cat.name}</span>
+                        {path !== cat.name && (
+                          <span className="text-[10px] font-normal text-stone-400 max-w-[140px] truncate" title={path}>
+                            ({path})
+                          </span>
+                        )}
                         <button
                           type="button"
                           onClick={() => toggleCategory(cat)}
@@ -1212,10 +1368,13 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   })}
                 </div>
                 <div className="mt-2.5 flex items-center justify-between gap-3 text-[11px] text-stone-500">
-                  <span>
-                    Primary: <strong className="text-stone-700">{formattedCategories.find((c) => c.id === primaryCategory?.id)?.path || primaryCategory?.name}</strong>
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="text-stone-400 font-medium">Primary Line:</span>
+                    <strong className="text-stone-700 truncate font-semibold">
+                      {(formattedCategories.find((c) => c.id === primaryCategory?.id)?.path || primaryCategory?.name || "Unassigned").replace(/ → /g, " › ")}
+                    </strong>
                   </span>
-                  <button type="button" onClick={clearCategories} className="font-semibold text-rose-600 hover:underline">
+                  <button type="button" onClick={clearCategories} className="font-semibold text-rose-600 hover:underline shrink-0">
                     Clear all
                   </button>
                 </div>
@@ -1223,7 +1382,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
             ) : (
               <div className="mb-4 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 p-3.5 text-[12px] text-amber-800 flex items-center gap-2.5">
                 <Tag className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>Pick one or more categories below so this product appears in the right collections.</span>
+                <span>Pick one or more categories below so this product appears in the right collections and category line.</span>
               </div>
             )}
 
@@ -1235,7 +1394,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                   type="text"
                   value={categoryQuery}
                   onChange={(e) => setCategoryQuery(e.target.value)}
-                  placeholder="Search categories (e.g. Panjabi, Saree, Women)…"
+                  placeholder="Search categories (e.g. Panjabi, Saree, Men)…"
                   className="w-full rounded-xl border border-stone-200 bg-white pl-10 pr-9 py-2.5 text-[13px] text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
                 />
                 {categoryQuery && (
@@ -1250,7 +1409,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 )}
               </div>
 
-              <div className="max-h-72 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1">
+              <div className="max-h-72 overflow-y-auto rounded-xl border border-stone-200 bg-white py-1 divide-y divide-stone-100">
                 {availableCategories.length === 0 ? (
                   <div className="px-4 py-4 text-center text-[13px] text-stone-400">Loading categories…</div>
                 ) : filteredCategories.length === 0 ? (
@@ -1261,26 +1420,53 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                     return (
                       <label
                         key={cat.id}
-                        className={`flex cursor-pointer items-center gap-3 px-4 py-2 text-[13px] transition hover:bg-stone-50 ${
+                        className={`flex cursor-pointer items-center gap-2.5 px-4 py-2 text-[13px] transition hover:bg-amber-50/50 ${
                           checked ? "bg-amber-50/70 font-semibold text-[#400604]" : "text-stone-700"
                         }`}
-                        style={{ paddingLeft: categoryQuery ? undefined : 16 + cat.level * 20 }}
+                        style={{ paddingLeft: categoryQuery ? 16 : 16 + cat.level * 22 }}
                       >
+                        {/* Tree connector lines */}
+                        {!categoryQuery && cat.level === 1 && (
+                          <span className="inline-flex items-center text-stone-400 shrink-0" aria-hidden="true">
+                            <CornerDownRight className="h-3.5 w-3.5 text-stone-400" />
+                          </span>
+                        )}
+                        {!categoryQuery && cat.level >= 2 && (
+                          <span className="inline-flex items-center text-stone-400 shrink-0" aria-hidden="true">
+                            <span className="inline-block w-2.5 border-b border-stone-300 mr-0.5" />
+                            <CornerDownRight className="h-3 w-3 text-stone-400" />
+                          </span>
+                        )}
+
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleCategory(cat)}
                           className="h-4 w-4 shrink-0 rounded border-stone-300 accent-[#400604]"
                         />
+
+                        {cat.level === 0 ? (
+                          <Folder className="h-4 w-4 text-amber-600 shrink-0" />
+                        ) : (
+                          <Folder className="h-3.5 w-3.5 text-stone-400 shrink-0" />
+                        )}
+
                         <span className="min-w-0 flex-1 truncate">
                           {cat.name}
                           {categoryQuery && cat.level > 0 && (
-                            <span className="ml-2 text-[11px] font-normal text-stone-400">{cat.path}</span>
+                            <span className="ml-2 text-[11px] font-normal text-stone-400">
+                              ({cat.path.replace(/ → /g, " › ")})
+                            </span>
                           )}
                         </span>
-                        {cat.level === 0 && (
-                          <span className="shrink-0 rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-500">
+
+                        {cat.level === 0 ? (
+                          <span className="shrink-0 rounded-md bg-stone-100 border border-stone-200/70 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-stone-600">
                             Main
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-[10px] text-stone-400 font-normal">
+                            lvl {cat.level}
                           </span>
                         )}
                       </label>
@@ -1289,7 +1475,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 )}
               </div>
               <p className="mt-2 text-[11px] text-stone-400">
-                Tip: a product in a sub-category automatically shows under its parent collection too — you only need to tick the parent if you want it listed there on its own.
+                Tip: select the specific sub-category or main collection. The primary category line determines the breadcrumb trail and default collection routing.
               </p>
             </div>
 
@@ -1302,6 +1488,14 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 </span>
               </div>
               <div className="space-y-1.5 text-[11.5px]">
+                <div className="flex items-start gap-2">
+                  <span className="text-stone-400 font-medium shrink-0 w-24">Category Line:</span>
+                  <span className="text-[#400604] font-semibold break-all">
+                    {primaryCategory
+                      ? (formattedCategories.find((c) => c.id === primaryCategory.id)?.path || primaryCategory.name).replace(/ → /g, " › ")
+                      : "— No category selected —"}
+                  </span>
+                </div>
                 <div className="flex items-start gap-2">
                   <span className="text-stone-400 font-medium shrink-0 w-24">Product URL:</span>
                   <code className="text-[#400604] font-mono break-all font-semibold">
@@ -1319,7 +1513,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                 <div className="flex items-start gap-2">
                   <span className="text-stone-400 font-medium shrink-0 w-24">Breadcrumbs:</span>
                   <span className="text-stone-600">
-                    Home &gt; {primaryCategory?.name || "Unassigned"} &gt; {name || "Product Name"}
+                    Home &gt; {primaryCategory ? (formattedCategories.find((c) => c.id === primaryCategory.id)?.path || primaryCategory.name).replace(/ → /g, " > ") : "Unassigned"} &gt; {name || "Product Name"}
                   </span>
                 </div>
               </div>
@@ -1371,19 +1565,29 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
           </div>
 
           {/* Images */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
+          <div
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDropFiles}
+            className={`relative bg-white rounded-2xl border transition-all duration-200 p-5 shadow-sm ${
+              isDragOverDropzone
+                ? "border-[#400604] ring-4 ring-[#400604]/10 bg-amber-50/20"
+                : "border-stone-200/80"
+            }`}
+          >
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-purple-500" />
-                <h3 className="text-[14px] font-bold text-gray-700">
-                  Product Images & Angles
+                <ImageIcon className="h-4 w-4 text-[#400604]" />
+                <h3 className="text-[14px] font-bold text-stone-800">
+                  Product Images &amp; Drag &amp; Drop Studio
                 </h3>
               </div>
               <span
                 className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
                   images.length + pendingUploads.filter((u) => u.phase !== "error").length >= MAX_IMAGES
                     ? "bg-amber-50 text-amber-700 border-amber-200"
-                    : "bg-purple-50 text-purple-700 border-purple-100"
+                    : "bg-[#400604]/5 text-[#400604] border-[#400604]/20"
                 }`}
               >
                 {images.length}
@@ -1399,202 +1603,271 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
               </span>
             </div>
 
-            {/* Recommended Specifications Banner */}
-            <div className="mb-4 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50/60 border border-purple-100 p-4 text-[12px]">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-purple-600 shrink-0" />
-                <span className="font-bold text-purple-900 text-[13px]">
-                  Recommended Specifications for Fashion & Apparel:
+            {/* Active Drag-Over Banner */}
+            {isDragOverDropzone && (
+              <div className="my-3 rounded-xl bg-gradient-to-r from-[#400604] to-[#1A0302] p-3 text-center text-[12px] font-bold text-[#E1B76F] border border-[#E1B76F]/40 shadow-md animate-pulse flex items-center justify-center gap-2">
+                <UploadCloud className="h-4 w-4 animate-bounce" />
+                <span>Drop images now to automatically convert to WebP &amp; upload!</span>
+              </div>
+            )}
+
+            {/* Sleek Industry-Level Guidelines Bar */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-50 border border-stone-200/80 px-3.5 py-2.5 text-xs text-stone-600">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 font-bold text-stone-800">
+                  <Sparkles className="h-3.5 w-3.5 text-[#400604]" />
+                  Photo #1 is Cover Photo
                 </span>
+                <span className="text-stone-300">•</span>
+                <span>3:4 Portrait (1200 × 1600 px)</span>
+                <span className="text-stone-300">•</span>
+                <span>Auto-converts to WebP</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-gray-700 mb-2.5">
-                <div className="bg-white rounded-xl p-2.5 border border-purple-100/80 shadow-xs">
-                  <span className="text-purple-600 font-bold block mb-0.5">📐 Aspect Ratio</span>
-                  <strong className="text-gray-900 font-extrabold text-[12px]">3:4 Portrait</strong>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Fashion industry standard (Zara, ASOS)</p>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 border border-purple-100/80 shadow-xs">
-                  <span className="text-purple-600 font-bold block mb-0.5">📏 Ideal Dimensions</span>
-                  <strong className="text-gray-900 font-extrabold text-[12px]">1200 × 1600 px</strong>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Minimum 900 × 1200 px (Crisp zoom)</p>
-                </div>
-                <div className="bg-white rounded-xl p-2.5 border border-purple-100/80 shadow-xs">
-                  <span className="text-purple-600 font-bold block mb-0.5">📁 Format & Size</span>
-                  <strong className="text-gray-900 font-extrabold text-[12px]">WebP or JPG</strong>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Under 2.5 MB for instant mobile load</p>
-                </div>
-              </div>
-              <p className="text-[11px] text-purple-900/80 leading-relaxed bg-white/60 p-2 rounded-lg border border-purple-100/60">
-                💡 <strong>Why 3:4?</strong> Shirts, dresses, and clothing are vertical. 3:4 portrait photos prevent collars and bottom hems from being cut off. You can use the <strong>&quot;Crop / Fit&quot;</strong> button on any photo below to align it!
-              </p>
+              <span className="text-[11px] font-semibold text-stone-400">
+                Drag photos to reorder
+              </span>
             </div>
 
-            {/* Images List (3:4 Aspect Ratio Cards) */}
-            <div className="flex flex-wrap gap-3.5">
-              {images.map((img, i) => (
+            {/* Empty State Dropzone */}
+            {images.length === 0 && pendingUploads.length === 0 ? (
+              <div
+                onClick={() => fileRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition flex flex-col items-center justify-center gap-3 ${
+                  isDragOverDropzone
+                    ? "border-[#400604] bg-amber-50/70 ring-4 ring-[#400604]/10 scale-[1.01]"
+                    : "border-stone-300 bg-stone-50/60 hover:border-[#400604] hover:bg-amber-50/30"
+                }`}
+              >
                 <div
-                  key={`${img.wpId ?? img.src}-${i}`}
-                  className="relative w-28 aspect-[3/4] rounded-xl overflow-hidden border-2 border-purple-100 bg-[#f8f9fa] shadow-sm group transition hover:border-purple-300"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img.src}
-                    alt={img.alt}
-                    className="h-full w-full object-contain object-center"
-                  />
-                  {i === 0 && (
-                    <span className="absolute top-1 left-1 rounded-md bg-purple-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">
-                      Cover
-                    </span>
-                  )}
-
-                  {/* Hover Actions Overlay */}
-                  <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex flex-col justify-between p-1.5 transition duration-150">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        {i > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => moveImage(i, "left")}
-                            className="h-5 w-5 rounded bg-white/20 text-white hover:bg-white/40 flex items-center justify-center transition"
-                            title="Move left"
-                          >
-                            <ArrowLeft className="h-3 w-3" />
-                          </button>
-                        )}
-                        {i < images.length - 1 && (
-                          <button
-                            type="button"
-                            onClick={() => moveImage(i, "right")}
-                            className="h-5 w-5 rounded bg-white/20 text-white hover:bg-white/40 flex items-center justify-center transition"
-                            title="Move right"
-                          >
-                            <ArrowRight className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeImage(i)}
-                        className="h-5 w-5 rounded bg-red-500/90 text-white hover:bg-red-600 flex items-center justify-center transition"
-                        title="Remove image"
-                      >
-                        <Trash className="h-3 w-3" />
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewModalIndex(i)}
-                        className="w-full rounded bg-white/20 py-1 text-[10px] font-semibold text-white hover:bg-white/30 flex items-center justify-center gap-1 transition"
-                      >
-                        <Eye className="h-3 w-3" /> Preview
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCropModalIndex(i);
-                          setCropMode("3:4");
-                          setCropAlign("top");
-                        }}
-                        className="w-full rounded bg-purple-600 py-1 text-[10px] font-semibold text-white hover:bg-purple-700 flex items-center justify-center gap-1 transition shadow-sm"
-                      >
-                        <Crop className="h-3 w-3" /> Crop / Fit
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* In-progress / failed uploads — each with its own % bar */}
-              {pendingUploads.map((item) => (
-                <div
-                  key={item.id}
-                  className={`relative w-28 aspect-[3/4] rounded-xl overflow-hidden border-2 bg-[#f8f9fa] shadow-sm ${
-                    item.phase === "error"
-                      ? "border-red-300"
-                      : "border-purple-300"
+                  className={`h-14 w-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                    isDragOverDropzone
+                      ? "bg-[#400604] text-[#E1B76F] scale-110"
+                      : "bg-white text-[#400604] border border-stone-200"
                   }`}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={item.previewUrl}
-                    alt={item.name}
-                    className="h-full w-full object-cover object-center opacity-50"
-                  />
-                  <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/40 to-black/10 p-2">
-                    {item.phase === "error" ? (
-                      <>
-                        <p className="text-[9px] font-bold text-red-200 leading-tight line-clamp-2 mb-1.5">
-                          {item.error || "Upload failed"}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => removePending(item.id)}
-                          className="w-full rounded bg-red-500/90 py-1 text-[10px] font-bold text-white hover:bg-red-600 transition"
-                        >
-                          Dismiss
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] font-bold text-white/90 truncate pr-1">
-                            {item.phase === "processing" ? "Saving…" : "Uploading"}
-                          </span>
-                          <span className="text-[10px] font-black text-white tabular-nums">
-                            {item.progress}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-white/25 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-[width] duration-150 ease-out ${
-                              item.phase === "processing"
-                                ? "bg-amber-300 animate-pulse"
-                                : "bg-purple-400"
-                            }`}
-                            style={{ width: `${Math.max(item.progress, 2)}%` }}
-                          />
-                        </div>
-                        <p className="mt-1 text-[8px] text-white/60 truncate">{item.name}</p>
-                      </>
-                    )}
-                  </div>
+                  <UploadCloud className="h-7 w-7" />
                 </div>
-              ))}
-
-              {/* Upload Button or Max Limit State */}
-              {images.length + pendingUploads.filter((u) => u.phase !== "error").length < MAX_IMAGES ? (
+                <div>
+                  <p className="text-[14px] font-bold text-stone-800">
+                    {isDragOverDropzone
+                      ? "Release your mouse to upload!"
+                      : "Drag & drop product photos here, or click to browse"}
+                  </p>
+                  <p className="text-[12px] text-stone-500 mt-1">
+                    Upload up to {MAX_IMAGES} photos · Recommended 3:4 portrait (1200 × 1600 px) · JPG, PNG, WEBP
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="w-28 aspect-[3/4] rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/30 flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-purple-400 hover:bg-purple-50/60 hover:text-purple-600 transition cursor-pointer"
+                  className="mt-1 inline-flex items-center gap-2 rounded-xl bg-[#400604] px-4 py-2 text-[12px] font-bold text-white hover:bg-[#250302] transition shadow-xs cursor-pointer"
                 >
-                  <div className="h-8 w-8 rounded-full bg-white shadow-sm flex items-center justify-center text-purple-600">
-                    <Upload className="h-4 w-4" />
-                  </div>
-                  <span className="text-[11px] font-bold text-gray-700">Add Photo</span>
-                  <span className="text-[9px] text-gray-400">3:4 Portrait</span>
+                  <Upload className="h-3.5 w-3.5" />
+                  Select Images From Computer
                 </button>
-              ) : images.length >= MAX_IMAGES ? (
-                <div className="w-28 aspect-[3/4] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-400 p-2 text-center select-none">
-                  <Check className="h-5 w-5 text-emerald-500" />
-                  <span className="text-[11px] font-bold text-gray-700">Max Limit</span>
-                  <span className="text-[9px] text-gray-400 leading-tight">{MAX_IMAGES}/{MAX_IMAGES} photos added</span>
-                </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
+
+            {/* Images List (3:4 Aspect Ratio Cards with Drag Reorder) */}
+            {(images.length > 0 || pendingUploads.length > 0) ? (
+              <div className="flex flex-wrap gap-3.5">
+                {images.map((img, i) => {
+                  const isBeingDragged = draggedImageIndex === i;
+                  const isDropTarget = dragOverImageIndex === i;
+                  return (
+                    <div
+                      key={`${img.wpId ?? img.src}-${i}`}
+                      draggable={true}
+                      onDragStart={(e) => handleImageDragStart(e, i)}
+                      onDragOver={(e) => handleImageDragOver(e, i)}
+                      onDragLeave={(e) => handleImageDragLeave(e, i)}
+                      onDrop={(e) => handleImageDrop(e, i)}
+                      onDragEnd={handleImageDragEnd}
+                      className={`relative w-28 aspect-[3/4] rounded-xl overflow-hidden border-2 bg-[#f8f9fa] shadow-2xs group transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
+                        isBeingDragged
+                          ? "opacity-30 scale-95 ring-2 ring-[#400604] border-[#400604]"
+                          : isDropTarget
+                          ? "ring-2 ring-[#400604] border-[#400604] scale-105 shadow-md"
+                          : "border-stone-200 hover:border-[#400604]/60"
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.src}
+                        alt={img.alt}
+                        className="h-full w-full object-contain object-center pointer-events-none"
+                      />
+
+                      {/* Position / Cover Badge */}
+                      <span
+                        className={`absolute top-1 left-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold shadow-xs ${
+                          i === 0
+                            ? "bg-[#400604] text-[#E1B76F] border border-[#E1B76F]/40"
+                            : "bg-black/60 text-white backdrop-blur-xs"
+                        }`}
+                      >
+                        {i === 0 ? "Cover" : `#${i + 1}`}
+                      </span>
+
+                      {/* Drag Grip Handle */}
+                      <div
+                        className="absolute top-1 right-1 h-5 w-5 rounded bg-black/50 text-white/80 hover:text-white flex items-center justify-center backdrop-blur-xs opacity-75 group-hover:opacity-100 transition"
+                        title="Drag this card to rearrange photo order"
+                      >
+                        <GripVertical className="h-3.5 w-3.5" />
+                      </div>
+
+                      {/* Hover Actions Overlay */}
+                      <div className="absolute inset-0 bg-black/75 opacity-0 group-hover:opacity-100 flex flex-col justify-between p-1.5 transition duration-150">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            {i > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(i, "left")}
+                                className="h-5 w-5 rounded bg-white/20 text-white hover:bg-white/40 flex items-center justify-center transition cursor-pointer"
+                                title="Move left"
+                              >
+                                <ArrowLeft className="h-3 w-3" />
+                              </button>
+                            )}
+                            {i < images.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(i, "right")}
+                                className="h-5 w-5 rounded bg-white/20 text-white hover:bg-white/40 flex items-center justify-center transition cursor-pointer"
+                                title="Move right"
+                              >
+                                <ArrowRight className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeImage(i)}
+                            className="h-5 w-5 rounded bg-red-500/90 text-white hover:bg-red-600 flex items-center justify-center transition cursor-pointer"
+                            title="Remove image"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </button>
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewModalIndex(i)}
+                            className="w-full rounded bg-white/20 py-1 text-[10px] font-semibold text-white hover:bg-white/30 flex items-center justify-center gap-1 transition cursor-pointer"
+                          >
+                            <Eye className="h-3 w-3" /> Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCropModalIndex(i);
+                              setCropMode("3:4");
+                              setCropAlign("top");
+                            }}
+                            className="w-full rounded bg-[#400604] py-1 text-[10px] font-semibold text-white hover:bg-[#250302] flex items-center justify-center gap-1 transition shadow-sm cursor-pointer"
+                          >
+                            <Crop className="h-3 w-3" /> Crop / Fit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* In-progress / failed uploads — each with its own % bar */}
+                {pendingUploads.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`relative w-28 aspect-[3/4] rounded-xl overflow-hidden border-2 bg-[#f8f9fa] shadow-sm ${
+                      item.phase === "error"
+                        ? "border-red-300"
+                        : "border-[#400604]/40"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.previewUrl}
+                      alt={item.name}
+                      className="h-full w-full object-cover object-center opacity-50"
+                    />
+                    <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/40 to-black/10 p-2">
+                      {item.phase === "error" ? (
+                        <>
+                          <p className="text-[9px] font-bold text-red-200 leading-tight line-clamp-2 mb-1.5">
+                            {item.error || "Upload failed"}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removePending(item.id)}
+                            className="w-full rounded bg-red-500/90 py-1 text-[10px] font-bold text-white hover:bg-red-600 transition"
+                          >
+                            Dismiss
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[9px] font-bold text-white/90 truncate pr-1">
+                              {item.phase === "processing" ? "Saving…" : "Uploading"}
+                            </span>
+                            <span className="text-[10px] font-black text-white tabular-nums">
+                              {item.progress}%
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-white/25 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-[width] duration-150 ease-out ${
+                                item.phase === "processing"
+                                  ? "bg-amber-300 animate-pulse"
+                                  : "bg-[#E1B76F]"
+                              }`}
+                              style={{ width: `${Math.max(item.progress, 2)}%` }}
+                            />
+                          </div>
+                          <p className="mt-1 text-[8px] text-white/60 truncate">{item.name}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Upload / Dropzone Card for adding more photos */}
+                {images.length + pendingUploads.filter((u) => u.phase !== "error").length < MAX_IMAGES ? (
+                  <div
+                    onClick={() => fileRef.current?.click()}
+                    className={`w-28 aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition cursor-pointer text-center p-2 ${
+                      isDragOverDropzone
+                        ? "border-[#400604] bg-amber-50/80 ring-2 ring-[#400604]/20 scale-105"
+                        : "border-stone-300 bg-stone-50/50 hover:border-[#400604] hover:bg-amber-50/30 text-stone-500 hover:text-[#400604]"
+                    }`}
+                  >
+                    <div className="h-8 w-8 rounded-full bg-white shadow-xs flex items-center justify-center text-[#400604] border border-stone-200">
+                      <UploadCloud className="h-4 w-4" />
+                    </div>
+                    <span className="text-[11px] font-bold text-stone-700">Add Photo</span>
+                    <span className="text-[9px] text-stone-400">Drag &amp; Drop or Click</span>
+                  </div>
+                ) : images.length >= MAX_IMAGES ? (
+                  <div className="w-28 aspect-[3/4] rounded-xl border-2 border-dashed border-stone-200 bg-stone-50 flex flex-col items-center justify-center gap-1 text-stone-400 p-2 text-center select-none">
+                    <Check className="h-5 w-5 text-emerald-500" />
+                    <span className="text-[11px] font-bold text-stone-700">Max Limit</span>
+                    <span className="text-[9px] text-stone-400 leading-tight">{MAX_IMAGES}/{MAX_IMAGES} photos added</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             {/* Overall batch progress when multiple files uploading */}
             {uploading && pendingUploads.length > 0 && (
-              <div className="mt-3 rounded-xl border border-purple-100 bg-purple-50/50 px-3.5 py-2.5">
+              <div className="mt-3 rounded-xl border border-amber-200/80 bg-[#FAF7F2] px-3.5 py-2.5">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold text-purple-800">
+                  <span className="text-[11px] font-bold text-[#400604]">
                     Uploading {pendingUploads.filter((u) => u.phase !== "error").length} photo
                     {pendingUploads.filter((u) => u.phase !== "error").length !== 1 ? "s" : ""}…
                   </span>
-                  <span className="text-[11px] font-black text-purple-700 tabular-nums">
+                  <span className="text-[11px] font-black text-[#400604] tabular-nums">
                     {Math.round(
                       pendingUploads
                         .filter((u) => u.phase !== "error")
@@ -1604,9 +1877,9 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
                     % overall
                   </span>
                 </div>
-                <div className="h-2 w-full rounded-full bg-white overflow-hidden border border-purple-100">
+                <div className="h-2 w-full rounded-full bg-stone-200 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-[width] duration-200 ease-out"
+                    className="h-full rounded-full bg-gradient-to-r from-[#400604] to-[#E1B76F] transition-[width] duration-200 ease-out"
                     style={{
                       width: `${Math.round(
                         pendingUploads
@@ -1882,56 +2155,77 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
         {/* ── Right Column — Price, Stock, Sizes ──────── */}
         <div className="space-y-5">
           {/* Pricing */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="h-4 w-4 text-purple-500" />
-              <h3 className="text-[14px] font-bold text-gray-700">Pricing</h3>
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center text-[#400604]">
+                  <DollarSign className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-bold text-stone-900">Pricing &amp; Margins</h3>
+                  <p className="text-[11px] text-stone-400">Regular price, sale price &amp; inventory cost</p>
+                </div>
+              </div>
+              {(salePrice || regularPrice) && (
+                <span className="text-[12px] font-extrabold text-[#400604] bg-[#400604]/5 border border-[#400604]/20 px-2.5 py-0.5 rounded-full">
+                  ৳{Number(salePrice || regularPrice).toLocaleString()}
+                </span>
+              )}
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700 mb-1.5">
                   Regular Price (৳) *
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={regularPrice}
-                  onChange={(e) => setRegularPrice(e.target.value)}
-                  required
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                  placeholder="1650"
-                />
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-stone-400 select-none">৳</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={regularPrice}
+                    onChange={(e) => setRegularPrice(e.target.value)}
+                    required
+                    className="w-full rounded-xl border border-stone-200 bg-white pl-8 pr-4 py-2.5 text-[14px] font-semibold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="1650"
+                  />
+                </div>
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700 mb-1.5">
                   Sale Price (৳)
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={salePrice}
-                  onChange={(e) => setSalePrice(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
-                  placeholder="Leave empty if no sale"
-                />
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-stone-400 select-none">৳</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={salePrice}
+                    onChange={(e) => setSalePrice(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white pl-8 pr-4 py-2.5 text-[14px] font-semibold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="Leave empty if no sale"
+                  />
+                </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700">
                     Buy Price / Cost (৳)
                   </label>
                   <span className="text-[10px] text-stone-400">Inventory Cost</span>
                 </div>
-                <input
-                  type="number"
-                  min="0"
-                  value={buyPrice}
-                  onChange={(e) => setBuyPrice(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
-                  placeholder="e.g. 950 (cost per unit)"
-                />
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-stone-400 select-none">৳</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={buyPrice}
+                    onChange={(e) => setBuyPrice(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white pl-8 pr-4 py-2.5 text-[14px] font-semibold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="e.g. 950 (cost per unit)"
+                  />
+                </div>
                 <p className="mt-1 text-[11px] text-stone-400 leading-tight">
                   Your purchase or production cost. Powers stock valuation &amp; margins.
                 </p>
@@ -1969,42 +2263,55 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
             </div>
           </div>
 
-          {/* Delivery */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="h-4 w-4 text-purple-500" />
-              <h3 className="text-[14px] font-bold text-gray-700">Delivery Charges</h3>
+          {/* Delivery Charges */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center text-[#400604]">
+                  <Truck className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-bold text-stone-900">Delivery Charges</h3>
+                  <p className="text-[11px] text-stone-400">City-specific shipping or store default</p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-[11.5px] text-gray-500 leading-relaxed bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                💡 <strong>Leave both empty</strong> to use the store-wide delivery rates (Settings → Shipping). Typing <strong>0</strong> makes delivery <strong>Free</strong> for this product only — don&apos;t enter 0 to &quot;remove&quot; a rate.
-              </p>
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
-                  Inside Dhaka (৳)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={deliveryInside}
-                  onChange={(e) => setDeliveryInside(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                  placeholder="Empty = store rate · 0 = Free for this product"
-                />
+            <div className="space-y-3.5">
+              <div className="text-[11.5px] text-stone-600 leading-relaxed bg-stone-50 p-3 rounded-xl border border-stone-200/70">
+                💡 <strong>Leave empty</strong> to use standard store delivery rates. Enter <strong>0</strong> to give <strong>Free Delivery</strong> for this product.
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                  Inside Dhaka (৳)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-stone-400 select-none">৳</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={deliveryInside}
+                    onChange={(e) => setDeliveryInside(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white pl-8 pr-4 py-2.5 text-[13px] font-semibold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="Empty = store rate · 0 = Free"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700 mb-1.5">
                   Outside Dhaka (৳)
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={deliveryOutside}
-                  onChange={(e) => setDeliveryOutside(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[13px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition"
-                  placeholder="Empty = store rate · 0 = Free for this product"
-                />
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-stone-400 select-none">৳</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={deliveryOutside}
+                    onChange={(e) => setDeliveryOutside(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white pl-8 pr-4 py-2.5 text-[13px] font-semibold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                    placeholder="Empty = store rate · 0 = Free"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -2247,418 +2554,566 @@ export function ProductForm({ initialData, onSuccess, onCancel }: Props) {
             </div>
           </div>
 
-          {/* Sizes */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Ruler className="h-4 w-4 text-purple-500" />
-              <h3 className="text-[14px] font-bold text-gray-700">Sizes</h3>
+          {/* Sizes & Measurements (Clean & Minimal with Modal Launcher) */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm space-y-3.5">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-[#400604]/10 border border-[#E1B76F]/30 flex items-center justify-center text-[#400604]">
+                  <Ruler className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-[14px] font-bold text-stone-900">
+                    Sizes &amp; Measurements
+                  </h3>
+                  <p className="text-[11px] text-stone-400">
+                    Selectable sizes &amp; garment specs chart
+                  </p>
+                </div>
+              </div>
+              {sizes.length > 0 && (
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#400604]/5 text-[#400604] border border-[#400604]/20">
+                  {sizes.length} {sizes.length === 1 ? "size" : "sizes"}
+                </span>
+              )}
             </div>
 
+            {/* Button + Quick Chips */}
             <div className="space-y-3">
-              <div>
-                <p className="text-[11px] text-gray-400 mb-2 font-medium">
-                  Clothing
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {CLOTHING_SIZES.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => toggleSize(s)}
-                      className={`h-9 min-w-[2.5rem] px-3 rounded-xl text-sm font-semibold border transition ${
-                        sizes.includes(s)
-                          ? "bg-purple-600 border-purple-500 text-white shadow-sm"
-                          : "bg-gray-50 border-gray-200 text-gray-500 hover:border-purple-300 hover:text-purple-600"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] text-gray-400 mb-2 font-medium">
-                  Shoe / Euro
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {SHOE_SIZES.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => toggleSize(s)}
-                      className={`h-9 min-w-[2.5rem] px-3 rounded-xl text-sm font-semibold border transition ${
-                        sizes.includes(s)
-                          ? "bg-purple-600 border-purple-500 text-white shadow-sm"
-                          : "bg-gray-50 border-gray-200 text-gray-500 hover:border-purple-300 hover:text-purple-600"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {sizes.length > 0 && (
-              <p className="mt-3 text-[11px] text-purple-500 font-medium">
-                Selected: {sizes.join(", ")}
-              </p>
-            )}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSizeModalOpen(true)}
+                  className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-bold border border-stone-300 bg-white text-stone-800 hover:border-[#400604] hover:bg-stone-50 transition cursor-pointer shadow-xs select-none"
+                >
+                  <Ruler className="h-3.5 w-3.5 text-[#400604]" />
+                  <span>{sizes.length > 0 ? "+ Configure Sizes & Specs" : "+ Setup Sizes & Measurements"}</span>
+                </button>
 
-            {/* Optional size measurements — stored as WC meta _angkon_size_chart */}
-            {sizes.length > 0 && (
-              <div className="mt-5 pt-5 border-t border-purple-50 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[12px] font-bold text-gray-700">
-                      Size Measurements
-                      <span className="ml-1.5 font-medium text-gray-400">(optional)</span>
-                    </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      Shown on the product page Size guide. Add custom fields for this product.
-                    </p>
-                  </div>
-                  {sizes.some((s) =>
-                    CLOTHING_SIZES.some((c) => c.toUpperCase() === s.toUpperCase()),
-                  ) ? (
-                    <button
-                      type="button"
-                      onClick={fillDefaultShirtMeasurements}
-                      className="text-[11px] font-semibold text-purple-600 hover:text-purple-800 underline underline-offset-2"
-                    >
-                      Fill shirt defaults
-                    </button>
-                  ) : null}
-                </div>
-
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                  <table className="w-full min-w-[360px] text-left text-[12px]">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-200">
-                        <th className="px-3 py-2.5 font-bold text-gray-700 w-16">Size</th>
-                        {sizeChart.columns.map((col) => (
-                          <th key={col} className="px-2 py-2.5 font-bold text-gray-700">
-                            <div className="flex items-center gap-1">
-                              <span className="truncate">{col}</span>
-                              <button
-                                type="button"
-                                onClick={() => removeMeasureColumn(col)}
-                                className="text-gray-300 hover:text-red-500 transition"
-                                title={`Remove ${col}`}
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sizes.map((s) => (
-                        <tr key={s} className="border-b border-gray-100 last:border-0">
-                          <td className="px-3 py-2 font-bold text-gray-800">{s}</td>
-                          {sizeChart.columns.map((col) => (
-                            <td key={col} className="px-2 py-1.5">
-                              <input
-                                value={sizeChart.rows[s]?.[col] ?? ""}
-                                onChange={(e) =>
-                                  setMeasureValue(s, col, e.target.value)
-                                }
-                                placeholder='e.g. 40"'
-                                className="w-full min-w-[4.5rem] rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
-                              />
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex gap-2">
-                  <input
-                    value={newMeasureField}
-                    onChange={(e) => setNewMeasureField(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addMeasureColumn();
-                      }
-                    }}
-                    placeholder="New field (e.g. Shoulder, Waist)"
-                    className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[12px] text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
-                  />
+                {sizes.length > 0 && (
                   <button
                     type="button"
-                    onClick={addMeasureColumn}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-50 border border-purple-100 px-3.5 text-[12px] font-bold text-purple-700 hover:bg-purple-100 transition"
+                    onClick={clearAllSizes}
+                    className="text-[11px] font-semibold text-stone-400 hover:text-rose-600 transition cursor-pointer px-2 py-1"
                   >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add Measurement
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Colors & Fabric Swatches Studio */}
-          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4 text-[#400604]" />
-                <h3 className="text-[14px] font-bold text-stone-800">
-                  Product Colors &amp; Fabric Swatches
-                </h3>
-              </div>
-              <span
-                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                  colors.length > 0
-                    ? "bg-[#400604]/5 text-[#400604] border-[#400604]/20"
-                    : "bg-stone-50 text-stone-500 border-stone-200"
-                }`}
-              >
-                {colors.length} {colors.length === 1 ? "Color" : "Colors"} Selected
-              </span>
-            </div>
-            <p className="text-[11px] text-stone-500 mb-4 leading-relaxed">
-              Select all available colors for this product or enter custom shades. Every color displays an authentic visual swatch with guaranteed high-contrast borders for light tones like White.
-            </p>
-
-            {/* 1. Active Selected Colors Tray — Always Visible with Physical Swatch & 1-Click Remove */}
-            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3.5 mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
-                    Active Selected Colors
-                  </span>
-                  <span className="rounded-full bg-[#400604] px-2 py-0.5 text-[10px] font-bold text-white tabular-nums">
-                    {colors.length}
-                  </span>
-                </div>
-                {colors.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setColors([])}
-                    className="text-[11px] font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer"
-                  >
-                    Clear All
+                    Clear all
                   </button>
                 )}
               </div>
 
-              {colors.length === 0 ? (
-                <p className="text-[12px] text-stone-400 italic">
-                  No colors selected yet. Click any preset below, use the color picker, or type &quot;White&quot;, &quot;Maroon&quot;, etc.
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((c) => {
-                    const style = resolveColorStyle(c);
-                    return (
+              {/* Selected Sizes Pills */}
+              {sizes.length > 0 ? (
+                <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-stone-500">
+                      Active Product Sizes ({sizes.length})
+                    </span>
+                    <span className="text-[10px] text-stone-400">
+                      Click &times; to remove
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sizes.map((s) => (
                       <span
-                        key={c}
-                        className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-xl text-[12px] font-bold border border-stone-200 bg-white text-stone-800 shadow-2xs transition group hover:border-[#400604]/40"
+                        key={s}
+                        className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-lg text-xs font-bold bg-white text-[#400604] border border-[#400604]/30 shadow-2xs group hover:border-[#400604] transition"
                       >
-                        <span
-                          className={`h-4 w-4 rounded-full shrink-0 ${style.swatchBorder}`}
-                          style={{ backgroundColor: style.bg }}
-                          title={`Color swatch: ${c}`}
-                        />
-                        <span className="font-semibold">{c}</span>
+                        <span>{s}</span>
                         <button
                           type="button"
-                          onClick={() => toggleColor(c)}
-                          className="h-5 w-5 rounded-lg flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-stone-100 transition cursor-pointer"
-                          title={`Remove ${c}`}
-                          aria-label={`Remove ${c}`}
+                          onClick={() => toggleSize(s)}
+                          className="h-4 w-4 rounded flex items-center justify-center text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          title={`Remove ${s}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
                       </span>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* 2. Popular Fashion Presets Grid */}
-            <div className="mb-4">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-2">
-                Fashion &amp; Ethnic Presets
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {COLOR_OPTIONS.map((c) => {
-                  const checked = colors.some(
-                    (x) => x.toLowerCase() === c.toLowerCase(),
-                  );
-                  const style = resolveColorStyle(c);
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => toggleColor(c)}
-                      className={`inline-flex items-center gap-2 h-9 px-3 rounded-xl text-[12px] font-semibold border cursor-pointer transition select-none ${
-                        checked
-                          ? "bg-[#400604] border-[#400604] text-white shadow-xs ring-1 ring-[#E1B76F]"
-                          : "bg-stone-50/70 border-stone-200 text-stone-700 hover:border-[#400604]/50 hover:bg-stone-100/70"
-                      }`}
-                    >
-                      <span
-                        className={`h-3.5 w-3.5 rounded-full shrink-0 ${
-                          checked && style.isLight
-                            ? "border-2 border-stone-200 shadow-2xs"
-                            : style.swatchBorder
-                        }`}
-                        style={{ backgroundColor: style.bg }}
-                      />
-                      <span>{c}</span>
-                      {checked && (
-                        <Check className="h-3.5 w-3.5 text-[#E1B76F] stroke-[2.5]" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 3. Add Custom Color Input with Live Preview + Native Color Picker */}
-            <div className="space-y-2">
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                Type Any Custom Color or Hex Code
-              </label>
-              <div className="flex gap-2 items-center">
-                <div className="relative flex-1">
-                  <input
-                    value={customColor}
-                    onChange={(e) => setCustomColor(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addCustomColor();
-                      }
-                    }}
-                    className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-[13px] text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
-                    placeholder="Type color e.g. White, Off-White, Ivory, Lavender, #FFFFFF…"
-                  />
-                </div>
-
-                {/* Eyedropper / Color Picker Modal */}
-                <label
-                  className="relative flex items-center justify-center h-10 w-10 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-600 hover:text-[#400604] cursor-pointer transition shadow-2xs shrink-0"
-                  title="Pick exact shade from color spectrum"
-                >
-                  <Palette className="h-4 w-4" />
-                  <input
-                    type="color"
-                    defaultValue="#ffffff"
-                    onChange={(e) => {
-                      const hex = e.target.value;
-                      addCustomColor(hex);
-                    }}
-                    className="sr-only"
-                  />
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => addCustomColor()}
-                  className="rounded-xl bg-[#400604] border border-[#400604] px-4 py-2.5 text-[12px] font-bold text-white hover:bg-[#520805] active:scale-95 transition shadow-2xs cursor-pointer shrink-0"
-                >
-                  Add Color
-                </button>
-              </div>
-
-              {/* Live Preview while typing */}
-              {customColor.trim() && (() => {
-                const preview = resolveColorStyle(customColor);
-                return (
-                  <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-[12px]">
-                    <span className="text-[11px] font-bold text-stone-500">Live Preview:</span>
-                    <span
-                      className={`h-4 w-4 rounded-full shrink-0 ${preview.swatchBorder}`}
-                      style={{ backgroundColor: preview.bg }}
-                    />
-                    <strong className="text-stone-800 font-bold capitalize">
-                      {customColor.trim()}
-                    </strong>
-                    {preview.isLight && (
-                      <span className="text-[10px] font-semibold text-stone-600 bg-white px-2 py-0.5 rounded border border-stone-200">
-                        Light tone — high-contrast border applied
-                      </span>
-                    )}
-                    <span className="text-[10px] text-stone-400 ml-auto">
-                      Press Enter to add
-                    </span>
+                    ))}
                   </div>
-                );
-              })()}
 
-              {/* 4. Quick Suggestions for Colors Not Yet Selected */}
-              {POPULAR_SUGGESTIONS.filter(
-                (p) => !colors.some((c) => c.toLowerCase() === p.toLowerCase()),
-              ).length > 0 && (
-                <div className="pt-1.5 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[10.5px] font-bold text-stone-400 uppercase tracking-wider mr-1">
-                    Quick suggestions:
-                  </span>
-                  {POPULAR_SUGGESTIONS.filter(
-                    (p) => !colors.some((c) => c.toLowerCase() === p.toLowerCase()),
-                  ).map((sug) => {
-                    const style = resolveColorStyle(sug);
-                    return (
+                  {/* Measurement Chart Status */}
+                  {sizeChart.sections && sizeChart.sections.length > 0 && (
+                    <div className="pt-2 border-t border-stone-200/70 flex items-center justify-between text-[11px]">
+                      <span className="text-stone-600 flex items-center gap-1.5 truncate mr-2">
+                        <Sparkles className="h-3 w-3 text-[#E1B76F] shrink-0" />
+                        <strong className="text-stone-800 shrink-0">
+                          {GARMENT_PRESETS[sizeChart.preset || "suit"]?.label || "Garment Specs"}:
+                        </strong>{" "}
+                        <span className="truncate">
+                          {sizeChart.sections.map((s) => s.title).join(" + ")}
+                        </span>
+                      </span>
                       <button
-                        key={sug}
                         type="button"
-                        onClick={() => addCustomColor(sug)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-stone-200 bg-white text-stone-600 hover:border-[#400604] hover:text-[#400604] transition cursor-pointer"
+                        onClick={() => setSizeModalOpen(true)}
+                        className="font-bold text-[#400604] hover:underline cursor-pointer shrink-0"
                       >
-                        <span
-                          className={`h-2.5 w-2.5 rounded-full shrink-0 ${style.swatchBorder}`}
-                          style={{ backgroundColor: style.bg }}
-                        />
-                        + {sug}
+                        Edit Specs &rarr;
                       </button>
-                    );
-                  })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-stone-200 p-3.5 text-center bg-stone-50/50">
+                  <p className="text-[11.5px] text-stone-500">
+                    No sizes selected yet (product will have no size selector).
+                  </p>
+                  <p className="text-[10.5px] text-stone-400 mt-0.5">
+                    Click &ldquo;+ Setup Sizes &amp; Measurements&rdquo; to pick sizes and customize garment measurements.
+                  </p>
                 </div>
               )}
             </div>
           </div>
+
+          {/* Product Colors Section (Clean & Minimal) */}
+          <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Palette className="h-4 w-4 text-[#400604]" />
+                <h3 className="text-[14px] font-bold text-stone-900">
+                  Product Colors
+                </h3>
+              </div>
+              {colors.length > 0 && (
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#400604]/5 text-[#400604] border border-[#400604]/20">
+                  {colors.length} {colors.length === 1 ? "color" : "colors"}
+                </span>
+              )}
+            </div>
+
+            {/* Simple Row: + Select Button + Active Chips */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setColorModalOpen(true)}
+                className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-bold border border-stone-300 bg-white text-stone-800 hover:border-[#400604] hover:bg-stone-50 transition cursor-pointer shadow-xs select-none"
+              >
+                <Palette className="h-3.5 w-3.5 text-[#400604]" />
+                <span>{colors.length > 0 ? "+ Add More Colors" : "+ Select Colors"}</span>
+              </button>
+
+              {colors.map((c) => {
+                const style = resolveColorStyle(c);
+                return (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-xl text-xs font-bold border border-stone-200 bg-white text-stone-800 shadow-2xs group hover:border-[#400604]/40 transition"
+                  >
+                    <span
+                      className={`h-3.5 w-3.5 rounded-full shrink-0 ${style.swatchBorder}`}
+                      style={{ backgroundColor: style.bg }}
+                      title={`Color swatch: ${c}`}
+                    />
+                    <span className="font-semibold">{c}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleColor(c)}
+                      className="h-4 w-4 rounded flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-stone-100 transition cursor-pointer"
+                      title={`Remove ${c}`}
+                      aria-label={`Remove ${c}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                );
+              })}
+
+              {colors.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setColors([])}
+                  className="text-[11px] font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer ml-1"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Color Selection Popup Modal (Industry Level) ── */}
+          {colorModalOpen && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="color-modal-title"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+            >
+              {/* Backdrop */}
+              <div
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+                onClick={() => setColorModalOpen(false)}
+                aria-hidden="true"
+              />
+
+              {/* Modal Container */}
+              <div className="relative z-10 w-full max-w-lg rounded-2xl border border-stone-200 bg-white shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[90vh]">
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-100 bg-stone-50/70">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-xl bg-[#400604]/5 border border-[#400604]/20 flex items-center justify-center text-[#400604]">
+                      <Palette className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 id="color-modal-title" className="text-sm font-bold text-stone-900">
+                        Select Colors
+                      </h3>
+                      <p className="text-[11px] text-stone-500">
+                        {colors.length} {colors.length === 1 ? "color" : "colors"} selected
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setColorModalOpen(false)}
+                    className="h-8 w-8 rounded-xl flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition cursor-pointer"
+                    aria-label="Close modal"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Scrollable Body */}
+                <div className="p-5 overflow-y-auto space-y-4">
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+                    <input
+                      type="text"
+                      value={colorSearch}
+                      onChange={(e) => setColorSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && colorSearch.trim()) {
+                          e.preventDefault();
+                          addCustomColor(colorSearch.trim());
+                          setColorSearch("");
+                        }
+                      }}
+                      placeholder="Search color or type custom name (e.g. Sage Green)..."
+                      className="w-full rounded-xl border border-stone-200 bg-stone-50 pl-10 pr-4 py-2 text-xs text-stone-800 placeholder-stone-400 focus:bg-white focus:outline-none focus:border-[#400604] focus:ring-2 focus:ring-[#400604]/10 transition"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* Add Custom Color Banner */}
+                  {colorSearch.trim() &&
+                    !colors.some(
+                      (c) => c.toLowerCase() === colorSearch.trim().toLowerCase(),
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addCustomColor(colorSearch.trim());
+                          setColorSearch("");
+                        }}
+                        className="w-full flex items-center justify-between p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200 text-xs font-bold text-stone-800 transition cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <span
+                            className={`h-4 w-4 rounded-full ${
+                              resolveColorStyle(colorSearch.trim()).swatchBorder
+                            }`}
+                            style={{
+                              backgroundColor: resolveColorStyle(colorSearch.trim()).bg,
+                            }}
+                          />
+                          <span>Add custom &ldquo;{colorSearch.trim()}&rdquo;</span>
+                        </span>
+                        <span className="text-[10px] uppercase font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded">
+                          + Add
+                        </span>
+                      </button>
+                    )}
+
+                  {/* Currently Selected Strip in Modal */}
+                  {colors.length > 0 && (
+                    <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10.5px] font-bold uppercase tracking-wider text-stone-500">
+                          Selected ({colors.length})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setColors([])}
+                          className="text-[11px] font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {colors.map((c) => {
+                          const style = resolveColorStyle(c);
+                          return (
+                            <span
+                              key={c}
+                              className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg text-[11px] font-bold border border-stone-200 bg-white text-stone-800 shadow-2xs"
+                            >
+                              <span
+                                className={`h-3 w-3 rounded-full shrink-0 ${style.swatchBorder}`}
+                                style={{ backgroundColor: style.bg }}
+                              />
+                              <span>{c}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleColor(c)}
+                                className="h-3.5 w-3.5 rounded flex items-center justify-center text-stone-400 hover:text-red-600 transition cursor-pointer"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preset Swatches Grid */}
+                  <div>
+                    <p className="text-[10.5px] font-bold uppercase tracking-wider text-stone-500 mb-2">
+                      {colorSearch.trim() ? "Matching Colors" : "Popular Fashion Swatches"}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {filteredColors.map((c: string) => {
+                        const isSelected = colors.some(
+                          (x) => x.toLowerCase() === c.toLowerCase(),
+                        );
+                        const style = resolveColorStyle(c);
+                        return (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => toggleColor(c)}
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold border text-left transition cursor-pointer select-none ${
+                              isSelected
+                                ? "bg-[#400604] text-white border-[#400604] shadow-xs"
+                                : "bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2 truncate mr-1">
+                              <span
+                                className={`h-3.5 w-3.5 rounded-full shrink-0 ${
+                                  isSelected && style.isLight
+                                    ? "border-2 border-stone-200 shadow-2xs"
+                                    : style.swatchBorder
+                                }`}
+                                style={{ backgroundColor: style.bg }}
+                              />
+                              <span className="truncate">{c}</span>
+                            </span>
+                            {isSelected && (
+                              <Check className="h-3.5 w-3.5 text-[#E1B76F] stroke-[3] shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-between px-5 py-3 border-t border-stone-100 bg-stone-50/70">
+                  <label
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 cursor-pointer transition shadow-2xs"
+                    title="Pick exact custom hex color from spectrum"
+                  >
+                    <Palette className="h-3.5 w-3.5 text-[#400604]" />
+                    <span>Custom Hex</span>
+                    <input
+                      type="color"
+                      defaultValue="#ffffff"
+                      onChange={(e) => addCustomColor(e.target.value)}
+                      className="sr-only"
+                    />
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setColorModalOpen(false)}
+                      className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 transition cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setColorModalOpen(false)}
+                      className="px-5 py-2 rounded-xl bg-[#400604] hover:bg-[#520805] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Size & Measurement Builder Modal ── */}
+          {sizeModalOpen && (
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto"
+            >
+              <div
+                className="fixed inset-0"
+                onClick={() => setSizeModalOpen(false)}
+                aria-hidden="true"
+              />
+              <div className="relative z-10 w-full max-w-7xl max-h-[96vh] flex flex-col rounded-3xl bg-[#FDFBF7] shadow-2xl overflow-y-auto">
+                <SizeMeasurementBuilder
+                  initialChart={sizeChart}
+                  productName={name}
+                  availableProductSizes={sizes}
+                  onSave={(newChart) => {
+                    setSizeChart(newChart);
+                    if (newChart.sizes && newChart.sizes.length > 0) {
+                      setSizes(newChart.sizes);
+                    }
+                    setSizeModalOpen(false);
+                  }}
+                  onCancel={() => setSizeModalOpen(false)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Error + Submit ──────────────────────────────── */}
-      {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-[13px] text-red-600">
-          {error}
-        </div>
-      )}
-
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={saving || uploading}
-          className="flex items-center gap-2 rounded-xl bg-[#400604] border border-[#400604] px-6 py-3 text-[14px] font-semibold text-white hover:bg-[#520805] disabled:opacity-50 transition shadow-md shadow-[#400604]/20 cursor-pointer"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin text-[#E1B76F]" /> Saving…
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 text-[#E1B76F]" />
-              {initialData?.id ? "Update Product" : "Create Product"}
-            </>
+      {/* ── Fixed Bottom Save Line Action Bar ──────────── */}
+      <div className="fixed bottom-0 left-0 lg:left-[var(--admin-sidebar-width,78px)] right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200/90 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] transition-[left] duration-300">
+        <div className="px-4 sm:px-6 lg:px-8 py-3">
+          {error && (
+            <div className="mb-2.5 flex items-center justify-between gap-2 rounded-xl bg-red-50 border border-red-200 px-3.5 py-2 text-[12px] text-red-700">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
+                <span className="truncate">{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setError("")}
+                className="text-red-400 hover:text-red-700 p-0.5 shrink-0"
+                aria-label="Dismiss error"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           )}
-        </button>
 
-        <button
-          type="button"
-          onClick={handleCancel}
-          disabled={saving}
-          className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-3 text-[14px] font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-900 disabled:opacity-50 transition cursor-pointer"
-        >
-          Cancel
-        </button>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+            {/* Left summary / product status info */}
+            <div className="flex items-center gap-3 w-full sm:w-auto min-w-0">
+              {images.length > 0 && images[0]?.src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={images[0].src}
+                  alt={name || "Product"}
+                  className="h-11 w-11 rounded-xl object-cover border border-stone-200/90 shadow-2xs shrink-0 ring-1 ring-black/5"
+                />
+              ) : (
+                <div className="h-11 w-11 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center shrink-0">
+                  <Package className="h-5 w-5 text-stone-400" />
+                </div>
+              )}
+
+              <div className="min-w-0 flex-1 sm:flex-initial">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] sm:text-[14px] font-bold text-stone-900 truncate max-w-[200px] sm:max-w-sm md:max-w-md">
+                    {name.trim() || (initialData?.id ? "Edit Product" : "New Product")}
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 border ${
+                      initialData?.id
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}
+                  >
+                    {initialData?.id ? "Editing" : "Draft"}
+                  </span>
+                </div>
+
+                {/* Subtitle / Category line & stats - Unified & Clean */}
+                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-stone-600 flex-wrap">
+                  {/* Category line */}
+                  {primaryCategory ? (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 max-w-[240px] sm:max-w-xs md:max-w-sm truncate"
+                      title={`Category: ${(formattedCategories.find((c) => c.id === primaryCategory.id)?.path || primaryCategory.name).replace(/ → /g, " › ")}`}
+                    >
+                      <FolderTree className="h-3 w-3 text-stone-500 shrink-0" />
+                      <span className="truncate">
+                        {(formattedCategories.find((c) => c.id === primaryCategory.id)?.path || primaryCategory.name).replace(/ → /g, " › ")}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-stone-100 text-stone-500 text-[11px] font-medium border border-stone-200/80 shrink-0">
+                      <Folder className="h-3 w-3 text-stone-400 shrink-0" />
+                      <span>No category</span>
+                    </span>
+                  )}
+
+                  {/* Image count */}
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 shrink-0">
+                    <ImageIcon className="h-3 w-3 text-stone-500 shrink-0" />
+                    <span>{images.length} {images.length === 1 ? "image" : "images"}</span>
+                  </span>
+
+                  {/* Size count */}
+                  {sizes.length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 shrink-0">
+                      <Ruler className="h-3 w-3 text-stone-500 shrink-0" />
+                      <span>{sizes.length} sizes</span>
+                    </span>
+                  )}
+
+                  {/* Color count */}
+                  {colors.length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 shrink-0">
+                      <Palette className="h-3 w-3 text-stone-500 shrink-0" />
+                      <span>{colors.length} {colors.length === 1 ? "color" : "colors"}</span>
+                    </span>
+                  )}
+
+                  {/* Uploading indicator */}
+                  {uploading && (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[11px] font-semibold border border-amber-300 animate-pulse shrink-0">
+                      <Loader2 className="h-3 w-3 animate-spin text-amber-700 shrink-0" />
+                      <span>Uploading…</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Right action buttons */}
+            <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={saving}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 sm:px-5 py-2.5 text-[13px] font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-400 disabled:opacity-50 transition shadow-2xs cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={saving || uploading}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#400604] to-[#2B0403] border border-[#400604] px-5 sm:px-6 py-2.5 text-[13px] font-bold text-white hover:from-[#520805] hover:to-[#380504] disabled:opacity-50 transition shadow-md shadow-[#400604]/25 cursor-pointer"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-[#E1B76F]" />
+                    <span>Saving…</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 text-[#E1B76F]" />
+                    <span>{initialData?.id ? "Update Product" : "Save Product"}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </form>
   );

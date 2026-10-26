@@ -18,8 +18,31 @@ const CATALOG: WooProduct[] = REAL_PRODUCTS as unknown as WooProduct[];
 export function mapWooProduct(raw: any): WooProduct {
   const sizeAttr = (raw.attributes ?? []).find(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (a: any) => a.name?.toLowerCase() === "size",
+    (a: any) => {
+      const n = String(a?.name || "").toLowerCase();
+      return n === "size" || n === "sizes";
+    }
   );
+  const resolvedSizes: string[] =
+    Array.isArray(sizeAttr?.options) && sizeAttr.options.length > 0
+      ? sizeAttr.options
+      : (Array.isArray(raw.sizes) && raw.sizes.length > 0 ? raw.sizes : []);
+
+  const attributes = (raw.attributes ?? []).map((a: { id: number; name: string; options: string[]; visible: boolean }) => ({
+    id: a.id,
+    name: a.name,
+    options: a.options ?? [],
+    visible: a.visible ?? true,
+  }));
+  if (resolvedSizes.length > 0 && !sizeAttr) {
+    attributes.push({
+      id: 0,
+      name: "Size",
+      options: resolvedSizes,
+      visible: true,
+    });
+  }
+
   return {
     id: raw.id,
     name: raw.name,
@@ -32,16 +55,11 @@ export function mapWooProduct(raw: any): WooProduct {
     sale_price: raw.sale_price ?? "",
     on_sale: raw.on_sale ?? false,
     stock_status: raw.stock_status ?? "instock",
-    sizes: sizeAttr?.options ?? raw.sizes ?? [],
+    sizes: resolvedSizes,
     images: raw.images ?? [],
     categories: raw.categories ?? [],
     tags: raw.tags ?? [],
-    attributes: (raw.attributes ?? []).map((a: { id: number; name: string; options: string[]; visible: boolean }) => ({
-      id: a.id,
-      name: a.name,
-      options: a.options ?? [],
-      visible: a.visible ?? true,
-    })),
+    attributes,
     sku: raw.sku ?? undefined,
     shipping_class_id: raw.shipping_class_id ?? 0,
     stock_quantity: raw.stock_quantity ?? null,

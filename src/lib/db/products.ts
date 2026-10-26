@@ -18,6 +18,49 @@ export interface DbProductQuery {
 // Convert Mongoose Product doc or lean object into typed WooProduct
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toWooProduct(doc: any): WooProduct {
+  const docSizes: string[] = Array.isArray(doc.sizes)
+    ? doc.sizes.map(String).map((s: string) => s.trim()).filter(Boolean)
+    : [];
+
+  const rawAttributes = Array.isArray(doc.attributes) ? [...doc.attributes] : [];
+  const sizeAttrIdx = rawAttributes.findIndex((a: any) => {
+    const n = String(a?.name || "").toLowerCase();
+    return n === "size" || n === "sizes";
+  });
+  const sizeAttr = sizeAttrIdx >= 0 ? rawAttributes[sizeAttrIdx] : undefined;
+  const attrSizes: string[] =
+    sizeAttr && Array.isArray(sizeAttr.options)
+      ? sizeAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean)
+      : [];
+
+  // doc.sizes is the explicit admin-managed field and must take precedence over legacy attributes
+  const resolvedSizes: string[] = docSizes.length > 0 ? docSizes : attrSizes;
+
+  // Keep attributes synchronized with resolvedSizes so storefront variation selector matches exactly
+  const attributes = [...rawAttributes];
+  if (resolvedSizes.length > 0) {
+    if (sizeAttrIdx >= 0) {
+      attributes[sizeAttrIdx] = {
+        ...attributes[sizeAttrIdx],
+        options: resolvedSizes,
+        visible: true,
+      };
+    } else {
+      attributes.push({
+        id: 0,
+        name: "Size",
+        options: resolvedSizes,
+        visible: true,
+      });
+    }
+  } else if (sizeAttrIdx >= 0 && Array.isArray(doc.sizes) && doc.sizes.length === 0) {
+    // If admin explicitly cleared sizes (doc.sizes is []), clear the attribute options too
+    attributes[sizeAttrIdx] = {
+      ...attributes[sizeAttrIdx],
+      options: [],
+    };
+  }
+
   return {
     id: doc.id,
     name: doc.name,
@@ -30,7 +73,7 @@ function toWooProduct(doc: any): WooProduct {
     sale_price: doc.sale_price || "",
     on_sale: Boolean(doc.on_sale),
     stock_status: doc.stock_status || "instock",
-    sizes: Array.isArray(doc.sizes) ? doc.sizes : [],
+    sizes: resolvedSizes,
     images: Array.isArray(doc.images)
       ? doc.images.map((img: { id?: number; src: string; name?: string; alt?: string }) => ({
           id: img.id || 0,
@@ -48,7 +91,7 @@ function toWooProduct(doc: any): WooProduct {
         }))
       : [],
     tags: Array.isArray(doc.tags) ? doc.tags : [],
-    attributes: Array.isArray(doc.attributes) ? doc.attributes : [],
+    attributes: attributes,
     sku: doc.sku || undefined,
     weight: doc.weight || undefined,
     shipping_class_id: doc.shipping_class_id || 0,

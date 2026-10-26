@@ -92,8 +92,37 @@ export async function PUT(
     if (body.buy_price !== undefined) {
       body.buy_price = String(body.buy_price);
     }
-    if (body.sizes && Array.isArray(body.sizes)) {
-      body.sizes = body.sizes;
+
+    // Keep sizes array and attributes[Size] completely synchronized
+    if (Array.isArray(body.sizes)) {
+      body.sizes = body.sizes.map(String).map((s: string) => s.trim()).filter(Boolean);
+      if (Array.isArray(body.attributes)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sizeAttrIdx = body.attributes.findIndex((a: any) => {
+          const n = String(a?.name || "").toLowerCase();
+          return n === "size" || n === "sizes";
+        });
+        if (sizeAttrIdx >= 0) {
+          body.attributes[sizeAttrIdx].options = body.sizes;
+        } else if (body.sizes.length > 0) {
+          body.attributes.push({
+            id: 0,
+            name: "Size",
+            visible: true,
+            variation: false,
+            options: body.sizes,
+          });
+        }
+      }
+    } else if (Array.isArray(body.attributes)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sizeAttr = body.attributes.find((a: any) => {
+        const n = String(a?.name || "").toLowerCase();
+        return n === "size" || n === "sizes";
+      });
+      if (sizeAttr && Array.isArray(sizeAttr.options)) {
+        body.sizes = sizeAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean);
+      }
     }
 
     if (body.stock_quantity !== undefined) {

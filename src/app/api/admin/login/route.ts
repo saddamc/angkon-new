@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIp, rateLimit } from "@/server/rate-limit";
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
@@ -61,6 +62,18 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/login — authenticate
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIp(request);
+    const limit = await rateLimit(`admin-login:ip:${ip}`, 5, 15 * 60);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many admin login attempts from this network. Please wait 15 minutes before trying again.",
+          retryAfterSeconds: limit.retryAfterSeconds,
+        },
+        { status: 429 }
+      );
+    }
+
     const { username, password } = await request.json();
 
     if (!username || !password) {

@@ -1,16 +1,15 @@
-"use client";
-
-import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag } from "lucide-react";
-import { getProducts } from "@/services/products.service";
+import { getDbProducts, getAllDbProducts } from "@/lib/db/products";
+import { getDbCategories } from "@/lib/db/categories";
 import type { WooProduct, WooCategory } from "@/types/product";
 import { ProductCard } from "@/components/product/product-card";
-import { useCartStore } from "@/store/cart-store";
-import { useMounted } from "@/hooks/use-mounted";
+import { FloatingCartButton } from "@/components/home/floating-cart-button";
 import { getCategoryImage } from "@/config/category-images";
 import REAL_CATEGORIES from "@/data/real-categories.json";
+
+// 5-minute Incremental Static Regeneration (sub-50ms instant initial page loads)
+export const revalidate = 300;
 
 const EXCLUDED_GRID_SLUGS = new Set(["uncategorized", "kids", "unisex"]);
 
@@ -27,82 +26,43 @@ function filterHomepageCategories(cats: WooCategory[]): WooCategory[] {
     .sort((a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0));
 }
 
-// Initial root categories fallback to prevent SSR layout shift
-const initialRootCats: WooCategory[] = filterHomepageCategories(
-  REAL_CATEGORIES as unknown as WooCategory[]
-);
+export default async function HomePage() {
+  const [dbCats, dbProducts] = await Promise.all([
+    getDbCategories().catch(() => REAL_CATEGORIES as unknown as WooCategory[]),
+    getDbProducts({ perPage: 24 }).catch(() => getAllDbProducts()),
+  ]);
 
-export default function HomePage() {
-  const [products, setProducts] = useState<WooProduct[]>([]);
-  const [categories, setCategories] = useState<WooCategory[]>(initialRootCats);
-  const [isLoading, setIsLoading] = useState(true);
-  const openCart = useCartStore((s) => s.openCart);
-  const mounted = useMounted();
-  const itemCount = useCartStore((s) => s.itemCount());
-
-  useEffect(() => {
-    // 1. Fetch live products
-    getProducts({ perPage: 24 })
-      .then((data) => {
-        if (Array.isArray(data)) setProducts(data);
-      })
-      .catch((err) => console.error("Failed to fetch products:", err))
-      .finally(() => setIsLoading(false));
-
-    // 2. Fetch live categories synced with Admin Panel
-    fetch("/api/categories")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          const roots = filterHomepageCategories(data);
-          if (roots.length > 0) {
-            setCategories(roots);
-          }
-        }
-      })
-      .catch((err) => console.error("Failed to fetch categories:", err));
-  }, []);
+  const categories = filterHomepageCategories(
+    dbCats && dbCats.length > 0 ? dbCats : (REAL_CATEGORIES as unknown as WooCategory[])
+  );
+  const products: WooProduct[] = Array.isArray(dbProducts) && dbProducts.length > 0 ? dbProducts : [];
 
   // Dynamically pair categories into 2-column banner cards matching Admin Panel order
-  const bannerPairs = useMemo(() => {
-    const pairs: Array<Array<{ title: string; href: string; image: string; alt: string }>> = [];
-    for (let i = 0; i < categories.length; i += 2) {
-      const pair = [
-        {
-          title: categories[i].name,
-          href: `/product-category/${categories[i].slug}`,
-          image: getCategoryImage(categories[i]),
-          alt: `${categories[i].name} Collection`,
-        },
-      ];
-      if (i + 1 < categories.length) {
-        pair.push({
-          title: categories[i + 1].name,
-          href: `/product-category/${categories[i + 1].slug}`,
-          image: getCategoryImage(categories[i + 1]),
-          alt: `${categories[i + 1].name} Collection`,
-        });
-      }
-      pairs.push(pair);
+  const bannerPairs: Array<Array<{ title: string; href: string; image: string; alt: string }>> = [];
+  for (let i = 0; i < categories.length; i += 2) {
+    const pair = [
+      {
+        title: categories[i].name,
+        href: `/product-category/${categories[i].slug}`,
+        image: getCategoryImage(categories[i]),
+        alt: `${categories[i].name} Collection`,
+      },
+    ];
+    if (i + 1 < categories.length) {
+      pair.push({
+        title: categories[i + 1].name,
+        href: `/product-category/${categories[i + 1].slug}`,
+        image: getCategoryImage(categories[i + 1]),
+        alt: `${categories[i + 1].name} Collection`,
+      });
     }
-    return pairs;
-  }, [categories]);
+    bannerPairs.push(pair);
+  }
 
   return (
     <div className="min-h-screen bg-[#400604] text-white">
       {/* Floating cart shortcut */}
-      <button
-        onClick={openCart}
-        className="group fixed bottom-6 left-3 sm:left-4 z-40 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-[#400604] text-white border border-[#E1B76F]/40 shadow-2xl transition-all hover:scale-110 cursor-pointer"
-        aria-label="Open cart"
-      >
-        <ShoppingBag className="h-5 w-5 text-white transition group-hover:scale-105" />
-        {mounted && itemCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-black text-[#400604] shadow">
-            {itemCount}
-          </span>
-        )}
-      </button>
+      <FloatingCartButton />
 
       {/* ── 1. Top Hero Banner (ANGKON House of Modern Heritage - Full Width Edge to Edge) ── */}
       <section className="w-full overflow-hidden">
@@ -113,8 +73,8 @@ export default function HomePage() {
           <Image
             src="/banners/HERO1.webp"
             alt="ANGKON — House of Modern Heritage"
-            width={4096}
-            height={1956}
+            width={1920}
+            height={917}
             priority
             loading="eager"
             quality={95}
@@ -149,7 +109,7 @@ export default function HomePage() {
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
                   />
-                  {/* Dynamic Admin Upload Overlay: When category image is updated via Admin Panel (unbaked), display title with localized contrast under text & zero side blur */}
+                  {/* Dynamic Admin Upload Overlay */}
                   {!hasBakedText && (
                     <div className="absolute inset-0 flex items-center justify-start pl-6 sm:pl-10 md:pl-14 pointer-events-none z-10">
                       <span className="font-heading font-black text-xl sm:text-2xl md:text-3xl lg:text-4xl text-white uppercase tracking-[0.22em] drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)] drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
@@ -176,22 +136,9 @@ export default function HomePage() {
       {/* ── 4. Products: 8-Column WooCommerce Loop Grid (Full Width Edge to Edge) ── */}
       <section className="w-full px-2 sm:px-3 md:px-4 lg:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-2 gap-x-3 sm:gap-x-4 md:gap-x-5 gap-y-8 sm:gap-y-10 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8">
-          {isLoading
-            ? Array.from({ length: 16 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="animate-pulse bg-transparent p-0"
-                >
-                  <div className="mb-2 aspect-[3/4] rounded-none bg-[#340402] border border-[#E1B76F]/10" />
-                  <div className="mb-1 h-3 w-3/4 rounded bg-[#340402]" />
-                  <div className="mb-1 h-2.5 w-1/3 rounded bg-[#340402]" />
-                  <div className="mb-2 h-3 w-1/2 rounded bg-[#340402]" />
-                  <div className="h-6 w-24 rounded-full bg-[#340402]" />
-                </div>
-              ))
-            : products.slice(0, 16).map((product, index) => (
-                <ProductCard key={product.id} product={product} eager={index < 4} />
-              ))}
+          {products.slice(0, 16).map((product, index) => (
+            <ProductCard key={product.id} product={product} eager={index < 4} />
+          ))}
         </div>
       </section>
 
@@ -210,7 +157,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
     </div>
   );
 }

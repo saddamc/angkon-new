@@ -140,8 +140,10 @@ export async function uploadToCloudinary(
   file: Buffer | string,
   options: UploadOptions = {}
 ): Promise<UploadApiResponse> {
+  const uploadFolder = options.folder || "ANGKON";
   const uploadOptions: Record<string, unknown> = {
-    folder: options.folder || "ANGKON",
+    folder: uploadFolder,
+    asset_folder: uploadFolder,
     resource_type: "image",
     overwrite: options.overwrite ?? true,
     unique_filename: !options.publicId,
@@ -469,6 +471,14 @@ export async function syncProductImagesToCategoryFolder({
         overwrite: true,
         invalidate: true,
       });
+
+      // Synchronize asset_folder in Cloudinary's dynamic Media Library so old folder is emptied
+      try {
+        await cloudinary.api.update(newPublicId, { asset_folder: targetFolder });
+      } catch (assetFolderErr) {
+        console.warn(`Could not update asset_folder for "${newPublicId}":`, assetFolderErr);
+      }
+
       updatedImages.push({
         ...img,
         src: renameRes.secure_url,
@@ -483,7 +493,7 @@ export async function syncProductImagesToCategoryFolder({
     }
   }
 
-  // Safely clean up any leftover emptied old folders
+  // Safely clean up and remove any leftover emptied old product folders
   for (const oldF of foldersToClean) {
     const protectedFolders = [
       "",
@@ -497,9 +507,9 @@ export async function syncProductImagesToCategoryFolder({
     ];
     if (!protectedFolders.includes(oldF)) {
       try {
-        await cloudinary.api.delete_folder(oldF);
-      } catch {
-        // Safe ignore if folder still has other assets
+        await deleteProductCloudinaryFolder(oldF);
+      } catch (fErr) {
+        console.warn(`Could not delete old product folder "${oldF}":`, fErr);
       }
     }
   }

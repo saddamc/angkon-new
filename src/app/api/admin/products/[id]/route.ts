@@ -5,6 +5,7 @@ import {
   deleteFromCloudinary,
   syncProductImagesToCategoryFolder,
   extractProductFolderFromUrl,
+  extractPublicIdFromUrl,
   deleteProductCloudinaryFolder,
   buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
@@ -154,7 +155,10 @@ export async function PUT(
       body.categories = await resolveProductCategories(body.categories, localCategory);
     }
 
-    // Automatically ensure product images are organized in the matching category-wise Cloudinary folder
+    // 1. Fetch existing product before update to detect category changes & removed images
+    const existing = await Product.findOne(query).lean();
+
+    // 2. Automatically ensure product images are organized in the matching category-wise Cloudinary folder
     if (Array.isArray(body.images) && body.images.length > 0) {
       body.images = await syncProductImagesToCategoryFolder({
         images: body.images,
@@ -163,30 +167,41 @@ export async function PUT(
       });
     }
 
-    // Track and cleanly delete any images removed from this product in Cloudinary
-    const existing = await Product.findOne(query).lean();
+    // 3. Track and cleanly delete any images removed from this product in Cloudinary
     if (existing && Array.isArray(existing.images) && Array.isArray(body.images)) {
       const newImages = body.images;
-      const newSrcSet = new Set(
-        newImages.map((img: any) => (typeof img === "string" ? img : img?.src)).filter(Boolean)
+      // Extract file basenames from new images so relocated images are recognized and preserved
+      const newBasenames = new Set(
+        newImages.map((img: any) => {
+          const src = typeof img === "string" ? img : img?.src;
+          if (!src) return "";
+          const pub = extractPublicIdFromUrl(src);
+          return pub ? pub.split("/").pop() : "";
+        }).filter(Boolean)
       );
 
       for (const oldImg of existing.images) {
         const oldSrc = typeof oldImg === "string" ? oldImg : oldImg?.src;
-        if (oldSrc && typeof oldSrc === "string" && oldSrc.includes("res.cloudinary.com") && !newSrcSet.has(oldSrc)) {
-          try {
-            const isUsedElsewhere = await Product.exists({
-              _id: { $ne: existing._id },
-              "images.src": oldSrc,
-            });
-            if (!isUsedElsewhere) {
-              await deleteFromCloudinary(oldSrc);
-              console.log(`Deleted removed single product image from Cloudinary: ${oldSrc}`);
-            } else {
-              console.warn(`Preserving removed image "${oldSrc}" as another product references it.`);
+        if (oldSrc && typeof oldSrc === "string" && oldSrc.includes("res.cloudinary.com")) {
+          const oldPub = extractPublicIdFromUrl(oldSrc);
+          const oldBasename = oldPub ? oldPub.split("/").pop() : "";
+
+          // Only delete if the asset was truly removed from the product (not just relocated)
+          if (oldBasename && !newBasenames.has(oldBasename)) {
+            try {
+              const isUsedElsewhere = await Product.exists({
+                _id: { $ne: existing._id },
+                "images.src": oldSrc,
+              });
+              if (!isUsedElsewhere) {
+                await deleteFromCloudinary(oldSrc);
+                console.log(`Deleted removed single product image from Cloudinary: ${oldSrc}`);
+              } else {
+                console.warn(`Preserving removed image "${oldSrc}" as another product references it.`);
+              }
+            } catch (delErr) {
+              console.warn(`Error deleting removed image "${oldSrc}":`, delErr);
             }
-          } catch (delErr) {
-            console.warn(`Error deleting removed image "${oldSrc}":`, delErr);
           }
         }
       }

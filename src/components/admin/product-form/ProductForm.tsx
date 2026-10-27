@@ -297,9 +297,21 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           selectedCategories.find((c) => c.id === primary.parent);
         if (parentCat) catSlug = parentCat.slug || parentCat.name;
       } else {
-        catSlug = primary.slug || primary.name;
-        const childCat = selectedCategories.find((c) => c.parent === primary.id);
-        if (childCat) subSlug = childCat.slug || childCat.name;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fullCat = availableCategories.find((c) => c.id === primary.id) as any;
+        const linkedParentId = fullCat?.linked_parents?.[0];
+        if (linkedParentId) {
+          const parentCat = availableCategories.find((c) => c.id === linkedParentId);
+          if (parentCat) {
+            catSlug = parentCat.slug || parentCat.name;
+            subSlug = primary.slug || primary.name;
+          }
+        }
+        if (!catSlug) {
+          catSlug = primary.slug || primary.name;
+          const childCat = selectedCategories.find((c) => c.parent === primary.id);
+          if (childCat) subSlug = childCat.slug || childCat.name;
+        }
       }
     }
 

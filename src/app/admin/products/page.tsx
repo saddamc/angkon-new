@@ -863,9 +863,9 @@ export default function AdminProductsPage() {
             <div className="rounded-2xl bg-amber-50/80 border border-amber-200/80 p-3.5 flex items-start gap-3 text-amber-800">
               <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="text-[12px] leading-relaxed">
-                <p className="font-bold text-amber-900">Database & Cloudinary Cleanup</p>
+                <p className="font-bold text-amber-900">Remove from Database</p>
                 <p className="text-amber-700 mt-0.5">
-                  The product record and attached Cloudinary images will be permanently removed from MongoDB Atlas and CDN storage.
+                  This action cannot be undone. {deleteTarget.ids.length === 1 ? "The product" : "The selected products"} will be permanently removed from the database.
                 </p>
               </div>
             </div>

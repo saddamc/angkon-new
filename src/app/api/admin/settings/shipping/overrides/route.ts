@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
+import { invalidateShippingSettingsCache } from "@/server/shipping";
 
 // Product-specific delivery fees (`_delivery_inside` / `_delivery_outside`) REPLACE the store-wide
 // rates for that product. This endpoint lets the admin see how many products do that and clear them
@@ -55,6 +56,7 @@ export async function POST() {
       { timestamps: false },
     );
     await publishCatalogChange();
+    invalidateShippingSettingsCache();
     return NextResponse.json({ success: true, cleared: result.modifiedCount });
   } catch (error) {
     console.error("POST shipping overrides failed:", error);

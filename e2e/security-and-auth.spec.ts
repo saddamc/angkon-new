@@ -115,9 +115,20 @@ test.describe("Security, Authorization & Authentication Verification", () => {
   });
 
   test("SEC-01 Regression: Guest checkout with existing registered email must NOT issue session token or overwrite profile", async ({ playwright }) => {
-    const existingCustomerEmail = "test_existing_check@angkon-test.local";
+    const existingCustomerEmail = `existing_customer_${Date.now()}@angkon-test.local`;
 
-    // 1. Perform checkout as an unauthenticated guest from a completely new isolated context
+    // 0. Ensure customer exists first by registering
+    const regContext = await playwright.request.newContext();
+    await regContext.post("http://localhost:3001/api/auth/register", {
+      data: {
+        name: "Legitimate Customer",
+        email: existingCustomerEmail,
+        password: "StrongPassword123!",
+        phone: "01711223344",
+      },
+    });
+
+    // 1. Perform checkout as an unauthenticated guest using that existing email from a completely new isolated context
     const guestContext = await playwright.request.newContext();
     const guestRes = await guestContext.post("http://localhost:3001/api/orders", {
       data: {

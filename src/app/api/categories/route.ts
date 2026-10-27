@@ -8,7 +8,7 @@ export async function GET() {
     const categories = await getDbCategories();
     return NextResponse.json(categories, {
       headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Cache-Control": "public, max-age=15, s-maxage=60, stale-while-revalidate=300",
       },
     });
   } catch (error) {

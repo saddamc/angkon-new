@@ -24,7 +24,7 @@ if (!global.mongooseCache) {
 }
 
 let lastFailureTime = 0;
-const FAILURE_COOLDOWN_MS = 5000;
+const FAILURE_COOLDOWN_MS = 1000;
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;

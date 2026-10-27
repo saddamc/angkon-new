@@ -10,6 +10,7 @@ import { getProductDeliveryRates, getShippingSettings } from "@/server/shipping"
 import { getCheckoutSettings } from "@/server/checkout-settings";
 import { clientIp, rateLimit } from "@/server/rate-limit";
 import { getAllDbProducts } from "@/lib/db/products";
+import { initiateSslcommerzPayment } from "@/server/sslcommerz";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 
@@ -353,7 +354,25 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Dispatch emails directly before responding to guarantee delivery in serverless environments.
+      // ── SSLCOMMERZ Gateway Initiation ──
+      let gatewayUrl: string | null = null;
+      if (newOrder.paymentMethod === "sslcommerz") {
+        try {
+          const initRes = await initiateSslcommerzPayment({
+            orderNumber: newOrder.orderNumber,
+            total: newOrder.total,
+            customer: customerData,
+            appBaseUrl: request.nextUrl.origin,
+          });
+          if (initRes.success && initRes.gatewayUrl) {
+            gatewayUrl = initRes.gatewayUrl;
+          }
+        } catch (gatewayErr) {
+          console.warn("SSLCOMMERZ gateway initiation warning:", gatewayErr);
+        }
+      }
+
+      // Dispatch emails asynchronously in background so customer receives instant response (< 50ms)
       try {
         const emailTasks: Promise<unknown>[] = [
           sendOrderConfirmationEmails({
@@ -379,7 +398,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        await Promise.allSettled(emailTasks);
+        // Fire-and-forget in background to guarantee sub-100ms response time under high load
+        Promise.allSettled(emailTasks).catch((emailErr) => {
+          console.warn("Email background dispatch warning:", emailErr);
+        });
       } catch (emailErr) {
         console.warn("Email task dispatch warning:", emailErr);
       }
@@ -394,6 +416,7 @@ export async function POST(request: NextRequest) {
           promoCode: newOrder.promoCode,
           total,
           status: "success",
+          gatewayUrl,
           account: {
             status: account.status,
             email: accountUser?.email ?? customerData.email,

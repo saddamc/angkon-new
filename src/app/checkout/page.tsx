@@ -417,6 +417,24 @@ export default function CheckoutPage() {
         address: `${data.streetAddress}, ${data.city || data.district}`,
       });
 
+      if (result.gatewayUrl) {
+        trackPurchase({
+          order_id: result.orderNumber || result.orderId || orderId,
+          value: typeof result.total === "number" ? result.total : FINAL_TOTAL,
+          currency: "BDT",
+          num_items: items.reduce((acc, item) => acc + item.quantity, 0),
+          content_ids: items.map((item) => item.productId),
+        });
+        clearCart();
+        try {
+          localStorage.removeItem("angkon_applied_promo");
+        } catch {
+          /* ignore */
+        }
+        window.location.href = result.gatewayUrl;
+        return;
+      }
+
       setSubmitted(true);
       trackPurchase({
         order_id: result.orderNumber || result.orderId || orderId,

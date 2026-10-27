@@ -71,12 +71,28 @@ export function normalizeCheckoutSettings(raw: unknown): CheckoutSettings {
   };
 }
 
+// High-speed In-Memory Checkout Settings Cache
+let cachedCheckoutSettings: { data: CheckoutSettings; expiresAt: number } | null = null;
+const CHECKOUT_SETTINGS_CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+export function invalidateCheckoutSettingsCache() {
+  cachedCheckoutSettings = null;
+}
+
 export async function getCheckoutSettings(): Promise<CheckoutSettings> {
+  const now = Date.now();
+  if (cachedCheckoutSettings && now < cachedCheckoutSettings.expiresAt) {
+    return cachedCheckoutSettings.data;
+  }
+
   try {
     await connectToDatabase();
     const doc = await Settings.findOne({ key: CHECKOUT_SETTINGS_KEY }).lean();
-    return normalizeCheckoutSettings(doc?.value);
+    const normalized = normalizeCheckoutSettings(doc?.value);
+    cachedCheckoutSettings = { data: normalized, expiresAt: now + CHECKOUT_SETTINGS_CACHE_TTL_MS };
+    return normalized;
   } catch (error) {
+    if (cachedCheckoutSettings) return cachedCheckoutSettings.data;
     console.warn("Checkout settings unavailable, using defaults:", error);
     return { ...DEFAULT_CHECKOUT_SETTINGS };
   }

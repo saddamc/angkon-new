@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { quote, subtotal },
-      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+      { headers: { "Cache-Control": "private, no-transform" } },
     );
   } catch {
     return NextResponse.json({ error: "Could not calculate delivery." }, { status: 400 });

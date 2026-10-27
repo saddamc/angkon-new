@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { revalidateStorefront } from "@/lib/catalog-sync";
-import { getShippingSettings, SHIPPING_SETTINGS_KEY } from "@/server/shipping";
+import { getShippingSettings, SHIPPING_SETTINGS_KEY, invalidateShippingSettingsCache } from "@/server/shipping";
 
 const FIELDS = [
   ["insideDhaka", "Inside Dhaka delivery"],
@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
       { $set: { value: values } },
       { upsert: true, new: true },
     );
+
+    invalidateShippingSettingsCache();
 
     // Pages that print these prices (shipping, delivery-time, terms) refresh right away.
     revalidateStorefront();

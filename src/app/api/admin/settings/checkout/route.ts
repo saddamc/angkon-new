@@ -5,6 +5,7 @@ import {
   CHECKOUT_SETTINGS_KEY,
   getCheckoutSettings,
   normalizeCheckoutSettings,
+  invalidateCheckoutSettingsCache,
 } from "@/server/checkout-settings";
 
 export async function GET() {
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
       { $set: { value: normalized } },
       { upsert: true, new: true },
     );
+    invalidateCheckoutSettingsCache();
     return NextResponse.json({ success: true, settings: normalized });
   } catch (error) {
     console.error("POST /api/admin/settings/checkout error:", error);

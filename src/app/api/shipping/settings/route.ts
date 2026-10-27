@@ -8,6 +8,6 @@ import { getShippingSettings } from "@/server/shipping";
 export async function GET() {
   const settings = await getShippingSettings();
   return NextResponse.json(settings, {
-    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    headers: { "Cache-Control": "public, max-age=15, s-maxage=60, stale-while-revalidate=300" },
   });
 }

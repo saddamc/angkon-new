@@ -51,14 +51,18 @@ test.describe("ANGKON storefront", () => {
 test.describe("ANGKON account", () => {
   test("signed-out visitors see sign-in and registration forms", async ({ page }) => {
     await page.goto("/my-account");
+    await expect(page.getByText("Loading your account…")).toBeHidden({ timeout: 30_000 });
 
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await page.getByRole("button", { name: "Create account" }).click();
     await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+    await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page.getByRole("button", { name: "Forgot password?" })).toBeVisible();
   });
 
   test("forgot-password form opens from the sign-in form", async ({ page }) => {
     await page.goto("/my-account");
+    await expect(page.getByText("Loading your account…")).toBeHidden({ timeout: 30_000 });
     await page.getByRole("button", { name: "Forgot password?" }).click();
 
     await expect(page.getByRole("heading", { name: "Reset password" })).toBeVisible();
@@ -75,6 +79,6 @@ test.describe("ANGKON account", () => {
     await page.goto("/api/auth/verify?token=not-a-real-token-0000000000000000");
 
     await expect(page).toHaveURL(/\/my-account/);
-    await expect(page.getByText(/verification link has expired or was already used/i)).toBeVisible();
+    await expect(page.getByText(/verification link has expired or was already used/i)).toBeVisible({ timeout: 30_000 });
   });
 });

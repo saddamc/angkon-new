@@ -18,6 +18,20 @@ const nextConfig: NextConfig = {
             key: "X-XSS-Protection",
             value: "1; mode=block",
           },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: blob: https://res.cloudinary.com https://wsrv.nl https://images.unsplash.com https://*.fbcdn.net https://*.facebook.com https://*.google-analytics.com https://*.googletagmanager.com",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://res.cloudinary.com https://api.resend.com https://www.facebook.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
+              "frame-ancestors 'none'",
+              "form-action 'self'",
+              "base-uri 'self'",
+            ].join("; "),
+          },
         ],
       },
     ];

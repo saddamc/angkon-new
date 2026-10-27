@@ -6,19 +6,30 @@ export async function addFirstProductToCart(page: Page) {
   const firstCard = page.locator("article").first();
   await expect(firstCard).toBeVisible();
 
-  // Cards aren't one big link — open the product through its title.
-  await firstCard.locator('a[href^="/products/"]:has(h3)').first().click();
-  // The first visit to a product page can take a while to compile on the dev server.
-  await expect(page).toHaveURL(/\/products\/.+/, { timeout: 60_000 });
-
-  // Pick the first size if the product has sizes.
-  const sizeButtons = page.locator("button").filter({ hasText: /^(XS|S|M|L|XL|XXL)$/i });
-  if (await sizeButtons.count()) {
-    await sizeButtons.first().click();
+  // Direct navigation via product href is much more reliable across client-side hydration
+  const productLink = firstCard.locator('a[href^="/products/"]').first();
+  const href = await productLink.getAttribute("href");
+  if (href) {
+    await page.goto(href);
+  } else {
+    await productLink.click();
   }
 
-  await page.getByRole("button", { name: /add to (cart|bag)/i }).first().click();
-  await expect(page.getByLabel("Shopping Cart Drawer")).toBeVisible();
+  // Ensure product page is fully loaded
+  await expect(page).toHaveURL(/\/products\/.+/, { timeout: 60_000 });
+
+  // Pick a size if the product requires sizes
+  const sizeOption = page.locator("button").filter({ hasText: /^(XS|S|M|L|XL|XXL|Standard|Free Size)$/i }).first();
+  if (await sizeOption.count()) {
+    await sizeOption.click();
+  }
+
+  const addToCartBtn = page.getByRole("button", { name: /add to cart/i }).first();
+  await expect(addToCartBtn).toBeVisible();
+  await addToCartBtn.click();
+
+  // The cart drawer opens automatically upon adding to cart
+  await expect(page.getByLabel("Shopping Cart Drawer")).toBeVisible({ timeout: 15_000 });
 }
 
 /** The home-page promo popup covers the screen; real visitors close it, tests skip it. */

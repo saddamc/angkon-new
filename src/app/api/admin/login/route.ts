@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import nodeCrypto from "crypto";
 import { clientIp, rateLimit } from "@/server/rate-limit";
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
+
+if (process.env.NODE_ENV === "production") {
+  if (ADMIN_PASSWORD === "admin" || JWT_SECRET === "angkon_secure_jwt_secret_2026") {
+    console.warn("⚠️ SECURITY WARNING: Using default ADMIN_PASSWORD or fallback JWT_SECRET in production!");
+  }
+}
+
+/** Constant-time string comparison to prevent timing side-channel attacks */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return nodeCrypto.timingSafeEqual(bufA, bufB);
+}
 
 // ── Minimal HMAC-SHA256 token (no external package needed) ──────────────────
 async function sign(payload: Record<string, unknown>, secret: string): Promise<string> {
@@ -37,7 +53,7 @@ async function verify(token: string, secret: string): Promise<Record<string, unk
     );
     const expectedSig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
     const expectedSigB64 = btoa(String.fromCharCode(...new Uint8Array(expectedSig)));
-    if (sig !== expectedSigB64) return null;
+    if (!timingSafeEqualStr(sig, expectedSigB64)) return null;
     const payload = JSON.parse(atob(body));
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
@@ -80,9 +96,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
     }
 
-    // Comparison against configured credentials or default admin/admin
-    const userMatch = username === ADMIN_USERNAME;
-    const passMatch = password === ADMIN_PASSWORD;
+    // Constant-time comparison against configured credentials
+    const userMatch = timingSafeEqualStr(String(username), ADMIN_USERNAME);
+    const passMatch = timingSafeEqualStr(String(password), ADMIN_PASSWORD);
     if (!userMatch || !passMatch) {
       await new Promise((r) => setTimeout(r, 400));
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });

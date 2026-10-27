@@ -288,8 +288,9 @@ export async function POST(request: NextRequest) {
         notes: orderNotes ? String(orderNotes).trim() : "",
       });
 
-      // Synchronize complete customer profile in MongoDB strictly for this email account
-      if (accountUser && normalizeEmail(accountUser.email) === customerData.email) {
+      // Synchronize customer profile in MongoDB strictly when authorized (signed in or newly created)
+      const isAuthorizedSession = account.status === "signed_in" || account.status === "created";
+      if (isAuthorizedSession && accountUser && normalizeEmail(accountUser.email) === customerData.email) {
         try {
           let updated = false;
 
@@ -402,9 +403,9 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
 
-      // Auto-login session cookie strictly for THIS order's email account so next time they visit
-      // checkout or my-account, they are already recognized and their details are pre-filled!
-      if (accountUser && normalizeEmail(accountUser.email) === customerData.email) {
+      // Set session cookie only when authorized: either a freshly created account during checkout
+      // or an already authenticated session. NEVER auto-login unauthenticated guests using an existing email!
+      if (isAuthorizedSession && accountUser && normalizeEmail(accountUser.email) === customerData.email) {
         setSessionCookie(response, {
           id: String(accountUser._id),
           email: accountUser.email,

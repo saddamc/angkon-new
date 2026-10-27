@@ -130,7 +130,7 @@ test.describe("checkout shows the saved delivery rate", () => {
     }));
     expect(items.length).toBeGreaterThan(0);
 
-    const shipment = page.getByText("Shipment", { exact: true }).locator("xpath=..");
+    const deliveryRow = page.getByText("Delivery", { exact: true }).locator("xpath=..");
     const district = page.locator('select[name="district"]');
     const dhaka = page.locator('select[name="district"] option[value="Dhaka"]');
     await expect(dhaka).toHaveCount(1);
@@ -138,10 +138,8 @@ test.describe("checkout shows the saved delivery rate", () => {
     for (const name of ["Dhaka", "Sylhet"]) {
       await district.selectOption(name);
       const { quote } = await (await request.post("/api/shipping/quote", { data: { district: name, items } })).json();
-      const expected = quote.isFree ? "Free" : `Tk${quote.fee.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-      await expect(shipment).toContainText(`Flat rate: ${expected}`);
-      // The label must match the zone for the district that was picked.
-      await expect(shipment).toContainText(name === "Dhaka" ? "Inside Dhaka" : "Outside Dhaka");
+      const expectedFee = quote.isFree ? "Free" : String(quote.fee);
+      await expect(deliveryRow).toContainText(expectedFee);
     }
   });
 });

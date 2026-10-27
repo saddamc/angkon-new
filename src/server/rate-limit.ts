@@ -35,8 +35,28 @@ export async function rateLimit(
   }
 }
 
-/** Best-effort client IP behind Vercel's proxy. */
+/**
+ * Resilient client IP extraction behind reverse proxies (Vercel, Cloudflare, Nginx).
+ * Priority order:
+ * 1. Cloudflare header (cf-connecting-ip)
+ * 2. Dedicated proxy header (x-real-ip)
+ * 3. Last hop in x-forwarded-for (prevents client spoofing by prepending fake IPs)
+ */
 export function clientIp(request: NextRequest): string {
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+
   const forwarded = request.headers.get("x-forwarded-for");
-  return (forwarded?.split(",")[0] || request.headers.get("x-real-ip") || "unknown").trim();
+  if (forwarded) {
+    const parts = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
+    // Rightmost non-empty IP is the one appended by the nearest trusted reverse proxy
+    if (parts.length > 0) {
+      return parts[parts.length - 1];
+    }
+  }
+
+  return "unknown";
 }

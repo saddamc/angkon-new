@@ -69,7 +69,7 @@ test.describe("verification API", () => {
         address: "1 Test Road",
         city: "Dhaka",
         district: "Dhaka",
-        items: [{ productId: 0, name: "Test item", price: 100, quantity: 1 }],
+        items: [{ productId: 228008, slug: "safaidah-dastaan-black-floral-suit", name: "Safaidah Suit", price: 8800, quantity: 1 }],
       },
     });
     expect(res.status()).toBe(403);

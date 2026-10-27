@@ -163,6 +163,35 @@ export async function PUT(
       });
     }
 
+    // Track and cleanly delete any images removed from this product in Cloudinary
+    const existing = await Product.findOne(query).lean();
+    if (existing && Array.isArray(existing.images) && Array.isArray(body.images)) {
+      const newImages = body.images;
+      const newSrcSet = new Set(
+        newImages.map((img: any) => (typeof img === "string" ? img : img?.src)).filter(Boolean)
+      );
+
+      for (const oldImg of existing.images) {
+        const oldSrc = typeof oldImg === "string" ? oldImg : oldImg?.src;
+        if (oldSrc && typeof oldSrc === "string" && oldSrc.includes("res.cloudinary.com") && !newSrcSet.has(oldSrc)) {
+          try {
+            const isUsedElsewhere = await Product.exists({
+              _id: { $ne: existing._id },
+              "images.src": oldSrc,
+            });
+            if (!isUsedElsewhere) {
+              await deleteFromCloudinary(oldSrc);
+              console.log(`Deleted removed single product image from Cloudinary: ${oldSrc}`);
+            } else {
+              console.warn(`Preserving removed image "${oldSrc}" as another product references it.`);
+            }
+          } catch (delErr) {
+            console.warn(`Error deleting removed image "${oldSrc}":`, delErr);
+          }
+        }
+      }
+    }
+
     let updated = await Product.findOneAndUpdate(
       query,
       { $set: body },

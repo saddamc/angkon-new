@@ -430,7 +430,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
 
       void authFetch("/api/admin/upload", {
         method: "DELETE",
-        body: JSON.stringify({ url: img.src, id: img.wpId }),
+        body: JSON.stringify({ url: img.src }),
       }).catch((err) => {
         console.warn("Failed to delete removed session image from Cloudinary:", err);
       });
@@ -493,9 +493,18 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
 
       const oldImg = targetImg;
       if (oldImg) {
-        sessionUploadedRef.current = sessionUploadedRef.current.filter(
-          (item) => (item.id && item.id === oldImg.wpId) || item.url === oldImg.src
+        const wasOldInSession = sessionUploadedRef.current.some(
+          (item) => item.url === oldImg.src || (oldImg.wpId && item.id === oldImg.wpId)
         );
+        if (wasOldInSession) {
+          sessionUploadedRef.current = sessionUploadedRef.current.filter(
+            (item) => (item.id && item.id === oldImg.wpId) || item.url === oldImg.src
+          );
+          void authFetch("/api/admin/upload", {
+            method: "DELETE",
+            body: JSON.stringify({ url: oldImg.src }),
+          }).catch(() => {});
+        }
       }
 
       sessionUploadedRef.current.push({ id: wpId, url });

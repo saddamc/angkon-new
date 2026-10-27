@@ -59,11 +59,22 @@ export async function POST(request: NextRequest) {
             $or: [{ slug: targetCat }, { name: new RegExp(`^${targetCat}$`, "i") }],
           }).lean();
 
-          if (catDoc && catDoc.parent && catDoc.parent > 0) {
-            const parentDoc = await Category.findOne({ id: catDoc.parent }).lean();
-            if (parentDoc) {
-              finalCat = parentDoc.slug || parentDoc.name;
-              finalSub = catDoc.slug || catDoc.name;
+          if (catDoc) {
+            const parentId =
+              catDoc.parent && Number(catDoc.parent) > 0
+                ? Number(catDoc.parent)
+                : Array.isArray(catDoc.linked_parents) && catDoc.linked_parents.length > 0
+                ? Number(catDoc.linked_parents[0])
+                : 0;
+
+            if (parentId > 0) {
+              const parentDoc = await Category.findOne({ id: parentId }).lean();
+              if (parentDoc) {
+                finalCat = parentDoc.slug || parentDoc.name;
+                finalSub = catDoc.slug || catDoc.name;
+              }
+            } else if (!finalCat) {
+              finalCat = catDoc.slug || catDoc.name;
             }
           }
         }
@@ -78,7 +89,7 @@ export async function POST(request: NextRequest) {
         folder = buildCategoryFolderPath({ category: finalCat, subcategory: finalSub });
       } else {
         folder = buildCloudinaryFolderPath({
-          category: finalCat || (finalProd ? "PRODUCTS" : undefined),
+          category: finalCat,
           subcategory: finalSub,
           product: finalProd,
         });
@@ -179,13 +190,15 @@ export async function DELETE(request: NextRequest) {
       if (body.folder) folderToDelete = body.folder;
       if (body.public_id) itemsToDelete.push(body.public_id);
       if (body.url) itemsToDelete.push(body.url);
-      if (body.id) itemsToDelete.push(String(body.id));
+      if (body.id && !body.url && !body.public_id && typeof body.id === "string" && body.id.includes("/")) {
+        itemsToDelete.push(body.id);
+      }
 
       if (Array.isArray(body.items)) {
         for (const item of body.items) {
           if (item?.public_id) itemsToDelete.push(item.public_id);
           else if (item?.url) itemsToDelete.push(item.url);
-          else if (item?.id) itemsToDelete.push(String(item.id));
+          else if (item?.id && typeof item.id === "string" && item.id.includes("/")) itemsToDelete.push(item.id);
         }
       }
       if (Array.isArray(body.urls)) {
@@ -209,7 +222,7 @@ export async function DELETE(request: NextRequest) {
 
     if (pubId) itemsToDelete.push(pubId);
     if (url) itemsToDelete.push(url);
-    if (id) itemsToDelete.push(id);
+    if (id && !url && !pubId && id.includes("/")) itemsToDelete.push(id);
     if (folder) folderToDelete = folder;
   }
 
@@ -223,12 +236,33 @@ export async function DELETE(request: NextRequest) {
   try {
     const results: Array<{ id: string; result: string }> = [];
 
+    let ProductModel: any = null;
+    try {
+      const { connectToDatabase } = await import("@/lib/mongodb");
+      await connectToDatabase();
+      ProductModel = (await import("@/models/Product")).default;
+    } catch (dbErr) {
+      console.warn("MongoDB connection warning in upload delete:", dbErr);
+    }
+
     // Delete individual assets
     for (const item of itemsToDelete) {
       if (!item) continue;
       const cleanPublicId = extractPublicIdFromUrl(item);
       if (cleanPublicId) {
         try {
+          if (ProductModel) {
+            const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+            const isUsedElsewhere = await ProductModel.exists({
+              "images.src": new RegExp(escapeRegex(cleanPublicId)),
+            });
+            if (isUsedElsewhere) {
+              console.warn(`Preserving Cloudinary image "${cleanPublicId}" as it is referenced in database.`);
+              results.push({ id: cleanPublicId, result: "preserved_in_use" });
+              continue;
+            }
+          }
+
           const delResult = await deleteFromCloudinary(cleanPublicId);
           results.push({ id: cleanPublicId, result: delResult.result });
         } catch (delErr) {

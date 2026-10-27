@@ -72,17 +72,18 @@ export function buildCategoryFolderPath({
 
 /**
  * Builds standard Cloudinary folder path adhering to:
- * Project Name (ANGKON) -> PRODUCTS -> Category (e.g. WOMEN/MEN) -> Subcategory (e.g. ETHNIC_WEAR) -> Product (e.g. product-slug)
+ * Project Name (ANGKON) -> Category (e.g. WOMEN/ETHNIC_WEAR) -> Subcategory (e.g. AIMAN_AISHA/GUZEL) -> Product (e.g. product-slug)
+ * All products in the same category go into the exact same category folder hierarchy.
  */
 export function buildCloudinaryFolderPath({
   category,
   subcategory,
   product,
 }: CloudinaryFolderOptions = {}): string {
-  const parts: string[] = ["ANGKON", "PRODUCTS"];
+  const parts: string[] = ["ANGKON"];
 
   if (category && category.trim()) {
-    // Sanitize category to clean uppercase identifier e.g. "MEN", "WOMEN"
+    // Sanitize category to clean uppercase identifier e.g. "MEN", "WOMEN", "ETHNIC_WEAR"
     const catClean = category
       .trim()
       .toUpperCase()
@@ -94,7 +95,7 @@ export function buildCloudinaryFolderPath({
   }
 
   if (subcategory && subcategory.trim()) {
-    // Sanitize subcategory to clean uppercase identifier e.g. "ETHNIC", "POLO"
+    // Sanitize subcategory to clean uppercase identifier e.g. "AIMAN_AISHA", "GUZEL"
     const subClean = subcategory
       .trim()
       .toUpperCase()
@@ -112,6 +113,11 @@ export function buildCloudinaryFolderPath({
       .toLowerCase()
       .replace(/[^a-z0-9_\s-]/g, "")
       .replace(/\s+/g, "-");
+
+    // If no category or subcategory was provided, place under PRODUCTS/ fallback
+    if (parts.length === 1) {
+      parts.push("PRODUCTS");
+    }
     parts.push(prodClean);
   }
 
@@ -250,10 +256,11 @@ export function extractProductFolderFromUrl(
   if (segments[0] !== "ANGKON") return null;
   // 2. Must never delete root or top-level containers
   if (segments.length <= 1) return null; // "ANGKON"
-  if (segments.length === 2 && (segments[1] === "PRODUCTS" || segments[1] === "CATEGORIES")) return null;
-  // 3. If under PRODUCTS, must have at least ANGKON/PRODUCTS/<product> (segments >= 3)
-  if (segments[1] === "PRODUCTS" && segments.length < 3) return null;
-  // 4. Must not be just a category folder
+  const topProtected = ["PRODUCTS", "CATEGORIES", "ETHNIC_WEAR", "WOMEN", "MEN", "TEST"];
+  if (segments.length === 2 && topProtected.includes(segments[1])) return null;
+  // 3. Must have at least 3 segments (e.g. ANGKON/<CAT>/<PROD> or ANGKON/<CAT>/<SUB>/<PROD>)
+  if (segments.length < 3) return null;
+  // 4. Must not be inside CATEGORIES
   if (segments[1] === "CATEGORIES") return null;
 
   // 5. If product identifiers are provided, verify that the last folder segment matches
@@ -289,7 +296,16 @@ export async function deleteCloudinaryFolder(
   folderPath: string
 ): Promise<{ resourcesDeleted: number; folderDeleted: boolean }> {
   const cleanPath = (folderPath || "").trim().replace(/\/+$/, "");
-  const protectedPaths = ["", "ANGKON", "ANGKON/PRODUCTS", "ANGKON/CATEGORIES"];
+  const protectedPaths = [
+    "",
+    "ANGKON",
+    "ANGKON/PRODUCTS",
+    "ANGKON/CATEGORIES",
+    "ANGKON/ETHNIC_WEAR",
+    "ANGKON/WOMEN",
+    "ANGKON/MEN",
+    "ANGKON/TEST",
+  ];
   if (protectedPaths.includes(cleanPath)) {
     throw new Error(`Refusing to delete protected Cloudinary root/category path: "${folderPath}"`);
   }
@@ -420,6 +436,8 @@ export async function syncProductImagesToCategoryFolder({
   });
 
   const updatedImages = [];
+  const foldersToClean = new Set<string>();
+
   for (const img of images) {
     if (!img?.src || typeof img.src !== "string" || !img.src.includes("res.cloudinary.com")) {
       updatedImages.push(img);
@@ -444,6 +462,7 @@ export async function syncProductImagesToCategoryFolder({
       continue;
     }
 
+    const oldFolder = currentPublicId.substring(0, currentPublicId.lastIndexOf("/"));
     const newPublicId = `${targetFolder}/${fileName}`;
     try {
       const renameRes = await cloudinary.uploader.rename(currentPublicId, newPublicId, {
@@ -454,10 +473,34 @@ export async function syncProductImagesToCategoryFolder({
         ...img,
         src: renameRes.secure_url,
       });
+      if (oldFolder && oldFolder !== targetFolder) {
+        foldersToClean.add(oldFolder);
+      }
     } catch (err: any) {
       // If image doesn't exist on Cloudinary or failed to rename, preserve original img
       console.warn(`Could not relocate image "${currentPublicId}" to "${newPublicId}":`, err?.message || err);
       updatedImages.push(img);
+    }
+  }
+
+  // Safely clean up any leftover emptied old folders
+  for (const oldF of foldersToClean) {
+    const protectedFolders = [
+      "",
+      "ANGKON",
+      "ANGKON/CATEGORIES",
+      "ANGKON/PRODUCTS",
+      "ANGKON/ETHNIC_WEAR",
+      "ANGKON/WOMEN",
+      "ANGKON/MEN",
+      "ANGKON/TEST",
+    ];
+    if (!protectedFolders.includes(oldF)) {
+      try {
+        await cloudinary.api.delete_folder(oldF);
+      } catch {
+        // Safe ignore if folder still has other assets
+      }
     }
   }
 

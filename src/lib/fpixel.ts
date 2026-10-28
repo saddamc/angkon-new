@@ -1,4 +1,4 @@
-export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "";
+export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID || "1480517547316620";
 
 declare global {
   interface Window {
@@ -6,6 +6,70 @@ declare global {
     fbq?: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     _fbq?: any;
+    __angkon_meta_test_code?: string;
+  }
+}
+
+function getActiveTestEventCode(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  if (window.__angkon_meta_test_code?.trim()) {
+    return window.__angkon_meta_test_code.trim();
+  }
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("test_event_code");
+    if (code?.trim()) return code.trim();
+  } catch {
+    // Ignore URL parsing errors
+  }
+  return undefined;
+}
+
+function logEventTelemetry(name: string, payload: Record<string, unknown>, testCode?: string) {
+  if (typeof window === "undefined") return;
+
+  const url = window.location.pathname + window.location.search;
+
+  // Local window event dispatch for live UI updates
+  try {
+    window.dispatchEvent(
+      new CustomEvent("angkon_meta_event", {
+        detail: {
+          name,
+          parameters: payload,
+          url,
+          testEventCode: testCode,
+          timestamp: new Date().toISOString(),
+        },
+      })
+    );
+  } catch {
+    // Ignore event dispatch errors
+  }
+
+  // Non-blocking telemetry to server event buffer
+  try {
+    const data = JSON.stringify({
+      name,
+      parameters: payload,
+      url,
+      testEventCode: testCode,
+      source: "browser",
+    });
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([data], { type: "application/json" });
+      navigator.sendBeacon("/api/admin/pixel/events", blob);
+    } else {
+      fetch("/api/admin/pixel/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: data,
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch {
+    // Ignore logging errors so customer checkout is never affected
   }
 }
 
@@ -14,7 +78,10 @@ declare global {
  */
 export function pageview() {
   if (typeof window !== "undefined" && typeof window.fbq === "function") {
-    window.fbq("track", "PageView");
+    const testCode = getActiveTestEventCode();
+    const payload = testCode ? { test_event_code: testCode } : {};
+    window.fbq("track", "PageView", payload);
+    logEventTelemetry("PageView", payload, testCode);
   }
 }
 
@@ -23,7 +90,13 @@ export function pageview() {
  */
 export function event(name: string, options: Record<string, unknown> = {}) {
   if (typeof window !== "undefined" && typeof window.fbq === "function") {
-    window.fbq("track", name, options);
+    const testCode = getActiveTestEventCode();
+    const finalPayload = testCode
+      ? { ...options, test_event_code: testCode }
+      : { ...options };
+
+    window.fbq("track", name, finalPayload);
+    logEventTelemetry(name, finalPayload, testCode);
   }
 }
 

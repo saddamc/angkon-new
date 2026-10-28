@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import Link from "next/link";
 import {
   Settings,
   Globe,
@@ -13,6 +14,8 @@ import {
   Palette,
   Truck,
   ShoppingCart,
+  Activity,
+  ExternalLink,
 } from "lucide-react";
 import { PromoSettings } from "./promo-settings";
 import { ShippingSettings } from "./shipping-settings";
@@ -38,11 +41,16 @@ export default function AdminSettingsPage() {
   const orderEmailText = !mail ? "Loading…" : mail.orderEmails.length ? mail.orderEmails.join(", ") : "Not configured — set ADMIN_EMAIL";
   const alertTargets = mail?.orderEmails.length ? mail.orderEmails.join(", ") : "the configured order email";
 
+  const isDevMode =
+    process.env.NODE_ENV !== "production" ||
+    process.env.NEXT_PUBLIC_ENABLE_META_ROUTES === "true";
+
   const tabs = [
     { key: "general", label: "General", icon: Store },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "shipping", label: "Shipping", icon: Truck },
     { key: "checkout", label: "Checkout", icon: ShoppingCart },
+    ...(isDevMode ? [{ key: "pixel", label: "Meta Pixel", icon: Activity }] : []),
     { key: "appearance", label: "Appearance", icon: Palette },
     { key: "security", label: "Security", icon: Shield },
   ];
@@ -181,6 +189,49 @@ export default function AdminSettingsPage() {
           {activeTab === "shipping" && <ShippingSettings />}
 
           {activeTab === "checkout" && <CheckoutSettings />}
+
+          {activeTab === "pixel" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800 mb-1">Meta (Facebook) Pixel Integration</h2>
+                  <p className="text-[13px] text-stone-500">
+                    Manage your store pixel dataset ID, view live tracked events, and test conversion telemetry
+                  </p>
+                </div>
+                <Link
+                  href="/admin/pixel"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition"
+                >
+                  <span>Open Dedicated Pixel Suite</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+
+              <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-5 space-y-3">
+                <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
+                  <Activity className="h-4 w-4 text-blue-600" />
+                  Full Telemetry Dashboard Available
+                </div>
+                <p className="text-xs text-blue-800 leading-relaxed">
+                  We have provided a dedicated administrative route at{" "}
+                  <Link href="/admin/pixel" className="underline font-bold text-blue-900 hover:text-blue-700">
+                    /admin/pixel
+                  </Link>{" "}
+                  featuring real-time event simulation, PageView/AddToCart/Purchase event diagnostics, and instant database updates.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href="/admin/meta"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white border border-blue-200 px-4 py-2 text-xs font-bold text-blue-700 shadow-xs hover:bg-blue-50 transition"
+                  >
+                    <span>Open Meta Events Manager</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
 
           {activeTab === "appearance" && (
             <div className="space-y-6">

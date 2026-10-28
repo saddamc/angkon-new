@@ -4,6 +4,7 @@ import "./globals.css";
 import { RootShell } from "@/components/layout/root-shell";
 import { getCategoryTree } from "@/lib/woocommerce/categories";
 import { FacebookPixel } from "@/components/analytics/facebook-pixel";
+import { getPixelSettings } from "@/server/pixel-settings";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -37,12 +38,15 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // A WooCommerce hiccup here shouldn't take down the whole site — degrade to
   // static nav links only rather than tripping the root error boundary.
-  const categoryTree = await getCategoryTree().catch(() => []);
+  const [categoryTree, pixelSettings] = await Promise.all([
+    getCategoryTree().catch(() => []),
+    getPixelSettings().catch(() => null),
+  ]);
 
   return (
     <html lang="en" className={`${poppins.variable} ${lato.variable}`}>
       <body className="font-sans antialiased text-white bg-[#400604]" suppressHydrationWarning>
-        <FacebookPixel />
+        <FacebookPixel initialConfig={pixelSettings} />
         <RootShell categoryTree={categoryTree}>{children}</RootShell>
       </body>
     </html>

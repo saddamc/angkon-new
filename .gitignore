@@ -48,15 +48,22 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# Non-production media dumps & scraped reference data (never deploy to production)
+# Non-production media dumps, local reference repos & scraped data (never commit)
 /Angkon/
+/PIXEL/
+/backup-copy/
 /follow/
 /replica/
 /scratch/
+/PIXEL.md
 
 # Testing & E2E output
 /e2e/test-results/
 /e2e/playwright-report/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 /coverage/
 /.nyc_output/
 
@@ -67,14 +74,3 @@ sync-categories.mjs
 # typescript & build info
 *.tsbuildinfo
 next-env.d.ts
-
-# editor settings, local backups and scraped reference material (never commit)
-.vscode/
-backup-copy/
-follow/
-
-# playwright output
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/

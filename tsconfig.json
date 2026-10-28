@@ -38,6 +38,11 @@
   "exclude": [
     "node_modules",
     "e2e",
-    "backup-copy"
+    "backup-copy",
+    "PIXEL",
+    "follow",
+    "replica",
+    "scratch",
+    "Angkon"
   ]
 }

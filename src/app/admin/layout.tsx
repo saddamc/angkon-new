@@ -21,6 +21,7 @@ import {
   PanelLeft,
   Volume2,
   VolumeX,
+  Activity,
 } from "lucide-react";
 import {
   isSoundEnabled,
@@ -30,6 +31,10 @@ import {
   requestDesktopNotificationPermission,
 } from "@/lib/sound-alert";
 
+const isDevMode =
+  process.env.NODE_ENV !== "production" ||
+  process.env.NEXT_PUBLIC_ENABLE_META_ROUTES === "true";
+
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
@@ -37,6 +42,9 @@ const NAV = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
   { href: "/admin/customers", label: "Customers", icon: Users },
+  ...(isDevMode
+    ? [{ href: "/admin/meta", label: "Meta Events Manager", icon: Activity }]
+    : []),
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -245,7 +253,9 @@ export default function AdminLayout({
         {/* Navigation */}
         <nav className="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto">
           {NAV.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href);
+            const active =
+              pathname.startsWith(href) ||
+              (href === "/admin/meta" && pathname.startsWith("/admin/pixel"));
             return (
               <Link
                 key={href}

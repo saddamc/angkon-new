@@ -5,30 +5,56 @@ import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { FB_PIXEL_ID, pageview } from "@/lib/fpixel";
 
-function FacebookPixelNavigationTracker() {
+interface PixelConfig {
+  enabled: boolean;
+  pixelId: string;
+  testEventCode?: string;
+}
+
+function FacebookPixelNavigationTracker({
+  pixelId,
+  testEventCode,
+}: {
+  pixelId: string;
+  testEventCode?: string;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!FB_PIXEL_ID) return;
+    if (typeof window !== "undefined") {
+      window.__angkon_meta_test_code = testEventCode || undefined;
+    }
+  }, [testEventCode]);
+
+  useEffect(() => {
+    if (!pixelId) return;
+    // Fires once on initial page load and on every subsequent client-side route navigation
     pageview();
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, pixelId]);
 
   return null;
 }
 
-export function FacebookPixel() {
-  if (!FB_PIXEL_ID) {
+export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig | null }) {
+  // Use DB configured pixel ID if provided, otherwise fallback to environment variable
+  const activePixelId = (initialConfig?.pixelId || FB_PIXEL_ID || "").trim();
+  const isEnabled = initialConfig ? initialConfig.enabled : Boolean(activePixelId);
+
+  if (!isEnabled || !activePixelId) {
     return null;
   }
 
   return (
     <>
       <Suspense fallback={null}>
-        <FacebookPixelNavigationTracker />
+        <FacebookPixelNavigationTracker
+          pixelId={activePixelId}
+          testEventCode={initialConfig?.testEventCode}
+        />
       </Suspense>
 
-      {/* Meta Pixel Base Code */}
+      {/* Meta Pixel Base Initialization Code (No duplicate PageView in script tag) */}
       <Script
         id="facebook-pixel"
         strategy="afterInteractive"
@@ -42,22 +68,23 @@ export function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${FB_PIXEL_ID}');
-            fbq('track', 'PageView');
+            fbq('init', '${activePixelId}');
           `,
         }}
       />
 
-      {/* Fallback for users with JavaScript disabled */}
+      {/* Fallback for users/crawlers with JavaScript disabled */}
       <noscript>
         <img
           height="1"
           width="1"
           style={{ display: "none" }}
-          src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
+          src={`https://www.facebook.com/tr?id=${activePixelId}&ev=PageView&noscript=1`}
           alt=""
         />
       </noscript>
     </>
   );
 }
+
+export default FacebookPixel;

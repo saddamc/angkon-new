@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Script from "next/script";
-import { FB_PIXEL_ID, pageview } from "@/lib/fpixel";
+import { FB_PIXEL_ID, pageview, logEventTelemetry } from "@/lib/fpixel";
 
 interface PixelConfig {
   enabled: boolean;
@@ -20,6 +20,7 @@ function FacebookPixelNavigationTracker({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -29,7 +30,14 @@ function FacebookPixelNavigationTracker({
 
   useEffect(() => {
     if (!pixelId) return;
-    // Fires once on initial page load and on every subsequent client-side route navigation
+
+    // The base <Script> tag fires the initial PageView on page load.
+    // We only trigger pageview() on subsequent client-side route navigations.
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
     pageview();
   }, [pathname, searchParams, pixelId]);
 
@@ -45,16 +53,18 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
     return null;
   }
 
+  const testEventCode = initialConfig?.testEventCode?.trim();
+
   return (
     <>
       <Suspense fallback={null}>
         <FacebookPixelNavigationTracker
           pixelId={activePixelId}
-          testEventCode={initialConfig?.testEventCode}
+          testEventCode={testEventCode}
         />
       </Suspense>
 
-      {/* Meta Pixel Base Initialization Code (No duplicate PageView in script tag) */}
+      {/* Meta Pixel Base Initialization & Initial PageView */}
       <Script
         id="facebook-pixel"
         strategy="afterInteractive"
@@ -69,7 +79,19 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '${activePixelId}');
+            ${
+              testEventCode
+                ? `fbq('track', 'PageView', { test_event_code: '${testEventCode}' });`
+                : `fbq('track', 'PageView');`
+            }
           `,
+        }}
+        onLoad={() => {
+          logEventTelemetry(
+            "PageView",
+            testEventCode ? { test_event_code: testEventCode } : {},
+            testEventCode
+          );
         }}
       />
 

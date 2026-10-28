@@ -25,7 +25,7 @@ function getActiveTestEventCode(): string | undefined {
   return undefined;
 }
 
-function logEventTelemetry(name: string, payload: Record<string, unknown>, testCode?: string) {
+export function logEventTelemetry(name: string, payload: Record<string, unknown>, testCode?: string) {
   if (typeof window === "undefined") return;
 
   const url = window.location.pathname + window.location.search;

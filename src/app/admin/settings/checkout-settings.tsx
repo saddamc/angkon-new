@@ -261,7 +261,7 @@ export function CheckoutSettings() {
           >
             {saving ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin text-purple-200" /> Saving to MongoDB…
+                <Loader2 className="h-4 w-4 animate-spin text-purple-200" /> Saving…
               </>
             ) : (
               <>
@@ -375,7 +375,7 @@ export function CheckoutSettings() {
                   Customer Accounts &amp; Profile Auto-Save
                 </p>
                 <p className="mt-1 text-[12.5px] leading-relaxed text-stone-500">
-                  Automatically create customer accounts in MongoDB upon checkout and sync their delivery addresses and order history.
+                  Automatically create customer accounts upon checkout and sync their delivery addresses and order history.
                 </p>
               </div>
             </div>

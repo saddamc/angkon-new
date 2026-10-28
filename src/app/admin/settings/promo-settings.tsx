@@ -101,16 +101,16 @@ export function PromoSettings() {
 
       <div className="space-y-3">
         <label className="block text-[12px] font-bold uppercase tracking-wider text-stone-500">
-          Banner Image (Cloudinary)
+          Banner Image
         </label>
         {image ? (
           <div className="relative inline-block border border-stone-200 rounded-xl overflow-hidden group shadow-sm">
-            <Image src={image} alt="Promo" width={280} height={280} className="object-cover max-h-[300px]" />
+            <Image src={image} alt="Promo Banner" width={280} height={280} className="object-cover max-h-[300px]" />
             <button
               type="button"
               onClick={() => setImage("")}
               className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition cursor-pointer"
-              title="Remove image"
+              title="Remove banner image"
             >
               <X className="w-4 h-4" />
             </button>
@@ -119,11 +119,14 @@ export function PromoSettings() {
           <div className="relative">
             <label className="flex h-[140px] w-[280px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-stone-200 bg-stone-50/50 transition hover:bg-purple-50/40 hover:border-purple-300">
               {uploading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
+                <div className="flex flex-col items-center gap-1.5 text-purple-600">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="text-[12px] font-medium">Uploading banner...</span>
+                </div>
               ) : (
                 <>
                   <UploadCloud className="h-7 w-7 text-stone-400 mb-1" />
-                  <span className="text-[12px] font-semibold text-stone-600">Upload to Cloudinary</span>
+                  <span className="text-[12px] font-semibold text-stone-600">Upload Banner Image</span>
                   <span className="text-[10px] text-stone-400">PNG, JPG, WebP</span>
                 </>
               )}
@@ -156,7 +159,7 @@ export function PromoSettings() {
           {saving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin text-purple-200" />
-              Saving to MongoDB…
+              Saving…
             </>
           ) : (
             "Save Promo Settings"

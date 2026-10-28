@@ -658,7 +658,7 @@ export function CategoryStudio({
                   {uploading ? (
                     <div className="flex flex-col items-center gap-2 text-purple-600">
                       <Loader2 className="h-7 w-7 animate-spin" />
-                      <span className="text-[13px] font-medium">Uploading to Cloudinary...</span>
+                      <span className="text-[13px] font-medium">Uploading image...</span>
                     </div>
                   ) : form.imageUrl ? (
                     <div className="relative group flex flex-col items-center">
@@ -671,7 +671,7 @@ export function CategoryStudio({
                         <button
                           type="button"
                           onClick={handleRemoveImage}
-                          title="Remove image and delete from Cloudinary"
+                          title="Remove image"
                           className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full cursor-pointer hover:bg-red-600 shadow-md transition"
                         >
                           <X className="h-3.5 w-3.5" />

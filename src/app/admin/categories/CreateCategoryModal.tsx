@@ -861,7 +861,7 @@ export function CreateCategoryModal({
                   {uploading ? <Loader2 className="h-5 w-5 animate-spin text-purple-600" /> : <UploadCloud className="h-5 w-5" />}
                 </div>
                 <p className="text-[13px] font-bold text-gray-800">
-                  {uploading ? "Uploading to Cloudinary (WebP)..." : "Click to upload banner or drag & drop"}
+                  {uploading ? "Uploading banner (WebP)..." : "Click to upload banner or drag & drop"}
                 </p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
                   Any image format · Auto-converted to optimized WebP

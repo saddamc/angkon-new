@@ -60,7 +60,7 @@ export function DeleteConfirmModal({
           )}
           <p className="text-[12px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex items-center gap-2">
             <span>🗑️</span>
-            <span>Attached category image in Cloudinary will also be automatically removed.</span>
+            <span>Attached category image will also be automatically removed.</span>
           </p>
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">

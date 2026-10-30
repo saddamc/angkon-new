@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import Image from "next/image";
 import {
   X, Plus, FolderOpen, Layers, Check, Loader2, AlertCircle,
   UploadCloud, Search, ChevronDown, Lock, Unlock, Sparkles,
@@ -63,7 +64,7 @@ async function convertImageToWebP(file: File, maxDimension = 1600, quality = 0.9
       sourceHeight = bitmap.height;
       imageSource = bitmap;
     } else {
-      const img = new Image();
+      const img = new window.Image();
       const url = URL.createObjectURL(file);
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
@@ -586,9 +587,11 @@ export function CreateCategoryModal({
                   {selectedParentCategory ? (
                     <>
                       {selectedParentCategory.image?.src ? (
-                        <img
+                        <Image
                           src={selectedParentCategory.image.src}
                           alt=""
+                          width={32}
+                          height={32}
                           className="h-8 w-8 rounded-lg object-cover border border-gray-200 shrink-0"
                         />
                       ) : (
@@ -646,7 +649,7 @@ export function CreateCategoryModal({
                             }`}
                           >
                             {cat.image?.src ? (
-                              <img src={cat.image.src} alt="" className="h-6 w-6 rounded-md object-cover shrink-0" />
+                              <Image src={cat.image.src} alt="" width={24} height={24} className="h-6 w-6 rounded-md object-cover shrink-0" />
                             ) : (
                               <FolderOpen className="h-4 w-4 text-gray-400 shrink-0" />
                             )}
@@ -794,9 +797,11 @@ export function CreateCategoryModal({
 
             {imageUrl ? (
               <div className="relative rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 shadow-xs group">
-                <img
+                <Image
                   src={imageUrl}
                   alt={imageAlt || name}
+                  width={600}
+                  height={144}
                   className="w-full h-36 object-cover object-center"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">

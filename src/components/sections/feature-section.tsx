@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 
 export function FeatureSection() {
@@ -9,10 +10,12 @@ export function FeatureSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           
           <Link href="/product-category/women" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden border border-[#E1B76F]/20 shadow-xl block">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1000&auto=format&fit=crop" 
               alt="Women's Collection" 
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
@@ -24,10 +27,12 @@ export function FeatureSection() {
           </Link>
 
           <Link href="/product-category/men" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden border border-[#E1B76F]/20 shadow-xl block">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=1000&auto=format&fit=crop" 
               alt="Men's Collection" 
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
@@ -39,10 +44,12 @@ export function FeatureSection() {
           </Link>
 
           <Link href="/product-category/accessories" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden border border-[#E1B76F]/20 shadow-xl block">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1000&auto=format&fit=crop" 
               alt="Accessories" 
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
@@ -54,10 +61,12 @@ export function FeatureSection() {
           </Link>
 
           <Link href="/sale" className="group relative aspect-[16/9] md:aspect-[3/2] rounded-[2rem] overflow-hidden border border-[#E1B76F]/20 shadow-xl block">
-            <img 
+            <Image 
               src="https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=1000&auto=format&fit=crop" 
               alt="Sale" 
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover transition-transform duration-1000 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-500" />
             <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">

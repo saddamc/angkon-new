@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMounted } from "@/hooks/use-mounted";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { getProducts } from "@/services/products.service";
 import { formatPrice } from "@/utils/price";
@@ -217,9 +218,11 @@ export function SearchModal() {
                             onClick={closeModal}
                             className="group flex gap-3 rounded-xl border border-transparent p-2.5 transition hover:bg-[#340402]"
                           >
-                            <img
+                            <Image
                               src={product.image}
                               alt={product.name}
+                              width={48}
+                              height={48}
                               className="h-12 w-12 rounded object-cover border border-[#E1B76F]/20"
                             />
                             <div className="min-w-0 flex-1">

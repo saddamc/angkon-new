@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Plus, Pencil, Trash2, RefreshCw, ChevronRight, X, Loader2,
-  FolderOpen, Check, AlertCircle, UploadCloud,
-  Search, Filter, GripVertical, CheckCircle2, XCircle, SearchX, ChevronDown, ChevronUp,
-  ArrowRightLeft, Sparkles, ExternalLink, ArrowLeft, Layers, MoreVertical
+  FolderOpen, Check, AlertCircle,
+  Search, GripVertical, SearchX,
+  ArrowRightLeft, Sparkles, ExternalLink, MoreVertical
 } from "lucide-react";
-import { decodeHtmlCharCodes } from "@/utils/category-display";
 import { CreateCategoryModal } from "./CreateCategoryModal";
 
 
 import type { WCCategory, CategoryTree, FormData } from "./types";
-import { EMPTY_FORM } from "./types";
 import {
   catName,
   slugify,
@@ -21,11 +20,8 @@ import {
   sortedChildrenOf,
   parentsWithChildrenIds,
   ancestorIdsOf,
-  directChildren,
-  categoryPath,
-  subtreeList,
   descendantIdSet,
-  siblingsOf,
+  subtreeList,
   getStatus,
 } from "./category-tree-utils";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
@@ -544,9 +540,11 @@ export default function AdminCategoriesPage() {
           {/* Thumbnail / Category Icon */}
           <div className="relative shrink-0 flex items-center justify-center">
             {cat.image?.src ? (
-              <img
+              <Image
                 src={cat.image.src}
                 alt={catName(cat)}
+                width={44}
+                height={44}
                 className={`rounded-xl object-cover border border-gray-200 shadow-2xs bg-white ${
                   depth === 0 ? "h-10 w-10 sm:h-11 sm:w-11" : "h-8 w-8 sm:h-9 sm:w-9"
                 }`}
@@ -566,7 +564,7 @@ export default function AdminCategoriesPage() {
                 const isUrl = isIconUrl(iconMeta);
                 return (
                   <div className="absolute -bottom-1 -right-1 bg-white rounded-full shadow-2xs border border-gray-100 text-[11px] leading-none p-[2px] z-10 flex items-center justify-center overflow-hidden">
-                    {isUrl ? <img src={iconMeta} alt="" className="h-3 w-3 object-contain" /> : iconMeta}
+                    {isUrl ? <Image src={iconMeta} alt="" width={12} height={12} className="h-3 w-3 object-contain" /> : iconMeta}
                   </div>
                 );
               }

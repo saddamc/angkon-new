@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown, X } from "lucide-react";
 import type { CategoryNode } from "@/types/woocommerce";
 import { categoryDisplayName } from "@/utils/category-display";
@@ -69,9 +70,11 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
       <div className="animate-in slide-in-from-left flex h-full w-[85%] max-w-[380px] flex-col bg-[#1A0302] border-r border-[#E1B76F]/30 shadow-2xl duration-300">
         <div className="flex items-center justify-between border-b border-[#E1B76F]/20 bg-[#100101] p-4 text-white">
           <Link href="/" onClick={onClose} className="flex items-center gap-2.5">
-            <img
+            <Image
               src="/logo.jpeg"
               alt="ANGKON"
+              width={36}
+              height={36}
               className="h-9 w-9 rounded-md shadow-sm border border-[#E1B76F]/30 object-contain"
             />
             <span className="font-serif tracking-[0.2em] text-[16px] font-bold text-white uppercase leading-none">

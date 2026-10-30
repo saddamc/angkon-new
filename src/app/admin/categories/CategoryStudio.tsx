@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { useAuth } from "@/hooks/use-auth";
 import {
   ChevronLeft, FolderOpen, Loader2, Check, AlertCircle, UploadCloud,
@@ -665,9 +666,11 @@ export function CategoryStudio({
                   ) : form.imageUrl ? (
                     <div className="relative group flex flex-col items-center">
                       <div className="relative">
-                        <img
+                        <Image
                           src={form.imageUrl}
                           alt="Category"
+                          width={128}
+                          height={128}
                           className="h-32 w-32 object-cover rounded-xl border border-gray-200 shadow-sm"
                         />
                         <button
@@ -740,7 +743,7 @@ export function CategoryStudio({
                           : "border-gray-200 bg-gray-50/80 hover:bg-white"
                       }`}
                     >
-                      <img src={preset.src} alt="" className="h-7 w-7 rounded-lg object-cover border border-gray-200 shrink-0" />
+                      <Image src={preset.src} alt="" width={28} height={28} className="h-7 w-7 rounded-lg object-cover border border-gray-200 shrink-0" />
                       <span className="text-[12px] font-bold text-gray-800">{preset.name}</span>
                     </button>
                   ))}
@@ -782,7 +785,7 @@ export function CategoryStudio({
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="h-8 w-8 rounded-lg bg-white border border-purple-200 flex items-center justify-center shrink-0 shadow-xs text-lg">
                       {isIconUrl(form.icon) ? (
-                        <img src={form.icon} alt="" className="h-5 w-5 object-contain" />
+                        <Image src={form.icon} alt="" width={20} height={20} className="h-5 w-5 object-contain" />
                       ) : (
                         <span>{form.icon}</span>
                       )}
@@ -940,12 +943,12 @@ export function CategoryStudio({
                       >
                         {hasIcon ? (
                           isIconUrl(form.icon) ? (
-                            <img src={form.icon} alt="" className="h-10 w-10 object-contain" />
+                            <Image src={form.icon} alt="" width={40} height={40} className="h-10 w-10 object-contain" />
                           ) : (
                             <span className="text-3xl select-none">{form.icon}</span>
                           )
                         ) : hasImg ? (
-                          <img src={form.imageUrl} alt="" className="h-full w-full object-cover select-none" />
+                          <Image src={form.imageUrl} alt="" width={80} height={80} className="h-full w-full object-cover select-none" />
                         ) : (
                           <span className="text-3xl select-none">👗</span>
                         )}
@@ -1021,9 +1024,11 @@ export function CategoryStudio({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           {sub.image?.src ? (
-                            <img
+                            <Image
                               src={sub.image.src}
                               alt=""
+                              width={32}
+                              height={32}
                               className="h-8 w-8 rounded-lg object-cover border border-gray-100 shrink-0"
                             />
                           ) : (
@@ -1115,9 +1120,11 @@ export function CategoryStudio({
                       />
                       <span className="truncate">{catName(mainCat)}</span>
                       {mainCat.image?.src && (
-                        <img
+                        <Image
                           src={mainCat.image.src}
                           alt=""
+                          width={20}
+                          height={20}
                           className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
                         />
                       )}
@@ -1159,9 +1166,11 @@ export function CategoryStudio({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           {sub.image?.src ? (
-                            <img
+                            <Image
                               src={sub.image.src}
                               alt=""
+                              width={32}
+                              height={32}
                               className="h-8 w-8 rounded-lg object-cover border border-purple-200 shrink-0"
                             />
                           ) : (

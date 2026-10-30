@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   MapPin,
   Phone,
@@ -105,9 +106,11 @@ export function Footer() {
           {/* Column 1: Brand & Social Channels (4 cols on lg) */}
           <div className="lg:col-span-4 space-y-5">
             <Link href="/" className="inline-flex items-center gap-3 group">
-              <img
+              <Image
                 src="/logo.jpeg"
                 alt="ANGKON Logo"
+                width={48}
+                height={48}
                 className="h-12 w-12 rounded-lg border border-[#E1B76F]/40 shadow-lg object-contain group-hover:border-[#E1B76F] transition"
               />
               <div>

@@ -12,6 +12,7 @@ const eslintConfig = [
       "react-hooks/set-state-in-effect": "off",
       "react-hooks/immutability": "off",
       "react-hooks/globals": "off",
+      "react-hooks/incompatible-library": "off",
       "react-hooks/refs": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": [

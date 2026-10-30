@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown, ChevronRight, Menu as MenuIcon, Home, Sparkles, Tag, ShoppingBag, FolderOpen } from "lucide-react";
 import type { CategoryNode } from "@/types/woocommerce";
 import { FASHION_CATEGORIES } from "@/data/categories";
@@ -148,7 +149,7 @@ export function MegaMenu({ categoryTree }: MegaMenuProps) {
                               className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-white/90 hover:bg-[#400604] hover:text-[#E1B76F] transition-colors"
                             >
                               {sub.image ? (
-                                <img src={sub.image} alt={sub.name} className="h-7 w-7 rounded-lg object-cover bg-[#2b0403] shadow-sm shrink-0 border border-[#E1B76F]/20" />
+                                <Image src={sub.image} alt={sub.name} width={28} height={28} className="h-7 w-7 rounded-lg object-cover bg-[#2b0403] shadow-sm shrink-0 border border-[#E1B76F]/20" />
                               ) : (
                                 <div className="h-7 w-7 rounded-lg bg-[#2b0403] border border-[#E1B76F]/20 flex items-center justify-center text-white/50 shrink-0">
                                   <FolderOpen className="h-3.5 w-3.5" />

@@ -57,6 +57,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (body.capiAccessToken !== undefined) {
+      const cleanToken = String(body.capiAccessToken).trim();
+      if (cleanToken && (cleanToken.startsWith("{") || cleanToken.startsWith("[") || cleanToken.includes('"event_name"'))) {
+        return NextResponse.json(
+          {
+            error:
+              "Invalid Conversions API Access Token. You pasted sample JSON payload data instead of a Meta Access Token. Meta tokens start with 'EAA' (generated in Meta Events Manager > Settings > Conversions API).",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Guard: Prevent turning on tracking when pixelId is missing or cleared
     const current = await getPixelSettings(auth.tenantId);
     const effectivePixelId =

@@ -36,7 +36,10 @@ export async function POST(request: NextRequest) {
     }
 
     await connectToDatabase();
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.findOne({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } });
+    }
 
     if (!user) {
       return NextResponse.json({ error: INVALID }, { status: 401 });

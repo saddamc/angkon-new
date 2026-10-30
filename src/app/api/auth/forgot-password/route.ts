@@ -39,15 +39,32 @@ export async function POST(request: NextRequest) {
     }
 
     await connectToDatabase();
-    const user = await User.findOne({ email });
-    if (!user) return NextResponse.json(GENERIC_OK);
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.findOne({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" } });
+    }
+
+    if (!user) {
+      console.warn(`[Auth:ForgotPassword] Reset requested for non-existent email: "${email}". No reset email dispatched.`);
+      return NextResponse.json(GENERIC_OK);
+    }
 
     const last = user.lastResetSentAt ? new Date(user.lastResetSentAt).getTime() : 0;
     if (Date.now() - last < EMAIL_RESEND_COOLDOWN_MS) {
+      console.log(`[Auth:ForgotPassword] Resend cooldown active for "${email}". Silently ignored.`);
       return NextResponse.json(GENERIC_OK); // quietly rate-limit
     }
 
-    await issuePasswordResetEmail(user, request);
+    const emailResult = await issuePasswordResetEmail(user, request);
+    if (!emailResult.success) {
+      console.error(`[Auth:ForgotPassword] Resend delivery error for "${email}":`, emailResult.error);
+      return NextResponse.json(
+        { error: "Unable to send password reset email at this moment. Please try again shortly." },
+        { status: 500 }
+      );
+    }
+
+    console.log(`[Auth:ForgotPassword] Password reset email successfully dispatched to "${email}" (ID: ${emailResult.id})`);
     return NextResponse.json(GENERIC_OK);
   } catch (error) {
     console.error("Forgot password error:", error);

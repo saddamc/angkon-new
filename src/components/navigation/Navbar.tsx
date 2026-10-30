@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useMounted } from "@/hooks/use-mounted";
-import { ShoppingCart, Menu, User, Search, X, ChevronDown } from "lucide-react";
+import { ShoppingCart, Menu, User, Search, X } from "lucide-react";
 import { CartDrawer } from "@/components/layout/cart-drawer";
 import { useCartStore } from "@/store/cart-store";
 import type { CategoryNode } from "@/types/woocommerce";
@@ -25,7 +25,7 @@ interface NavbarProps {
   categoryTree: CategoryNode[];
 }
 
-export function Navbar({ categoryTree }: NavbarProps) {
+export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isCartOpen = useCartStore((state) => state.isOpen);
@@ -118,7 +118,7 @@ export function Navbar({ categoryTree }: NavbarProps) {
   // Live search query fetching
   useEffect(() => {
     if (!searchQuery.trim()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced live-search request
+       
       setSearchResults([]);
       setSearchLoading(false);
       return;

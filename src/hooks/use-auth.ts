@@ -11,6 +11,7 @@ export function useAuth() {
   const logout = useCallback(async () => {
     // Ask server to clear the HttpOnly cookie
     await fetch("/api/admin/login", { method: "DELETE" });
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/admin";
   }, []);
 

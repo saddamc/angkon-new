@@ -22,7 +22,7 @@ export function PromoPopup() {
   useEffect(() => {
     // Only show popup on home page
     if (pathname !== "/") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- close the popup when leaving the home page
+       
       setIsOpen(false);
       return;
     }

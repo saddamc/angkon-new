@@ -12,10 +12,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  ArrowRight,
   ShieldCheck,
-  KeyRound,
-  Sparkles,
 } from "lucide-react";
 
 export interface AuthModalUser {

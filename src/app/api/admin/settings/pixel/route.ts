@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPixelSettings, savePixelSettings, PixelSettings } from "@/server/pixel-settings";
+import {
+  getPixelSettings,
+  savePixelSettings,
+  getPublicAdminPixelSettings,
+  getPixelEvents,
+  PixelSettings,
+} from "@/server/pixel-settings";
+import { requireAdminSession } from "@/server/admin-auth";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const settings = await getPixelSettings();
-    return NextResponse.json(settings, {
+    const auth = await requireAdminSession(request);
+    if (!auth.authorized) {
+      return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const settings = await getPixelSettings(auth.tenantId);
+    const { events } = getPixelEvents(auth.tenantId);
+    const safeSettings = getPublicAdminPixelSettings(settings, events);
+
+    return NextResponse.json(safeSettings, {
       headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
     });
   } catch (error) {
@@ -15,20 +30,50 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAdminSession(request);
+    if (!auth.authorized) {
+      return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as Partial<PixelSettings>;
 
     if (body.pixelId !== undefined) {
       const cleanId = String(body.pixelId).trim();
       if (cleanId && !/^\d{10,25}$/.test(cleanId)) {
         return NextResponse.json(
-          { error: "Invalid Meta Pixel ID. Pixel IDs typically consist of 14 to 17 numeric digits." },
+          { error: "Invalid Meta Pixel / Dataset ID. Pixel IDs consist of 10 to 25 numeric digits." },
           { status: 400 }
         );
       }
     }
 
-    const saved = await savePixelSettings(body);
-    return NextResponse.json({ success: true, settings: saved });
+    if (body.adAccountId !== undefined) {
+      const cleanAdAcc = String(body.adAccountId).trim();
+      if (cleanAdAcc && !/^(act_)?\d{6,25}$/.test(cleanAdAcc)) {
+        return NextResponse.json(
+          { error: "Invalid Meta Ad Account ID. Format should be numeric or act_123456789." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Guard: Prevent turning on tracking when pixelId is missing or cleared
+    const current = await getPixelSettings(auth.tenantId);
+    const effectivePixelId =
+      body.pixelId !== undefined ? String(body.pixelId).trim() : (current.pixelId?.trim() || "");
+
+    if (body.enabled === true && !effectivePixelId) {
+      return NextResponse.json(
+        { error: "Cannot enable tracking without a valid Meta Pixel / Dataset ID." },
+        { status: 400 }
+      );
+    }
+
+    const saved = await savePixelSettings(body, auth.tenantId);
+    const { events } = getPixelEvents(auth.tenantId);
+    const safeSettings = getPublicAdminPixelSettings(saved, events);
+
+    return NextResponse.json({ success: true, settings: safeSettings });
   } catch (error) {
     console.error("POST /api/admin/settings/pixel error:", error);
     return NextResponse.json({ error: "Failed to save pixel settings" }, { status: 500 });

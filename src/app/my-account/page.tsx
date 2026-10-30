@@ -180,7 +180,6 @@ export default function MyAccountPage() {
     if (window.location.search.includes("verify=")) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- load the session once on mount
     void loadSession();
   }, []);
 

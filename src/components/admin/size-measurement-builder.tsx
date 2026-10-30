@@ -1,21 +1,15 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
-  Check,
   Plus,
   Trash2,
   Edit2,
   Eye,
-  Ruler,
   ChevronDown,
-  GripVertical,
   ArrowUp,
   ArrowDown,
-  Sparkles,
-  Info,
-  Layers,
 } from "lucide-react";
 import {
   MultiSectionSizeChart,
@@ -23,12 +17,10 @@ import {
   SizeChartSectionRow,
   GARMENT_PRESETS,
   createDefaultMultiSectionChart,
-  formatMeasurement,
   MeasurementUnit,
 } from "@/utils/size-chart";
 import {
   PRESET_ICONS,
-  COMMON_SIZES,
   LivePreviewCard,
   AddPartModal,
   ManageSizesModal,
@@ -46,7 +38,7 @@ interface SizeMeasurementBuilderProps {
 
 export function SizeMeasurementBuilder({
   initialChart,
-  productName,
+  productName: _productName,
   availableProductSizes,
   onSave,
   onCancel,
@@ -78,7 +70,6 @@ export function SizeMeasurementBuilder({
 
   // Manage Sizes modal state
   const [showManageSizesModal, setShowManageSizesModal] = useState(false);
-  const [customSizeInput, setCustomSizeInput] = useState("");
 
   // Track unsaved modifications
   const [hasChanges, setHasChanges] = useState(false);

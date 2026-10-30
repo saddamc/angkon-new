@@ -5,7 +5,6 @@ import type { WooCategory } from "@/types/product";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __globalCategoriesCache: { data: WooCategory[] | null; lastFetch: number; version?: string } | undefined;
 }
 

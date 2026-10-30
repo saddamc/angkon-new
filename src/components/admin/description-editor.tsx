@@ -14,7 +14,6 @@ import {
   Eraser,
   Copy,
   Check,
-  FileText,
   ClipboardPaste,
 } from "lucide-react";
 import {

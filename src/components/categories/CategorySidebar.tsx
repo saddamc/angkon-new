@@ -22,7 +22,6 @@ export function CategorySidebar({ isMobile = false }: CategorySidebarProps) {
   const [recentItems, setRecentItems] = useState<RecentlyViewedProduct[]>(DEFAULT_RECENTLY_VIEWED);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage after hydration
     setRecentItems(getRecentlyViewed());
   }, []);
 

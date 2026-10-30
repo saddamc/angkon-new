@@ -6,7 +6,6 @@ import {
   BarChart3,
   ShoppingCart,
   Users,
-  Package,
   TrendingUp,
   RefreshCw,
   AlertTriangle,
@@ -151,7 +150,6 @@ export default function ReportsPage() {
   });
 
   const s = report?.sales;
-  const periodLabel = PERIODS.find((t) => t.key === period)?.label ?? "This period";
 
   if (loading && !report) {
     return (

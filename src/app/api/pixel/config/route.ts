@@ -1,29 +1,49 @@
 import { NextResponse } from "next/server";
-import { getPixelSettings } from "@/server/pixel-settings";
+import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/pixel-settings";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const settings = await getPixelSettings();
+    const settings = await getPixelSettings(DEFAULT_TENANT_ID);
+    const activePixelId = settings.enabled ? (settings.pixelId || "") : "";
+
     return NextResponse.json(
       {
-        enabled: settings.enabled,
-        pixelId: settings.enabled ? settings.pixelId : null,
+        enabled: Boolean(settings.enabled && activePixelId),
+        pixelId: activePixelId || null,
+        testEventCode: settings.testEventCode || "",
         events: {
-          pageView: settings.trackPageView,
-          viewContent: settings.trackViewContent,
-          addToCart: settings.trackAddToCart,
-          initiateCheckout: settings.trackInitiateCheckout,
-          purchase: settings.trackPurchase,
+          // Standard track* naming
+          trackPageView: settings.trackPageView !== false,
+          trackViewContent: settings.trackViewContent !== false,
+          trackAddToCart: settings.trackAddToCart !== false,
+          trackInitiateCheckout: settings.trackInitiateCheckout !== false,
+          trackPurchase: settings.trackPurchase !== false,
+          // CamelCase alias support
+          pageView: settings.trackPageView !== false,
+          viewContent: settings.trackViewContent !== false,
+          addToCart: settings.trackAddToCart !== false,
+          initiateCheckout: settings.trackInitiateCheckout !== false,
+          purchase: settings.trackPurchase !== false,
         },
       },
       {
         headers: {
-          "Cache-Control": "public, max-age=15, s-maxage=60, stale-while-revalidate=300",
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
       }
     );
   } catch (error) {
     console.error("GET /api/pixel/config error:", error);
-    return NextResponse.json({ enabled: false, pixelId: null }, { status: 500 });
+    return NextResponse.json(
+      { enabled: false, pixelId: null, events: {} },
+      {
+        status: 500,
+        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+      }
+    );
   }
 }

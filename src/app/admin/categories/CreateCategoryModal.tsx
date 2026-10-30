@@ -4,8 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import {
   X, Plus, FolderOpen, Layers, Check, Loader2, AlertCircle,
   UploadCloud, Search, ChevronDown, Lock, Unlock, Sparkles,
-  ImageIcon, Eye, EyeOff, Hash, ArrowRight, CornerDownRight,
-  RefreshCw, CheckCircle2
+  EyeOff, Hash, CornerDownRight, CheckCircle2
 } from "lucide-react";
 import { decodeHtmlCharCodes } from "@/utils/category-display";
 
@@ -19,7 +18,7 @@ export interface WCCategory {
   count: number;
   direct_count?: number;
   menu_order: number;
-  meta_data?: { id?: number; key: string; value: any }[];
+  meta_data?: { id?: number; key: string; value: unknown }[];
   image?: { id?: number; src: string; alt?: string } | null;
   is_linked?: boolean;
 }
@@ -45,18 +44,6 @@ function slugify(name: string) {
     .trim()
     .replace(/\s+/g, "-")
     .replace(/[^\w-]/g, "");
-}
-
-function categoryPath(flat: WCCategory[], id: number): string {
-  const parts: string[] = [];
-  let current = flat.find((c) => c.id === id);
-  const seen = new Set<number>();
-  while (current && !seen.has(current.id)) {
-    seen.add(current.id);
-    parts.unshift(catName(current));
-    current = flat.find((c) => c.id === current?.parent);
-  }
-  return parts.join(" > ");
 }
 
 async function convertImageToWebP(file: File, maxDimension = 1600, quality = 0.90): Promise<File> {
@@ -222,37 +209,6 @@ export function CreateCategoryModal({
     }
   }, [isOpen, initialType, initialParentId, flat]);
 
-  // Handle ESC and click outside dropdowns
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (parentDropdownOpen) setParentDropdownOpen(false);
-        else if (crossDropdownOpen) setCrossDropdownOpen(false);
-        else void handleClose();
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        void handleSubmit(false);
-      }
-    };
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (parentDropdownRef.current && !parentDropdownRef.current.contains(e.target as Node)) {
-        setParentDropdownOpen(false);
-      }
-      if (crossDropdownRef.current && !crossDropdownRef.current.contains(e.target as Node)) {
-        setCrossDropdownOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen, parentDropdownOpen, crossDropdownOpen, onClose]);
-
   // Update slug automatically when name changes
   const handleNameChange = (val: string) => {
     setName(val);
@@ -326,8 +282,9 @@ export function CreateCategoryModal({
       sessionUploadedRef.current.push({ id: numericId, url: data.url });
       if (!imageAlt) setImageAlt(name.trim());
       showToast("Cover image uploaded in WebP format successfully!");
-    } catch (err: any) {
-      setError(err.message || "Failed to upload image.");
+    } catch (err: unknown) {
+      const e = err as { message?: string } | undefined;
+      setError(e?.message || "Failed to upload image.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -436,12 +393,45 @@ export function CreateCategoryModal({
       } else {
         onClose();
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to create category. Please check your network and try again.");
+    } catch (err: unknown) {
+      const e = err as { message?: string } | undefined;
+      setError(e?.message || "Failed to create category. Please check your network and try again.");
     } finally {
       setSaving(false);
     }
   };
+
+  // Handle ESC and click outside dropdowns
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (parentDropdownOpen) setParentDropdownOpen(false);
+        else if (crossDropdownOpen) setCrossDropdownOpen(false);
+        else void handleClose();
+      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        void handleSubmit(false);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (parentDropdownRef.current && !parentDropdownRef.current.contains(e.target as Node)) {
+        setParentDropdownOpen(false);
+      }
+      if (crossDropdownRef.current && !crossDropdownRef.current.contains(e.target as Node)) {
+        setCrossDropdownOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, parentDropdownOpen, crossDropdownOpen, onClose]);
 
   const selectedParentCategory = useMemo(() => {
     return flat.find((c) => c.id === parent) || null;

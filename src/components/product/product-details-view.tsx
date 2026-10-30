@@ -22,9 +22,8 @@ import {
 } from "@/components/product/ready-to-wear-size-guide-modal";
 import { getProductSizeChart, isMultiSectionSizeChart } from "@/utils/size-chart";
 import { useCartStore } from "@/store/cart-store";
-import { useWishlistStore } from "@/store/wishlist-store";
 import type { WooProduct } from "@/types/product";
-import { formatPrice, getDisplayPrice } from "@/utils/price";
+import { getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
 import { saveRecentlyViewed } from "@/utils/recently-viewed";
 import { trackViewContent, trackAddToCart } from "@/lib/fpixel";
@@ -154,7 +153,6 @@ export function ProductDetailsView({
   const [optionError, setOptionError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
-  const [wished, setWished] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("Description");
   const [showStickyBar, setShowStickyBar] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -245,15 +243,11 @@ export function ProductDetailsView({
   const insideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_inside")?.value || "60");
   const outsideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_outside")?.value || "120");
 
-  const deliveryFee = useMemo(() => ({
-    inside: insideFee,
-    outside: outsideFee
-  }), [insideFee, outsideFee]);
-
   const pricing = useMemo(
     () => getDisplayPrice(product.regular_price || product.price, product.sale_price),
     [product.price, product.regular_price, product.sale_price],
   );
+  const currentPrice = pricing.current;
 
   useEffect(() => {
     if (product?.id) {
@@ -261,11 +255,11 @@ export function ProductDetailsView({
         content_name: product.name,
         content_category: product.categories?.[0]?.name || "Apparel",
         content_ids: [product.id],
-        value: pricing.current,
+        value: currentPrice,
         currency: "BDT",
       });
     }
-  }, [product?.id, product?.name, product?.categories, pricing.current]);
+  }, [product?.id, product?.name, product?.categories, currentPrice]);
 
   const FALLBACK_PRODUCT_IMAGE = "/placeholder.webp";
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
@@ -289,9 +283,6 @@ export function ProductDetailsView({
   const activeImg = resolveImageSrc(rawActiveImg);
   const lightboxImg = resolveImageSrc(rawLightboxImg);
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
-  const infoAttributes = product.attributes.filter((a) => a.visible && a.name.toLowerCase() !== "size");
-  const brandAttr = product.attributes.find((a) => a.name.toLowerCase() === "brand");
-  const brand = brandAttr?.options?.[0];
 
   // Genuine customer selectable variation attributes (e.g. Size)
   const variationAttrs = useMemo(() => {
@@ -364,19 +355,6 @@ export function ProductDetailsView({
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2400);
-  };
-
-  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
-  const isWished = useWishlistStore((s) => s.isInWishlist(product.id));
-
-  const handleWishlistToggle = () => {
-    toggleWishlist({
-      productId: product.id,
-      slug: product.slug,
-      name: product.name,
-      image: activeImg,
-      price: pricing.current,
-    });
   };
 
   return (

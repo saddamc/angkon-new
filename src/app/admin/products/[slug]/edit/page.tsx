@@ -9,9 +9,6 @@ import { ProductForm } from "@/components/admin/product-form";
 import { ProductFormSkeleton } from "@/components/admin/product-form-skeleton";
 import {
   getSizeChartFromMeta,
-  emptySizeChart,
-  isMultiSectionSizeChart,
-  flattenMultiSectionChart,
   normalizeToMultiSectionChart,
 } from "@/utils/size-chart";
 

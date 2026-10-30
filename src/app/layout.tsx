@@ -24,16 +24,29 @@ const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://angkon.com.bd");
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "ANGKON — House of Modern Heritage",
-  description: "ANGKON — HOUSE OF MODERN HERITAGE. Premium fashion and modern heritage apparel crafted with excellence in Bangladesh. Showroom: HOUSE OF MODERN HERITAGE — H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212.",
-  icons: {
-    icon: "/logo.jpeg",
-    shortcut: "/logo.jpeg",
-    apple: "/logo.jpeg",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const pixelSettings = await getPixelSettings().catch(() => null);
+  const domainToken = pixelSettings?.domainVerificationToken?.trim();
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: "ANGKON — House of Modern Heritage",
+    description:
+      "ANGKON — HOUSE OF MODERN HERITAGE. Premium fashion and modern heritage apparel crafted with excellence in Bangladesh. Showroom: HOUSE OF MODERN HERITAGE — H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212.",
+    icons: {
+      icon: "/logo.jpeg",
+      shortcut: "/logo.jpeg",
+      apple: "/logo.jpeg",
+    },
+    verification: {
+      other: domainToken
+        ? {
+            "facebook-domain-verification": [domainToken],
+          }
+        : undefined,
+    },
+  };
+}
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // A WooCommerce hiccup here shouldn't take down the whole site — degrade to

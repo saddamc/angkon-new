@@ -104,10 +104,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
+    const primaryTenant = process.env.PRIMARY_TENANT_ID?.trim() || "angkon-main";
     const token = await sign(
       {
         sub: username,
         role: "admin",
+        authorizedTenants: [primaryTenant],
+        defaultTenant: primaryTenant,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8,
       },

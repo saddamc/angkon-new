@@ -4,20 +4,17 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   ChevronLeft, FolderOpen, Loader2, Check, AlertCircle, UploadCloud,
-  Sparkles, X, Search, Layers, Plus, ExternalLink, ImageIcon, Info,
-  Unlink, Tag, Folder, RefreshCw
+  Sparkles, X, Search, Layers, Plus, ExternalLink, ImageIcon,
+  Tag, RefreshCw
 } from "lucide-react";
 import type { WCCategory, FormData } from "./types";
 import { ICON_CATEGORIES } from "./types";
 import {
   catName,
   slugify,
-  categoryPath,
-  subtreeList,
   descendantIdSet,
   directChildren,
   siblingsOf,
-  getStatus,
   ancestorIdsOf,
 } from "./category-tree-utils";
 import {
@@ -91,7 +88,7 @@ export function CategoryStudio({
     setActiveTab("details");
     isSavedRef.current = false;
     sessionUploadedRef.current = [];
-  }, [initial.id, mode, initial.parent]);
+  }, [initial, mode]);
 
   const filteredIcons = useMemo(() => {
     const q = iconSearch.trim().toLowerCase();
@@ -125,7 +122,6 @@ export function CategoryStudio({
           c.linked_parents.includes(categoryId)
       )
     : [];
-  const totalSubCount = directChildCats.length + crossListedChildCats.length;
   const linkableCandidates = categoryId
     ? flat.filter(
         (c) =>
@@ -153,8 +149,9 @@ export function CategoryStudio({
       if (!res.ok) throw new Error("Failed to link category");
       setLinkingChildId("");
       if (onReload) await onReload();
-    } catch (e: any) {
-      setError(e.message || "Failed to link category");
+    } catch (e: unknown) {
+      const err = e as { message?: string } | undefined;
+      setError(err?.message || "Failed to link category");
     } finally {
       setLinkingActionLoading(false);
     }
@@ -173,14 +170,15 @@ export function CategoryStudio({
       });
       if (!res.ok) throw new Error("Failed to unlink category");
       if (onReload) await onReload();
-    } catch (e: any) {
-      setError(e.message || "Failed to unlink category");
+    } catch (e: unknown) {
+      const err = e as { message?: string } | undefined;
+      setError(err?.message || "Failed to unlink category");
     } finally {
       setLinkingActionLoading(false);
     }
   };
 
-  const set = (key: keyof FormData, val: any) => setForm((prev) => ({ ...prev, [key]: val }));
+  const set = <K extends keyof FormData>(key: K, val: FormData[K]) => setForm((prev) => ({ ...prev, [key]: val }));
 
   const handleNameChange = (name: string) => {
     setForm((prev) => ({
@@ -224,9 +222,10 @@ export function CategoryStudio({
         linkedParents: form.linkedParents || [],
       });
     }
-    catch (err: any) {
+    catch (err: unknown) {
       isSavedRef.current = false;
-      setError(err.message || "Failed to save category");
+      const errorObj = err as { message?: string } | undefined;
+      setError(errorObj?.message || "Failed to save category");
     }
     finally { setSaving(false); }
   };
@@ -335,7 +334,10 @@ export function CategoryStudio({
           body: JSON.stringify({ id: prevId, url: prevUrl }),
         });
       }
-    } catch (err: any) { setError(err.message || "Upload failed"); }
+    } catch (err: unknown) {
+      const errorObj = err as { message?: string } | undefined;
+      setError(errorObj?.message || "Upload failed");
+    }
     finally { setUploading(false); }
   };
 

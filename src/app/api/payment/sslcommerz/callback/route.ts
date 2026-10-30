@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { validateSslcommerzTransaction } from "@/server/sslcommerz";
+import { sendMetaCapiEvent } from "@/server/meta-capi";
 
 export async function POST(request: NextRequest) {
   return handleCallback(request);
@@ -87,6 +88,36 @@ async function handleCallback(request: NextRequest) {
   }
 
   if (isVerified) {
+    // Dispatch server-side Meta Conversions API (CAPI) Purchase event (idempotent, only once per verified payment)
+    if (!order.notes?.includes("[CAPI_PURCHASE_SENT]")) {
+      order.notes = `${order.notes || ""} [CAPI_PURCHASE_SENT]`.trim();
+      await order.save();
+
+      sendMetaCapiEvent({
+        eventName: "Purchase",
+        eventId: `order_${order.orderNumber}`,
+        eventSourceUrl: `${appBaseUrl}/checkout`,
+        userData: {
+          email: order.customer.email,
+          phone: order.customer.phone,
+          firstName: order.customer.fullName,
+          city: order.customer.city,
+          district: order.customer.district,
+          postalCode: order.customer.postalCode,
+          clientIp: request.headers.get("x-forwarded-for")?.split(",")[0].trim() || undefined,
+          clientUserAgent: request.headers.get("user-agent") || undefined,
+        },
+        customData: {
+          value: order.total,
+          currency: "BDT",
+          order_id: order.orderNumber,
+          num_items: order.items.reduce((acc, it) => acc + it.quantity, 0),
+          content_ids: order.items.map((it) => it.productId),
+          content_type: "product",
+        },
+      }).catch((err) => console.warn("[Meta CAPI] SSLCOMMERZ post-payment purchase error:", err));
+    }
+
     return NextResponse.redirect(`${appBaseUrl}/thankyou-for-shopping?order=${tranId}&payment=success`);
   }
 

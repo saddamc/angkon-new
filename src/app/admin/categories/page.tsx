@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  Plus, Pencil, Trash2, RefreshCw, ChevronRight, ChevronLeft, X, Loader2,
-  FolderOpen, Tag, ImageIcon, Check, AlertCircle, UploadCloud,
+  Plus, Pencil, Trash2, RefreshCw, ChevronRight, X, Loader2,
+  FolderOpen, Check, AlertCircle, UploadCloud,
   Search, Filter, GripVertical, CheckCircle2, XCircle, SearchX, ChevronDown, ChevronUp,
   ArrowRightLeft, Sparkles, ExternalLink, ArrowLeft, Layers, MoreVertical
 } from "lucide-react";
@@ -30,7 +30,6 @@ import {
 } from "./category-tree-utils";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { MoveModal } from "./MoveModal";
-import { DetailsDrawer } from "./DetailsDrawer";
 import { CategoryStudio } from "./CategoryStudio";
 import { isIconUrl } from "./icon-presets";
 
@@ -88,7 +87,9 @@ export default function AdminCategoriesPage() {
   const showToast = (msg: string, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
   const flatRef = useRef<WCCategory[]>(flat);
-  flatRef.current = flat;
+  useEffect(() => {
+    flatRef.current = flat;
+  }, [flat]);
 
   const selectedCatIdRef = useRef<number | null>(null);
   const initialSelectedRef = useRef(false);
@@ -128,6 +129,7 @@ export default function AdminCategoriesPage() {
     try {
       const res = await authFetch("/api/admin/categories");
       if (res.status === 401) {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/admin";
         return;
       }
@@ -431,16 +433,6 @@ export default function AdminCategoriesPage() {
     if (id !== null) void performMove(id, 0, null, null);
   };
 
-  const moveCategory = async (catId: number, parentId: number, direction: "up" | "down") => {
-    const siblings = sortedChildrenOf(flatRef.current, parentId);
-    const curIdx = siblings.findIndex((c) => c.id === catId);
-    if (curIdx === -1) return;
-    const targetIdx = direction === "up" ? curIdx - 1 : curIdx + 1;
-    if (targetIdx < 0 || targetIdx >= siblings.length) return;
-    const neighbour = siblings[targetIdx];
-    await performMove(catId, parentId, direction === "up" ? neighbour.id : null, direction === "down" ? neighbour.id : null);
-  };
-
   const openAdd = () => {
     setCreateModal({
       isOpen: true,
@@ -461,7 +453,7 @@ export default function AdminCategoriesPage() {
     selectForStudio(cat);
   };
 
-  const renderRow = (cat: CategoryTree, depth = 0, index: number) => {
+  const renderRow = (cat: CategoryTree, depth = 0, _index?: number) => {
     const active = getStatus(cat);
     const hasChildren = cat.children.length > 0;
     const isCollapsed = collapsedIds.has(cat.id);

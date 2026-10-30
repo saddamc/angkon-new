@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,9 +32,7 @@ import {
   requestDesktopNotificationPermission,
 } from "@/lib/sound-alert";
 
-const isDevMode =
-  process.env.NODE_ENV !== "production" ||
-  process.env.NEXT_PUBLIC_ENABLE_META_ROUTES === "true";
+const isMetaEnabled = process.env.NEXT_PUBLIC_DISABLE_META_ROUTES !== "true";
 
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,7 +41,7 @@ const NAV = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
   { href: "/admin/customers", label: "Customers", icon: Users },
-  ...(isDevMode
+  ...(isMetaEnabled
     ? [{ href: "/admin/meta", label: "Meta Events Manager", icon: Activity }]
     : []),
   { href: "/admin/settings", label: "Settings", icon: Settings },
@@ -154,6 +153,7 @@ export default function AdminLayout({
               title: "🎉 New Order Placed!",
               body: `Order #${latest.number || latestId} (৳${Number(latest.total || 0).toLocaleString("en-BD")}) from ${latest.billing?.first_name || "Customer"}`,
               onClick: () => {
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                 window.location.href = "/admin/orders?status=pending";
               },
             });
@@ -216,21 +216,33 @@ export default function AdminLayout({
           <button
             type="button"
             onClick={toggleSidebarExpanded}
-            className={`hidden lg:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-purple-500 text-white shadow-md hover:from-purple-700 hover:to-purple-600 hover:scale-105 transition-all duration-200 ${
+            className={`hidden lg:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#400604] border border-stone-200/90 shadow-sm hover:scale-105 transition-all duration-200 ${
               sidebarExpanded ? "" : "mx-auto"
             }`}
             title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
             aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
-            <span className="font-bold text-sm tracking-wider">AK</span>
+            <Image
+              src="/logo.jpeg"
+              alt="ANGKON"
+              width={40}
+              height={40}
+              className="h-full w-full object-cover"
+            />
           </button>
-          <div className="lg:hidden flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-purple-500 text-white shadow-md">
-            <span className="font-bold text-sm tracking-wider">AK</span>
+          <div className="lg:hidden flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#400604] border border-stone-200/90 shadow-sm">
+            <Image
+              src="/logo.jpeg"
+              alt="ANGKON"
+              width={40}
+              height={40}
+              className="h-full w-full object-cover"
+            />
           </div>
           {sidebarExpanded && (
             <>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="text-[14px] font-bold tracking-tight text-purple-700 whitespace-nowrap">
+                <p className="text-[14px] font-bold tracking-tight text-[#400604] whitespace-nowrap">
                   ANGKON
                 </p>
                 <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 whitespace-nowrap">

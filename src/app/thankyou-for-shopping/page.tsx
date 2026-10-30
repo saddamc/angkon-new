@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Clock, Truck, ShieldCheck, MapPin, Phone, ArrowRight } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Thank You for Shopping With Us — ANGKON",

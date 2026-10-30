@@ -18,11 +18,7 @@ import {
   LogIn,
   AlertCircle,
   Loader2,
-  Mail,
   ShieldCheck,
-  Check,
-  X,
-  Phone,
   Eye,
   EyeOff,
   Sparkles,
@@ -160,7 +156,6 @@ export default function CheckoutPage() {
 
   const watchedDistrict = watch("district");
   const watchedCity = watch("city");
-  const watchedEmail = watch("email");
 
   useEffect(() => {
     setMounted(true);
@@ -418,13 +413,8 @@ export default function CheckoutPage() {
       });
 
       if (result.gatewayUrl) {
-        trackPurchase({
-          order_id: result.orderNumber || result.orderId || orderId,
-          value: typeof result.total === "number" ? result.total : FINAL_TOTAL,
-          currency: "BDT",
-          num_items: items.reduce((acc, item) => acc + item.quantity, 0),
-          content_ids: items.map((item) => item.productId),
-        });
+        // Redirect customer to SSLCOMMERZ gateway for online card/MFS processing.
+        // Purchase event will be tracked post-payment upon gateway validation, preventing false conversions.
         clearCart();
         try {
           localStorage.removeItem("angkon_applied_promo");
@@ -436,8 +426,10 @@ export default function CheckoutPage() {
       }
 
       setSubmitted(true);
+      const confirmedOrderNum = result.orderNumber || result.orderId || orderId;
       trackPurchase({
-        order_id: result.orderNumber || result.orderId || orderId,
+        order_id: confirmedOrderNum,
+        event_id: `order_${confirmedOrderNum}`,
         value: typeof result.total === "number" ? result.total : FINAL_TOTAL,
         currency: "BDT",
         num_items: items.reduce((acc, item) => acc + item.quantity, 0),

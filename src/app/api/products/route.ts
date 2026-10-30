@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDbProducts } from "@/lib/db/products";
+import { getDbProducts, type DbProductQuery } from "@/lib/db/products";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || undefined;
     const category = searchParams.get("category") || undefined;
     const onSale = searchParams.get("onSale") === "true";
-    const orderby = (searchParams.get("orderby") as any) || undefined;
-    const order = (searchParams.get("order") as any) || undefined;
+    const orderby = (searchParams.get("orderby") as DbProductQuery["orderby"]) || undefined;
+    const order = (searchParams.get("order") as DbProductQuery["order"]) || undefined;
 
     const products = await getDbProducts({
       page,

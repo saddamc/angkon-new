@@ -218,7 +218,7 @@ export default function AdminOrdersPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
-        const updated = await res.json();
+        await res.json();
         const isCompleted = newStatus === "completed";
         setOrders((prev) =>
           prev.map((o) =>

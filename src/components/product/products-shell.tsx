@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search, SlidersHorizontal, X } from "lucide-react";
 import type { WooProduct, WooCategory } from "@/types/product";

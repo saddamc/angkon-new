@@ -10,7 +10,7 @@ export interface WCCategory {
   /** Products listed directly in this category. */
   direct_count?: number;
   menu_order: number;
-  meta_data?: { id?: number; key: string; value: any }[];
+  meta_data?: { id?: number; key: string; value: unknown }[];
   image?: { id?: number; src: string; alt?: string } | null;
   is_linked?: boolean;
 }

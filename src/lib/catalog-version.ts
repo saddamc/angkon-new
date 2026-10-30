@@ -12,7 +12,6 @@ const VERSION_KEY = "catalog-version";
 const VERSION_CHECK_INTERVAL_MS = 3000;
 
 declare global {
-  // eslint-disable-next-line no-var
   var __catalogVersion: { value: string; checkedAt: number } | undefined;
 }
 

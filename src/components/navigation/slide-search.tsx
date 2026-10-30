@@ -50,7 +50,7 @@ export function SlideSearch() {
       }, 50);
       return () => clearTimeout(timer);
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset / debounced search request
+
       setQuery("");
       setResults([]);
     }
@@ -70,7 +70,7 @@ export function SlideSearch() {
   // Fetch search results on query change
   useEffect(() => {
     if (!query.trim()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset / debounced search request
+
       setResults([]);
       return;
     }

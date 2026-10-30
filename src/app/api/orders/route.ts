@@ -11,6 +11,7 @@ import { getCheckoutSettings } from "@/server/checkout-settings";
 import { clientIp, rateLimit } from "@/server/rate-limit";
 import { getAllDbProducts } from "@/lib/db/products";
 import { initiateSslcommerzPayment } from "@/server/sslcommerz";
+import { sendMetaCapiEvent } from "@/server/meta-capi";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 
@@ -402,6 +403,34 @@ export async function POST(request: NextRequest) {
         Promise.allSettled(emailTasks).catch((emailErr) => {
           console.warn("Email background dispatch warning:", emailErr);
         });
+
+        // Server-side Meta Conversions API (CAPI) for Cash on Delivery purchases
+        if (newOrder.paymentMethod === "cod") {
+          sendMetaCapiEvent({
+            eventName: "Purchase",
+            eventId: `order_${newOrder.orderNumber}`,
+            eventSourceUrl: `${request.nextUrl.origin}/checkout`,
+            userData: {
+              email: customerData.email,
+              phone: customerData.phone,
+              firstName: customerData.fullName,
+              city: customerData.city,
+              district: customerData.district,
+              clientIp: clientIp(request),
+              clientUserAgent: request.headers.get("user-agent") || undefined,
+            },
+            customData: {
+              value: newOrder.total,
+              currency: "BDT",
+              order_id: newOrder.orderNumber,
+              num_items: itemsData.reduce((acc, it) => acc + it.quantity, 0),
+              content_ids: itemsData.map((it) => it.productId),
+              content_type: "product",
+            },
+          }).catch((capiErr) => {
+            console.warn("[Meta CAPI] Server COD purchase dispatch error:", capiErr);
+          });
+        }
       } catch (emailErr) {
         console.warn("Email task dispatch warning:", emailErr);
       }

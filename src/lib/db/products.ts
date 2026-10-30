@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { getCatalogVersion } from "@/lib/catalog-version";
 import type { WooProduct, WooCategory } from "@/types/product";
 import REAL_PRODUCTS from "@/data/real-products.json";
-import REAL_CATEGORIES from "@/data/real-categories.json";
 
 export interface DbProductQuery {
   page?: number;
@@ -16,14 +16,13 @@ export interface DbProductQuery {
 }
 
 // Convert Mongoose Product doc or lean object into typed WooProduct
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toWooProduct(doc: any): WooProduct {
   const docSizes: string[] = Array.isArray(doc.sizes)
     ? doc.sizes.map(String).map((s: string) => s.trim()).filter(Boolean)
     : [];
 
   const rawAttributes = Array.isArray(doc.attributes) ? [...doc.attributes] : [];
-  const sizeAttrIdx = rawAttributes.findIndex((a: any) => {
+  const sizeAttrIdx = rawAttributes.findIndex((a: { name?: unknown }) => {
     const n = String(a?.name || "").toLowerCase();
     return n === "size" || n === "sizes";
   });
@@ -104,7 +103,6 @@ function toWooProduct(doc: any): WooProduct {
 
 // High-speed Global In-Memory Products Cache (10 min TTL, invalidated on admin edit)
 declare global {
-  // eslint-disable-next-line no-var
   var __globalProductsCache: { data: WooProduct[] | null; lastFetch: number; version?: string } | undefined;
 }
 

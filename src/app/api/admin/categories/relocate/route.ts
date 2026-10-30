@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       const jsonPath = path.resolve(process.cwd(), "src/data/real-categories.json");
       if (fs.existsSync(jsonPath)) {
         const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-        const idx = raw.findIndex((c: any) => c.id === Number(id));
+        const idx = raw.findIndex((c: { id?: number }) => c.id === Number(id));
         if (idx >= 0) {
           raw[idx].parent = Number(parent);
           fs.writeFileSync(jsonPath, JSON.stringify(raw, null, 2), "utf-8");

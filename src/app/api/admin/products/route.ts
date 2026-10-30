@@ -132,8 +132,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let attributes = Array.isArray(body.attributes) ? [...body.attributes] : [];
+    const attributes = Array.isArray(body.attributes) ? [...body.attributes] : [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sizeAttrIdx = attributes.findIndex((a: any) => {
       const n = String(a?.name || "").toLowerCase();

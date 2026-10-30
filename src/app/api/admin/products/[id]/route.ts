@@ -172,7 +172,7 @@ export async function PUT(
       const newImages = body.images;
       // Extract file basenames from new images so relocated images are recognized and preserved
       const newBasenames = new Set(
-        newImages.map((img: any) => {
+        newImages.map((img: string | { src?: string } | null | undefined) => {
           const src = typeof img === "string" ? img : img?.src;
           if (!src) return "";
           const pub = extractPublicIdFromUrl(src);

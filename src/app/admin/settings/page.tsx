@@ -63,7 +63,7 @@ export default function AdminSettingsPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-800">Settings & Configuration</h1>
-          <p className="text-[12px] text-stone-500">ANGKON Executive Suite parameters</p>
+          <p className="text-[12px] text-stone-500">ANGKON Admin Configuration</p>
         </div>
       </div>
 

@@ -54,7 +54,6 @@ const CategorySchema = new Schema<ICategory>(
     timestamps: true,
     toJSON: {
       transform: (_doc, ret) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { _id, __v, ...rest } = ret as Record<string, unknown>;
         return rest;
       },

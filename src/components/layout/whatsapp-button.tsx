@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, X } from "lucide-react";
+import { X } from "lucide-react";
 
 const WA_NUMBER = "8801338668899"; // user verified contact
 const WA_MESSAGE = encodeURIComponent("Hi! I'm interested in apparel from ANGKON. Can you help me?");

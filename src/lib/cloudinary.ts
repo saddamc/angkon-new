@@ -330,8 +330,9 @@ export async function deleteCloudinaryFolder(
       try {
         await cloudinary.api.delete_folder(cleanPath);
         folderDeleted = true;
-      } catch (err: any) {
-        console.warn(`Could not delete folder "${cleanPath}" (may already be deleted or non-empty):`, err?.message || err);
+      } catch (err: unknown) {
+        const errObj = err as { message?: string } | undefined;
+        console.warn(`Could not delete folder "${cleanPath}" (may already be deleted or non-empty):`, errObj?.message || err);
       }
     }
 
@@ -486,9 +487,10 @@ export async function syncProductImagesToCategoryFolder({
       if (oldFolder && oldFolder !== targetFolder) {
         foldersToClean.add(oldFolder);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // If image doesn't exist on Cloudinary or failed to rename, preserve original img
-      console.warn(`Could not relocate image "${currentPublicId}" to "${newPublicId}":`, err?.message || err);
+      const errObj = err as { message?: string } | undefined;
+      console.warn(`Could not relocate image "${currentPublicId}" to "${newPublicId}":`, errObj?.message || err);
       updatedImages.push(img);
     }
   }

@@ -23,7 +23,7 @@ const MAPS_SHORT_URL = "https://maps.app.goo.gl/hwrj3KgQ6NdSYp3R8";
 const MAPS_DIRECTIONS_URL =
   "https://www.google.com/maps/dir/?api=1&destination=Angkon,+H-93(Ground+floor),+Road:2,+Block-A,+Dhaka&destination_place_id=0x3755c700590c6bd1:0xb8c41782ee16f18f";
 const MAPS_EMBED_URL =
-  "https://www.google.com/maps?q=Angkon,+H-93(Ground+floor),+Road:2,+Block-A,+Dhaka&ftid=0x3755c700590c6bd1:0xb8c41782ee16f18f&output=embed";
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1500.0!2d90.4527872!3d23.8585285!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c700590c6bd1%3A0xb8c41782ee16f18f!2sAngkon%2C%20H-93(Ground%20floor)%2C%20Road%3A2%2C%20Block-A%2C%20Dhaka!5e0!3m2!1sen!2sbd!4v1710000000000!5m2!1sen!2sbd";
 
 export default function ContactPage() {
   return (

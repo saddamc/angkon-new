@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowRight, Tag, Loader2, CheckCircle2, X } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, Tag, Loader2, X } from "lucide-react";
 import { QuantitySelector } from "@/components/product/quantity-selector";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
@@ -27,7 +27,7 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoMessage, setPromoMessage] = useState<string | null>(null);
+  const [_promoMessage, setPromoMessage] = useState<string | null>(null);
 
   // Sync config and restore applied promo from localStorage
   useEffect(() => {

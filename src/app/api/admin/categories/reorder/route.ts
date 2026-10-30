@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         items.forEach((it) => orderMap.set(Number(it.id), it));
 
         let updated = false;
-        raw.forEach((cat: any) => {
+        raw.forEach((cat: { id?: number; menu_order?: number; parent?: number }) => {
           const match = orderMap.get(Number(cat.id));
           if (match) {
             cat.menu_order = match.menu_order;

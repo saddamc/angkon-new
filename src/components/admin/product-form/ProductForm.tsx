@@ -26,7 +26,6 @@ import { toWpDescription } from "@/utils/html";
 import { DescriptionEditor } from "@/components/admin/description-editor";
 import { slugifyProductName } from "@/utils/product-url";
 import {
-  emptySizeChart,
   serializeSizeChart,
   sizeChartHasValues,
   SIZE_CHART_META_KEY,

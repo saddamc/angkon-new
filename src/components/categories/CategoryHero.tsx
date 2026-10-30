@@ -5,7 +5,7 @@ import { getCategoryImage } from "@/config/category-images";
 
 export function CategoryHero({
   category,
-  productCount,
+  productCount: _productCount,
 }: {
   category: CategoryNode;
   productCount?: number;

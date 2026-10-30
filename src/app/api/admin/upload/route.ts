@@ -236,7 +236,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const results: Array<{ id: string; result: string }> = [];
 
-    let ProductModel: any = null;
+    let ProductModel: typeof import("@/models/Product").Product | null = null;
     try {
       const { connectToDatabase } = await import("@/lib/mongodb");
       await connectToDatabase();

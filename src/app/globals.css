@@ -222,3 +222,17 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: 1px solid rgba(225, 183, 111, 0.15);
   color: rgba(255, 255, 255, 0.9);
 }
+
+/* ── Cross-browser Scrollbar Hiding (Enterprise Grade) ── */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+

@@ -191,13 +191,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(newCategory, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Create category failed:", err);
-    const message = err?.message || "Failed to create category";
+    const errorObj = err as { message?: string; code?: number } | undefined;
+    const message = errorObj?.message || "Failed to create category";
     return NextResponse.json(
       {
         error: message,
-        details: err?.code === 11000 ? "A category with this ID or slug already exists." : String(err?.message || err),
+        details: errorObj?.code === 11000 ? "A category with this ID or slug already exists." : String(errorObj?.message || err),
       },
       { status: 500 }
     );

@@ -144,7 +144,6 @@ const ProductSchema = new Schema<IProduct>(
     toJSON: {
       transform: (_doc, ret) => {
         // Remove MongoDB internal _id & __v when serializing for the frontend
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { _id, __v, ...rest } = ret as Record<string, unknown>;
         return rest;
       },

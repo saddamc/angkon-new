@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -15,11 +18,11 @@ export default function AdminLoginPage() {
     fetch("/api/admin/login")
       .then((res) => {
         if (res.ok) {
-          window.location.href = "/admin/dashboard";
+          router.replace("/admin/dashboard");
         }
       })
       .catch(() => {});
-  }, []);
+  }, [router]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +40,7 @@ export default function AdminLoginPage() {
         setError(data.error || "Invalid credentials");
         return;
       }
-      window.location.href = "/admin/dashboard";
+      router.replace("/admin/dashboard");
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -56,17 +59,21 @@ export default function AdminLoginPage() {
 
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo / Brand */}
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 border border-purple-200/50 shadow-xl shadow-purple-500/20">
-            <span className="font-sans font-black text-2xl tracking-widest text-white">AK</span>
+        <div className="mb-6 flex flex-col items-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#400604] border border-stone-200/90 shadow-lg p-1.5 mb-3">
+            <Image
+              src="/logo.jpeg"
+              alt="ANGKON Logo"
+              width={80}
+              height={80}
+              priority
+              className="h-full w-full rounded-xl object-cover"
+            />
           </div>
           <div className="text-center">
-            <h1 className="text-[24px] font-sans font-extrabold tracking-tight text-gray-900">
+            <h1 className="font-serif text-[24px] font-bold tracking-[0.22em] text-[#400604] uppercase">
               ANGKON
             </h1>
-            <p className="text-[11px] uppercase font-bold tracking-widest text-purple-600 mt-0.5">
-              Executive Administration
-            </p>
           </div>
         </div>
 
@@ -75,24 +82,24 @@ export default function AdminLoginPage() {
           <form onSubmit={onSubmit} className="space-y-4">
             {/* Username */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-1.5">
-                Executive Username
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+                Username
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
-                placeholder="admin"
-                className="w-full rounded-xl bg-stone-50 border border-stone-200 px-4 py-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
+                placeholder="Username or email"
+                className="w-full rounded-xl bg-stone-50 border border-stone-200 px-4 py-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 transition"
                 required
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-1.5">
-                Passphrase
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+                Password
               </label>
               <div className="relative">
                 <input
@@ -101,7 +108,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full rounded-xl bg-stone-50 border border-stone-200 px-4 py-3 pr-11 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
+                  className="w-full rounded-xl bg-stone-50 border border-stone-200 px-4 py-3 pr-11 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 transition"
                   required
                 />
                 <button
@@ -136,16 +143,12 @@ export default function AdminLoginPage() {
               ) : (
                 <>
                   <KeyRound className="h-4 w-4 text-purple-200" />
-                  <span>Authenticate Session</span>
+                  <span>Sign In</span>
                 </>
               )}
             </button>
           </form>
         </div>
-
-        <p className="text-center text-[11px] text-stone-400 mt-6 tracking-wide">
-          Protected by HttpOnly JWT Session Tokens · ANGKON
-        </p>
       </div>
     </div>
   );

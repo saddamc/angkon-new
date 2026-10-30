@@ -8,29 +8,31 @@ import {
   Copy,
   Check,
   Save,
-  Info,
   ExternalLink,
   Code,
   Zap,
   Lock,
+  PlayCircle,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
-import type { PixelSettings } from "@/server/pixel-settings";
+import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
 
 export default function MetaConversionsApiPage() {
-  const [settings, setSettings] = useState<PixelSettings | null>(null);
+  const [settings, setSettings] = useState<PublicAdminPixelSettings | null>(null);
   const [capiToken, setCapiToken] = useState("");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [copiedPayload, setCopiedPayload] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/settings/pixel")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
+      .then((data: PublicAdminPixelSettings | null) => {
         if (data) {
           setSettings(data);
-          setCapiToken(data.capiAccessToken || "");
         }
       })
       .catch(console.error);
@@ -53,7 +55,11 @@ export default function MetaConversionsApiPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setSettings(data.settings);
-        setMessage({ type: "success", text: "Conversions API (CAPI) access token saved to MongoDB Atlas!" });
+        setCapiToken("");
+        setMessage({
+          type: "success",
+          text: "Conversions API (CAPI) access token saved securely!",
+        });
       } else {
         setMessage({ type: "error", text: data.error || "Failed to save CAPI token." });
       }
@@ -64,7 +70,68 @@ export default function MetaConversionsApiPage() {
     }
   };
 
-  const pixelId = settings?.pixelId || "1480517547316620";
+  const handleClearToken = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to remove the Conversions API access token? Server-side tracking will be disabled."
+      )
+    ) {
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/settings/pixel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ capiAccessToken: "" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSettings(data.settings);
+        setCapiToken("");
+        setMessage({ type: "success", text: "CAPI token removed successfully." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error removing CAPI token." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/meta/capi/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pixelId: settings?.pixelId,
+          capiToken: capiToken.trim(),
+          testEventCode: settings?.testEventCode,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMessage({
+          type: "success",
+          text: `${data.message} (Trace ID: ${data.fbtraceId || "N/A"})`,
+        });
+      } else {
+        setMessage({
+          type: "error",
+          text: data.error || "Meta Graph API connection test failed.",
+        });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error testing Meta CAPI connection." });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const pixelId = settings?.pixelId || "";
   const testCode = settings?.testEventCode || "TEST12345";
 
   const sampleCapiPayload = {
@@ -103,44 +170,44 @@ export default function MetaConversionsApiPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl pb-20">
-      {/* ── Meta Navigation ── */}
+    <div className="space-y-6 max-w-7xl pb-24 text-stone-900 font-sans antialiased">
+      {/* ── 1. Unified Navigation ── */}
       <MetaNavigationHeader pixelId={pixelId} testEventCode={settings?.testEventCode} />
 
-      {/* ── Toast Alerts ── */}
+      {/* ── 2. Toast Alerts ── */}
       {message && (
         <div
-          className={`flex items-start gap-3 rounded-2xl p-4 border shadow-sm transition-all ${
+          className={`flex items-start gap-3 rounded-xl p-3.5 border shadow-2xs transition-all ${
             message.type === "success"
               ? "bg-emerald-50 border-emerald-200 text-emerald-900"
               : "bg-rose-50 border-rose-200 text-rose-900"
           }`}
         >
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-          <div className="flex-1 text-[13px] font-medium">{message.text}</div>
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+          <div className="flex-1 text-xs font-medium">{message.text}</div>
           <button
             type="button"
             onClick={() => setMessage(null)}
-            className="text-xs font-bold opacity-60 hover:opacity-100"
+            className="text-xs font-bold opacity-60 hover:opacity-100 cursor-pointer"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* ── Top Header Banner ── */}
-      <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 via-white to-blue-50/40 p-6 sm:p-8 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-800">
-              <Server className="h-3.5 w-3.5" />
-              <span>Conversions API (CAPI) Gateway</span>
+      {/* ── 3. Executive Hero Card ── */}
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200/70 px-2.5 py-0.5 text-[11px] font-bold text-indigo-800">
+              <Server className="h-3 w-3 text-indigo-600" />
+              <span>Conversions API (CAPI) Gateway v22.0</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
               Server-Side Event Tracking &amp; Deduplication
-            </h2>
-            <p className="text-sm text-stone-600 max-w-2xl leading-relaxed">
-              Meta Conversions API creates a direct, server-to-server connection between your Next.js application and Meta&apos;s Graph API. It restores conversion data lost to ad-blockers, iOS privacy restrictions, and network drops with zero duplicate reporting.
+            </h1>
+            <p className="text-xs sm:text-[13px] text-stone-600 max-w-2xl leading-relaxed">
+              Meta Conversions API establishes a direct, encrypted server-to-server connection between your Next.js application runtime and Meta Graph API. It restores conversion data lost to browser ad-blockers, iOS 14.5+ restrictions, and network dropouts.
             </p>
           </div>
 
@@ -148,7 +215,7 @@ export default function MetaConversionsApiPage() {
             href={`https://adsmanager.facebook.com/events_manager2/list/dataset/${pixelId}/settings`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-700 transition cursor-pointer self-start md:self-auto shrink-0"
           >
             <span>Generate CAPI Token in Meta</span>
             <ExternalLink className="h-3.5 w-3.5" />
@@ -156,100 +223,163 @@ export default function MetaConversionsApiPage() {
         </div>
       </div>
 
-      {/* ── 3 Architecture Benefit Cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs uppercase tracking-wider mb-2">
+      {/* ── 4. Three Architecture Benefit Pillars ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-2">
+          <div className="flex items-center gap-2 text-indigo-700 font-bold text-[11px] uppercase tracking-wider">
             <ShieldCheck className="h-4 w-4" />
             <span>Ad-Blocker Resilience</span>
           </div>
-          <div className="text-xl font-bold text-stone-900">Bypasses Client Blockers</div>
-          <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-            Events dispatch from Next.js server runtime directly to Meta Graph API, unaffected by browser extensions.
+          <div className="text-base font-bold text-stone-900">Bypasses Client Blockers</div>
+          <p className="text-xs text-stone-500 leading-relaxed">
+            Events dispatch from Next.js server runtime directly to Meta Graph API, unaffected by browser extensions, Brave Shields, or privacy firewalls.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-emerald-700 font-bold text-xs uppercase tracking-wider mb-2">
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-2">
+          <div className="flex items-center gap-2 text-emerald-700 font-bold text-[11px] uppercase tracking-wider">
             <Zap className="h-4 w-4" />
             <span>Deduplication Algorithm</span>
           </div>
-          <div className="text-xl font-bold text-stone-900">Matching `event_id`</div>
-          <p className="text-xs text-stone-500 mt-1 leading-relaxed">
-            When both browser and server fire the same event with matching IDs, Meta automatically merges them with 0 duplicate counts.
+          <div className="text-base font-bold text-stone-900">Matching `event_id`</div>
+          <p className="text-xs text-stone-500 leading-relaxed">
+            When both the browser Pixel and server CAPI fire the same event with matching IDs, Meta automatically merges them into a single conversion.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-purple-700 font-bold text-xs uppercase tracking-wider mb-2">
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-2">
+          <div className="flex items-center gap-2 text-purple-700 font-bold text-[11px] uppercase tracking-wider">
             <Lock className="h-4 w-4" />
-            <span>Data Privacy Compliance</span>
+            <span>Privacy Compliance</span>
           </div>
-          <div className="text-xl font-bold text-stone-900">SHA-256 Hashing</div>
-          <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+          <div className="text-base font-bold text-stone-900">SHA-256 Hashing</div>
+          <p className="text-xs text-stone-500 leading-relaxed">
             All customer parameters (email, phone, name) are strictly hashed before leaving your secure server infrastructure.
           </p>
         </div>
       </div>
 
-      {/* ── Token Configuration Form ── */}
-      <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
-        <div>
-          <h3 className="text-base font-bold text-stone-900">System User Access Token</h3>
-          <p className="text-[13px] text-stone-500">
-            Generate a permanent access token in Meta Events Manager &gt; Settings &gt; Conversions API &gt; &quot;Generate access token&quot;
-          </p>
+      {/* ── 5. Token Configuration Form ── */}
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-stone-100">
+          <div>
+            <h3 className="text-base font-bold text-stone-900">Conversions API Dataset Access Token</h3>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Navigate to Meta Events Manager &gt; Select Dataset &gt; Settings &gt; Conversions API &gt; &quot;Generate access token&quot;
+            </p>
+          </div>
+          <div>
+            {settings?.hasCapiAccessToken ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span>Configured ({settings.maskedCapiAccessToken})</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+                <span>Not Configured</span>
+              </span>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSaveToken} className="space-y-4">
           <div>
-            <label className="block text-[12px] font-bold uppercase tracking-wider text-stone-600 mb-2">
-              Meta Graph API Access Token
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+              Dataset Access Token
             </label>
             <input
               type="password"
               value={capiToken}
               onChange={(e) => setCapiToken(e.target.value)}
-              placeholder="EAAG... (Paste Meta Conversions API System User Token)"
-              className="w-full rounded-xl border border-stone-200 px-4 py-2.5 text-sm font-mono text-stone-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-sm"
+              placeholder={
+                settings?.hasCapiAccessToken
+                  ? `${settings.maskedCapiAccessToken} (Saved securely — paste new token only to replace)`
+                  : "EAAG... (Paste Meta Conversions API Access Token)"
+              }
+              className="w-full rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-mono text-stone-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition shadow-2xs"
             />
+            <p className="text-[11px] text-stone-400 mt-1">
+              Secrets are encrypted and never exposed in client bundles or public endpoints.
+            </p>
           </div>
 
-          <div className="flex items-center justify-end pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={testing || (!capiToken && !settings?.hasCapiAccessToken)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-40 cursor-pointer shadow-2xs"
+              >
+                {testing ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Verifying with Meta Graph API...</span>
+                  </>
+                ) : (
+                  <>
+                    <PlayCircle className="h-3.5 w-3.5" />
+                    <span>Test CAPI Connection Live</span>
+                  </>
+                )}
+              </button>
+
+              {settings?.hasCapiAccessToken && (
+                <button
+                  type="button"
+                  onClick={handleClearToken}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Remove Token</span>
+                </button>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+              disabled={saving || !capiToken.trim()}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-indigo-700 transition disabled:opacity-50 cursor-pointer"
             >
-              <Save className="h-4 w-4" />
-              <span>{saving ? "Saving..." : "Save CAPI Access Token"}</span>
+              {saving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-3.5 w-3.5" />
+                  <span>Save CAPI Access Token</span>
+                </>
+              )}
             </button>
           </div>
         </form>
       </div>
 
-      {/* ── Server Payload Preview ── */}
-      <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-stone-100 flex items-center justify-between">
+      {/* ── 6. Server Payload Schema Preview ── */}
+      <div className="rounded-2xl border border-stone-200/90 bg-white shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-stone-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Code className="h-4 w-4 text-indigo-600" />
-            <h3 className="text-sm font-bold text-stone-800">
-              Meta Graph API POST Endpoint &amp; Payload Schema
+            <h3 className="text-xs font-bold text-stone-800 uppercase tracking-wider">
+              Meta Graph API POST Endpoint &amp; Payload Schema (v22.0)
             </h3>
           </div>
           <button
             type="button"
             onClick={copyPayload}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+            className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
           >
-            {copiedPayload ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copiedPayload ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
             <span>{copiedPayload ? "Copied!" : "Copy Payload Schema"}</span>
           </button>
         </div>
 
-        <div className="p-4 bg-stone-900 font-mono text-xs overflow-x-auto text-stone-200">
+        <div className="p-4 bg-stone-900 font-mono text-xs overflow-x-auto text-stone-200 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="text-stone-400 mb-2 text-[11px]">
-            POST https://graph.facebook.com/v19.0/{pixelId}/events
+            POST https://graph.facebook.com/v22.0/{pixelId}/events
           </div>
           <pre className="text-emerald-400" suppressHydrationWarning>
             {JSON.stringify(sampleCapiPayload, null, 2)}

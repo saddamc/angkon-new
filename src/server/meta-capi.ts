@@ -483,7 +483,7 @@ export async function sendMetaCapiEvent(
       pixelId,
       capiToken,
       { ...event, testEventCode },
-      4500
+      8000
     );
 
     if (transmission.ok) {
@@ -709,13 +709,47 @@ export async function drainMetaCapiQueue(
 
       if (!claimedDoc) continue; // Claimed by another worker
 
+      let resolvedUserData: MetaCapiUserData | undefined = undefined;
+      if (claimedDoc.orderId) {
+        try {
+          const { Order } = await import("@/models/Order");
+          const order = await Order.findOne({ orderNumber: claimedDoc.orderId }).lean();
+          if (order?.customer) {
+            resolvedUserData = {
+              email: order.customer.email,
+              phone: order.customer.phone,
+              firstName: order.customer.fullName,
+              city: order.customer.city,
+              district: order.customer.district,
+              postalCode: order.customer.postalCode,
+            };
+          }
+        } catch {
+          // ignore order lookup errors in queue processor
+        }
+      }
+
+      // Filter out internal telemetry boolean flags from customData
+      const cleanCustomData: Record<string, unknown> = {};
+      if (claimedDoc.parameters && typeof claimedDoc.parameters === "object") {
+        const p = claimedDoc.parameters as Record<string, unknown>;
+        if (typeof p.value === "number") cleanCustomData.value = p.value;
+        if (typeof p.currency === "string") cleanCustomData.currency = p.currency;
+        if (p.order_id) cleanCustomData.order_id = p.order_id;
+        if (typeof p.num_items === "number") cleanCustomData.num_items = p.num_items;
+        if (typeof p.content_type === "string") cleanCustomData.content_type = p.content_type;
+        if (typeof p.content_name === "string") cleanCustomData.content_name = p.content_name;
+        if (Array.isArray(p.content_ids)) cleanCustomData.content_ids = p.content_ids;
+      }
+
       const eventPayload: MetaCapiEventPayload = {
         eventName: claimedDoc.eventName,
         eventId: claimedDoc.eventId,
         eventTime: claimedDoc.eventTime,
         eventSourceUrl: claimedDoc.url,
         actionSource: "website",
-        customData: claimedDoc.parameters as MetaCapiCustomData,
+        userData: resolvedUserData,
+        customData: cleanCustomData,
         testEventCode: claimedDoc.testEventCode || settings.testEventCode,
       };
 
@@ -765,7 +799,7 @@ export async function drainMetaCapiQueue(
         pixelId,
         capiToken,
         eventPayload,
-        4500
+        8000
       );
 
       if (transmission.ok) {

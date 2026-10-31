@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchMetaCampaigns } from "@/server/meta-ads";
-import { requireAdminSession } from "@/server/admin-auth";
+import { requireSuperAdminSession } from "@/server/admin-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdminSession(request);
+    const auth = await requireSuperAdminSession(request);
     if (!auth.authorized) {
       return auth.response || NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }

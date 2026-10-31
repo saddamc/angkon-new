@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { drainMetaCapiQueue } from "@/server/meta-capi";
-import { requireAdminSession } from "@/server/admin-auth";
+import { requireSuperAdminSession } from "@/server/admin-auth";
 import { DEFAULT_TENANT_ID } from "@/server/tenant";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 /**
  * Scheduled / Administrative endpoint for processing queued & retrying CAPI events.
  * Accepts:
- * - Admin session (via requireAdminSession)
+ * - Superadmin session (via requireSuperAdminSession)
  * - Cron runner Authorization header matching process.env.CRON_SECRET
  */
 export async function POST(request: NextRequest) {
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     let tenantId = DEFAULT_TENANT_ID;
 
     if (!isCronAuthorized) {
-      const auth = await requireAdminSession(request);
+      const auth = await requireSuperAdminSession(request);
       if (!auth.authorized) {
         return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }

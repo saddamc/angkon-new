@@ -111,19 +111,34 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
     trackAddToCart: (config?.trackAddToCart ?? initialConfig?.trackAddToCart) !== false,
     trackInitiateCheckout: (config?.trackInitiateCheckout ?? initialConfig?.trackInitiateCheckout) !== false,
     trackPurchase: (config?.trackPurchase ?? initialConfig?.trackPurchase) !== false,
-  }), [config, initialConfig]);
+  }), [
+    config?.trackPageView,
+    config?.trackViewContent,
+    config?.trackAddToCart,
+    config?.trackInitiateCheckout,
+    config?.trackPurchase,
+    initialConfig?.trackPageView,
+    initialConfig?.trackViewContent,
+    initialConfig?.trackAddToCart,
+    initialConfig?.trackInitiateCheckout,
+    initialConfig?.trackPurchase,
+  ]);
 
-  // Synchronize client-side global tracking flags
+  // Synchronize client-side global tracking flags & Meta consent
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.__angkon_meta_enabled = isEnabled;
       window.__angkon_pixel_events_config = eventsConfig;
       window.__angkon_meta_test_code = testEventCode || undefined;
 
-      // If tracking is disabled, revoke Meta consent immediately
-      if (!isEnabled && typeof window.fbq === "function") {
+      // Synchronize Meta tracking consent
+      if (typeof window.fbq === "function") {
         try {
-          window.fbq("consent", "revoke");
+          if (isEnabled) {
+            window.fbq("consent", "grant");
+          } else {
+            window.fbq("consent", "revoke");
+          }
         } catch {
           // ignore
         }

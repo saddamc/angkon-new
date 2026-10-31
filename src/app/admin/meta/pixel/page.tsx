@@ -536,7 +536,10 @@ export default function MetaPixelEventsManagerPage() {
 
     // Generate realistic parameters based on event type
     const sampleOrderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-    const pairedEventId = `order_${sampleOrderId}`;
+    const pairedEventId =
+      selectedSimulatorEvent === "Purchase"
+        ? `order_${sampleOrderId}`
+        : `ev_${selectedSimulatorEvent.toLowerCase()}_${sampleOrderId}`;
 
     let payloadParams: Record<string, unknown> = {};
     let targetUrl = "/";
@@ -623,12 +626,18 @@ export default function MetaPixelEventsManagerPage() {
 
       // 2. Server CAPI Dispatch
       if (simulatorMode === "both" || simulatorMode === "server") {
+        const currentOrigin =
+          typeof window !== "undefined" && window.location.origin
+            ? window.location.origin
+            : "https://www.angkon.net";
+
         const serverRes = await fetch("/api/admin/meta/capi/test", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             eventName: selectedSimulatorEvent,
             eventId: pairedEventId,
+            eventSourceUrl: `${currentOrigin}${targetUrl}`,
             testEventCode: testEventCode || undefined,
             customData: payloadParams,
           }),

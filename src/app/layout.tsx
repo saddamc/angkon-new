@@ -22,7 +22,7 @@ const lato = Lato({
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://angkon.com.bd");
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.angkon.net");
 
 export async function generateMetadata(): Promise<Metadata> {
   const pixelSettings = await getPixelSettings().catch(() => null);

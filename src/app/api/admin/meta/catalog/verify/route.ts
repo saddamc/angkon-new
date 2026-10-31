@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSession } from "@/server/admin-auth";
+import { requireSuperAdminSession } from "@/server/admin-auth";
 import {
   getMetaCatalogSettings,
   getPublicMetaCatalogSettings,
@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdminSession(request);
+    const auth = await requireSuperAdminSession(request);
     if (!auth.authorized) {
       return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

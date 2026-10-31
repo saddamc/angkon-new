@@ -16,7 +16,7 @@ export interface IUser extends Document {
   /** scrypt hash; empty for accounts auto-created at checkout until a password is set */
   password: string;
   phone: string;
-  role: "customer" | "admin";
+  role: "customer" | "admin" | "superadmin";
   addresses: IUserAddress[];
   emailVerified: boolean;
   emailVerifiedAt?: Date | null;
@@ -60,7 +60,7 @@ const UserSchema = new Schema<IUser>(
     },
     password: { type: String, default: "" },
     phone: { type: String, default: "", trim: true },
-    role: { type: String, enum: ["customer", "admin"], default: "customer" },
+    role: { type: String, enum: ["customer", "admin", "superadmin"], default: "customer" },
     addresses: { type: [UserAddressSchema], default: [] },
     emailVerified: { type: Boolean, default: false, index: true },
     emailVerifiedAt: { type: Date, default: null },

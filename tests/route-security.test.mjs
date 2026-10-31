@@ -76,8 +76,49 @@ test("Route Guard: Non-admin role (e.g. customer) is rejected with 403 Forbidden
   const payload = JSON.parse(atob(tokenStr.split(".")[1]));
 
   assert.notEqual(payload.role, "admin");
-  const authResponse = payload.role === "admin" ? { status: 200 } : { status: 403, error: "Forbidden: Admin role required" };
+  assert.notEqual(payload.role, "superadmin");
+  const authResponse = (payload.role === "admin" || payload.role === "superadmin") ? { status: 200 } : { status: 403, error: "Forbidden: Admin role required" };
   assert.equal(authResponse.status, 403);
+});
+
+test("RBAC Guard: Standard Admin (e.g. angkonofficial08@gmail.com) is forbidden from Meta Events Manager routes", async () => {
+  const adminToken = await createAdminJwt({
+    sub: "angkonofficial08@gmail.com",
+    role: "admin",
+    authorizedTenants: ["angkon-main"],
+  });
+
+  const req = new MockNextRequest("https://angkon.com.bd/api/admin/settings/pixel", {
+    headers: { cookie: `nb_admin_token=${adminToken}` },
+  });
+
+  const tokenPayload = JSON.parse(atob(req.cookies.get("nb_admin_token").value.split(".")[1]));
+  const isSuperAdmin = tokenPayload.role === "superadmin";
+
+  assert.equal(tokenPayload.role, "admin");
+  assert.equal(isSuperAdmin, false, "Standard admin must NOT have superadmin permissions");
+  const decision = isSuperAdmin ? { status: 200 } : { status: 403, error: "Forbidden: Super Administrator privileges required." };
+  assert.equal(decision.status, 403);
+});
+
+test("RBAC Guard: Super Administrator (e.g. saddam13bd@gmail.com) is authorized for Meta Events Manager routes", async () => {
+  const superAdminToken = await createAdminJwt({
+    sub: "saddam13bd@gmail.com",
+    role: "superadmin",
+    authorizedTenants: ["angkon-main"],
+  });
+
+  const req = new MockNextRequest("https://angkon.com.bd/api/admin/settings/pixel", {
+    headers: { cookie: `nb_admin_token=${superAdminToken}` },
+  });
+
+  const tokenPayload = JSON.parse(atob(req.cookies.get("nb_admin_token").value.split(".")[1]));
+  const isSuperAdmin = tokenPayload.role === "superadmin";
+
+  assert.equal(tokenPayload.role, "superadmin");
+  assert.equal(isSuperAdmin, true, "Superadmin role must be granted Meta access");
+  const decision = isSuperAdmin ? { status: 200 } : { status: 403, error: "Forbidden: Super Administrator privileges required." };
+  assert.equal(decision.status, 200);
 });
 
 test("Route Guard: Forged x-tenant-id header (Plain Stitch attack) returns 403 Forbidden", async () => {

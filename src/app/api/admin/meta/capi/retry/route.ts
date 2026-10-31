@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaEventLog } from "@/models/MetaEventLog";
 import { sendMetaCapiEvent, MetaCapiEventPayload } from "@/server/meta-capi";
-import { requireAdminSession } from "@/server/admin-auth";
+import { requireSuperAdminSession } from "@/server/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdminSession(request);
+    const auth = await requireSuperAdminSession(request);
     if (!auth.authorized) {
       return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

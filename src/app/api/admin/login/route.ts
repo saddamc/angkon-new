@@ -6,14 +6,10 @@ import { User } from "@/models/User";
 import { verifyPassword } from "@/server/auth";
 import { RateLimit } from "@/models/RateLimit";
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
 const JWT_SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
 
-if (process.env.NODE_ENV === "production") {
-  if (ADMIN_PASSWORD === "admin" || JWT_SECRET === "angkon_secure_jwt_secret_2026") {
-    console.warn("⚠️ SECURITY WARNING: Using default ADMIN_PASSWORD or fallback JWT_SECRET in production!");
-  }
+if (process.env.NODE_ENV === "production" && JWT_SECRET === "angkon_secure_jwt_secret_2026") {
+  console.warn("⚠️ SECURITY WARNING: Using fallback JWT_SECRET in production!");
 }
 
 /** Constant-time string comparison to prevent timing side-channel attacks */
@@ -76,7 +72,12 @@ export async function GET(request: NextRequest) {
   if (!payload) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
-  return NextResponse.json({ authenticated: true, user: payload.sub, name: payload.name });
+  return NextResponse.json({
+    authenticated: true,
+    user: payload.sub,
+    name: payload.name,
+    role: payload.role || "admin",
+  });
 }
 
 // POST /api/admin/login — authenticate
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
     const inputIdentifier = String(username).trim();
     const inputPassword = String(password);
 
-    let authenticatedAdmin: { sub: string; name: string; role: "admin" } | null = null;
+    let authenticatedAdmin: { sub: string; name: string; role: "admin" | "superadmin" } | null = null;
 
     // ── 1. Database-backed Administrator Authentication (Primary & Secure) ──
     try {
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
       }).select("+password");
 
       if (dbUser) {
-        if (dbUser.role !== "admin") {
+        if (dbUser.role !== "admin" && dbUser.role !== "superadmin") {
           // Account exists but does not have admin permissions
           await new Promise((r) => setTimeout(r, 400));
           return NextResponse.json(
@@ -128,26 +129,13 @@ export async function POST(request: NextRequest) {
         if (dbUser.password && verifyPassword(inputPassword, dbUser.password)) {
           authenticatedAdmin = {
             sub: dbUser.email || dbUser.name,
-            name: dbUser.name || "Administrator",
-            role: "admin",
+            name: dbUser.name || (dbUser.role === "superadmin" ? "Super Admin" : "Administrator"),
+            role: dbUser.role as "admin" | "superadmin",
           };
         }
       }
     } catch (dbErr) {
-      console.warn("Admin DB auth check encountered error, attempting fallback:", dbErr);
-    }
-
-    // ── 2. Emergency .env Fallback (Allows fallback if DB is empty or during recovery) ──
-    if (!authenticatedAdmin) {
-      const userMatch = timingSafeEqualStr(inputIdentifier, ADMIN_USERNAME);
-      const passMatch = timingSafeEqualStr(inputPassword, ADMIN_PASSWORD);
-      if (userMatch && passMatch) {
-        authenticatedAdmin = {
-          sub: ADMIN_USERNAME,
-          name: "ANGKON Admin",
-          role: "admin",
-        };
-      }
+      console.error("Admin DB auth check error:", dbErr);
     }
 
     if (!authenticatedAdmin) {
@@ -167,7 +155,7 @@ export async function POST(request: NextRequest) {
       {
         sub: authenticatedAdmin.sub,
         name: authenticatedAdmin.name,
-        role: "admin",
+        role: authenticatedAdmin.role,
         authorizedTenants: [primaryTenant],
         defaultTenant: primaryTenant,
         iat: Math.floor(Date.now() / 1000),
@@ -180,6 +168,7 @@ export async function POST(request: NextRequest) {
       ok: true,
       user: authenticatedAdmin.sub,
       name: authenticatedAdmin.name,
+      role: authenticatedAdmin.role,
     });
 
     // HttpOnly cookie — not accessible from JS (XSS-safe)

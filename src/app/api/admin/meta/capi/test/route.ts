@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPixelSettings } from "@/server/pixel-settings";
 import { testMetaCapiConnection } from "@/server/meta-capi";
-import { requireAdminSession } from "@/server/admin-auth";
+import { requireSuperAdminSession } from "@/server/admin-auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdminSession(request);
+    const auth = await requireSuperAdminSession(request);
     if (!auth.authorized) {
       return auth.response || NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     const result = await testMetaCapiConnection(pixelId, token, testEventCode, auth.tenantId, {
       eventName: body.eventName,
       eventId: body.eventId,
+      eventSourceUrl: body.eventSourceUrl,
       customData: body.customData,
     });
 

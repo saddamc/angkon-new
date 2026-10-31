@@ -196,6 +196,7 @@ export function trackViewContent(params: ViewContentParams) {
   if (cfg && (cfg.trackViewContent === false || (cfg as Record<string, unknown>).viewContent === false)) {
     return;
   }
+  const eventId = params.event_id || generateEventId("view");
   event(
     "ViewContent",
     {
@@ -206,8 +207,9 @@ export function trackViewContent(params: ViewContentParams) {
       value: params.value ?? 0,
       currency: params.currency || "BDT",
     },
-    params.event_id
+    eventId
   );
+  return eventId;
 }
 
 export interface AddToCartParams {
@@ -227,6 +229,7 @@ export function trackAddToCart(params: AddToCartParams) {
   if (cfg && (cfg.trackAddToCart === false || (cfg as Record<string, unknown>).addToCart === false)) {
     return;
   }
+  const eventId = params.event_id || generateEventId("cart");
   event(
     "AddToCart",
     {
@@ -236,8 +239,9 @@ export function trackAddToCart(params: AddToCartParams) {
       value: params.value ?? 0,
       currency: params.currency || "BDT",
     },
-    params.event_id
+    eventId
   );
+  return eventId;
 }
 
 export interface InitiateCheckoutParams {
@@ -256,6 +260,7 @@ export function trackInitiateCheckout(params: InitiateCheckoutParams) {
   if (cfg && (cfg.trackInitiateCheckout === false || (cfg as Record<string, unknown>).initiateCheckout === false)) {
     return;
   }
+  const eventId = params.event_id || generateEventId("checkout");
   event(
     "InitiateCheckout",
     {
@@ -265,8 +270,9 @@ export function trackInitiateCheckout(params: InitiateCheckoutParams) {
       content_ids: params.content_ids || [],
       content_type: "product",
     },
-    params.event_id
+    eventId
   );
+  return eventId;
 }
 
 export interface PurchaseParams {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSession } from "@/server/admin-auth";
+import { requireSuperAdminSession } from "@/server/admin-auth";
 import {
   getMetaCatalogSettings,
   getPublicMetaCatalogSettings,
@@ -37,7 +37,7 @@ function buildFeedInfo(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await requireAdminSession(request);
+    const auth = await requireSuperAdminSession(request);
     if (!auth.authorized) {
       return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await requireAdminSession(request);
+    const auth = await requireSuperAdminSession(request);
     if (!auth.authorized) {
       return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

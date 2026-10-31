@@ -61,6 +61,11 @@ export default function AdminLayout({
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState<{
+    user: string;
+    name: string;
+    role: string;
+  } | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   // Sound alert & real-time notification states
@@ -190,11 +195,41 @@ export default function AdminLayout({
     setProfileMenuOpen(false);
   }, [pathname]);
 
+  // Load authenticated admin details & role permissions
+  useEffect(() => {
+    if (pathname === "/admin") return;
+    let active = true;
+    fetch("/api/admin/login", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.authenticated) {
+          setAdminUser({
+            user: data.user || "",
+            name: data.name || "Administrator",
+            role: data.role || "admin",
+          });
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
   // Login page renders without sidebar
   if (pathname === "/admin") return <>{children}</>;
 
+  // Filter navigation by role (Meta Events Manager is strictly Super Admin only)
+  const isSuperAdmin = adminUser?.role === "superadmin";
+  const filteredNav = NAV.filter((item) => {
+    if (item.href === "/admin/meta") {
+      return isSuperAdmin;
+    }
+    return true;
+  });
+
   // Determine current page title
-  const currentNav = NAV.find((item) => pathname.startsWith(item.href));
+  const currentNav = filteredNav.find((item) => pathname.startsWith(item.href));
   const pageTitle = currentNav ? currentNav.label : "Admin";
   const PageIcon = currentNav ? currentNav.icon : LayoutDashboard;
 
@@ -264,7 +299,7 @@ export default function AdminLayout({
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto">
-          {NAV.map(({ href, label, icon: Icon }) => {
+          {filteredNav.map(({ href, label, icon: Icon }) => {
             const active =
               pathname.startsWith(href) ||
               (href === "/admin/meta" && pathname.startsWith("/admin/pixel"));
@@ -439,14 +474,34 @@ export default function AdminLayout({
                 aria-expanded={profileMenuOpen}
                 aria-haspopup="menu"
               >
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 shadow-md flex items-center justify-center text-white text-xs font-bold">
-                  AK
+                <div
+                  className={`h-9 w-9 rounded-full shadow-md flex items-center justify-center text-white text-xs font-bold ${
+                    adminUser?.role === "superadmin"
+                      ? "bg-gradient-to-br from-purple-600 via-indigo-600 to-amber-500 ring-2 ring-purple-200"
+                      : "bg-gradient-to-br from-purple-500 to-purple-600"
+                  }`}
+                >
+                  {((adminUser?.name || "Admin")
+                    .split(" ")
+                    .map((w) => w[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()) || "AK"}
                 </div>
                 <div className="hidden sm:block text-left">
-                  <p className="text-[12px] font-semibold text-gray-700">
-                    ANGKON
+                  <p className="text-[12px] font-semibold text-gray-700 leading-tight">
+                    {adminUser?.name || "ANGKON"}
                   </p>
-                  <p className="text-[10px] text-gray-400 font-medium">Administrator</p>
+                  <p
+                    className={`text-[10px] font-medium leading-tight ${
+                      adminUser?.role === "superadmin"
+                        ? "text-purple-600 font-bold"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    {adminUser?.role === "superadmin" ? "Super Admin" : "Administrator"}
+                  </p>
                 </div>
                 <ChevronRight
                   className={`h-3.5 w-3.5 text-gray-400 hidden sm:block transition-transform duration-200 ${
@@ -456,7 +511,26 @@ export default function AdminLayout({
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-48 rounded-xl border border-purple-100 bg-white p-1.5 shadow-[0_12px_28px_rgba(31,41,55,0.16)]">
+                <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-52 rounded-xl border border-purple-100 bg-white p-2 shadow-[0_12px_28px_rgba(31,41,55,0.16)]">
+                  <div className="px-3 py-2 border-b border-purple-50 mb-1">
+                    <p className="text-xs font-bold text-gray-800 truncate">
+                      {adminUser?.name || "Administrator"}
+                    </p>
+                    <p className="text-[11px] text-gray-400 truncate">
+                      {adminUser?.user || ""}
+                    </p>
+                    <span
+                      className={`inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        adminUser?.role === "superadmin"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {adminUser?.role === "superadmin"
+                        ? "Super Administrator"
+                        : "Administrator"}
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={logout}

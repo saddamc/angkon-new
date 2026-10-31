@@ -11,7 +11,7 @@ export interface AuthTokenPayload {
   sub: string;
   email: string;
   name: string;
-  role: "customer" | "admin";
+  role: "customer" | "admin" | "superadmin";
   iat: number;
   exp: number;
 }
@@ -56,7 +56,7 @@ export function createAuthToken(user: {
   id: string;
   email: string;
   name: string;
-  role: "customer" | "admin";
+  role: "customer" | "admin" | "superadmin";
 }): string {
   const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const now = Math.floor(Date.now() / 1000);
@@ -133,7 +133,7 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export function setSessionCookie(
   response: NextResponse,
-  user: { id: string; email: string; name: string; role: "customer" | "admin" },
+  user: { id: string; email: string; name: string; role: "customer" | "admin" | "superadmin" },
 ): void {
   response.cookies.set(AUTH_COOKIE_NAME, createAuthToken(user), {
     httpOnly: true,

@@ -249,7 +249,11 @@ export async function executeMetaGraphApiPost(
     event_name: event.eventName,
     event_time: eventTime,
     event_id: event.eventId,
-    event_source_url: event.eventSourceUrl || "https://angkon.com.bd",
+    event_source_url:
+      event.eventSourceUrl ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      process.env.SITE_URL ||
+      "https://www.angkon.net",
     action_source: event.actionSource || "website",
     user_data: buildMetaUserData(event.userData),
   };
@@ -860,7 +864,9 @@ export async function testMetaCapiConnection(
     {
       eventName: options?.eventName || "PageView",
       eventId: testEventId,
-      eventSourceUrl: options?.eventSourceUrl || "https://angkon.com.bd/admin/meta/conversions-api",
+      eventSourceUrl:
+        options?.eventSourceUrl ||
+        `${process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://www.angkon.net"}/admin/meta/pixel`,
       actionSource: "website",
       userData: {
         clientIp: "103.145.12.44",

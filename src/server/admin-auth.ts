@@ -72,7 +72,7 @@ export async function verifyAdminToken(
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
       return { valid: false };
     }
-    if (payload.role !== "admin") {
+    if (payload.role !== "admin" && payload.role !== "superadmin") {
       return { valid: false };
     }
 
@@ -186,4 +186,29 @@ export async function requireAdminSession(
     tenantId: tenantValidation.activeTenantId,
     authorizedTenants,
   };
+}
+
+/**
+ * Server-side guard requiring a valid super administrator session AND verified tenant membership.
+ * Standard "admin" role will receive a 403 Forbidden.
+ */
+export async function requireSuperAdminSession(
+  request: NextRequest | Request
+): Promise<AdminSessionAuthResult> {
+  const result = await requireAdminSession(request);
+  if (!result.authorized) {
+    return result;
+  }
+  if (result.role !== "superadmin") {
+    return {
+      authorized: false,
+      tenantId: result.tenantId,
+      authorizedTenants: result.authorizedTenants,
+      response: NextResponse.json(
+        { error: "Forbidden: Super Administrator privileges required." },
+        { status: 403 }
+      ),
+    };
+  }
+  return result;
 }

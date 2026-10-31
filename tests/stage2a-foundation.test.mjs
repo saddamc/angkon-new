@@ -115,7 +115,7 @@ async function verifyAdminSessionMock(headers = {}, urlString = "") {
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
       return { authorized: false, status: 401, error: "Session token expired." };
     }
-    if (payload.role !== "admin") {
+    if (payload.role !== "admin" && payload.role !== "superadmin") {
       return { authorized: false, status: 403, error: "Forbidden. Admin role required." };
     }
 

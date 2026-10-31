@@ -26,7 +26,7 @@ import type { WooProduct } from "@/types/product";
 import { getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
 import { saveRecentlyViewed } from "@/utils/recently-viewed";
-import { trackViewContent, trackAddToCart } from "@/lib/fpixel";
+import { trackViewContent, trackAddToCart, generateEventId } from "@/lib/fpixel";
 
 /* ── ShareStrip ─────────────────────────────────────────────────────── */
 
@@ -335,6 +335,7 @@ export function ProductDetailsView({
       setOptionError(true);
       return;
     }
+    const cartEventId = generateEventId("cart");
     addItem({
       productId: product.id,
       slug: product.slug,
@@ -349,9 +350,18 @@ export function ProductDetailsView({
     });
     trackAddToCart({
       content_name: product.name,
-      content_ids: [product.id],
+      content_ids: [String(product.id)],
+      content_type: "product",
+      contents: [
+        {
+          id: String(product.id),
+          quantity,
+          item_price: pricing.current,
+        },
+      ],
       value: pricing.current * quantity,
       currency: "BDT",
+      event_id: cartEventId,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2400);
@@ -552,6 +562,9 @@ export function ProductDetailsView({
                                 role="radio"
                                 aria-checked={isSelected}
                                 aria-label={`Size ${opt}`}
+                                data-nosnippet="true"
+                                data-meta-ignore="true"
+                                data-fb-ignore="true"
                                 onClick={() => {
                                   setSize(opt);
                                   setOptionError(false);

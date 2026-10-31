@@ -9,7 +9,7 @@ import { getDisplayPrice } from "@/utils/price";
 import { useCartStore } from "@/store/cart-store";
 import { QuickViewModal } from "@/components/product/quick-view-modal";
 import { decodeEntities } from "@/utils/html";
-import { trackAddToCart } from "@/lib/fpixel";
+import { trackAddToCart, generateEventId } from "@/lib/fpixel";
 
 interface ProductCardProps {
   product: WooProduct;
@@ -57,6 +57,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       return;
     }
 
+    const cartEventId = generateEventId("cart");
     addItem({
       productId: product.id,
       slug: product.slug,
@@ -72,9 +73,18 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
     
     trackAddToCart({
       content_name: product.name,
-      content_ids: [product.id],
+      content_ids: [String(product.id)],
+      content_type: "product",
+      contents: [
+        {
+          id: String(product.id),
+          quantity: 1,
+          item_price: pricing.current,
+        },
+      ],
       value: pricing.current,
       currency: "BDT",
+      event_id: cartEventId,
     });
 
     setAdded(true);

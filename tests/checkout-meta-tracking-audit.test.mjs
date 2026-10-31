@@ -144,12 +144,27 @@ function trackAddToCart(params) {
   const cfg = typeof global.window !== "undefined" ? global.window.__angkon_pixel_events_config : undefined;
   if (cfg && (cfg.trackAddToCart === false || cfg.addToCart === false)) return;
   const eventId = params.event_id || generateEventId("cart");
+  const normalizedIds = normalizeMetaContentIds(params.content_ids || []);
+  const contents =
+    params.contents && params.contents.length > 0
+      ? params.contents.map((item) => ({
+          id: normalizeMetaContentId(item.id) || String(item.id),
+          quantity: item.quantity || 1,
+          item_price: item.item_price !== undefined ? item.item_price : params.value,
+        }))
+      : normalizedIds.map((id) => ({
+          id,
+          quantity: 1,
+          item_price: params.value ?? 0,
+        }));
+
   fpixelEvent(
     "AddToCart",
     {
       content_name: params.content_name,
-      content_ids: params.content_ids || [],
+      content_ids: normalizedIds,
       content_type: params.content_type || "product",
+      contents,
       value: params.value ?? 0,
       currency: params.currency || "BDT",
     },
@@ -295,6 +310,9 @@ test("Audit Criterion 2: Clicking Add to Cart fires AddToCart exactly once with 
   assert.equal(ev.params.value, 17600);
   assert.equal(ev.params.currency, "BDT");
   assert.deepEqual(ev.params.content_ids, ["228012"]);
+  assert.deepEqual(ev.params.contents, [
+    { id: "228012", quantity: 1, item_price: 17600 },
+  ]);
   assert.equal(ev.extra?.eventID, eventId);
 
   teardownBrowserMock();
@@ -556,6 +574,53 @@ test("Audit Criterion 12: AddToCart storefront event pairs browser and server CA
   assert.equal(browserDispatches[0].params.value, serverCapiPayload.customData.value);
   assert.equal(browserDispatches[0].params.currency, serverCapiPayload.customData.currency);
   assert.ok(serverCapiPayload.eventSourceUrl.startsWith("https://www.angkon.net"));
+
+  teardownBrowserMock();
+});
+
+test("Audit Criterion 13: Meta autoConfig is disabled before pixel init to prevent SubscribedButtonClick", async () => {
+  const fs = await import("node:fs");
+  const pixelComponentText = fs.readFileSync("src/components/analytics/facebook-pixel.tsx", "utf8");
+
+  assert.ok(
+    pixelComponentText.includes("fbq('set', 'autoConfig', false"),
+    "Must explicitly call fbq('set', 'autoConfig', false, pixelId) before init to halt automatic SubscribedButtonClick"
+  );
+});
+
+test("Audit Criterion 14: Canonical numeric product ID is used in AddToCart, not SKU SD-WD-08", () => {
+  const mock = setupBrowserMock();
+
+  const product = {
+    id: 228008,
+    sku: "SD-WD-08",
+    name: "Safaidah – Dastaan | Black Floral Suit",
+    price: 8800,
+  };
+
+  const eventId = trackAddToCart({
+    content_name: product.name,
+    content_ids: [String(product.id)], // Must use canonical numeric product.id ("228008")
+    content_type: "product",
+    contents: [
+      {
+        id: String(product.id),
+        quantity: 1,
+        item_price: product.price,
+      },
+    ],
+    value: product.price,
+    currency: "BDT",
+  });
+
+  assert.ok(eventId);
+  const ev = mock.dispatchedEvents[0];
+  assert.equal(ev.eventName, "AddToCart");
+  assert.deepEqual(ev.params.content_ids, ["228008"]);
+  assert.notEqual(ev.params.content_ids[0], product.sku, "Must NOT use SKU SD-WD-08");
+  assert.equal(ev.params.contents[0].id, "228008");
+  assert.equal(ev.params.currency, "BDT");
+  assert.equal(ev.params.value, 8800);
 
   teardownBrowserMock();
 });

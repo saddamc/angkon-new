@@ -1,4 +1,4 @@
-import { normalizeMetaContentIds } from "@/lib/meta-product-id";
+import { normalizeMetaContentId, normalizeMetaContentIds } from "@/lib/meta-product-id";
 
 export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID?.trim() || "";
 
@@ -216,6 +216,7 @@ export interface AddToCartParams {
   content_name: string;
   content_ids?: (string | number)[];
   content_type?: string;
+  contents?: Array<{ id: string | number; quantity: number; item_price?: number }>;
   value?: number;
   currency?: string;
   event_id?: string;
@@ -230,12 +231,27 @@ export function trackAddToCart(params: AddToCartParams) {
     return;
   }
   const eventId = params.event_id || generateEventId("cart");
+  const normalizedIds = normalizeMetaContentIds(params.content_ids || []);
+  const contents =
+    params.contents && params.contents.length > 0
+      ? params.contents.map((item) => ({
+          id: normalizeMetaContentId(item.id) || String(item.id),
+          quantity: item.quantity || 1,
+          item_price: item.item_price !== undefined ? item.item_price : params.value,
+        }))
+      : normalizedIds.map((id) => ({
+          id,
+          quantity: 1,
+          item_price: params.value ?? 0,
+        }));
+
   event(
     "AddToCart",
     {
       content_name: params.content_name,
-      content_ids: params.content_ids || [],
+      content_ids: normalizedIds,
       content_type: params.content_type || "product",
+      contents,
       value: params.value ?? 0,
       currency: params.currency || "BDT",
     },

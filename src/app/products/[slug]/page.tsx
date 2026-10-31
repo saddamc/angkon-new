@@ -64,6 +64,8 @@ export async function generateMetadata({ params }: ProductDetailsProps): Promise
       "product:price:amount": currentPrice,
       "product:price:currency": "BDT",
       "product:availability": product.stock_status === "instock" ? "in stock" : "out of stock",
+      "product:retailer_item_id": String(product.id),
+      "product:item_group_id": String(product.id),
     },
   };
 }
@@ -93,14 +95,16 @@ export default async function ProductDetailsPage({ params }: ProductDetailsProps
     name: product.name,
     image: product.images?.map((img) => img.src) || [primaryImage],
     description: cleanDescription || product.name,
-    sku: product.sku || `ANG-${product.id}`,
+    productID: String(product.id),
+    sku: String(product.id),
+    mpn: product.sku || undefined,
     brand: {
       "@type": "Brand",
       name: "Angkon",
     },
     offers: {
       "@type": "Offer",
-      url: `https://angkon.com/products/${product.slug}`,
+      url: `https://www.angkon.net/products/${product.slug}`,
       priceCurrency: "BDT",
       price: currentPrice,
       availability: inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",

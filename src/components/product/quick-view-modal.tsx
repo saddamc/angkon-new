@@ -8,7 +8,7 @@ import type { WooProduct } from "@/types/product";
 import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { useCartStore } from "@/store/cart-store";
 import { decodeEntities } from "@/utils/html";
-import { trackAddToCart } from "@/lib/fpixel";
+import { trackAddToCart, generateEventId } from "@/lib/fpixel";
 
 interface QuickViewModalProps {
   product: WooProduct;
@@ -50,6 +50,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   const handleAddToCart = () => {
     if (!inStock) return;
+    const cartEventId = generateEventId("cart");
     addItem({
       productId: product.id,
       slug: product.slug,
@@ -64,9 +65,18 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
     });
     trackAddToCart({
       content_name: product.name,
-      content_ids: [product.id],
+      content_ids: [String(product.id)],
+      content_type: "product",
+      contents: [
+        {
+          id: String(product.id),
+          quantity,
+          item_price: pricing.current,
+        },
+      ],
       value: pricing.current * quantity,
       currency: "BDT",
+      event_id: cartEventId,
     });
     setAdded(true);
     setTimeout(() => {

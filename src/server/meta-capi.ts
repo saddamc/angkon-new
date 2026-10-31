@@ -172,6 +172,13 @@ function sanitizeEventParameters(event: MetaCapiEventPayload): Record<string, un
     if (Array.isArray(event.customData.content_ids)) {
       params.content_ids = normalizeMetaContentIds(event.customData.content_ids).slice(0, 10);
     }
+    if (Array.isArray(event.customData.contents)) {
+      params.contents = event.customData.contents.slice(0, 20).map((c) => ({
+        id: normalizeMetaContentId(c.id) ?? String(c.id || ""),
+        quantity: typeof c.quantity === "number" ? c.quantity : 1,
+        ...(typeof c.item_price === "number" ? { item_price: c.item_price } : {}),
+      }));
+    }
   }
 
   return params;
@@ -740,6 +747,7 @@ export async function drainMetaCapiQueue(
         if (typeof p.content_type === "string") cleanCustomData.content_type = p.content_type;
         if (typeof p.content_name === "string") cleanCustomData.content_name = p.content_name;
         if (Array.isArray(p.content_ids)) cleanCustomData.content_ids = p.content_ids;
+        if (Array.isArray(p.contents)) cleanCustomData.contents = p.contents;
       }
 
       const eventPayload: MetaCapiEventPayload = {

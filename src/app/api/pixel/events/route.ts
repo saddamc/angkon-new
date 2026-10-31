@@ -90,6 +90,19 @@ export async function POST(request: NextRequest) {
       if (typeof p.content_name === "string") sanitizedParams.content_name = p.content_name.slice(0, 150);
       if (typeof p.content_type === "string") sanitizedParams.content_type = p.content_type.slice(0, 50);
       if (Array.isArray(p.content_ids)) sanitizedParams.content_ids = p.content_ids.slice(0, 10);
+      if (Array.isArray(p.contents)) {
+        sanitizedParams.contents = p.contents.slice(0, 20).map((c: unknown) => {
+          if (c && typeof c === "object") {
+            const item = c as Record<string, unknown>;
+            return {
+              id: String(item.id || "").trim().slice(0, 50),
+              quantity: typeof item.quantity === "number" ? item.quantity : 1,
+              ...(typeof item.item_price === "number" ? { item_price: item.item_price } : {}),
+            };
+          }
+          return { id: String(c || "").trim().slice(0, 50), quantity: 1 };
+        });
+      }
     }
 
     await connectToDatabase();

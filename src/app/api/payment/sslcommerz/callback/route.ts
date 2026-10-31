@@ -93,29 +93,43 @@ async function handleCallback(request: NextRequest) {
       order.notes = `${order.notes || ""} [CAPI_PURCHASE_SENT]`.trim();
       await order.save();
 
-      sendMetaCapiEvent({
-        eventName: "Purchase",
-        eventId: `order_${order.orderNumber}`,
-        eventSourceUrl: `${appBaseUrl}/checkout`,
-        userData: {
-          email: order.customer.email,
-          phone: order.customer.phone,
-          firstName: order.customer.fullName,
-          city: order.customer.city,
-          district: order.customer.district,
-          postalCode: order.customer.postalCode,
-          clientIp: request.headers.get("x-forwarded-for")?.split(",")[0].trim() || undefined,
-          clientUserAgent: request.headers.get("user-agent") || undefined,
-        },
-        customData: {
-          value: order.total,
-          currency: "BDT",
-          order_id: order.orderNumber,
-          num_items: order.items.reduce((acc, it) => acc + it.quantity, 0),
-          content_ids: order.items.map((it) => it.productId),
-          content_type: "product",
-        },
-      }).catch((err) => console.warn("[Meta CAPI] SSLCOMMERZ post-payment purchase error:", err));
+      const fbp = request.cookies.get("_fbp")?.value;
+      const fbc = request.cookies.get("_fbc")?.value;
+
+      try {
+        await sendMetaCapiEvent({
+          eventName: "Purchase",
+          eventId: `order_${order.orderNumber}`,
+          eventSourceUrl: `${appBaseUrl}/checkout`,
+          userData: {
+            email: order.customer.email,
+            phone: order.customer.phone,
+            firstName: order.customer.fullName,
+            city: order.customer.city,
+            district: order.customer.district,
+            postalCode: order.customer.postalCode,
+            clientIp: request.headers.get("x-forwarded-for")?.split(",")[0].trim() || undefined,
+            clientUserAgent: request.headers.get("user-agent") || undefined,
+            fbp,
+            fbc,
+          },
+          customData: {
+            value: order.total,
+            currency: "BDT",
+            order_id: order.orderNumber,
+            num_items: order.items.reduce((acc, it) => acc + it.quantity, 0),
+            content_ids: order.items.map((it) => it.productId),
+            content_type: "product",
+            contents: order.items.map((it) => ({
+              id: String(it.productId),
+              quantity: it.quantity,
+              item_price: it.price,
+            })),
+          },
+        });
+      } catch (err) {
+        console.warn("[Meta CAPI] SSLCOMMERZ post-payment purchase error:", err);
+      }
     }
 
     return NextResponse.redirect(`${appBaseUrl}/thankyou-for-shopping?order=${tranId}&payment=success`);

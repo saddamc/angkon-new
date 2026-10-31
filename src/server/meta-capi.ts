@@ -490,7 +490,7 @@ export async function sendMetaCapiEvent(
       pixelId,
       capiToken,
       { ...event, testEventCode },
-      8000
+      4000
     );
 
     if (transmission.ok) {
@@ -508,6 +508,7 @@ export async function sendMetaCapiEvent(
               responseStatus: transmission.status,
               eventsReceived: received,
               fbtraceId: transmission.fbtraceId,
+              testEventCode: testEventCode || undefined,
               claimToken: null,
               claimedAt: null,
               error: null,
@@ -542,6 +543,7 @@ export async function sendMetaCapiEvent(
               error: transmission.error,
               errorCode: transmission.errorCode,
               fbtraceId: transmission.fbtraceId,
+              testEventCode: testEventCode || undefined,
               nextAttemptAt,
               claimToken: null,
               claimedAt: null,
@@ -576,6 +578,7 @@ export async function sendMetaCapiEvent(
             error: finalError,
             errorCode: transmission.errorCode,
             fbtraceId: transmission.fbtraceId,
+            testEventCode: testEventCode || undefined,
             claimToken: null,
             claimedAt: null,
           },

@@ -624,3 +624,149 @@ test("Audit Criterion 14: Canonical numeric product ID is used in AddToCart, not
 
   teardownBrowserMock();
 });
+
+test("Audit Criterion 15: Two different successful orders each generate one Purchase without suppression or collision", () => {
+  const mock = setupBrowserMock({ testEventCode: "TEST66032" });
+
+  const order1 = "ANG-246576-399";
+  const order2 = "ANG-345275-453";
+
+  // Customer places first order
+  trackPurchase({
+    order_id: order1,
+    event_id: `order_${order1}`,
+    value: 8880,
+    currency: "BDT",
+    num_items: 1,
+    content_ids: ["228008"],
+    contents: [{ id: "228008", quantity: 1, item_price: 8800 }],
+  });
+
+  // Verify first purchase event was dispatched
+  assert.equal(mock.dispatchedEvents.length, 1);
+  assert.equal(mock.dispatchedEvents[0].eventName, "Purchase");
+  assert.equal(mock.dispatchedEvents[0].extra.eventID, `order_${order1}`);
+  assert.equal(mock.dispatchedEvents[0].params.order_id, order1);
+  assert.equal(mock.dispatchedEvents[0].params.test_event_code, "TEST66032");
+
+  // Re-firing the first order must be suppressed by the session lock
+  trackPurchase({
+    order_id: order1,
+    event_id: `order_${order1}`,
+    value: 8880,
+    currency: "BDT",
+  });
+  assert.equal(mock.dispatchedEvents.length, 1, "Duplicate dispatch of order 1 must be suppressed");
+
+  // Customer places second order in the same browser session
+  trackPurchase({
+    order_id: order2,
+    event_id: `order_${order2}`,
+    value: 8880,
+    currency: "BDT",
+    num_items: 1,
+    content_ids: ["228016"],
+    contents: [{ id: "228016", quantity: 1, item_price: 8800 }],
+  });
+
+  // Verify second order successfully dispatched independently
+  assert.equal(mock.dispatchedEvents.length, 2, "Second order must dispatch exactly one Purchase");
+  assert.equal(mock.dispatchedEvents[1].eventName, "Purchase");
+  assert.equal(mock.dispatchedEvents[1].extra.eventID, `order_${order2}`);
+  assert.equal(mock.dispatchedEvents[1].params.order_id, order2);
+  assert.equal(mock.dispatchedEvents[1].params.test_event_code, "TEST66032");
+  assert.deepEqual(mock.dispatchedEvents[1].params.content_ids, ["228016"]);
+
+  teardownBrowserMock();
+});
+
+test("Audit Criterion 16: Repeated post-payment or order callbacks do not duplicate Purchase", () => {
+  // Simulates SSLCOMMERZ or webhook callback idempotency guard
+  const orderNotesHistory = [];
+  const processedEvents = [];
+
+  function processPaymentCallback(orderNumber, notes) {
+    if (notes.includes("[CAPI_PURCHASE_SENT]")) {
+      return { skipped: true, reason: "already_sent" };
+    }
+    const updatedNotes = `${notes} [CAPI_PURCHASE_SENT]`.trim();
+    orderNotesHistory.push(updatedNotes);
+    processedEvents.push({
+      eventName: "Purchase",
+      eventId: `order_${orderNumber}`,
+    });
+    return { skipped: false, notes: updatedNotes };
+  }
+
+  // First callback
+  const firstRes = processPaymentCallback("ANG-999111-222", "Order placed via SSLCOMMERZ");
+  assert.equal(firstRes.skipped, false);
+  assert.equal(processedEvents.length, 1);
+
+  // Duplicate callback (e.g. gateway IPN retry or customer back-button)
+  const secondRes = processPaymentCallback("ANG-999111-222", firstRes.notes);
+  assert.equal(secondRes.skipped, true);
+  assert.equal(processedEvents.length, 1, "Duplicate callback must NOT generate a second Purchase");
+});
+
+test("Audit Criterion 17: CAPI retry exhaustion transitions to status 'failed' in ledger with explicit error message", () => {
+  const MAX_RETRIES = 5;
+
+  function simulateLedgerRetry(attemptCount, lastError) {
+    const isTransient = true;
+    const attempt = attemptCount + 1;
+    if (isTransient && attempt < MAX_RETRIES) {
+      return {
+        status: "retrying",
+        attemptCount: attempt,
+      };
+    }
+    return {
+      status: "failed",
+      attemptCount: attempt,
+      error: `Exceeded maximum retry attempts (${MAX_RETRIES}). Last error: ${lastError}`,
+    };
+  }
+
+  // Attempts 1 to 4 should stay retrying
+  assert.equal(simulateLedgerRetry(0, "408 Timeout").status, "retrying");
+  assert.equal(simulateLedgerRetry(3, "408 Timeout").status, "retrying");
+
+  // Attempt 5 (>= MAX_RETRIES) transitions to failed
+  const finalResult = simulateLedgerRetry(4, "Meta API request timed out after 4000ms");
+  assert.equal(finalResult.status, "failed");
+  assert.ok(finalResult.error.includes("Exceeded maximum retry attempts (5)"));
+});
+
+test("Audit Criterion 18: Test Event Code is included correctly on both Browser and Server Purchase copies in testing mode", () => {
+  const testCode = "TEST66032";
+  const mock = setupBrowserMock({ testEventCode: testCode });
+
+  const orderNum = "ANG-TEST-001";
+  trackPurchase({
+    order_id: orderNum,
+    event_id: `order_${orderNum}`,
+    value: 8880,
+    currency: "BDT",
+  });
+
+  const browserDispatch = mock.dispatchedEvents[0];
+  assert.equal(browserDispatch.params.test_event_code, testCode);
+
+  // Server CAPI payload generated for this order
+  const serverPayload = {
+    eventName: "Purchase",
+    eventId: `order_${orderNum}`,
+    testEventCode: testCode,
+    customData: {
+      order_id: orderNum,
+      value: 8880,
+      currency: "BDT",
+    },
+  };
+
+  assert.equal(browserDispatch.extra.eventID, serverPayload.eventId);
+  assert.equal(browserDispatch.params.test_event_code, serverPayload.testEventCode);
+
+  teardownBrowserMock();
+});

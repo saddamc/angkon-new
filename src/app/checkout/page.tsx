@@ -347,9 +347,16 @@ export default function CheckoutPage() {
     setPlacing(true);
     setSubmitError(null);
     try {
+      const activeTestCode =
+        (typeof window !== "undefined" && window.__angkon_meta_test_code) ||
+        (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("test_event_code") || undefined : undefined);
+
       const response = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(activeTestCode ? { "x-meta-test-code": activeTestCode } : {}),
+        },
         body: JSON.stringify({
           fullName: data.name,
           address: data.streetAddress,
@@ -362,6 +369,7 @@ export default function CheckoutPage() {
           paymentMethod,
           promoCode: appliedPromo?.code || "",
           discount: discountAmount,
+          testEventCode: activeTestCode,
           items: items.map((item) => ({
             productId: item.productId,
             name: item.name,
@@ -434,6 +442,11 @@ export default function CheckoutPage() {
         currency: "BDT",
         num_items: items.reduce((acc, item) => acc + item.quantity, 0),
         content_ids: items.map((item) => item.productId),
+        contents: items.map((item) => ({
+          id: String(item.productId),
+          quantity: item.quantity,
+          item_price: item.price,
+        })),
       });
       clearCart();
       try {

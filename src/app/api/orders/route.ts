@@ -82,6 +82,13 @@ export async function POST(request: NextRequest) {
       items = [],
     } = body;
 
+    const testEventCode =
+      (typeof body.testEventCode === "string" && body.testEventCode.trim() ? body.testEventCode.trim() : undefined) ||
+      request.headers.get("x-meta-test-code")?.trim() ||
+      undefined;
+    const fbp = request.cookies.get("_fbp")?.value;
+    const fbc = request.cookies.get("_fbc")?.value;
+
     if (!fullName || !phone || !address || !items || items.length === 0) {
       return NextResponse.json(
         { error: "Missing required order information (name, phone, address, items)." },
@@ -406,30 +413,41 @@ export async function POST(request: NextRequest) {
 
         // Server-side Meta Conversions API (CAPI) for Cash on Delivery purchases
         if (newOrder.paymentMethod === "cod") {
-          sendMetaCapiEvent({
-            eventName: "Purchase",
-            eventId: `order_${newOrder.orderNumber}`,
-            eventSourceUrl: `${request.nextUrl.origin}/checkout`,
-            userData: {
-              email: customerData.email,
-              phone: customerData.phone,
-              firstName: customerData.fullName,
-              city: customerData.city,
-              district: customerData.district,
-              clientIp: clientIp(request),
-              clientUserAgent: request.headers.get("user-agent") || undefined,
-            },
-            customData: {
-              value: newOrder.total,
-              currency: "BDT",
-              order_id: newOrder.orderNumber,
-              num_items: itemsData.reduce((acc, it) => acc + it.quantity, 0),
-              content_ids: itemsData.map((it) => it.productId),
-              content_type: "product",
-            },
-          }).catch((capiErr) => {
+          try {
+            await sendMetaCapiEvent({
+              eventName: "Purchase",
+              eventId: `order_${newOrder.orderNumber}`,
+              eventSourceUrl: `${request.nextUrl.origin}/checkout`,
+              userData: {
+                email: customerData.email,
+                phone: customerData.phone,
+                firstName: customerData.fullName,
+                city: customerData.city,
+                district: customerData.district,
+                postalCode: customerData.postalCode,
+                clientIp: clientIp(request),
+                clientUserAgent: request.headers.get("user-agent") || undefined,
+                fbp,
+                fbc,
+              },
+              customData: {
+                value: newOrder.total,
+                currency: "BDT",
+                order_id: newOrder.orderNumber,
+                num_items: itemsData.reduce((acc, it) => acc + it.quantity, 0),
+                content_ids: itemsData.map((it) => it.productId),
+                content_type: "product",
+                contents: itemsData.map((it) => ({
+                  id: String(it.productId),
+                  quantity: it.quantity,
+                  item_price: it.price,
+                })),
+              },
+              testEventCode,
+            });
+          } catch (capiErr) {
             console.warn("[Meta CAPI] Server COD purchase dispatch error:", capiErr);
-          });
+          }
         }
       } catch (emailErr) {
         console.warn("Email task dispatch warning:", emailErr);

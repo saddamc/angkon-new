@@ -163,27 +163,29 @@ export async function POST(request: NextRequest) {
       const fbp = request.cookies.get("_fbp")?.value;
       const fbc = request.cookies.get("_fbc")?.value;
 
-      sendMetaCapiEvent(
-        {
-          eventName,
-          eventId,
-          eventSourceUrl: `${origin}${url}`,
-          actionSource: "website",
-          customData: sanitizedParams,
-          userData: {
-            clientIp,
-            clientUserAgent,
-            fbp,
-            fbc,
+      try {
+        await sendMetaCapiEvent(
+          {
+            eventName,
+            eventId,
+            eventSourceUrl: `${origin}${url}`,
+            actionSource: "website",
+            customData: sanitizedParams,
+            userData: {
+              clientIp,
+              clientUserAgent,
+              fbp,
+              fbc,
+            },
+            testEventCode,
+            tenantId: DEFAULT_TENANT_ID,
           },
-          testEventCode,
-          tenantId: DEFAULT_TENANT_ID,
-        },
-        settings.capiAccessToken,
-        settings.pixelId
-      ).catch((err) => {
+          settings.capiAccessToken,
+          settings.pixelId
+        );
+      } catch (err) {
         console.warn(`[Meta Ingest] CAPI forward failed for ${eventName}:`, err);
-      });
+      }
     }
 
     return NextResponse.json({

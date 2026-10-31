@@ -297,6 +297,7 @@ export interface PurchaseParams {
   currency?: string;
   num_items?: number;
   content_ids?: (string | number)[];
+  contents?: Array<{ id: string | number; quantity: number; item_price?: number }>;
   event_id?: string;
 }
 
@@ -336,6 +337,7 @@ export function trackPurchase(params: PurchaseParams) {
       currency: params.currency || "BDT",
       num_items: params.num_items ?? 1,
       content_ids: params.content_ids || [],
+      ...(Array.isArray(params.contents) && params.contents.length > 0 ? { contents: params.contents } : {}),
       content_type: "product",
     },
     eventId

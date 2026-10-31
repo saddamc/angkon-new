@@ -83,7 +83,7 @@ export default function MetaPixelEventsManagerPage() {
   const [selectedSimulatorEvent, setSelectedSimulatorEvent] = useState<string>("Purchase");
   const [simulatorMode, setSimulatorMode] = useState<"both" | "browser" | "server">("both");
   const [simulatorLogs, setSimulatorLogs] = useState<
-    Array<{ id: string; time: string; type: "info" | "success" | "error"; text: string }>
+    Array<{ id: string; time: string; type: "info" | "success" | "error" | "warning"; text: string }>
   >([]);
   const [deliveryStats, setDeliveryStats] = useState<{
     queued: number;
@@ -568,37 +568,35 @@ export default function MetaPixelEventsManagerPage() {
     } else if (selectedSimulatorEvent === "InitiateCheckout") {
       payloadParams = {
         num_items: 2,
-        value: 9700,
+        value: 5850,
         currency: "BDT",
-        content_ids: ["PRD-PANJABI-001", "PRD-SHAWL-004"],
+        content_ids: ["228001", "228005"],
       };
       targetUrl = "/checkout";
     } else {
-      // Purchase
+      // Purchase: Generate dynamic sample values without using static 9700 BDT
+      const simItems = [
+        { id: "228001", quantity: 1, item_price: 3850 },
+        { id: "228005", quantity: 1, item_price: 2450 },
+      ];
+      const simTotal = simItems.reduce((acc, it) => acc + it.quantity * it.item_price, 0);
       payloadParams = {
         order_id: sampleOrderId,
-        value: 9700,
+        value: simTotal,
         currency: "BDT",
-        num_items: 2,
-        content_ids: ["PRD-PANJABI-001", "PRD-SHAWL-004"],
+        num_items: simItems.reduce((acc, it) => acc + it.quantity, 0),
+        content_ids: simItems.map((it) => it.id),
+        contents: simItems,
+        is_simulation: true,
       };
       targetUrl = `/thankyou-for-shopping?order_id=${sampleOrderId}`;
     }
 
     try {
-      // 1. Browser Event Dispatch
+      // 1. Browser Event Simulation (Internal Preview Only)
+      // Never dispatch fake events via window.fbq in production, as this contaminates live dataset metrics.
+      // Real Browser Pixel testing must be conducted via Meta Events Manager -> Test Events -> Website.
       if (simulatorMode === "both" || simulatorMode === "browser") {
-        if (
-          typeof window !== "undefined" &&
-          typeof (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq === "function"
-        ) {
-          (
-            window as unknown as {
-              fbq: (act: string, ev: string, p?: Record<string, unknown>, opts?: { eventID: string }) => void;
-            }
-          ).fbq("track", selectedSimulatorEvent, payloadParams, { eventID: pairedEventId });
-        }
-
         await fetch("/api/admin/pixel/events", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -607,8 +605,8 @@ export default function MetaPixelEventsManagerPage() {
             eventId: pairedEventId,
             parameters: payloadParams,
             url: targetUrl,
-            source: "browser",
-            status: "dispatched",
+            source: "test_simulator",
+            status: "simulated_preview",
             testEventCode: testEventCode || undefined,
           }),
         });
@@ -618,61 +616,73 @@ export default function MetaPixelEventsManagerPage() {
             id: `log_${Date.now()}_b`,
             time: timeStr,
             type: "info",
-            text: `[Browser] Dispatched fbq('track', '${selectedSimulatorEvent}') with eventID '${pairedEventId}'.`,
+            text: `[Browser Preview] Safe internal simulation recorded (ID: ${pairedEventId}). Live browser fbq dispatch is disabled in simulator to protect production dataset.`,
           },
           ...prev.slice(0, 49),
         ]);
       }
 
-      // 2. Server CAPI Dispatch
+      // 2. Server CAPI Dispatch (Strictly guarded by Meta Test Event Code)
       if (simulatorMode === "both" || simulatorMode === "server") {
-        const currentOrigin =
-          typeof window !== "undefined" && window.location.origin
-            ? window.location.origin
-            : "https://www.angkon.net";
-
-        const serverRes = await fetch("/api/admin/meta/capi/test", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            eventName: selectedSimulatorEvent,
-            eventId: pairedEventId,
-            eventSourceUrl: `${currentOrigin}${targetUrl}`,
-            testEventCode: testEventCode || undefined,
-            customData: payloadParams,
-          }),
-        });
-
-        const serverData = await serverRes.json();
-        if (serverRes.ok && (serverData.success || serverData.ok)) {
+        if (!testEventCode?.trim()) {
           setSimulatorLogs((prev) => [
             {
-              id: `log_${Date.now()}_s`,
+              id: `log_${Date.now()}_s_blocked`,
               time: timeStr,
-              type: "success",
-              text: `[Server CAPI] 200 OK — ${selectedSimulatorEvent} received by Meta Graph. Trace: ${
-                serverData.fbtraceId || "N/A"
-              }`,
+              type: "warning",
+              text: `[Server Preview] External CAPI dispatch blocked. A Meta Test Event Code (test_event_code) is strictly required to transmit test events to Meta Graph API without polluting production metrics.`,
             },
             ...prev.slice(0, 49),
           ]);
         } else {
-          setSimulatorLogs((prev) => [
-            {
-              id: `log_${Date.now()}_s_err`,
-              time: timeStr,
-              type: "error",
-              text: `[Server CAPI Error] ${serverData.error || "Rejected by Meta Graph"}`,
-            },
-            ...prev.slice(0, 49),
-          ]);
+          const currentOrigin =
+            typeof window !== "undefined" && window.location.origin
+              ? window.location.origin
+              : "https://www.angkon.net";
+
+          const serverRes = await fetch("/api/admin/meta/capi/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventName: selectedSimulatorEvent,
+              eventId: pairedEventId,
+              eventSourceUrl: `${currentOrigin}${targetUrl}`,
+              testEventCode: testEventCode.trim(),
+              customData: payloadParams,
+            }),
+          });
+
+          const serverData = await serverRes.json();
+          if (serverRes.ok && (serverData.success || serverData.ok)) {
+            setSimulatorLogs((prev) => [
+              {
+                id: `log_${Date.now()}_s`,
+                time: timeStr,
+                type: "success",
+                text: `[Server CAPI] 200 OK — ${selectedSimulatorEvent} received by Meta Graph Test Events (Test Code: ${testEventCode.trim()}, Trace: ${
+                  serverData.fbtraceId || "N/A"
+                }).`,
+              },
+              ...prev.slice(0, 49),
+            ]);
+          } else {
+            setSimulatorLogs((prev) => [
+              {
+                id: `log_${Date.now()}_s_err`,
+                time: timeStr,
+                type: "error",
+                text: `[Server CAPI Error] ${serverData.error || "Rejected by Meta Graph"}`,
+              },
+              ...prev.slice(0, 49),
+            ]);
+          }
         }
       }
 
       await reloadEvents();
       setMessage({
         type: "success",
-        text: `Simulated '${selectedSimulatorEvent}' dispatched successfully (Mode: ${simulatorMode}, ID: ${pairedEventId}).`,
+        text: `Simulated '${selectedSimulatorEvent}' processed (Mode: ${simulatorMode}, ID: ${pairedEventId}).`,
       });
     } catch {
       setMessage({ type: "error", text: "Failed to dispatch simulated event." });
@@ -2139,6 +2149,8 @@ export default function MetaPixelEventsManagerPage() {
                           ? "text-emerald-400"
                           : log.type === "error"
                           ? "text-rose-400"
+                          : log.type === "warning"
+                          ? "text-amber-400"
                           : "text-stone-300"
                       }`}
                     >

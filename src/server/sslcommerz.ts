@@ -4,6 +4,35 @@
  * VISA, Mastercard, AMEX, and automated IPN verification.
  */
 
+import crypto from "crypto";
+
+export function createPaymentTrackingToken(orderNumber: string, total: number): string {
+  const secret = process.env.JWT_SECRET || "angkon-tracking-secret";
+  const payload = `${orderNumber}:${total}:${Date.now()}`;
+  const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+  return `${Buffer.from(payload).toString("base64url")}.${sig}`;
+}
+
+export function verifyPaymentTrackingToken(token: string, expectedOrderNumber: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 2) return false;
+    const [payloadB64, sig] = parts;
+    const payload = Buffer.from(payloadB64, "base64url").toString("utf8");
+    const [orderNumber, , timestampStr] = payload.split(":");
+    if (orderNumber !== expectedOrderNumber) return false;
+
+    const timestamp = parseInt(timestampStr, 10);
+    if (isNaN(timestamp) || Date.now() - timestamp > 15 * 60 * 1000) return false; // 15 min expiration
+
+    const secret = process.env.JWT_SECRET || "angkon-tracking-secret";
+    const expectedSig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
+    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
+  } catch {
+    return false;
+  }
+}
+
 export interface SslcommerzInitParams {
   orderNumber: string;
   total: number;

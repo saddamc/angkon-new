@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
-import { validateSslcommerzTransaction } from "@/server/sslcommerz";
+import { validateSslcommerzTransaction, createPaymentTrackingToken } from "@/server/sslcommerz";
 import { sendMetaCapiEvent } from "@/server/meta-capi";
 
 export async function POST(request: NextRequest) {
@@ -132,7 +132,20 @@ async function handleCallback(request: NextRequest) {
       }
     }
 
-    return NextResponse.redirect(`${appBaseUrl}/thankyou-for-shopping?order=${tranId}&payment=success`);
+    const redirectResponse = NextResponse.redirect(
+      `${appBaseUrl}/thankyou-for-shopping?order=${encodeURIComponent(tranId)}&payment=success`
+    );
+
+    const trackingToken = createPaymentTrackingToken(order.orderNumber, order.total);
+    redirectResponse.cookies.set("sslcommerz_tracking_token", trackingToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 900, // 15 minutes
+      path: "/",
+    });
+
+    return redirectResponse;
   }
 
   return NextResponse.redirect(`${appBaseUrl}/checkout?error=verification_failed&order=${tranId}`);

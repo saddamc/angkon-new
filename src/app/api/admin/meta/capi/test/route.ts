@@ -43,6 +43,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const targetEvent = String(body.eventName || "PageView").trim();
+    if (
+      (targetEvent === "Purchase" ||
+        targetEvent === "AddToCart" ||
+        targetEvent === "InitiateCheckout") &&
+      !testEventCode
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "External test dispatch blocked: A Meta Test Event Code (test_event_code) is strictly required to simulate conversion events without polluting production datasets.",
+        },
+        { status: 400 }
+      );
+    }
+
     const result = await testMetaCapiConnection(pixelId, token, testEventCode, auth.tenantId, {
       eventName: body.eventName,
       eventId: body.eventId,

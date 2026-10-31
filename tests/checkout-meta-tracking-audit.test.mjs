@@ -873,3 +873,67 @@ test("Audit Criterion 23: CAPI PageView payload contains no currency, value, or 
     "executeMetaGraphApiPost must strip value and currency from PageView payload"
   );
 });
+
+test("Audit Criterion 24 & 25: Admin simulator blocks fake window.fbq in production and requires test_event_code for CAPI", async () => {
+  const fs = await import("node:fs");
+  const pixelAdminContent = fs.readFileSync("src/app/admin/meta/pixel/page.tsx", "utf8");
+  const capiTestApi = fs.readFileSync("src/app/api/admin/meta/capi/test/route.ts", "utf8");
+
+  // Verify simulator does not call fbq track
+  assert.ok(
+    !pixelAdminContent.includes('.fbq("track", selectedSimulatorEvent'),
+    "Admin simulator must not execute live window.fbq track to protect production dataset"
+  );
+  assert.ok(
+    pixelAdminContent.includes("External CAPI dispatch blocked. A Meta Test Event Code"),
+    "Admin simulator must block external CAPI dispatch when testEventCode is missing"
+  );
+  assert.ok(
+    capiTestApi.includes("External test dispatch blocked: A Meta Test Event Code"),
+    "CAPI test API must reject conversion tests without test_event_code"
+  );
+});
+
+test("Audit Criterion 26: Old static 9700 BDT simulator value is eliminated from active code", async () => {
+  const fs = await import("node:fs");
+  const pixelAdminContent = fs.readFileSync("src/app/admin/meta/pixel/page.tsx", "utf8");
+  assert.ok(
+    !pixelAdminContent.includes("value: 9700"),
+    "Admin simulator must not hardcode static 9700 BDT"
+  );
+});
+
+test("Audit Criterion 27 & 28: SSLCommerz tracking token generation, verification, and protected endpoint", async () => {
+  const { createPaymentTrackingToken, verifyPaymentTrackingToken } = await import("../src/server/sslcommerz.ts");
+
+  const orderNum = "ANG-TEST-SSL-001";
+  const token = createPaymentTrackingToken(orderNum, 5000);
+  assert.ok(typeof token === "string" && token.includes("."), "Tracking token must be signed delimited string");
+
+  assert.equal(verifyPaymentTrackingToken(token, orderNum), true, "Valid tracking token must verify successfully");
+  assert.equal(verifyPaymentTrackingToken(token, "ANG-WRONG-ORDER"), false, "Token must fail for wrong order number");
+  assert.equal(verifyPaymentTrackingToken("invalid.token", orderNum), false, "Malformed token must fail");
+
+  const verifyApi = (await import("node:fs")).readFileSync("src/app/api/orders/verify-tracking/route.ts", "utf8");
+  assert.ok(verifyApi.includes('order.paymentStatus !== "paid"'), "Verify API must reject unpaid orders");
+  assert.ok(verifyApi.includes('order.orderStatus === "cancelled"'), "Verify API must reject cancelled or refunded orders");
+  assert.ok(!verifyApi.includes("customer.phone"), "Verify API must not expose customer phone PII");
+});
+
+test("Audit Criterion 29 & 30: ThankYouOrderTracker guards idempotency and uses order_${orderNumber}", async () => {
+  const fs = await import("node:fs");
+  const trackerContent = fs.readFileSync("src/components/analytics/thankyou-order-tracker.tsx", "utf8");
+
+  assert.ok(
+    trackerContent.includes('sessionStorage.getItem(storageKey) === "true"'),
+    "ThankYouOrderTracker must check sessionStorage idempotency lock before tracking"
+  );
+  assert.ok(
+    trackerContent.includes('sessionStorage.setItem(storageKey, "true")'),
+    "ThankYouOrderTracker must set sessionStorage idempotency lock upon successful track"
+  );
+  assert.ok(
+    trackerContent.includes('event_id: data.eventId || `order_${data.orderNumber}`'),
+    "ThankYouOrderTracker must use exact order_${orderNumber} event ID matching CAPI"
+  );
+});

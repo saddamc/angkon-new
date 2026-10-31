@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CheckCircle2, Clock, ShieldCheck, ArrowRight } from "lucide-react";
+import { ThankYouOrderTracker } from "@/components/analytics/thankyou-order-tracker";
 
 export const metadata: Metadata = {
   title: "Thank You for Shopping With Us — ANGKON",
@@ -18,6 +20,9 @@ const DELIVERY_TIMES = [
 export default function ThankYouPage() {
   return (
     <div className="min-h-screen bg-[#400604] text-white">
+      <Suspense fallback={null}>
+        <ThankYouOrderTracker />
+      </Suspense>
       {/* Header */}
       <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-14 px-4 text-center">
         <div className="container mx-auto max-w-[800px]">

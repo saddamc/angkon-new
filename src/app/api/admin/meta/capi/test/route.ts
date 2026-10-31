@@ -43,11 +43,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await testMetaCapiConnection(pixelId, token, testEventCode, auth.tenantId);
+    const result = await testMetaCapiConnection(pixelId, token, testEventCode, auth.tenantId, {
+      eventName: body.eventName,
+      eventId: body.eventId,
+      customData: body.customData,
+    });
 
     if (result.success) {
       return NextResponse.json({
         ok: true,
+        success: true,
+        eventsReceived: result.eventsReceived ?? 1,
         message: `Connection successful! Meta received ${result.eventsReceived ?? 1} test event.`,
         fbtraceId: result.fbtraceId,
       });
@@ -56,6 +62,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
+        success: false,
         error: result.error || "Meta Graph API rejected the token or dataset ID.",
         code: result.code,
         fbtraceId: result.fbtraceId,

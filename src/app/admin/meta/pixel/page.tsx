@@ -447,12 +447,14 @@ export default function MetaPixelEventsManagerPage() {
 
       const data = await res.json();
       const timeStr = new Date().toLocaleTimeString();
-      if (res.ok && data.success) {
+      if (res.ok && (data.success || data.ok)) {
         setCapiTestResult({
           success: true,
-          message: `Conversions API confirmed delivery (HTTP 200). Events received: ${
-            data.eventsReceived || 1
-          }. Meta Graph accepted event.`,
+          message:
+            data.message ||
+            `Conversions API confirmed delivery (HTTP 200). Events received: ${
+              data.eventsReceived || 1
+            }. Meta Graph accepted event.`,
           fbtraceId: data.fbtraceId,
           timestamp: timeStr,
         });
@@ -633,7 +635,7 @@ export default function MetaPixelEventsManagerPage() {
         });
 
         const serverData = await serverRes.json();
-        if (serverRes.ok && serverData.success) {
+        if (serverRes.ok && (serverData.success || serverData.ok)) {
           setSimulatorLogs((prev) => [
             {
               id: `log_${Date.now()}_s`,

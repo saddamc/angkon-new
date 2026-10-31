@@ -846,15 +846,21 @@ export async function testMetaCapiConnection(
   pixelId: string,
   capiToken: string,
   testEventCode?: string,
-  tenantId = DEFAULT_TENANT_ID
+  tenantId = DEFAULT_TENANT_ID,
+  options?: {
+    eventName?: string;
+    eventId?: string;
+    eventSourceUrl?: string;
+    customData?: Record<string, unknown>;
+  }
 ): Promise<MetaCapiResponse> {
-  const testEventId = `diag_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const testEventId = options?.eventId || `diag_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
   return sendMetaCapiEvent(
     {
-      eventName: "PageView",
+      eventName: options?.eventName || "PageView",
       eventId: testEventId,
-      eventSourceUrl: "https://angkon.com.bd/admin/meta/conversions-api",
+      eventSourceUrl: options?.eventSourceUrl || "https://angkon.com.bd/admin/meta/conversions-api",
       actionSource: "website",
       userData: {
         clientIp: "103.145.12.44",
@@ -862,6 +868,7 @@ export async function testMetaCapiConnection(
       },
       customData: {
         diagnostic_test: true,
+        ...(options?.customData || {}),
       },
       testEventCode,
     },

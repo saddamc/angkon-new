@@ -15,9 +15,9 @@ export async function GET(request: NextRequest) {
     const settings = await getPixelSettings(auth.tenantId);
     const token = (settings.domainVerificationToken || "").trim();
 
-    const host = request.headers.get("host") || "angkon.com.bd";
+    const host = request.headers.get("host") || "www.angkon.net";
     const cleanDomain = host.replace(/:\d+$/, "");
-    const targetDomain = cleanDomain.includes("localhost") ? "angkon.com.bd" : cleanDomain;
+    const targetDomain = cleanDomain.includes("localhost") ? "www.angkon.net" : cleanDomain;
     const protocol = host.includes("localhost") ? "http" : "https";
     const siteUrl = `${protocol}://${host}`;
 

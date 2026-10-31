@@ -96,7 +96,7 @@ test("production URL resolution never falls back to localhost", () => {
     env: { NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:3000" },
   });
 
-  assert.equal(production.baseUrl, "https://angkon.com.bd");
+  assert.equal(production.baseUrl, "https://www.angkon.net");
   assert.equal(production.source, "default-production-domain");
   assert.equal(production.isLocal, false);
   assert.equal(production.isPublicHttps, true);

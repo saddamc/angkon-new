@@ -3,7 +3,7 @@ import { normalizeMetaProductId } from "./meta-product-id";
 /** Meta Commerce catalog transport and validation helpers. */
 export const META_CATALOG_CURRENCY = "BDT";
 export const META_CATALOG_BRAND = "ANGKON";
-export const DEFAULT_PRODUCTION_BASE_URL = "https://angkon.com.bd";
+export const DEFAULT_PRODUCTION_BASE_URL = "https://www.angkon.net";
 export const CATALOG_FEED_PATH = "/api/meta/catalog";
 export const MAX_FEED_ITEMS = 10_000;
 export const DEFAULT_FEED_PAGE_SIZE = 2_000;

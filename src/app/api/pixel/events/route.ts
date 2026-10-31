@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaEventLog } from "@/models/MetaEventLog";
 import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/pixel-settings";
+import { sendMetaCapiEvent } from "@/server/meta-capi";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +129,48 @@ export async function POST(request: NextRequest) {
         { tenantId: DEFAULT_TENANT_ID, eventId, source: "server" },
         { $set: { isDeduplicated: true } }
       ).catch(() => {});
+    } else if (
+      eventName !== "Purchase" &&
+      settings.enabled &&
+      settings.capiAccessToken
+    ) {
+      // For non-Purchase standard storefront events (AddToCart, ViewContent, InitiateCheckout, PageView),
+      // asynchronously forward to Meta Conversions API (CAPI) on the server side so Meta receives both
+      // Browser and Server copies with identical event_name and event_id for full deduplication.
+      // (Purchase is handled authoritatively by /api/orders upon verified order creation).
+      const origin =
+        request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")
+          ? request.nextUrl.origin
+          : "https://www.angkon.net";
+      const clientIp =
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        undefined;
+      const clientUserAgent = request.headers.get("user-agent") || undefined;
+      const fbp = request.cookies.get("_fbp")?.value;
+      const fbc = request.cookies.get("_fbc")?.value;
+
+      sendMetaCapiEvent(
+        {
+          eventName,
+          eventId,
+          eventSourceUrl: `${origin}${url}`,
+          actionSource: "website",
+          customData: sanitizedParams,
+          userData: {
+            clientIp,
+            clientUserAgent,
+            fbp,
+            fbc,
+          },
+          testEventCode,
+          tenantId: DEFAULT_TENANT_ID,
+        },
+        settings.capiAccessToken,
+        settings.pixelId
+      ).catch((err) => {
+        console.warn(`[Meta Ingest] CAPI forward failed for ${eventName}:`, err);
+      });
     }
 
     return NextResponse.json({

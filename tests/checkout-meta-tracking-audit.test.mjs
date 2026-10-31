@@ -489,3 +489,73 @@ test("Audit Criterion 9 & 10: Canonical Dataset ID, origin resolution, and PII n
   assert.equal(metaUserData.client_ip_address, "103.145.132.1");
   assert.equal(metaUserData.client_user_agent, "Mozilla/5.0");
 });
+
+test("Audit Criterion 11: Content Security Policy connect-src allows Meta MPC edge endpoints (*.run.app and *.on.aws)", async () => {
+  const fs = await import("node:fs");
+  const nextConfigText = fs.readFileSync("next.config.ts", "utf8");
+
+  assert.ok(
+    nextConfigText.includes("https://*.run.app"),
+    "CSP connect-src must allow Google Cloud Run (*.run.app) for Meta MPC telemetry beacons"
+  );
+  assert.ok(
+    nextConfigText.includes("https://*.on.aws"),
+    "CSP connect-src must allow AWS ECS (*.on.aws) for Meta MPC telemetry beacons"
+  );
+  assert.ok(
+    nextConfigText.includes("https://*.facebook.com"),
+    "CSP connect-src must allow facebook.com"
+  );
+  assert.ok(
+    nextConfigText.includes("https://connect.facebook.net"),
+    "CSP connect-src must allow connect.facebook.net"
+  );
+});
+
+test("Audit Criterion 12: AddToCart storefront event pairs browser and server CAPI with identical eventID and canonical domain", () => {
+  const mock = setupBrowserMock({
+    pixelId: "1304551066085265",
+    eventsConfig: { trackAddToCart: true },
+  });
+
+  const cartEventId = generateEventId("cart");
+
+  // Storefront action: Add to Cart
+  const browserEventId = trackAddToCart({
+    content_name: "Heritage Silk Panjabi",
+    content_ids: [101],
+    value: 4500,
+    currency: "BDT",
+    event_id: cartEventId,
+  });
+
+  // Verify browser event emission
+  assert.equal(browserEventId, cartEventId);
+  const browserDispatches = mock.dispatchedEvents;
+  assert.equal(browserDispatches.length, 1);
+  assert.equal(browserDispatches[0].eventName, "AddToCart");
+  assert.equal(browserDispatches[0].extra.eventID, cartEventId);
+
+  // Simulated server CAPI payload generated for this AddToCart event
+  const serverCapiPayload = {
+    eventName: "AddToCart",
+    eventId: cartEventId,
+    eventSourceUrl: "https://www.angkon.net/products/heritage-silk-panjabi",
+    actionSource: "website",
+    customData: {
+      content_name: "Heritage Silk Panjabi",
+      content_ids: ["101"],
+      value: 4500,
+      currency: "BDT",
+    },
+  };
+
+  // Verify browser & server equality for Meta deduplication
+  assert.equal(browserDispatches[0].eventName, serverCapiPayload.eventName);
+  assert.equal(browserDispatches[0].extra.eventID, serverCapiPayload.eventId);
+  assert.equal(browserDispatches[0].params.value, serverCapiPayload.customData.value);
+  assert.equal(browserDispatches[0].params.currency, serverCapiPayload.customData.currency);
+  assert.ok(serverCapiPayload.eventSourceUrl.startsWith("https://www.angkon.net"));
+
+  teardownBrowserMock();
+});

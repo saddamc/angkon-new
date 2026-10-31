@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAttributionComparisonReport } from "@/server/meta-ads";
 import { requireSuperAdminSession } from "@/server/admin-auth";
+import { MetaAdReportingLevel } from "@/models/MetaAdReport";
 
 export const dynamic = "force-dynamic";
 
@@ -17,10 +18,14 @@ export async function GET(request: NextRequest) {
 
     const since = searchParams.get("since") || thirtyDaysAgo;
     const until = searchParams.get("until") || today;
+    const rawLevel = searchParams.get("level") || "campaign";
+    const level: MetaAdReportingLevel =
+      rawLevel === "adset" || rawLevel === "ad" || rawLevel === "account" ? rawLevel : "campaign";
 
     const report = await getAttributionComparisonReport({
       since,
       until,
+      level,
       tenantId: auth.tenantId,
     });
 

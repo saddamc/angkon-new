@@ -1,14 +1,23 @@
 import { connectToDatabase } from "@/lib/mongodb";
-import { MetaAdReport, MetaAdImportLog } from "@/models/MetaAdReport";
+import {
+  MetaAdReport,
+  MetaAdReportingLevel,
+} from "@/models/MetaAdReport";
 import { Order } from "@/models/Order";
-import { getPixelSettings, DEFAULT_TENANT_ID } from "./pixel-settings";
+import {
+  getMetaMarketingSettings,
+  normalizeAdAccountId,
+  computeAttributionConfigKey,
+} from "./meta-marketing-settings";
+import {
+  callMetaMarketingGraphApi,
+  createAndRunAdImportJob,
+  fetchMetaDailyInsightsSlice,
+  ParsedMetaInsightRecord,
+} from "./meta-marketing-api";
+import { DEFAULT_TENANT_ID } from "./tenant";
 
-const GRAPH_API_VERSION = "v22.0";
-const MAX_RETRIES = 3;
-
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+export const META_MARKETING_API_VERSION = "v22.0";
 
 export interface MetaCampaignItem {
   id: string;
@@ -20,73 +29,8 @@ export interface MetaCampaignItem {
   stop_time?: string;
 }
 
-export interface MetaInsightDailyRecord {
-  campaign_id: string;
-  campaign_name: string;
-  date: string;
-  spend: number;
-  impressions: number;
-  clicks: number;
-  cpc: number;
-  ctr: number;
-  roas: number;
-  metaPurchases: number;
-  metaPurchaseValue: number;
-}
-
 /**
- * Executes a resilient fetch to Meta Graph API with exponential backoff on rate-limits.
- */
-async function callMetaGraphApi<T>(endpoint: string, token: string): Promise<T> {
-  let attempt = 0;
-  let delay = 1000;
-
-  const url = endpoint.includes("?")
-    ? `${endpoint}&access_token=${encodeURIComponent(token)}`
-    : `${endpoint}?access_token=${encodeURIComponent(token)}`;
-
-  while (attempt < MAX_RETRIES) {
-    attempt++;
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (response.ok) {
-      return data as T;
-    }
-
-    const errorCode = data?.error?.code;
-    const errorSubcode = data?.error?.error_subcode;
-    const errorMessage = data?.error?.message || `HTTP ${response.status}`;
-
-    // Meta Rate Limits: code 17 (User request limit), code 80004/80000 (Ad Account call limit), code 32 (Page request limit)
-    const isRateLimit =
-      errorCode === 17 ||
-      errorCode === 32 ||
-      errorCode === 80004 ||
-      errorCode === 80000 ||
-      errorSubcode === 2446079;
-
-    if (isRateLimit && attempt < MAX_RETRIES) {
-      console.warn(`[Meta Marketing API] Rate limit encountered. Backing off ${delay}ms...`);
-      await wait(delay);
-      delay *= 2;
-      continue;
-    }
-
-    throw new Error(
-      `Meta Marketing API Error (${errorCode || response.status}): ${errorMessage}`
-    );
-  }
-
-  throw new Error("Meta Marketing API call exceeded maximum retry attempts.");
-}
-
-/**
- * Fetches available ad campaigns from Meta Marketing API with pagination.
+ * Fetches campaigns for the ad account with pagination.
  */
 export async function fetchMetaCampaigns(options?: {
   adAccountId?: string;
@@ -94,35 +38,34 @@ export async function fetchMetaCampaigns(options?: {
   tenantId?: string;
 }): Promise<MetaCampaignItem[]> {
   const tenantId = options?.tenantId || DEFAULT_TENANT_ID;
-  const settings = await getPixelSettings(tenantId);
-  const rawAccountId = (options?.adAccountId || settings.adAccountId || "").trim();
-  const token = (options?.token || settings.marketingApiAccessToken || "").trim();
+  const settings = await getMetaMarketingSettings(tenantId);
+  const actId = normalizeAdAccountId(options?.adAccountId || settings.adAccountId);
+  const token = (options?.token || settings.accessToken || "").trim();
 
-  if (!rawAccountId) {
-    throw new Error("Meta Ad Account ID is not configured (e.g. act_123456789).");
+  if (!actId) {
+    throw new Error("Meta Ad Account ID is not configured (e.g. act_1234567890).");
   }
   if (!token) {
     throw new Error(
-      "Meta Marketing API Access Token is missing. Provide an authorized system user or OAuth token with 'ads_read' permissions."
+      "Meta Marketing API Access Token is missing. Provide an authorized token with 'ads_read' permission."
     );
   }
 
-  const actId = rawAccountId.startsWith("act_") ? rawAccountId : `act_${rawAccountId}`;
-  let endpoint: string | null = `https://graph.facebook.com/${GRAPH_API_VERSION}/${actId}/campaigns?fields=id,name,status,effective_status,objective,start_time,stop_time&limit=50`;
+  let endpoint: string | null = `https://graph.facebook.com/${META_MARKETING_API_VERSION}/${actId}/campaigns?fields=id,name,status,effective_status,objective,start_time,stop_time&limit=50`;
 
   const allCampaigns: MetaCampaignItem[] = [];
 
-  while (endpoint && allCampaigns.length < 200) {
-    interface CampaignsResponse {
-      data?: MetaCampaignItem[];
-      paging?: { next?: string };
-    }
+  interface CampaignsResponse {
+    data?: MetaCampaignItem[];
+    paging?: { next?: string };
+  }
 
-    const res: CampaignsResponse = await callMetaGraphApi<CampaignsResponse>(endpoint, token);
+  while (endpoint && allCampaigns.length < 200) {
+    const apiResult = await callMetaMarketingGraphApi<CampaignsResponse>(endpoint, token);
+    const res: CampaignsResponse = apiResult.data;
     if (Array.isArray(res.data)) {
       allCampaigns.push(...res.data);
     }
-
     endpoint = res.paging?.next || null;
   }
 
@@ -130,243 +73,152 @@ export async function fetchMetaCampaigns(options?: {
 }
 
 /**
- * Retrieves daily campaign Insights from Meta Marketing API for a specific date range.
- * Never fabricates data; returns empty array if no historical data exists.
+ * Fetches daily insights on demand for preview/inspection.
  */
 export async function fetchMetaDailyInsights(options: {
-  since: string; // YYYY-MM-DD
-  until: string; // YYYY-MM-DD
+  since: string;
+  until: string;
+  level?: MetaAdReportingLevel;
   adAccountId?: string;
   token?: string;
   tenantId?: string;
-}): Promise<MetaInsightDailyRecord[]> {
-  const tenantId = options.tenantId || DEFAULT_TENANT_ID;
-  const settings = await getPixelSettings(tenantId);
-  const rawAccountId = (options.adAccountId || settings.adAccountId || "").trim();
-  const token = (options.token || settings.marketingApiAccessToken || "").trim();
-
-  if (!rawAccountId || !token) {
-    throw new Error("Meta Ad Account ID or Marketing API Token is missing.");
-  }
-
-  const actId = rawAccountId.startsWith("act_") ? rawAccountId : `act_${rawAccountId}`;
-  const timeRange = JSON.stringify({ since: options.since, until: options.until });
-
-  let endpoint: string | null = `https://graph.facebook.com/${GRAPH_API_VERSION}/${actId}/insights?fields=campaign_id,campaign_name,spend,impressions,clicks,cpc,ctr,purchase_roas,actions,action_values,date_start&time_range=${encodeURIComponent(
-    timeRange
-  )}&time_increment=1&limit=100`;
-
-  const records: MetaInsightDailyRecord[] = [];
-
-  interface InsightApiItem {
-    campaign_id: string;
-    campaign_name: string;
-    date_start: string;
-    spend?: string;
-    impressions?: string;
-    clicks?: string;
-    cpc?: string;
-    ctr?: string;
-    purchase_roas?: Array<{ action_type: string; value: string }>;
-    actions?: Array<{ action_type: string; value: string }>;
-    action_values?: Array<{ action_type: string; value: string }>;
-  }
-
-  interface InsightsApiResponse {
-    data?: InsightApiItem[];
-    paging?: { next?: string };
-  }
-
-  while (endpoint && records.length < 500) {
-    const res: InsightsApiResponse = await callMetaGraphApi<InsightsApiResponse>(endpoint, token);
-    if (Array.isArray(res.data)) {
-      for (const item of res.data) {
-        const spend = parseFloat(item.spend || "0");
-        const impressions = parseInt(item.impressions || "0", 10);
-        const clicks = parseInt(item.clicks || "0", 10);
-        const cpc = parseFloat(item.cpc || "0");
-        const ctr = parseFloat(item.ctr || "0");
-
-        // Parse ROAS
-        let roas = 0;
-        if (Array.isArray(item.purchase_roas)) {
-          const roasEntry =
-            item.purchase_roas.find((r) => r.action_type === "omni_purchase" || r.action_type === "purchase") ||
-            item.purchase_roas[0];
-          roas = roasEntry ? parseFloat(roasEntry.value || "0") : 0;
-        }
-
-        // Parse Platform Attributed Purchases & Value
-        let metaPurchases = 0;
-        if (Array.isArray(item.actions)) {
-          const p = item.actions.find(
-            (a) => a.action_type === "purchase" || a.action_type === "omni_purchase"
-          );
-          metaPurchases = p ? parseInt(p.value || "0", 10) : 0;
-        }
-
-        let metaPurchaseValue = 0;
-        if (Array.isArray(item.action_values)) {
-          const pv = item.action_values.find(
-            (a) => a.action_type === "purchase" || a.action_type === "omni_purchase"
-          );
-          metaPurchaseValue = pv ? parseFloat(pv.value || "0") : 0;
-        }
-
-        records.push({
-          campaign_id: item.campaign_id,
-          campaign_name: item.campaign_name || "Campaign",
-          date: item.date_start,
-          spend,
-          impressions,
-          clicks,
-          cpc,
-          ctr,
-          roas,
-          metaPurchases,
-          metaPurchaseValue,
-        });
-      }
-    }
-    endpoint = res.paging?.next || null;
-  }
+}): Promise<ParsedMetaInsightRecord[]> {
+  const { records } = await fetchMetaDailyInsightsSlice({
+    since: options.since,
+    until: options.until,
+    level: options.level || "campaign",
+    tenantId: options.tenantId,
+    adAccountId: options.adAccountId,
+    token: options.token,
+  });
 
   return records;
 }
 
 /**
- * Imports historical Meta Insights into MongoDB with duplicate prevention and audit logging.
+ * Triggers historical synchronization into MongoDB.
  */
 export async function importMetaHistoricalInsights(options: {
   since: string;
   until: string;
+  level?: MetaAdReportingLevel;
   tenantId?: string;
-}): Promise<{
-  importedCount: number;
-  totalSpend: number;
-  records: MetaInsightDailyRecord[];
-}> {
-  await connectToDatabase();
-  const tenantId = options.tenantId || DEFAULT_TENANT_ID;
-  const settings = await getPixelSettings(tenantId);
+}) {
+  const job = await createAndRunAdImportJob({
+    since: options.since,
+    until: options.until,
+    level: options.level || "campaign",
+    tenantId: options.tenantId,
+  });
 
-  const actId = (settings.adAccountId || "").trim();
-  const token = (settings.marketingApiAccessToken || "").trim();
+  return {
+    jobId: job.jobId,
+    importedCount: job.totalRecords,
+    totalSpend: job.totalSpend,
+    status: job.status,
+  };
+}
 
-  if (!actId || !token) {
-    throw new Error(
-      "Meta Ad Account ID or Marketing API Token is missing in store settings."
-    );
-  }
-
-  try {
-    const rawRecords = await fetchMetaDailyInsights({
-      since: options.since,
-      until: options.until,
-      adAccountId: actId,
-      token,
-      tenantId,
-    });
-
-    let totalSpend = 0;
-    let importedCount = 0;
-
-    for (const rec of rawRecords) {
-      totalSpend += rec.spend;
-
-      // Upsert to guarantee strict duplicate prevention
-      await MetaAdReport.findOneAndUpdate(
-        {
-          tenantId,
-          adAccountId: actId,
-          campaignId: rec.campaign_id,
-          date: rec.date,
-        },
-        {
-          $set: {
-            campaignName: rec.campaign_name,
-            spend: rec.spend,
-            currency: "BDT",
-            impressions: rec.impressions,
-            clicks: rec.clicks,
-            cpc: rec.cpc,
-            ctr: rec.ctr,
-            roas: rec.roas,
-            metaPurchases: rec.metaPurchases,
-            metaPurchaseValue: rec.metaPurchaseValue,
-            source: "meta_marketing_api",
-          },
-        },
-        { upsert: true, new: true }
-      );
-      importedCount++;
-    }
-
-    // Log the import execution
-    await MetaAdImportLog.create({
-      tenantId,
-      adAccountId: actId,
-      dateRange: { since: options.since, until: options.until },
-      recordsImported: importedCount,
-      totalSpend,
-      status: "success",
-    });
-
-    return { importedCount, totalSpend, records: rawRecords };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : "Import failed";
-    await MetaAdImportLog.create({
-      tenantId,
-      adAccountId: actId,
-      dateRange: { since: options.since, until: options.until },
-      status: "failed",
-      errorMessage: errorMsg,
-    }).catch(() => {});
-
-    throw error;
-  }
+export interface DualLedgerAttributionReport {
+  period: { since: string; until: string };
+  reportingLevel: MetaAdReportingLevel;
+  metaPlatformMetrics: {
+    isAvailable: boolean;
+    status: "verified_ad_data" | "no_imported_ad_data" | "rate_limited";
+    currency: string;
+    totalSpend: number | null;
+    totalImpressions: number | null;
+    totalClicks: number | null;
+    totalReach: number | null;
+    avgFrequency: number | null;
+    avgCpc: number | null;
+    avgCtr: number | null;
+    avgCpm: number | null;
+    metaReportedPurchases: number | null;
+    metaReportedRevenue: number | null;
+    metaClaimedRoas: number | null;
+    entitiesCount: number;
+  };
+  actualStoreMetrics: {
+    totalOrders: number;
+    deliveredOrders: number;
+    cancelledOrders: number;
+    refundedOrders: number;
+    // Realized vs Pending Cash separation
+    realizedPaidCash: number; // Card/MFS paid + settled COD
+    refundedCash: number;
+    netRealizedCash: number; // realizedPaidCash - refundedCash
+    unsettledPendingCash: number; // Delivered pending courier settlement + in-transit COD
+    // Cross-system comparison
+    storeRealizedCashPerMetaSpend: number | null; // Diagnostic ratio
+  };
+  reconciliationDiagnostics: {
+    isAvailable: boolean;
+    purchaseCountGap: number | null; // Meta Purchases - Store Realized Orders
+    revenueGap: number | null; // Meta Purchase Value - Net Realized Store Cash
+    roasDiscrepancy: number | null; // Meta Claimed ROAS - Store Realized Diagnostic Ratio
+    diagnosticDisclaimer: string;
+  };
 }
 
 /**
- * Generates an executive comparison separating Meta Platform-Attributed Conversions
- * from Actual Realized Store Orders & Revenue.
- * Truthful reporting: when no ad data is imported, indicates unavailable rather than fabricated zeros.
+ * Generates an executive dual-ledger reconciliation report.
+ * Strictly isolates Meta platform-reported conversions from actual store cash operations.
+ * Enforces single-level queries to prevent additive double-counting across campaign/adset/ad.
  */
 export async function getAttributionComparisonReport(options: {
   since: string;
   until: string;
+  level?: MetaAdReportingLevel;
   tenantId?: string;
-}) {
+}): Promise<DualLedgerAttributionReport> {
   await connectToDatabase();
   const tenantId = options.tenantId || DEFAULT_TENANT_ID;
+  const level: MetaAdReportingLevel = options.level || "campaign";
+  const settings = await getMetaMarketingSettings(tenantId);
+  const attributionConfigKey = computeAttributionConfigKey(settings.attributionConfig);
 
-  // 1. Meta Platform-Reported Ad Performance
+  // 1. Meta Platform-Reported Ad Performance (Strictly filtered by level to avoid additive double-counting)
   const adReports = await MetaAdReport.find({
     tenantId,
+    level,
+    breakdownKey: "none",
+    attributionConfigKey,
     date: { $gte: options.since, $lte: options.until },
   }).lean();
 
   const hasAdData = adReports.length > 0;
+  const currency = adReports[0]?.currency || settings.accountCurrency || "BDT";
 
   const metaAgg = adReports.reduce(
     (acc, cur) => {
       acc.totalSpend += cur.spend || 0;
       acc.totalImpressions += cur.impressions || 0;
       acc.totalClicks += cur.clicks || 0;
-      acc.metaReportedPurchases += cur.metaPurchases || 0;
-      acc.metaReportedRevenue += cur.metaPurchaseValue || 0;
+      acc.totalReach += cur.reach || 0;
+      acc.metaPurchases += cur.metaPurchases || 0;
+      acc.metaPurchaseValue += cur.metaPurchaseValue || 0;
       return acc;
     },
     {
       totalSpend: 0,
       totalImpressions: 0,
       totalClicks: 0,
-      metaReportedPurchases: 0,
-      metaReportedRevenue: 0,
+      totalReach: 0,
+      metaPurchases: 0,
+      metaPurchaseValue: 0,
     }
   );
 
-  // 2. Real Store Orders & Revenue (Delivered, Confirmed, Cancelled, Refunds)
+  const avgCpc = metaAgg.totalClicks > 0 ? Number((metaAgg.totalSpend / metaAgg.totalClicks).toFixed(2)) : 0;
+  const avgCtr = metaAgg.totalImpressions > 0 ? Number(((metaAgg.totalClicks / metaAgg.totalImpressions) * 100).toFixed(2)) : 0;
+  const avgCpm = metaAgg.totalImpressions > 0 ? Number(((metaAgg.totalSpend / metaAgg.totalImpressions) * 1000).toFixed(2)) : 0;
+  const avgFrequency = metaAgg.totalReach > 0 ? Number((metaAgg.totalImpressions / metaAgg.totalReach).toFixed(2)) : 1;
+
+  const metaClaimedRoas =
+    metaAgg.totalSpend > 0 ? Number((metaAgg.metaPurchaseValue / metaAgg.totalSpend).toFixed(2)) : null;
+
+  // 2. Real Store Financial Ledger
   const sinceDate = new Date(`${options.since}T00:00:00.000Z`);
   const untilDate = new Date(`${options.until}T23:59:59.999Z`);
 
@@ -374,98 +226,140 @@ export async function getAttributionComparisonReport(options: {
     createdAt: { $gte: sinceDate, $lte: untilDate },
   }).lean();
 
-  let storeTotalOrders = 0;
-  let storeDeliveredOrders = 0;
-  let storeCancelledOrders = 0;
-  let storePaidRevenue = 0;
-  let storePendingRevenue = 0;
-  let storeRefunds = 0;
+  let totalOrders = 0;
+  let deliveredOrders = 0;
+  let cancelledOrders = 0;
+  let refundedOrders = 0;
+  let realizedPaidCash = 0;
+  let refundedCash = 0;
+  let unsettledPendingCash = 0;
 
   for (const order of storeOrders) {
-    storeTotalOrders++;
-    if (order.orderStatus === "delivered" || order.orderStatus === "completed") {
-      storeDeliveredOrders++;
-      storePaidRevenue += order.total || 0;
-    } else if (order.paymentStatus === "paid") {
-      storePaidRevenue += order.total || 0;
+    totalOrders++;
+    const total = order.total || 0;
+    const isDelivered = order.orderStatus === "delivered" || order.orderStatus === "completed";
+    const isPaid = order.paymentStatus === "paid";
+    // Check if COD remittance was explicitly recorded as settled
+    const isCodSettled = (order as unknown as Record<string, unknown>).codSettlementStatus === "settled";
+
+    if (order.orderStatus === "refunded") {
+      refundedOrders++;
+      const orderRec = order as unknown as Record<string, unknown>;
+      refundedCash += orderRec.refundAmount ? Number(orderRec.refundAmount) : total;
     } else if (order.orderStatus === "cancelled" || order.orderStatus === "failed") {
-      storeCancelledOrders++;
-    } else if (order.orderStatus === "refunded") {
-      storeRefunds++;
+      cancelledCount(order);
+      cancelledOrders++;
+    } else if (isPaid || isCodSettled) {
+      realizedPaidCash += total;
+      if (isDelivered) deliveredOrders++;
     } else {
-      storePendingRevenue += order.total || 0;
+      // In-transit COD or delivered pending courier settlement
+      unsettledPendingCash += total;
+      if (isDelivered) deliveredOrders++;
     }
   }
 
-  const actualRealizedNetRevenue = storePaidRevenue;
+  function cancelledCount(_o: unknown) {
+    // Helper to keep loop readable
+  }
+
+  const netRealizedCash = Math.max(0, realizedPaidCash - refundedCash);
+
+  // Store Realized Cash / Meta Ad Spend (Cross-System Diagnostic Ratio)
+  const storeRealizedCashPerMetaSpend =
+    hasAdData && metaAgg.totalSpend > 0
+      ? Number((netRealizedCash / metaAgg.totalSpend).toFixed(2))
+      : null;
+
+  const diagnosticDisclaimer =
+    "Dual-Ledger Notice: Meta Platform Conversions use statistical view/click attribution windows (e.g. 7d click, 1d view) and include cross-device touchpoints. Store Net Realized Cash reflects settled bank payments and courier payouts minus customer refunds. They operate as two independent accounting systems.";
 
   if (!hasAdData) {
     return {
       period: { since: options.since, until: options.until },
+      reportingLevel: level,
       metaPlatformMetrics: {
         isAvailable: false,
-        status: "no_imported_ad_data",
+        status: settings.status === "rate_limited" ? "rate_limited" : "no_imported_ad_data",
+        currency,
         totalSpend: null,
         totalImpressions: null,
         totalClicks: null,
+        totalReach: null,
+        avgFrequency: null,
+        avgCpc: null,
+        avgCtr: null,
+        avgCpm: null,
         metaReportedPurchases: null,
         metaReportedRevenue: null,
         metaClaimedRoas: null,
+        entitiesCount: 0,
       },
       actualStoreMetrics: {
-        storeTotalOrders,
-        storeDeliveredOrders,
-        storeCancelledOrders,
-        storeRefunds,
-        actualRealizedNetRevenue,
-        storePendingRevenue,
-        trueBlendedRoas: null,
+        totalOrders,
+        deliveredOrders,
+        cancelledOrders,
+        refundedOrders,
+        realizedPaidCash,
+        refundedCash,
+        netRealizedCash,
+        unsettledPendingCash,
+        storeRealizedCashPerMetaSpend: null,
       },
-      attributionDiscrepancy: {
+      reconciliationDiagnostics: {
         isAvailable: false,
-        orderGap: null,
+        purchaseCountGap: null,
         revenueGap: null,
-        roasInflation: null,
+        roasDiscrepancy: null,
+        diagnosticDisclaimer,
       },
     };
   }
 
-  const trueBlendedRoas =
-    metaAgg.totalSpend > 0
-      ? Number((actualRealizedNetRevenue / metaAgg.totalSpend).toFixed(2))
-      : 0;
-
-  const metaClaimedRoas =
-    metaAgg.totalSpend > 0
-      ? Number((metaAgg.metaReportedRevenue / metaAgg.totalSpend).toFixed(2))
-      : 0;
+  const purchaseCountGap = metaAgg.metaPurchases - deliveredOrders;
+  const revenueGap = Number((metaAgg.metaPurchaseValue - netRealizedCash).toFixed(2));
+  const roasDiscrepancy =
+    metaClaimedRoas !== null && storeRealizedCashPerMetaSpend !== null
+      ? Number((metaClaimedRoas - storeRealizedCashPerMetaSpend).toFixed(2))
+      : null;
 
   return {
     period: { since: options.since, until: options.until },
+    reportingLevel: level,
     metaPlatformMetrics: {
       isAvailable: true,
       status: "verified_ad_data",
+      currency,
       totalSpend: metaAgg.totalSpend,
       totalImpressions: metaAgg.totalImpressions,
       totalClicks: metaAgg.totalClicks,
-      metaReportedPurchases: metaAgg.metaReportedPurchases,
-      metaReportedRevenue: metaAgg.metaReportedRevenue,
+      totalReach: metaAgg.totalReach,
+      avgFrequency,
+      avgCpc,
+      avgCtr,
+      avgCpm,
+      metaReportedPurchases: metaAgg.metaPurchases,
+      metaReportedRevenue: metaAgg.metaPurchaseValue,
       metaClaimedRoas,
+      entitiesCount: adReports.length,
     },
     actualStoreMetrics: {
-      storeTotalOrders,
-      storeDeliveredOrders,
-      storeCancelledOrders,
-      storeRefunds,
-      actualRealizedNetRevenue,
-      storePendingRevenue,
-      trueBlendedRoas,
+      totalOrders,
+      deliveredOrders,
+      cancelledOrders,
+      refundedOrders,
+      realizedPaidCash,
+      refundedCash,
+      netRealizedCash,
+      unsettledPendingCash,
+      storeRealizedCashPerMetaSpend,
     },
-    attributionDiscrepancy: {
+    reconciliationDiagnostics: {
       isAvailable: true,
-      orderGap: metaAgg.metaReportedPurchases - storeDeliveredOrders,
-      revenueGap: metaAgg.metaReportedRevenue - actualRealizedNetRevenue,
-      roasInflation: Number((metaClaimedRoas - trueBlendedRoas).toFixed(2)),
+      purchaseCountGap,
+      revenueGap,
+      roasDiscrepancy,
+      diagnosticDisclaimer,
     },
   };
 }

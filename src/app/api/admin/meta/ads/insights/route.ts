@@ -4,6 +4,7 @@ import {
   importMetaHistoricalInsights,
 } from "@/server/meta-ads";
 import { requireSuperAdminSession } from "@/server/admin-auth";
+import { MetaAdReportingLevel } from "@/models/MetaAdReport";
 
 export const dynamic = "force-dynamic";
 
@@ -20,11 +21,15 @@ export async function GET(request: NextRequest) {
 
     const since = searchParams.get("since") || thirtyDaysAgo;
     const until = searchParams.get("until") || today;
+    const rawLevel = searchParams.get("level") || "campaign";
+    const level: MetaAdReportingLevel =
+      rawLevel === "adset" || rawLevel === "ad" || rawLevel === "account" ? rawLevel : "campaign";
     const adAccountId = searchParams.get("adAccountId") || undefined;
 
     const insights = await fetchMetaDailyInsights({
       since,
       until,
+      level,
       adAccountId,
       tenantId: auth.tenantId,
     });
@@ -32,6 +37,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       tenantId: auth.tenantId,
+      level,
       since,
       until,
       count: insights.length,
@@ -56,19 +62,26 @@ export async function POST(request: NextRequest) {
 
     const since = body.since || thirtyDaysAgo;
     const until = body.until || today;
+    const rawLevel = body.level || "campaign";
+    const level: MetaAdReportingLevel =
+      rawLevel === "adset" || rawLevel === "ad" || rawLevel === "account" ? rawLevel : "campaign";
 
     const result = await importMetaHistoricalInsights({
       since,
       until,
+      level,
       tenantId: auth.tenantId,
     });
 
     return NextResponse.json({
       ok: true,
       tenantId: auth.tenantId,
+      level,
       message: `Successfully imported ${result.importedCount} historical records from Meta Marketing API.`,
       importedCount: result.importedCount,
       totalSpend: result.totalSpend,
+      jobId: result.jobId,
+      status: result.status,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error importing Meta insights";

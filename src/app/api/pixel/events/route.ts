@@ -144,12 +144,15 @@ export async function POST(request: NextRequest) {
       ).catch(() => {});
     } else if (
       eventName !== "Purchase" &&
+      eventName !== "PageView" &&
       settings.enabled &&
       settings.capiAccessToken
     ) {
-      // For non-Purchase standard storefront events (AddToCart, ViewContent, InitiateCheckout, PageView),
-      // asynchronously forward to Meta Conversions API (CAPI) on the server side so Meta receives both
+      // For standard storefront conversion events (AddToCart, ViewContent, InitiateCheckout),
+      // forward to Meta Conversions API (CAPI) on the server side so Meta receives both
       // Browser and Server copies with identical event_name and event_id for full deduplication.
+      // (PageView is tracked natively by the browser Meta Pixel; excluding PageView from CAPI
+      // prevents Meta Events Manager from classifying PageView under Custom Events).
       // (Purchase is handled authoritatively by /api/orders upon verified order creation).
       const origin =
         request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")

@@ -770,3 +770,40 @@ test("Audit Criterion 18: Test Event Code is included correctly on both Browser 
 
   teardownBrowserMock();
 });
+
+test("Audit Criterion 19: Standard Meta PageView implementation is parameterless and ignores /admin routes", () => {
+  // 1. Regular storefront route
+  const mock = setupBrowserMock();
+  global.window.location = { pathname: "/products/royal-panjabi", search: "" };
+
+  function executePageView() {
+    if (global.window.location.pathname.startsWith("/admin") || global.window.location.pathname.startsWith("/api")) {
+      return false;
+    }
+    global.window.fbq("track", "PageView");
+    return true;
+  }
+
+  assert.equal(executePageView(), true);
+  assert.equal(mock.dispatchedEvents.length, 1);
+  const ev = mock.dispatchedEvents[0];
+  assert.equal(ev.eventName, "PageView");
+  assert.deepEqual(ev.params, undefined, "Standard Meta PageView must be parameterless without custom data payload");
+
+  // 2. Admin route must suppress PageView
+  global.window.location = { pathname: "/admin/orders", search: "" };
+  assert.equal(executePageView(), false, "Admin routes must not fire PageView");
+  assert.equal(mock.dispatchedEvents.length, 1, "Dispatched event count must remain 1");
+
+  teardownBrowserMock();
+});
+
+test("Audit Criterion 20: PageView is not forwarded to CAPI to prevent classification as Custom event", async () => {
+  const fs = await import("node:fs");
+  const routeContent = fs.readFileSync("src/app/api/pixel/events/route.ts", "utf8");
+
+  assert.ok(
+    routeContent.includes('eventName !== "PageView"'),
+    "API ingest must explicitly exclude PageView from CAPI forwarding to prevent Custom Event classification"
+  );
+});

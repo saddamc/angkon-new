@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { pageview, logEventTelemetry } from "@/lib/fpixel";
 
@@ -32,8 +32,7 @@ function FacebookPixelNavigationTracker({
   };
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const isFirstRender = useRef(true);
+  const lastTrackedPath = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -45,16 +44,23 @@ function FacebookPixelNavigationTracker({
   useEffect(() => {
     if (!pixelId) return;
     if (eventsConfig.trackPageView === false) return;
+    if (!pathname || pathname.startsWith("/admin") || pathname.startsWith("/api")) return;
 
-    // The base <Script> tag fires the initial PageView on page load (if enabled).
-    // Subsequent client-side route navigations are tracked here.
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    // The base Script tag already fires the initial PageView on page load.
+    // Record initial path on mount and do not fire a duplicate.
+    if (lastTrackedPath.current === null) {
+      lastTrackedPath.current = pathname;
       return;
     }
 
+    // Only track subsequent client-side route navigations when the pathname actually changes
+    if (lastTrackedPath.current === pathname) {
+      return;
+    }
+
+    lastTrackedPath.current = pathname;
     pageview();
-  }, [pathname, searchParams, pixelId, eventsConfig]);
+  }, [pathname, pixelId, eventsConfig.trackPageView]);
 
   return null;
 }
@@ -179,20 +185,21 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
             fbq('init', '${activePixelId}');
             ${
               eventsConfig.trackPageView
-                ? testEventCode
-                  ? `fbq('track', 'PageView', { test_event_code: '${testEventCode}' });`
-                  : `fbq('track', 'PageView');`
+                ? `if (!window.location.pathname.startsWith('/admin') && !window.location.pathname.startsWith('/api')) {
+                     fbq('track', 'PageView');
+                   }`
                 : ""
             }
           `,
         }}
         onLoad={() => {
-          if (eventsConfig.trackPageView) {
-            logEventTelemetry(
-              "PageView",
-              testEventCode ? { test_event_code: testEventCode } : {},
-              testEventCode
-            );
+          if (
+            eventsConfig.trackPageView &&
+            typeof window !== "undefined" &&
+            !window.location.pathname.startsWith("/admin") &&
+            !window.location.pathname.startsWith("/api")
+          ) {
+            logEventTelemetry("PageView", {}, testEventCode);
           }
         }}
       />

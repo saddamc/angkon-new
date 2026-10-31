@@ -771,24 +771,27 @@ test("Audit Criterion 18: Test Event Code is included correctly on both Browser 
   teardownBrowserMock();
 });
 
-test("Audit Criterion 19: Standard Meta PageView implementation is parameterless and ignores /admin routes", () => {
+test("Audit Criterion 19: Standard Meta PageView implementation is parameterless with eventID and ignores /admin routes", () => {
   // 1. Regular storefront route
   const mock = setupBrowserMock();
   global.window.location = { pathname: "/products/royal-panjabi", search: "" };
 
-  function executePageView() {
+  function executePageView(eventId) {
     if (global.window.location.pathname.startsWith("/admin") || global.window.location.pathname.startsWith("/api")) {
       return false;
     }
-    global.window.fbq("track", "PageView");
-    return true;
+    const effectiveEventId = eventId || generateEventId("pv");
+    global.window.fbq("track", "PageView", {}, { eventID: effectiveEventId });
+    return effectiveEventId;
   }
 
-  assert.equal(executePageView(), true);
+  const generatedId = executePageView();
+  assert.ok(typeof generatedId === "string" && generatedId.startsWith("pv_"));
   assert.equal(mock.dispatchedEvents.length, 1);
   const ev = mock.dispatchedEvents[0];
   assert.equal(ev.eventName, "PageView");
-  assert.deepEqual(ev.params, undefined, "Standard Meta PageView must be parameterless without custom data payload");
+  assert.deepEqual(ev.params, {}, "Standard Meta PageView must have empty parameter object without monetary custom data payload");
+  assert.equal(ev.extra.eventID, generatedId, "PageView must include eventID in extra options");
 
   // 2. Admin route must suppress PageView
   global.window.location = { pathname: "/admin/orders", search: "" };
@@ -798,12 +801,75 @@ test("Audit Criterion 19: Standard Meta PageView implementation is parameterless
   teardownBrowserMock();
 });
 
-test("Audit Criterion 20: PageView is not forwarded to CAPI to prevent classification as Custom event", async () => {
+test("Audit Criterion 20: PageView deduplication enforces shared eventId pairing and skips CAPI forwarding if client eventId is missing", async () => {
   const fs = await import("node:fs");
   const routeContent = fs.readFileSync("src/app/api/pixel/events/route.ts", "utf8");
 
+  // Verify route checks for clientProvidedId before forwarding PageView to CAPI
   assert.ok(
-    routeContent.includes('eventName !== "PageView"'),
-    "API ingest must explicitly exclude PageView from CAPI forwarding to prevent Custom Event classification"
+    routeContent.includes('eventName === "PageView" && !clientProvidedId'),
+    "API ingest must guard PageView and skip forwarding if clientProvidedId is missing"
+  );
+  assert.ok(
+    routeContent.includes("skipping paired CAPI forwarding to prevent deduplication mismatch"),
+    "API ingest must log clear reason when skipping CAPI forwarding for missing PageView eventId"
+  );
+  assert.ok(
+    routeContent.includes('eventName === "PageView" ? undefined : sanitizedParams'),
+    "API ingest must omit customData for PageView when forwarding to CAPI"
+  );
+});
+
+test("Audit Criterion 21: Initial PageView in facebook-pixel.tsx assigns shared event ID before track and fires telemetry with matching event ID", async () => {
+  const fs = await import("node:fs");
+  const componentContent = fs.readFileSync("src/components/analytics/facebook-pixel.tsx", "utf8");
+
+  assert.ok(
+    componentContent.includes("var initialPvId = 'pv_'"),
+    "Inline script must generate initialPvId before tracking"
+  );
+  assert.ok(
+    componentContent.includes("window.__angkon_initial_pv_id = initialPvId"),
+    "Inline script must store initialPvId on window"
+  );
+  assert.ok(
+    componentContent.includes("fbq('track', 'PageView', {}, { eventID: initialPvId })"),
+    "Inline script must pass initialPvId as eventID to fbq track PageView"
+  );
+  assert.ok(
+    componentContent.includes('logEventTelemetry("PageView", { eventId: initialPvId }'),
+    "onLoad handler must dispatch telemetry using window.__angkon_initial_pv_id"
+  );
+});
+
+test("Audit Criterion 22: Client route navigation generates fresh shared eventId and ignores query string only changes", async () => {
+  const fs = await import("node:fs");
+  const componentContent = fs.readFileSync("src/components/analytics/facebook-pixel.tsx", "utf8");
+
+  assert.ok(
+    componentContent.includes('const navPvId = generateEventId("pv")'),
+    "Navigation tracker must generate fresh eventId for each pathname transition"
+  );
+  assert.ok(
+    componentContent.includes("pageview(navPvId)"),
+    "Navigation tracker must pass navPvId to pageview"
+  );
+  assert.ok(
+    componentContent.includes("if (lastTrackedPath.current === pathname)"),
+    "Navigation tracker must compare pathname and ignore query string only transitions"
+  );
+});
+
+test("Audit Criterion 23: CAPI PageView payload contains no currency, value, or custom_data", async () => {
+  const fs = await import("node:fs");
+  const capiContent = fs.readFileSync("src/server/meta-capi.ts", "utf8");
+
+  assert.ok(
+    capiContent.includes('if (event.eventName === "PageView")'),
+    "executeMetaGraphApiPost must specifically check for PageView"
+  );
+  assert.ok(
+    capiContent.includes("delete cleanCustomData.value") && capiContent.includes("delete cleanCustomData.currency"),
+    "executeMetaGraphApiPost must strip value and currency from PageView payload"
   );
 });

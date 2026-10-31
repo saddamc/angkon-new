@@ -61,16 +61,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, silenced: true });
     }
 
-    const rawEventId =
-      typeof body.eventId === "string"
-        ? body.eventId
-        : typeof body.parameters?.eventId === "string"
-        ? (body.parameters.eventId as string)
-        : typeof body.parameters?.event_id === "string"
-        ? (body.parameters.event_id as string)
-        : typeof body.parameters?.order_id === "string"
-        ? `order_${body.parameters.order_id}`
-        : `browser_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const clientProvidedId =
+      typeof body.eventId === "string" && body.eventId.trim().length > 0
+        ? body.eventId.trim()
+        : typeof body.parameters?.eventId === "string" && (body.parameters.eventId as string).trim().length > 0
+        ? (body.parameters.eventId as string).trim()
+        : typeof body.parameters?.event_id === "string" && (body.parameters.event_id as string).trim().length > 0
+        ? (body.parameters.event_id as string).trim()
+        : null;
+
+    const rawEventId = clientProvidedId
+      ? clientProvidedId
+      : typeof body.parameters?.order_id === "string"
+      ? `order_${body.parameters.order_id}`
+      : `browser_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const eventId = String(rawEventId).trim().slice(0, 100);
     const url = typeof body.url === "string" ? body.url.slice(0, 500) : "/";
@@ -144,50 +148,56 @@ export async function POST(request: NextRequest) {
       ).catch(() => {});
     } else if (
       eventName !== "Purchase" &&
-      eventName !== "PageView" &&
       settings.enabled &&
       settings.capiAccessToken
     ) {
-      // For standard storefront conversion events (AddToCart, ViewContent, InitiateCheckout),
-      // forward to Meta Conversions API (CAPI) on the server side so Meta receives both
-      // Browser and Server copies with identical event_name and event_id for full deduplication.
-      // (PageView is tracked natively by the browser Meta Pixel; excluding PageView from CAPI
-      // prevents Meta Events Manager from classifying PageView under Custom Events).
-      // (Purchase is handled authoritatively by /api/orders upon verified order creation).
-      const origin =
-        request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")
-          ? request.nextUrl.origin
-          : "https://www.angkon.net";
-      const clientIp =
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        request.headers.get("x-real-ip") ||
-        undefined;
-      const clientUserAgent = request.headers.get("user-agent") || undefined;
-      const fbp = request.cookies.get("_fbp")?.value;
-      const fbc = request.cookies.get("_fbc")?.value;
-
-      try {
-        await sendMetaCapiEvent(
-          {
-            eventName,
-            eventId,
-            eventSourceUrl: `${origin}${url}`,
-            actionSource: "website",
-            customData: sanitizedParams,
-            userData: {
-              clientIp,
-              clientUserAgent,
-              fbp,
-              fbc,
-            },
-            testEventCode,
-            tenantId: DEFAULT_TENANT_ID,
-          },
-          settings.capiAccessToken,
-          settings.pixelId
+      // For PageView, require a client-provided eventId to ensure strict 1:1 Browser-CAPI pairing.
+      // If a PageView arrives without an eventId, skip CAPI forwarding to prevent deduplication failure.
+      if (eventName === "PageView" && !clientProvidedId) {
+        console.warn(
+          "[Meta Ingest] PageView telemetry received without client-provided eventId; skipping paired CAPI forwarding to prevent deduplication mismatch."
         );
-      } catch (err) {
-        console.warn(`[Meta Ingest] CAPI forward failed for ${eventName}:`, err);
+      } else {
+        // For standard storefront events (PageView, AddToCart, ViewContent, InitiateCheckout),
+        // forward to Meta Conversions API (CAPI) on the server side so Meta receives both
+        // Browser and Server copies with identical event_name and event_id for full deduplication.
+        // Purchase is handled authoritatively by /api/orders upon verified order creation.
+        const origin =
+          request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")
+            ? request.nextUrl.origin
+            : "https://www.angkon.net";
+        const clientIp =
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          request.headers.get("x-real-ip") ||
+          undefined;
+        const clientUserAgent = request.headers.get("user-agent") || undefined;
+        const fbp = request.cookies.get("_fbp")?.value;
+        const fbc = request.cookies.get("_fbc")?.value;
+
+        try {
+          await sendMetaCapiEvent(
+            {
+              eventName,
+              eventId,
+              eventSourceUrl: `${origin}${url}`,
+              actionSource: "website",
+              // PageView is standard non-monetary: no currency, no value, no ecommerce customData
+              customData: eventName === "PageView" ? undefined : sanitizedParams,
+              userData: {
+                clientIp,
+                clientUserAgent,
+                fbp,
+                fbc,
+              },
+              testEventCode,
+              tenantId: DEFAULT_TENANT_ID,
+            },
+            settings.capiAccessToken,
+            settings.pixelId
+          );
+        } catch (err) {
+          console.warn(`[Meta Ingest] CAPI forward failed for ${eventName}:`, err);
+        }
       }
     }
 

@@ -10,6 +10,8 @@ declare global {
     _fbq?: any;
     __angkon_meta_enabled?: boolean;
     __angkon_meta_test_code?: string;
+    __angkon_initial_pv_id?: string;
+    __angkon_initial_pv_telemetry_sent?: boolean;
     __angkon_pixel_events_config?: {
       trackPageView?: boolean;
       trackViewContent?: boolean;
@@ -112,25 +114,23 @@ export function generateEventId(prefix = "ev"): string {
 /**
  * Fires a standard Meta PageView event.
  */
-export function pageview(eventId?: string) {
+export function pageview(eventId?: string): string | undefined {
   if (typeof window !== "undefined") {
-    if (window.__angkon_meta_enabled === false) return;
-    if (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/api")) return;
+    if (window.__angkon_meta_enabled === false) return undefined;
+    if (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/api")) return undefined;
   }
   const cfg = typeof window !== "undefined" ? window.__angkon_pixel_events_config : undefined;
   if (cfg && (cfg.trackPageView === false || (cfg as Record<string, unknown>).pageView === false)) {
-    return;
+    return undefined;
   }
+  const effectiveEventId = eventId || generateEventId("pv");
   if (typeof window !== "undefined" && typeof window.fbq === "function") {
-    // Standard parameterless Meta PageView
-    if (eventId) {
-      window.fbq("track", "PageView", {}, { eventID: eventId });
-    } else {
-      window.fbq("track", "PageView");
-    }
+    // Standard parameterless Meta PageView paired with deterministic eventID
+    window.fbq("track", "PageView", {}, { eventID: effectiveEventId });
     const testCode = getActiveTestEventCode();
-    logEventTelemetry("PageView", eventId ? { eventId } : {}, testCode);
+    logEventTelemetry("PageView", { eventId: effectiveEventId }, testCode);
   }
+  return effectiveEventId;
 }
 
 /**

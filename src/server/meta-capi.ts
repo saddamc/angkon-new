@@ -162,6 +162,11 @@ function sanitizeEventParameters(event: MetaCapiEventPayload): Record<string, un
     hasFbc: Boolean(event.userData?.fbc),
   };
 
+  // Standard PageView is non-monetary and must not store currency or value in ledger parameters
+  if (event.eventName === "PageView") {
+    return params;
+  }
+
   if (event.customData) {
     if (event.customData.value !== undefined) params.value = event.customData.value;
     if (event.customData.currency) params.currency = event.customData.currency;
@@ -266,28 +271,39 @@ export async function executeMetaGraphApiPost(
   };
 
   if (event.customData) {
-    const normalizedCustomData: Record<string, unknown> = { ...event.customData };
+    if (event.eventName === "PageView") {
+      // PageView is a standard non-monetary event: do not attach currency or value,
+      // and do not send custom_data unless valid non-monetary parameters exist.
+      const cleanCustomData: Record<string, unknown> = { ...event.customData };
+      delete cleanCustomData.value;
+      delete cleanCustomData.currency;
+      if (Object.keys(cleanCustomData).length > 0) {
+        dataPayload.custom_data = cleanCustomData;
+      }
+    } else {
+      const normalizedCustomData: Record<string, unknown> = { ...event.customData };
 
-    if (Array.isArray(normalizedCustomData.content_ids)) {
-      normalizedCustomData.content_ids = normalizeMetaContentIds(
-        normalizedCustomData.content_ids
-      );
+      if (Array.isArray(normalizedCustomData.content_ids)) {
+        normalizedCustomData.content_ids = normalizeMetaContentIds(
+          normalizedCustomData.content_ids
+        );
+      }
+
+      if (Array.isArray(normalizedCustomData.contents)) {
+        normalizedCustomData.contents = (
+          normalizedCustomData.contents as Array<Record<string, unknown>>
+        ).map((content) => ({
+          ...content,
+          id: normalizeMetaContentId(content.id) ?? content.id,
+        }));
+      }
+
+      dataPayload.custom_data = {
+        currency: event.customData.currency || "BDT",
+        value: event.customData.value ?? 0,
+        ...normalizedCustomData,
+      };
     }
-
-    if (Array.isArray(normalizedCustomData.contents)) {
-      normalizedCustomData.contents = (
-        normalizedCustomData.contents as Array<Record<string, unknown>>
-      ).map((content) => ({
-        ...content,
-        id: normalizeMetaContentId(content.id) ?? content.id,
-      }));
-    }
-
-    dataPayload.custom_data = {
-      currency: event.customData.currency || "BDT",
-      value: event.customData.value ?? 0,
-      ...normalizedCustomData,
-    };
   }
 
   const requestBody: Record<string, unknown> = {

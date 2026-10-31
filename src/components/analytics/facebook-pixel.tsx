@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { pageview, logEventTelemetry } from "@/lib/fpixel";
+import { pageview, logEventTelemetry, generateEventId } from "@/lib/fpixel";
 
 export interface PixelConfig {
   enabled: boolean;
@@ -59,7 +59,8 @@ function FacebookPixelNavigationTracker({
     }
 
     lastTrackedPath.current = pathname;
-    pageview();
+    const navPvId = generateEventId("pv");
+    pageview(navPvId);
   }, [pathname, pixelId, eventsConfig.trackPageView]);
 
   return null;
@@ -181,12 +182,14 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
+            var initialPvId = 'pv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            window.__angkon_initial_pv_id = initialPvId;
             fbq('set', 'autoConfig', false, '${activePixelId}');
             fbq('init', '${activePixelId}');
             ${
               eventsConfig.trackPageView
                 ? `if (!window.location.pathname.startsWith('/admin') && !window.location.pathname.startsWith('/api')) {
-                     fbq('track', 'PageView');
+                     fbq('track', 'PageView', {}, { eventID: initialPvId });
                    }`
                 : ""
             }
@@ -199,7 +202,11 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
             !window.location.pathname.startsWith("/admin") &&
             !window.location.pathname.startsWith("/api")
           ) {
-            logEventTelemetry("PageView", {}, testEventCode);
+            const initialPvId = window.__angkon_initial_pv_id;
+            if (initialPvId && !window.__angkon_initial_pv_telemetry_sent) {
+              window.__angkon_initial_pv_telemetry_sent = true;
+              logEventTelemetry("PageView", { eventId: initialPvId }, testEventCode);
+            }
           }
         }}
       />

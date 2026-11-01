@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import {
   Globe,
   CheckCircle2,
-  ShieldCheck,
   Copy,
   Check,
   Save,
   Info,
   ExternalLink,
   AlertCircle,
+  Server,
+  FileCode,
+  Shield,
+  Clock,
+  RefreshCw,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
 import type { PixelSettings } from "@/server/pixel-settings";
@@ -58,18 +62,48 @@ const AEM_PRIORITY_LIST = [
   },
 ];
 
+interface DomainCheckResponse {
+  ok: boolean;
+  domain: string;
+  nameservers: string[];
+  tokenConfigured: boolean;
+  token: string;
+  verificationMethod: "dns_txt" | "html_meta_tag";
+  dnsTxt: {
+    status: "DETECTED" | "NOT_FOUND" | "ERROR";
+    domain: string;
+    recordsExamined: number;
+    matchedRecord?: string;
+    allTxtRecords: string[];
+    nameservers: string[];
+    details: string;
+    error?: string;
+  };
+  htmlMetaTag: {
+    status: "DETECTED" | "NOT_FOUND" | "NOT_CHECKED" | "ERROR";
+    url: string;
+    detectedToken?: string;
+    details: string;
+    error?: string;
+  };
+  metaOwnership: {
+    status: "VERIFIED" | "NEEDS_VERIFICATION" | "FAILED";
+    verified: boolean;
+    verifiedAt?: string | null;
+    source?: string | null;
+    confirmedBy?: string | null;
+  };
+  message: string;
+}
+
 export default function MetaDomainVerificationPage() {
   const [settings, setSettings] = useState<PixelSettings | null>(null);
   const [domainToken, setDomainToken] = useState("");
+  const [verificationMethod, setVerificationMethod] = useState<"dns_txt" | "html_meta_tag">("dns_txt");
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState<{
-    verified: boolean;
-    message: string;
-    domain: string;
-    htmlMetaTag?: { found: boolean; details: string };
-    dnsTxtRecord?: { found: boolean; details: string };
-  } | null>(null);
+  const [confirmingOwnership, setConfirmingOwnership] = useState(false);
+  const [checkResult, setCheckResult] = useState<DomainCheckResponse | null>(null);
   const [copiedMeta, setCopiedMeta] = useState(false);
   const [copiedDns, setCopiedDns] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -81,26 +115,61 @@ export default function MetaDomainVerificationPage() {
         if (data) {
           setSettings(data);
           setDomainToken(data.domainVerificationToken || "");
+          if (data.domainVerificationMethod) {
+            setVerificationMethod(data.domainVerificationMethod);
+          }
         }
       })
       .catch(console.error);
+
+    // Initial check on load
+    void runDomainCheck();
   }, []);
+
+  const runDomainCheck = async () => {
+    setChecking(true);
+    try {
+      const res = await fetch("/api/admin/meta/domain-verification/check");
+      const data: DomainCheckResponse = await res.json();
+      if (res.ok && data.ok) {
+        setCheckResult(data);
+        if (data.token) {
+          setDomainToken(data.token);
+        }
+      }
+    } catch {
+      // silent initial check error
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleRunCheck = async () => {
     setChecking(true);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/meta/domain-verification/check");
-      const data = await res.json();
+      const data: DomainCheckResponse = await res.json();
       if (res.ok && data.ok) {
         setCheckResult(data);
-        if (data.verified) {
-          setMessage({ type: "success", text: data.message });
+        if (data.dnsTxt.status === "DETECTED") {
+          setMessage({
+            type: "success",
+            text: `DNS verification successful: TXT record detected on ${data.domain}!`,
+          });
+        } else if (data.dnsTxt.status === "ERROR") {
+          setMessage({
+            type: "error",
+            text: `DNS check error: ${data.dnsTxt.error || data.dnsTxt.details}`,
+          });
         } else {
-          setMessage({ type: "error", text: data.message });
+          setMessage({
+            type: "error",
+            text: data.dnsTxt.details || "Verification record not found on DNS.",
+          });
         }
       } else {
-        setMessage({ type: "error", text: data.error || "Failed to run domain verification check." });
+        setMessage({ type: "error", text: "Failed to run domain verification check." });
       }
     } catch {
       setMessage({ type: "error", text: "Network error running domain verification check." });
@@ -119,13 +188,17 @@ export default function MetaDomainVerificationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           domainVerificationToken: domainToken.trim(),
+          domainVerificationMethod: verificationMethod,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setSettings(data.settings);
-        setMessage({ type: "success", text: "Domain verification token saved! Storefront <meta> tag updated." });
-        void handleRunCheck();
+        setMessage({
+          type: "success",
+          text: "Meta verification token saved! Checking live DNS TXT record now...",
+        });
+        await handleRunCheck();
       } else {
         setMessage({ type: "error", text: data.error || "Failed to save token." });
       }
@@ -136,7 +209,38 @@ export default function MetaDomainVerificationPage() {
     }
   };
 
-  const activeToken = domainToken.trim() || "angkon_meta_verification_token_sample";
+  const handleToggleMetaOwnership = async (newVerifiedState: boolean) => {
+    setConfirmingOwnership(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/meta/domain-verification/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "confirm_meta_ownership",
+          verified: newVerifiedState,
+          source: "meta_business_manager",
+          verificationMethod,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMessage({
+          type: "success",
+          text: data.message,
+        });
+        await handleRunCheck();
+      } else {
+        setMessage({ type: "error", text: data.error || "Failed to update ownership confirmation." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error updating ownership confirmation." });
+    } finally {
+      setConfirmingOwnership(false);
+    }
+  };
+
+  const activeToken = domainToken.trim() || "c82us1ogm8zgy1u7zn8v7dcvzpt1a2";
   const metaTagSnippet = `<meta name="facebook-domain-verification" content="${activeToken}" />`;
   const dnsSnippet = `facebook-domain-verification=${activeToken}`;
 
@@ -153,6 +257,10 @@ export default function MetaDomainVerificationPage() {
   };
 
   const pixelId = settings?.pixelId || "";
+  const rootDomain = checkResult?.domain || "angkon.net";
+  const isDnsDetected = checkResult?.dnsTxt.status === "DETECTED";
+  const isHtmlDetected = checkResult?.htmlMetaTag.status === "DETECTED";
+  const isOwnershipVerified = checkResult?.metaOwnership.status === "VERIFIED";
 
   return (
     <div className="space-y-6 max-w-7xl pb-24 text-stone-900 font-sans antialiased">
@@ -196,7 +304,7 @@ export default function MetaDomainVerificationPage() {
               Root Domain Verification &amp; Aggregated Event Measurement
             </h1>
             <p className="text-xs sm:text-[13px] text-stone-600 max-w-2xl leading-relaxed">
-              Meta requires root domain ownership verification to configure conversion event priority in Aggregated Event Measurement (AEM). This ensures accurate conversion attribution for Apple iOS 14.5+ visitors.
+              Meta requires root domain ownership verification to configure conversion event priority in Aggregated Event Measurement (AEM). Production domain <strong className="text-stone-900">angkon.net</strong> is managed on Namecheap with DNS TXT verification.
             </p>
           </div>
 
@@ -212,77 +320,163 @@ export default function MetaDomainVerificationPage() {
         </div>
       </div>
 
-      {/* ── 4. Live Verification Diagnostic Bar ── */}
+      {/* ── 4. Three-Pillar Status Dashboard (Section D) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Pillar 1: DNS TXT Verification */}
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                <Server className="h-3.5 w-3.5 text-stone-600" />
+                DNS TXT Verification
+              </span>
+              <span
+                className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                  isDnsDetected
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : checkResult?.dnsTxt.status === "ERROR"
+                    ? "bg-rose-50 text-rose-700 border-rose-200"
+                    : "bg-amber-50 text-amber-800 border-amber-200"
+                }`}
+              >
+                {checkResult ? checkResult.dnsTxt.status : "CHECKING..."}
+              </span>
+            </div>
+            <div>
+              <div className="text-base font-bold text-stone-900">
+                {rootDomain} (Apex DNS)
+              </div>
+              <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                {checkResult?.dnsTxt.details || "Querying live DNS TXT records directly on Namecheap..."}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-stone-100 text-[11px] text-stone-500 flex items-center justify-between">
+            <span>Provider: <strong>Namecheap</strong></span>
+            <span>NS: <strong>dns1.registrar-servers.com</strong></span>
+          </div>
+        </div>
+
+        {/* Pillar 2: HTML Meta Tag Verification */}
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                <FileCode className="h-3.5 w-3.5 text-stone-600" />
+                HTML Meta Tag
+              </span>
+              <span
+                className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                  isHtmlDetected
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : checkResult?.htmlMetaTag.status === "NOT_CHECKED"
+                    ? "bg-stone-100 text-stone-600 border-stone-200"
+                    : "bg-amber-50 text-amber-800 border-amber-200"
+                }`}
+              >
+                {checkResult ? checkResult.htmlMetaTag.status : "CHECKING..."}
+              </span>
+            </div>
+            <div>
+              <div className="text-base font-bold text-stone-900">
+                https://{rootDomain}/
+              </div>
+              <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                {checkResult?.htmlMetaTag.details || "Inspecting storefront HTML <head> meta tag..."}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-stone-100 text-[11px] text-stone-500 flex items-center justify-between">
+            <span>Injected: <strong>Next.js Head</strong></span>
+            <span>Secondary: <strong>Fallback</strong></span>
+          </div>
+        </div>
+
+        {/* Pillar 3: Meta Business Manager Ownership */}
+        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs flex flex-col justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5 text-stone-600" />
+                Meta Business Ownership
+              </span>
+              <span
+                className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                  isOwnershipVerified
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-amber-50 text-amber-800 border-amber-200"
+                }`}
+              >
+                {isOwnershipVerified ? "VERIFIED" : "NEEDS_VERIFICATION"}
+              </span>
+            </div>
+            <div>
+              <div className="text-base font-bold text-stone-900">
+                Meta Business Manager
+              </div>
+              <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+                {isOwnershipVerified
+                  ? `Ownership confirmed in Meta Business Manager on ${
+                      checkResult?.metaOwnership.verifiedAt
+                        ? new Date(checkResult.metaOwnership.verifiedAt).toLocaleDateString()
+                        : "Active"
+                    } by ${checkResult?.metaOwnership.confirmedBy || "Administrator"}.`
+                  : "Meta Business Manager ownership requires administrator confirmation."}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-stone-100 text-[11px] text-stone-500 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3 text-stone-400" />
+              <span>{isOwnershipVerified ? "Status: Verified" : "Action Required"}</span>
+            </div>
+            <button
+              type="button"
+              disabled={confirmingOwnership}
+              onClick={() => handleToggleMetaOwnership(!isOwnershipVerified)}
+              className="text-[11px] font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer underline disabled:opacity-50"
+            >
+              {isOwnershipVerified ? "Revoke Confirmation" : "Record Meta Confirmation"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. Configuration & Live DNS Diagnostic Bar ── */}
       <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-stone-100">
           <div>
             <div className="text-xs font-bold text-stone-900 flex items-center gap-2">
               <span
                 className={`h-2.5 w-2.5 rounded-full ${
-                  checkResult?.verified ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
+                  isDnsDetected ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
                 }`}
               />
               <span>
-                Domain Verification State:{" "}
-                <strong className={checkResult?.verified ? "text-emerald-700" : "text-amber-800"}>
-                  {checkResult
-                    ? checkResult.verified
-                      ? "VERIFIED & ACTIVE"
-                      : "NOT DETECTED YET"
-                    : "READY TO CHECK"}
-                </strong>
+                Target Root Domain:{" "}
+                <code className="font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  {rootDomain}
+                </code>
               </span>
             </div>
-            <p className="text-xs text-stone-500 mt-0.5">
-              Target root domain: <code className="font-mono text-stone-700 font-bold">angkon.com.bd</code>
+            <p className="text-xs text-stone-500 mt-1">
+              DNS TXT records are strictly queried on <strong className="text-stone-800">angkon.net</strong> (never www.angkon.net) matching Namecheap apex zone records.
             </p>
           </div>
 
           <button
             type="button"
             onClick={handleRunCheck}
-            disabled={checking || !domainToken}
+            disabled={checking}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-800 transition disabled:opacity-40 cursor-pointer shadow-2xs shrink-0"
           >
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span>{checking ? "Checking Domain..." : "Run Live Verification Check"}</span>
+            <RefreshCw className={`h-4 w-4 text-emerald-600 ${checking ? "animate-spin" : ""}`} />
+            <span>{checking ? "Checking DNS TXT..." : "Run Live Verification Check"}</span>
           </button>
         </div>
 
-        {checkResult && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div
-              className={`p-3.5 rounded-xl border ${
-                checkResult.htmlMetaTag?.found
-                  ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-                  : "bg-stone-50 border-stone-200 text-stone-700"
-              }`}
-            >
-              <div className="font-bold flex items-center gap-1.5 mb-1">
-                <span>{checkResult.htmlMetaTag?.found ? "✓" : "!"}</span>
-                <span>HTML &lt;head&gt; Meta Tag Result</span>
-              </div>
-              <p className="text-[11px] leading-relaxed opacity-90">{checkResult.htmlMetaTag?.details}</p>
-            </div>
-
-            <div
-              className={`p-3.5 rounded-xl border ${
-                checkResult.dnsTxtRecord?.found
-                  ? "bg-emerald-50/70 border-emerald-200 text-emerald-900"
-                  : "bg-stone-50 border-stone-200 text-stone-700"
-              }`}
-            >
-              <div className="font-bold flex items-center gap-1.5 mb-1">
-                <span>{checkResult.dnsTxtRecord?.found ? "✓" : "!"}</span>
-                <span>DNS TXT Record Result</span>
-              </div>
-              <p className="text-[11px] leading-relaxed opacity-90">{checkResult.dnsTxtRecord?.details}</p>
-            </div>
-          </div>
-        )}
-
         {/* Input Form */}
-        <form onSubmit={handleSaveToken} className="space-y-3 pt-1">
+        <form onSubmit={handleSaveToken} className="space-y-4 pt-1">
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1.5">
               Meta Domain Verification Token
@@ -292,7 +486,7 @@ export default function MetaDomainVerificationPage() {
                 type="text"
                 value={domainToken}
                 onChange={(e) => setDomainToken(e.target.value)}
-                placeholder="e.g. qwer1234asdf5678zxcv"
+                placeholder="e.g. c82us1ogm8zgy1u7zn8v7dcvzpt1a2"
                 className="flex-1 rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-mono text-stone-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 transition shadow-2xs"
               />
               <button
@@ -306,52 +500,124 @@ export default function MetaDomainVerificationPage() {
             </div>
             <p className="text-[11px] text-stone-400 mt-1.5 flex items-center gap-1">
               <Info className="h-3 w-3" />
-              Found in Meta Business Manager &gt; Brand Safety &gt; Domains.
+              Obtained from Meta Business Manager &gt; Brand Safety and Suitability &gt; Domains.
             </p>
+          </div>
+
+          {/* Verification Method Selector */}
+          <div className="flex items-center gap-4 text-xs font-medium text-stone-700">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Primary Method:</span>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="verificationMethod"
+                value="dns_txt"
+                checked={verificationMethod === "dns_txt"}
+                onChange={() => setVerificationMethod("dns_txt")}
+                className="text-emerald-600 focus:ring-emerald-500"
+              />
+              <span>DNS TXT Record (Namecheap - Recommended)</span>
+            </label>
+            <label className="inline-flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name="verificationMethod"
+                value="html_meta_tag"
+                checked={verificationMethod === "html_meta_tag"}
+                onChange={() => setVerificationMethod("html_meta_tag")}
+                className="text-emerald-600 focus:ring-emerald-500"
+              />
+              <span>HTML &lt;head&gt; Meta Tag (Storefront)</span>
+            </label>
           </div>
         </form>
 
         {/* Verification Code Snippets */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
-          {/* Method 1: HTML Meta Tag */}
+          {/* Method 1: DNS TXT Record (Primary) */}
           <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-stone-800">
-              <span>Method 1: HTML &lt;head&gt; Meta Tag (Auto-Injected)</span>
-              <button
-                type="button"
-                onClick={copyMetaSnippet}
-                className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-[11px] font-bold"
-              >
-                {copiedMeta ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedMeta ? "Copied!" : "Copy Tag"}</span>
-              </button>
-            </div>
-            <pre className="bg-stone-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {metaTagSnippet}
-            </pre>
-          </div>
-
-          {/* Method 2: DNS TXT Record */}
-          <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-stone-800">
-              <span>Method 2: DNS TXT Record</span>
+              <span className="flex items-center gap-1.5">
+                <Server className="h-3.5 w-3.5 text-stone-600" />
+                <span>Method 1: DNS TXT Record (Namecheap DNS)</span>
+              </span>
               <button
                 type="button"
                 onClick={copyDnsSnippet}
                 className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-[11px] font-bold"
               >
                 {copiedDns ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedDns ? "Copied!" : "Copy DNS"}</span>
+                <span>{copiedDns ? "Copied!" : "Copy DNS Record"}</span>
               </button>
             </div>
             <pre className="bg-stone-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {dnsSnippet}
             </pre>
+            <p className="text-[11px] text-stone-500 leading-normal">
+              In Namecheap cPanel or Advanced DNS, add a <strong>TXT Record</strong> with Host: <code>@</code> and Value: <code>{dnsSnippet}</code>.
+            </p>
+          </div>
+
+          {/* Method 2: HTML Meta Tag */}
+          <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-stone-800">
+              <span className="flex items-center gap-1.5">
+                <FileCode className="h-3.5 w-3.5 text-stone-600" />
+                <span>Method 2: HTML &lt;head&gt; Meta Tag (Auto-Injected)</span>
+              </span>
+              <button
+                type="button"
+                onClick={copyMetaSnippet}
+                className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 cursor-pointer text-[11px] font-bold"
+              >
+                {copiedMeta ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>{copiedMeta ? "Copied!" : "Copy HTML Tag"}</span>
+              </button>
+            </div>
+            <pre className="bg-stone-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {metaTagSnippet}
+            </pre>
+            <p className="text-[11px] text-stone-500 leading-normal">
+              Automatically injected into <code>&lt;head&gt;</code> on all <strong>https://{rootDomain}</strong> pages via Next.js metadata.
+            </p>
           </div>
         </div>
+
+        {/* Examined TXT Records Inspector */}
+        {checkResult && checkResult.dnsTxt.allTxtRecords.length > 0 && (
+          <div className="pt-3 border-t border-stone-100 space-y-1.5">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              Public DNS TXT Records Detected on {rootDomain} ({checkResult.dnsTxt.recordsExamined} records):
+            </div>
+            <div className="space-y-1">
+              {checkResult.dnsTxt.allTxtRecords.map((rec, i) => (
+                <div
+                  key={i}
+                  className={`p-2 rounded-lg text-[11px] font-mono border flex items-center justify-between ${
+                    rec.includes("facebook-domain-verification")
+                      ? "bg-emerald-50/80 border-emerald-300 text-emerald-900 font-bold"
+                      : "bg-stone-50 border-stone-200 text-stone-600"
+                  }`}
+                >
+                  <span className="truncate flex-1">{rec}</span>
+                  {rec.includes("facebook-domain-verification") && (
+                    <span className="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-bold ml-2">
+                      Meta Match
+                    </span>
+                  )}
+                  {rec.startsWith("v=spf") && (
+                    <span className="text-[10px] bg-stone-200 text-stone-700 px-1.5 py-0.5 rounded font-bold ml-2">
+                      SPF Record
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── 5. Aggregated Event Measurement (AEM) Priority Hierarchy ── */}
+      {/* ── 6. Aggregated Event Measurement (AEM) Priority Hierarchy ── */}
       <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-stone-100">
           <div>

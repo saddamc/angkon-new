@@ -34,6 +34,11 @@ export interface PixelSettings {
   pixelId: string;
   testEventCode?: string;
   domainVerificationToken?: string;
+  domainVerificationMethod?: "dns_txt" | "html_meta_tag";
+  metaOwnershipVerified?: boolean;
+  metaOwnershipVerifiedAt?: string;
+  metaOwnershipSource?: "meta_business_manager" | "manual_confirmation" | "meta_api";
+  metaOwnershipConfirmedBy?: string;
   /** Meta Conversions API (CAPI) Dataset Token for server-side event dispatch */
   capiAccessToken?: string;
   /** Meta Marketing API Access Token for retrieving ad account campaigns & reporting */
@@ -63,6 +68,11 @@ export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   pixelId: "",
   testEventCode: "",
   domainVerificationToken: "",
+  domainVerificationMethod: "dns_txt",
+  metaOwnershipVerified: false,
+  metaOwnershipVerifiedAt: "",
+  metaOwnershipSource: "meta_business_manager",
+  metaOwnershipConfirmedBy: "",
   capiAccessToken: "",
   marketingApiAccessToken: "",
   adAccountId: "",
@@ -221,11 +231,17 @@ export function computeIntegrationStatuses(
       label: "Unconfigured",
       detail: "Domain verification token not configured.",
     };
+  } else if (settings.metaOwnershipVerified) {
+    domainVerification = {
+      state: "connected",
+      label: "Ownership Verified",
+      detail: `Verified in Meta Business Manager${settings.metaOwnershipVerifiedAt ? ` (${new Date(settings.metaOwnershipVerifiedAt).toLocaleDateString()})` : ""}.`,
+    };
   } else {
     domainVerification = {
       state: "test-required",
       label: "Configured (Check Req)",
-      detail: "Token configured. Run live DNS or meta-tag check to confirm status.",
+      detail: "Token configured. Run live DNS check to confirm status.",
     };
   }
 
@@ -303,6 +319,17 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
     testEventCode: typeof source.testEventCode === "string" ? source.testEventCode.trim() : "",
     domainVerificationToken:
       typeof source.domainVerificationToken === "string" ? source.domainVerificationToken.trim() : "",
+    domainVerificationMethod:
+      source.domainVerificationMethod === "html_meta_tag" ? "html_meta_tag" : "dns_txt",
+    metaOwnershipVerified: Boolean(source.metaOwnershipVerified),
+    metaOwnershipVerifiedAt:
+      typeof source.metaOwnershipVerifiedAt === "string" ? source.metaOwnershipVerifiedAt : undefined,
+    metaOwnershipSource:
+      typeof source.metaOwnershipSource === "string"
+        ? (source.metaOwnershipSource as "meta_business_manager" | "manual_confirmation" | "meta_api")
+        : undefined,
+    metaOwnershipConfirmedBy:
+      typeof source.metaOwnershipConfirmedBy === "string" ? source.metaOwnershipConfirmedBy : undefined,
     capiAccessToken: typeof source.capiAccessToken === "string" ? source.capiAccessToken.trim() : "",
     marketingApiAccessToken:
       typeof source.marketingApiAccessToken === "string" ? source.marketingApiAccessToken.trim() : "",

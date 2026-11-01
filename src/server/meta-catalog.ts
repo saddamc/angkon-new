@@ -703,7 +703,7 @@ export async function probeProductionFeed(
       signal: controller.signal,
       headers: {
         Accept: "application/xml, text/xml, application/rss+xml;q=0.9, */*;q=0.1",
-        "User-Agent": "ANGKON-Catalog-Diagnostics/1.0 (+https://angkon.com.bd)",
+        "User-Agent": "ANGKON-Catalog-Diagnostics/1.0 (+https://angkon.net)",
       },
     });
 

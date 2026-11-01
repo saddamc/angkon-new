@@ -22,13 +22,21 @@ export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
   const byId = new Map<number, CategoryNode>();
   flat.forEach((category) => byId.set(category.id, { ...category, children: [] }));
 
+  // Identify categories that are linked to another parent so they are not placed as duplicate roots
+  const linkedChildIds = new Set<number>();
+  flat.forEach((category) => {
+    if (Array.isArray(category.linked_parents) && category.linked_parents.length > 0) {
+      linkedChildIds.add(category.id);
+    }
+  });
+
   const roots: CategoryNode[] = [];
   byId.forEach((node) => {
     const parentId = node.parent ?? 0;
     const parent = parentId ? byId.get(parentId) : undefined;
     if (parent) {
       parent.children.push(node);
-    } else {
+    } else if (!linkedChildIds.has(node.id)) {
       roots.push(node);
     }
   });

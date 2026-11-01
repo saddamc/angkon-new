@@ -6,11 +6,13 @@ import { getCategoryImage } from "@/config/category-images";
 export function CategoryHero({
   category,
   productCount: _productCount,
+  heading,
 }: {
   category: CategoryNode;
   productCount?: number;
+  heading?: string;
 }) {
-  const name = categoryDisplayName(category.name);
+  const name = heading || categoryDisplayName(category.name);
   const description = decodeHtmlCharCodes(category.description);
   const heroImage = getCategoryImage(category);
   const hasBakedText = typeof heroImage === "string" && heroImage.startsWith("/banners/");

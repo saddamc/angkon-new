@@ -74,23 +74,61 @@ test("Customer-Intent SEO: Product Catalog SEO Dictionary Validation", async (t)
       "Layout title must prioritize Women's Clothing & Designer Ethnic Wear"
     );
 
-    const categoryContent = fs.readFileSync(
-      path.resolve(process.cwd(), "src/app/product-category/[...slug]/page.tsx"),
+    const categorySeoFile = fs.readFileSync(
+      path.resolve(process.cwd(), "src/config/category-seo.ts"),
       "utf-8"
     );
     assert.ok(
-      categoryContent.includes("Three-Piece Dresses & Luxury Embroidered Suits for Women | ANGKON BD"),
-      "Ethnic wear category title must prioritize Three-Piece Dresses & Luxury Embroidered Suits"
+      categorySeoFile.includes("Three-Piece Dresses & Embroidered Suits for Women | ANGKON"),
+      "Ethnic wear category title must prioritize Three-Piece Dresses & Embroidered Suits"
     );
     assert.ok(
-      categoryContent.includes("Women's Ethnic Wear & Designer Outfits in Bangladesh | ANGKON"),
-      "Women category title must prioritize Ethnic Wear & Designer Outfits"
+      categorySeoFile.includes("Women's Dresses Online in Bangladesh | ANGKON"),
+      "Women category title must prioritize Women's Dresses Online in Bangladesh"
+    );
+    assert.ok(
+      categorySeoFile.includes("Women's Dresses & Designer Ethnic Fashion"),
+      "Women category H1 must be 'Women's Dresses & Designer Ethnic Fashion'"
+    );
+    assert.ok(
+      categorySeoFile.includes("Designer Three-Piece Dresses & Embroidered Suits"),
+      "Ethnic wear category H1 must be 'Designer Three-Piece Dresses & Embroidered Suits'"
     );
 
     const productsContent = fs.readFileSync(path.resolve(process.cwd(), "src/app/products/page.tsx"), "utf-8");
     assert.ok(
       productsContent.includes("Women's Dresses & Premium Three-Piece Suits Online | ANGKON"),
       "Products page must prioritize Women's Dresses & Premium Three-Piece Suits"
+    );
+  });
+
+  await t.test("Category SEO dictionary descriptions are concise and within Google SERP limits (60 - 170 chars)", () => {
+    const categorySeoFile = fs.readFileSync(
+      path.resolve(process.cwd(), "src/config/category-seo.ts"),
+      "utf-8"
+    );
+    const catDescMatches = [...categorySeoFile.matchAll(/description:\s*\n?\s*"([^"]+)"/g)].map((m) => m[1]);
+    assert.ok(catDescMatches.length >= 8, `Expected at least 8 category descriptions, found ${catDescMatches.length}`);
+    for (const desc of catDescMatches) {
+      assert.ok(
+        desc.length <= 170,
+        `Category description exceeds 170 chars (${desc.length} chars): "${desc}"`
+      );
+      assert.ok(
+        desc.length >= 60,
+        `Category description is too short (${desc.length} chars): "${desc}"`
+      );
+    }
+  });
+
+  await t.test("Category page dynamically sets noindex on empty categories and index on populated categories", () => {
+    const categoryPageContent = fs.readFileSync(
+      path.resolve(process.cwd(), "src/app/product-category/[...slug]/page.tsx"),
+      "utf-8"
+    );
+    assert.ok(
+      categoryPageContent.includes("robots: {\n      index: isPopulated,\n      follow: true,\n    }"),
+      "Category page must pass index: isPopulated to robots metadata"
     );
   });
 });

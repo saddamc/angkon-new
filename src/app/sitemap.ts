@@ -9,18 +9,77 @@ export const revalidate = 3600; // Cache and revalidate at edge once per hour
 const CANONICAL_BASE_URL = "https://www.angkon.net";
 
 /**
- * Traverses category tree recursively to collect all active public category paths.
+ * Computes all category IDs that have at least one active product,
+ * including parent and linked-parent categories that inherit child products.
  */
-function collectCategoryPaths(nodes: CategoryNode[], parentSlugs: string[] = []): string[] {
+function getPopulatedCategoryIds(nodes: CategoryNode[], products: WooProduct[]): Set<number> {
+  const populated = new Set<number>();
+  for (const product of products) {
+    if (Array.isArray(product.categories)) {
+      for (const cat of product.categories) {
+        if (cat.id) populated.add(cat.id);
+      }
+    }
+  }
+
+  const flatNodes: CategoryNode[] = [];
+  function flatten(list: CategoryNode[]) {
+    for (const item of list) {
+      flatNodes.push(item);
+      if (Array.isArray(item.children) && item.children.length > 0) {
+        flatten(item.children);
+      }
+    }
+  }
+  flatten(nodes);
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of flatNodes) {
+      if (populated.has(node.id)) {
+        if (node.parent && !populated.has(node.parent)) {
+          populated.add(node.parent);
+          changed = true;
+        }
+        const linkedParents = (node as { linked_parents?: number[] }).linked_parents;
+        if (Array.isArray(linkedParents)) {
+          for (const lp of linkedParents) {
+            if (!populated.has(lp)) {
+              populated.add(lp);
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return populated;
+}
+
+/**
+ * Traverses category tree recursively to collect all active public category paths.
+ * Excludes categories that currently have 0 products to protect crawl budget and prevent soft-404s.
+ */
+function collectCategoryPaths(
+  nodes: CategoryNode[],
+  parentSlugs: string[] = [],
+  populatedCategoryIds?: Set<number>
+): string[] {
   const paths: string[] = [];
   for (const node of nodes) {
     if (!node.slug || (node as { is_active?: boolean }).is_active === false) {
       continue;
     }
+    // Only include categories that actually contain published products
+    if (populatedCategoryIds && !populatedCategoryIds.has(node.id)) {
+      continue;
+    }
     const current = [...parentSlugs, node.slug];
     paths.push(current.join("/"));
     if (Array.isArray(node.children) && node.children.length > 0) {
-      paths.push(...collectCategoryPaths(node.children, current));
+      paths.push(...collectCategoryPaths(node.children, current, populatedCategoryIds));
     }
   }
   return paths;
@@ -56,10 +115,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   addEntry("/products", { changeFrequency: "daily", priority: 0.9 });
   addEntry("/sale", { changeFrequency: "daily", priority: 0.85 });
 
-  // Explicit Core Brand Categories (High Priority)
+  // Populated Core Brand Category (High Priority)
   addEntry("/product-category/women", { changeFrequency: "weekly", priority: 0.8 });
-  addEntry("/product-category/men", { changeFrequency: "weekly", priority: 0.8 });
-  addEntry("/product-category/accessories", { changeFrequency: "weekly", priority: 0.8 });
 
   // Institutional, Showroom, and Policy Pages
   addEntry("/about", { changeFrequency: "monthly", priority: 0.6 });
@@ -70,10 +127,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   addEntry("/privacy", { changeFrequency: "monthly", priority: 0.5 });
   addEntry("/terms", { changeFrequency: "monthly", priority: 0.5 });
 
-  // 2. Dynamic Categories from Tree
+  // 2. Fetch products & categories in parallel
+  let products: WooProduct[] = [];
+  let categoryTree: CategoryNode[] = [];
   try {
-    const categoryTree = await getCategoryTree().catch(() => [] as CategoryNode[]);
-    const paths = collectCategoryPaths(categoryTree);
+    [products, categoryTree] = await Promise.all([
+      getAllDbProducts().catch(() => []),
+      getCategoryTree().catch(() => [] as CategoryNode[]),
+    ]);
+  } catch (err) {
+    console.error("[Sitemap] Failed to load products or categories:", err);
+  }
+
+  // 3. Dynamic Populated Categories from Tree (excludes empty categories)
+  try {
+    const populatedIds = getPopulatedCategoryIds(categoryTree, products);
+    const paths = collectCategoryPaths(categoryTree, [], populatedIds);
     for (const catPath of paths) {
       addEntry(`/product-category/${catPath}`, {
         changeFrequency: "weekly",
@@ -84,9 +153,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[Sitemap] Failed to load dynamic categories:", catErr);
   }
 
-  // 3. Dynamic Products from Database
+  // 4. Dynamic Products from Database
   try {
-    const products: WooProduct[] = await getAllDbProducts().catch(() => []);
     for (const product of products) {
       if (!product.slug || typeof product.slug !== "string") continue;
       const cleanSlug = product.slug.trim().toLowerCase();

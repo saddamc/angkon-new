@@ -8,6 +8,7 @@ import { SubcategoryNavigation } from "@/components/categories/SubcategoryNaviga
 import { CategoryGrid } from "@/components/categories/CategoryGrid";
 import { CategorySidebar } from "@/components/categories/CategorySidebar";
 import { categoryDisplayName } from "@/utils/category-display";
+import { getCategorySeo } from "@/config/category-seo";
 
 export const revalidate = 300; // 5-minute ISR cache at the edge for instant loads
 
@@ -76,58 +77,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = categoryDisplayName(node.name);
   const canonicalPathSegments = path.map((n) => n.slug).join("/");
 
-  // Targeted commercial intent titles and descriptions for Bangladesh market
-  let seoTitle = `${name} | ANGKON`;
-  let seoDescription =
-    node.description ||
-    `Shop authentic ${name} at ANGKON. Premium ethnic fashion in Bangladesh with Cash on Delivery across all 64 districts.`;
+  // Check product count to avoid indexing empty thin-content categories
+  const { total } = await getProductsByCategorySlug(node.slug, {
+    page: 1,
+    perPage: 1,
+  });
+  const isPopulated = total > 0;
 
-  const normalizedSlug = node.slug.toLowerCase();
-  if (normalizedSlug === "ethnic-wear" || lookupSlug === "ethnic-wear") {
-    seoTitle = "Three-Piece Dresses & Luxury Embroidered Suits for Women | ANGKON BD";
-    seoDescription =
-      "Shop designer three-piece dresses and luxury embroidered suits for women in Bangladesh. Curated collections with Cash on Delivery across all 64 districts.";
-  } else if (normalizedSlug === "women") {
-    seoTitle = "Women's Ethnic Wear & Designer Outfits in Bangladesh | ANGKON";
-    seoDescription =
-      "Explore premium women's clothing at ANGKON. From exquisite embroidered three-piece ensembles to luxury festive attire, discover sophisticated fashion crafted for every occasion.";
-  } else if (normalizedSlug === "men") {
-    seoTitle = "Men's Ethnic Wear & Modern Heritage Attire in Bangladesh | ANGKON";
-    seoDescription =
-      "Shop contemporary ethnic wear for men in Bangladesh. Premium fabrics, precision tailoring, and heritage styles designed for sophistication.";
-  } else if (normalizedSlug === "accessories") {
-    seoTitle = "Women's & Men's Fashion Accessories in Bangladesh | ANGKON";
-    seoDescription =
-      "Complete your look with handcrafted luxury accessories at ANGKON. Premium caps, jewelry, and fashion essentials delivered nationwide.";
-  } else if (normalizedSlug.includes("tawakkal")) {
-    seoTitle = "Tawakkal Wada Collection — Luxury 3-Piece Embroidered Suits | ANGKON";
-    seoDescription =
-      "Shop the authentic Tawakkal Wada 3-piece collection in Bangladesh. Features premium embroidered long kameez, printed trousers, and coordinated gradient dupattas at BDT 7,990.";
-  } else if (normalizedSlug.includes("guzel") || normalizedSlug.includes("dastaan")) {
-    seoTitle = "Güzel Dastaan Designer Embroidered Suits | ANGKON";
-    seoDescription =
-      "Discover the Güzel Dastaan collection at ANGKON: luxury embroidered 3-piece suits featuring intricate zari needlework, pearl embellishments, and designer borders.";
-  } else if (normalizedSlug.includes("aiman")) {
-    seoTitle = "Aiman Aisha Festive Embroidered Suits & Gararas | ANGKON";
-    seoDescription =
-      "Shop Aiman Aisha luxury festive collections at ANGKON. Exquisite pastel floral embroidery, pearl detailing, and statement garara silhouettes with nationwide COD.";
-  } else if (normalizedSlug.includes("safa")) {
-    seoTitle = "Safa-Marwa Luxury Embroidered 3-Piece Suits | ANGKON";
-    seoDescription =
-      "Explore Safa-Marwa designer 3-piece suits at ANGKON. Striking contrast floral embroidery and delicate lace details tailored for festive celebrations.";
-  }
+  // Resolve customer-intent-focused title, description and H1
+  const seo = getCategorySeo(node.slug, name);
 
   return {
     title: {
-      absolute: seoTitle,
+      absolute: seo.title,
     },
-    description: seoDescription,
+    description: seo.description,
     alternates: {
       canonical: `/product-category/${canonicalPathSegments}`,
     },
+    robots: {
+      index: isPopulated,
+      follow: true,
+    },
     openGraph: {
-      title: seoTitle,
-      description: seoDescription,
+      title: seo.title,
+      description: seo.description,
       url: `/product-category/${canonicalPathSegments}`,
       ...(node.image?.src ? { images: [node.image.src] } : {}),
     },
@@ -170,6 +144,8 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
     orderby,
     order,
   });
+
+  const seo = getCategorySeo(node.slug, categoryDisplayName(node.name));
 
   const hasSubcategories = node.children.length > 0;
   const showSubcategories = hasSubcategories && page === 1;
@@ -215,7 +191,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
               <CategoryBreadcrumb path={path} basePrefix="/product-category" />
             </div>
             <div className="mb-5 sm:mb-6">
-              <CategoryHero category={node} productCount={total} />
+              <CategoryHero category={node} productCount={total} heading={seo.h1} />
             </div>
             {showSubcategories && (
               <div className="mb-8 sm:mb-10">

@@ -7,6 +7,7 @@ import {
   saveMetaCatalogSettings,
   type MetaCatalogSettings,
 } from "@/server/meta-catalog";
+import { getOrInitCatalogConfig } from "@/server/meta-catalog-connection";
 import { buildFeedUrl, resolveProductionBaseUrl, resolvePublicBaseUrl } from "@/lib/meta-catalog";
 
 export const dynamic = "force-dynamic";
@@ -111,6 +112,23 @@ export async function POST(request: NextRequest) {
     }
 
     const saved = await saveMetaCatalogSettings(updates, auth.tenantId);
+
+    // Keep dedicated MetaCatalogConfig model in sync with encrypted credentials
+    try {
+      const config = await getOrInitCatalogConfig(auth.tenantId);
+      if (updates.catalogId !== undefined) config.catalogId = normalizeMetaCatalogId(updates.catalogId);
+      if (updates.businessId !== undefined) config.businessId = String(updates.businessId).trim();
+      if (
+        typeof updates.catalogApiToken === "string" &&
+        !updates.catalogApiToken.includes("••••") &&
+        !updates.catalogApiToken.includes("***")
+      ) {
+        config.setAccessToken(updates.catalogApiToken);
+      }
+      await config.save();
+    } catch (syncErr) {
+      console.warn("MetaCatalogConfig sync warning:", syncErr);
+    }
 
     return NextResponse.json({
       success: true,

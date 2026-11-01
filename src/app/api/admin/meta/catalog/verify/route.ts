@@ -6,6 +6,7 @@ import {
   recordCatalogVerification,
   verifyCatalogApiAccess,
 } from "@/server/meta-catalog";
+import { verifyAndConnectCatalog } from "@/server/meta-catalog-connection";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,22 +32,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Run Stage 2 connection & permission verification
+    const stage2Result = await verifyAndConnectCatalog({
+      tenantId: auth.tenantId,
+      catalogId: settings.catalogId,
+      businessId: settings.businessId,
+      accessToken: settings.catalogApiToken,
+    });
+
     const verification = await verifyCatalogApiAccess(
       settings.catalogId,
       settings.catalogApiToken
     );
 
     const saved = await recordCatalogVerification(auth.tenantId, {
-      ok: verification.ok,
-      catalogName: verification.catalogName,
-      productCount: verification.productCount,
-      error: verification.error,
+      ok: stage2Result.ok && verification.ok,
+      catalogName: stage2Result.catalogName || verification.catalogName,
+      productCount: stage2Result.productCount !== undefined ? stage2Result.productCount : verification.productCount,
+      error: stage2Result.error || verification.error,
     });
 
     return NextResponse.json(
       {
-        ok: verification.ok,
-        verification,
+        ok: stage2Result.ok && verification.ok,
+        verification: {
+          ...verification,
+          error: stage2Result.error || verification.error,
+        },
+        stage2: stage2Result,
         settings: getPublicMetaCatalogSettings(saved),
       },
       { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } }
@@ -59,3 +72,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

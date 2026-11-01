@@ -52,6 +52,36 @@ interface FeedInfo {
   warnings: string[];
 }
 
+interface MetaConfigSafe {
+  businessId?: string;
+  catalogId?: string;
+  productFeedId?: string;
+  graphApiVersion?: string;
+  feedName?: string;
+  feedUrl?: string;
+  feedSchedule?: {
+    interval: "HOURLY" | "DAILY" | "WEEKLY";
+    hour: number;
+    minute: number;
+  };
+  hasToken?: boolean;
+  maskedToken?: string;
+  connectionStatus?: string;
+  feedRegistrationStatus?: string;
+  catalogName?: string;
+  catalogProductCount?: number;
+  lastConnectionCheckAt?: string;
+  lastSuccessfulImportAt?: string;
+  lastImportStatus?: string;
+  lastImportError?: string;
+  lastImportStats?: {
+    productsProcessed: number;
+    productsAccepted: number;
+    productsRejected: number;
+    errorCount: number;
+  };
+}
+
 interface CatalogSettingsResponse {
   settings: PublicMetaCatalogSettings;
   feed: FeedInfo;
@@ -253,6 +283,7 @@ function DiagnosticCard({
 export default function MetaCatalogPage() {
   const [settings, setSettings] = useState<PublicAdminPixelSettings | null>(null);
   const [catalogSettings, setCatalogSettings] = useState<PublicMetaCatalogSettings | null>(null);
+  const [metaConfig, setMetaConfig] = useState<MetaConfigSafe | null>(null);
   const [feedInfo, setFeedInfo] = useState<FeedInfo | null>(null);
   const [diagnostics, setDiagnostics] = useState<CatalogDiagnostics | null>(null);
   const [productionProbe, setProductionProbe] = useState<ProductionFeedProbe | null>(null);
@@ -260,6 +291,8 @@ export default function MetaCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [probeLoading, setProbeLoading] = useState(false);
+  const [registeringFeed, setRegisteringFeed] = useState(false);
+  const [checkingImport, setCheckingImport] = useState(false);
   const [copiedFeed, setCopiedFeed] = useState(false);
   const [copiedLocal, setCopiedLocal] = useState(false);
   const [catalogId, setCatalogId] = useState("");
@@ -283,12 +316,13 @@ export default function MetaCatalogPage() {
     setRefreshing(true);
 
     try {
-      const [pixelResult, catalogResult, diagnosticsResult, previewResult] =
+      const [pixelResult, catalogResult, diagnosticsResult, previewResult, configResult] =
         await Promise.allSettled([
           fetch("/api/admin/settings/pixel", { cache: "no-store" }),
           fetch("/api/admin/meta/catalog/settings", { cache: "no-store" }),
           fetch("/api/admin/meta/catalog/diagnostics", { cache: "no-store" }),
           fetch("/api/meta/catalog?format=json&per_page=20", { cache: "no-store" }),
+          fetch("/api/admin/meta/catalog/config", { cache: "no-store" }),
         ]);
 
       if (pixelResult.status === "fulfilled" && pixelResult.value.ok) {
@@ -301,6 +335,18 @@ export default function MetaCatalogPage() {
         setCatalogSettings(data.settings);
         setFeedInfo(data.feed);
         if (!formHydratedRef.current) hydrateForm(data.settings);
+      }
+
+      if (configResult.status === "fulfilled" && configResult.value.ok) {
+        const data = (await configResult.value.json()) as { config?: MetaConfigSafe };
+        if (data.config) {
+          setMetaConfig(data.config);
+          if (!formHydratedRef.current && (data.config.catalogId || data.config.businessId)) {
+            if (data.config.catalogId) setCatalogId(data.config.catalogId);
+            if (data.config.businessId) setBusinessId(data.config.businessId);
+            formHydratedRef.current = true;
+          }
+        }
       }
 
       if (diagnosticsResult.status === "fulfilled" && diagnosticsResult.value.ok) {
@@ -479,6 +525,95 @@ export default function MetaCatalogPage() {
       });
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const registerScheduledFeed = async () => {
+    setRegisteringFeed(true);
+    setFormMessage(null);
+    try {
+      const response = await fetch("/api/admin/meta/catalog/register-feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        productFeedId?: string;
+        action?: string;
+      };
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to register scheduled feed with Meta.");
+      }
+      setFormMessage({
+        type: "success",
+        text: `Feed registered with Meta Commerce Manager! Feed ID: ${data.productFeedId} (${data.action === "created_new" ? "New Feed Registered" : "Updated Existing Feed"}).`,
+      });
+      await loadData();
+    } catch (error) {
+      setFormMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to register feed.",
+      });
+    } finally {
+      setRegisteringFeed(false);
+    }
+  };
+
+  const checkImportStatusFromMeta = async () => {
+    setCheckingImport(true);
+    setFormMessage(null);
+    try {
+      const response = await fetch("/api/admin/meta/catalog/import-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        importStatus?: string;
+        stats?: { productsAccepted?: number; productsRejected?: number };
+      };
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to fetch import status.");
+      }
+      setFormMessage({
+        type: "success",
+        text: `Meta import status: ${data.importStatus} (${data.stats?.productsAccepted || 0} accepted, ${data.stats?.productsRejected || 0} rejected).`,
+      });
+      await loadData();
+    } catch (error) {
+      setFormMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to query import status.",
+      });
+    } finally {
+      setCheckingImport(false);
+    }
+  };
+
+  const disconnectFeedRegistration = async () => {
+    if (!confirm("Are you sure you want to remove this product feed registration?")) return;
+    setRegisteringFeed(true);
+    setFormMessage(null);
+    try {
+      const response = await fetch("/api/admin/meta/catalog/register-feed", {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as { message?: string };
+      setFormMessage({
+        type: "success",
+        text: data.message || "Feed registration removed.",
+      });
+      await loadData();
+    } catch (_error) {
+      setFormMessage({
+        type: "error",
+        text: "Failed to disconnect feed registration.",
+      });
+    } finally {
+      setRegisteringFeed(false);
     }
   };
 
@@ -971,6 +1106,182 @@ export default function MetaCatalogPage() {
         </div>
       </div>
 
+      {/* ── 4.5. Stage 2: Scheduled Feed Registration & Import Monitoring ── */}
+      <div className="rounded-2xl border border-purple-200/90 bg-white p-5 shadow-xs sm:p-6">
+        <div className="flex flex-col gap-2 border-b border-stone-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-[10px] font-bold text-purple-700">
+                STAGE 2 INTEGRATION
+              </span>
+              <h2 className="text-sm font-bold text-stone-900">
+                Meta Commerce Scheduled Feed Registration &amp; Monitoring
+              </h2>
+            </div>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">
+              Registers ANGKON&apos;s verified XML feed URL directly with Meta&apos;s Product Feeds API and retrieves actual ingestion telemetry from Meta Commerce Manager.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${
+                metaConfig?.feedRegistrationStatus === "ACTIVE"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : metaConfig?.feedRegistrationStatus === "FAILED"
+                  ? "border-rose-200 bg-rose-50 text-rose-800"
+                  : "border-stone-200 bg-stone-50 text-stone-700"
+              }`}
+            >
+              Feed: {metaConfig?.feedRegistrationStatus || "UNREGISTERED"}
+            </span>
+            {metaConfig?.productFeedId && (
+              <span className="font-mono text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                ID: {metaConfig.productFeedId}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                  Registered Feed Name
+                </span>
+                <p className="mt-1 text-xs font-semibold text-stone-900">
+                  {metaConfig?.feedName || "ANGKON Production Catalog Feed"}
+                </p>
+                <p className="mt-0.5 text-[11px] text-stone-500">
+                  Schedule: Daily at 04:00 AM BD Time (UTC+6)
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                  Graph API Version
+                </span>
+                <p className="mt-1 font-mono text-xs font-semibold text-stone-900">
+                  {metaConfig?.graphApiVersion || "v22.0"}
+                </p>
+                <p className="mt-0.5 text-[11px] text-stone-500">
+                  Credentials encrypted with AES-256-GCM at rest
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => void registerScheduledFeed()}
+                disabled={registeringFeed || (!catalogSettings?.catalogId && !metaConfig?.catalogId)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {registeringFeed ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Activity className="h-3.5 w-3.5" />
+                )}
+                <span>
+                  {metaConfig?.productFeedId
+                    ? "Update Feed Schedule on Meta"
+                    : "Register Scheduled Feed with Meta"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void checkImportStatusFromMeta()}
+                disabled={checkingImport || !metaConfig?.productFeedId}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {checkingImport ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                <span>Fetch Meta Import Telemetry</span>
+              </button>
+
+              {metaConfig?.productFeedId && (
+                <button
+                  type="button"
+                  onClick={() => void disconnectFeedRegistration()}
+                  disabled={registeringFeed}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 transition hover:bg-stone-50 disabled:opacity-50"
+                >
+                  <XCircle className="h-3.5 w-3.5 text-stone-400" />
+                  <span>Unbind Feed</span>
+                </button>
+              )}
+            </div>
+
+            {metaConfig?.lastImportError && (
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <div>
+                  <strong>Meta Ingestion Warning:</strong> {metaConfig.lastImportError}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-purple-100 bg-purple-50/40 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-stone-900">Latest Meta Import Batch</h3>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                  metaConfig?.lastImportStatus === "SUCCESS"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : metaConfig?.lastImportStatus === "PARTIAL"
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : metaConfig?.lastImportStatus === "FAILED"
+                    ? "border-rose-200 bg-rose-50 text-rose-800"
+                    : metaConfig?.lastImportStatus === "RUNNING"
+                    ? "border-blue-200 bg-blue-50 text-blue-800"
+                    : "border-stone-200 bg-stone-100 text-stone-600"
+                }`}
+              >
+                {metaConfig?.lastImportStatus || "NOT_STARTED"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-lg bg-white p-2.5 border border-purple-100/60 shadow-2xs">
+                <span className="block text-[10px] font-bold text-stone-500 uppercase">Processed</span>
+                <span className="text-lg font-black text-stone-900">
+                  {metaConfig?.lastImportStats?.productsProcessed ?? 0}
+                </span>
+              </div>
+              <div className="rounded-lg bg-white p-2.5 border border-purple-100/60 shadow-2xs">
+                <span className="block text-[10px] font-bold text-emerald-600 uppercase">Accepted</span>
+                <span className="text-lg font-black text-emerald-700">
+                  {metaConfig?.lastImportStats?.productsAccepted ?? 0}
+                </span>
+              </div>
+              <div className="rounded-lg bg-white p-2.5 border border-purple-100/60 shadow-2xs">
+                <span className="block text-[10px] font-bold text-rose-600 uppercase">Rejected</span>
+                <span className="text-lg font-black text-rose-700">
+                  {metaConfig?.lastImportStats?.productsRejected ?? 0}
+                </span>
+              </div>
+              <div className="rounded-lg bg-white p-2.5 border border-purple-100/60 shadow-2xs">
+                <span className="block text-[10px] font-bold text-amber-600 uppercase">Errors</span>
+                <span className="text-lg font-black text-amber-700">
+                  {metaConfig?.lastImportStats?.errorCount ?? 0}
+                </span>
+              </div>
+            </div>
+
+            <p className="border-t border-purple-200/50 pt-2 text-[10px] leading-relaxed text-stone-600">
+              {metaConfig?.lastSuccessfulImportAt
+                ? `Last successful import confirmed by Meta: ${formatDateTime(metaConfig.lastSuccessfulImportAt)}`
+                : "No successful import records found yet. Click 'Fetch Meta Import Telemetry' after Meta runs the first scheduled pull."}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── 5. Truthful diagnostics ── */}
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1101,21 +1412,61 @@ export default function MetaCatalogPage() {
 
           <DiagnosticCard
             title="Last successful Meta fetch"
-            stateLabel="Not available"
-            tone="neutral"
-            detail="Meta owns the import schedule. ANGKON cannot truthfully report a successful Meta fetch without an authorized Catalog API connection and Meta-side import data."
-            meta={catalogSettings?.lastVerifiedAt ? "API access verified, import time still unknown" : "Requires Catalog API access + Meta diagnostics"}
+            stateLabel={
+              metaConfig?.lastSuccessfulImportAt
+                ? "Import confirmed"
+                : metaConfig?.lastImportStatus === "RUNNING"
+                ? "Processing"
+                : "Not available"
+            }
+            tone={
+              metaConfig?.lastSuccessfulImportAt
+                ? "success"
+                : metaConfig?.lastImportStatus === "RUNNING"
+                ? "pending"
+                : "neutral"
+            }
+            detail={
+              metaConfig?.lastSuccessfulImportAt
+                ? `Meta confirmed successful product import on ${formatDateTime(metaConfig.lastSuccessfulImportAt)} with ${metaConfig.lastImportStats?.productsAccepted || 0} accepted products.`
+                : "Meta owns the import schedule. ANGKON cannot truthfully report a successful Meta fetch without an authorized Catalog API connection and Meta-side import data."
+            }
+            meta={
+              metaConfig?.lastSuccessfulImportAt
+                ? `Confirmed by Meta · Feed ID: ${metaConfig.productFeedId || "registered"}`
+                : catalogSettings?.lastVerifiedAt
+                ? "API access verified, import time still unknown"
+                : "Requires Catalog API access + Meta diagnostics"
+            }
             icon={<Clock3 className="h-4 w-4" />}
           />
 
           <DiagnosticCard
             title="Product import errors"
             stateLabel={
-              invalidCount > 0 ? `${invalidCount} local error${invalidCount === 1 ? "" : "s"}` : "No local errors"
+              metaConfig?.lastImportStats?.productsRejected
+                ? `${metaConfig.lastImportStats.productsRejected} Meta rejected`
+                : invalidCount > 0
+                ? `${invalidCount} local error${invalidCount === 1 ? "" : "s"}`
+                : "No errors"
             }
-            tone={invalidCount > 0 ? "warning" : "success"}
-            detail="Local feed validation errors are shown below. Meta-side product import errors are only visible in Commerce Manager or with authorized Catalog API access."
-            meta="Meta import errors: unavailable"
+            tone={
+              (metaConfig?.lastImportStats?.productsRejected || 0) > 0 || invalidCount > 0
+                ? "warning"
+                : "success"
+            }
+            detail={
+              metaConfig?.lastImportError
+                ? `Meta reported: ${metaConfig.lastImportError}`
+                : invalidCount > 0
+                ? "Local feed validation errors are shown below. Fix them before relying on Meta retargeting."
+                : "No local or Meta import errors recorded."
+            }
+            meta={
+              metaConfig?.lastImportStats
+                ? `Accepted: ${metaConfig.lastImportStats.productsAccepted} · Rejected: ${metaConfig.lastImportStats.productsRejected}`
+                : "Meta import errors: query telemetry above"
+            }
             icon={<AlertTriangle className="h-4 w-4" />}
           />
         </div>

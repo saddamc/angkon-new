@@ -6,12 +6,12 @@ import { ProductsShell } from "@/components/product/products-shell";
 import { PageHeader } from "@/components/sections/page-header";
 
 const COLLECTION_PILLS = [
-  { label: "Men", href: "/product-category/men" },
   { label: "Women", href: "/product-category/women" },
-  { label: "Pants", href: "/pants" },
-  { label: "Tees", href: "/t-shirt" },
-  { label: "Polos", href: "/polos" },
-  { label: "Accessories", href: "/accessories" },
+  { label: "Ethnic Wear", href: "/product-category/women/ethnic-wear" },
+  { label: "Tawakkal Wada", href: "/product-category/women/ethnic-wear/tawakkal-wada" },
+  { label: "Güzel", href: "/product-category/women/ethnic-wear/guzel" },
+  { label: "Aiman Aisha", href: "/product-category/women/ethnic-wear/aiman-aisha" },
+  { label: "Safa-Marwa", href: "/product-category/women/ethnic-wear/safa-marwa" },
   { label: "Sale", href: "/sale" },
 ];
 

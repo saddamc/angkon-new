@@ -38,6 +38,43 @@ const CATEGORY_PREVIEW = 10;
 
 // ─── Dual Range Slider ────────────────────────────────────────────────────────
 
+function buildCategoryHierarchyMap(categories: WooCategory[]) {
+  const byId = new Map<number, WooCategory>();
+  for (const c of categories) {
+    byId.set(c.id, c);
+  }
+
+  const descendantSlugsBySlug = new Map<string, Set<string>>();
+
+  for (const cat of categories) {
+    const descendantIds = new Set<number>([cat.id]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const c of categories) {
+        const isDirectChild = Boolean(c.parent && descendantIds.has(c.parent));
+        const isLinkedChild = Boolean(
+          Array.isArray(c.linked_parents) &&
+            c.linked_parents.some((lp: number) => descendantIds.has(lp))
+        );
+        if ((isDirectChild || isLinkedChild) && !descendantIds.has(c.id)) {
+          descendantIds.add(c.id);
+          added = true;
+        }
+      }
+    }
+
+    const slugs = new Set<string>();
+    for (const id of descendantIds) {
+      const found = byId.get(id);
+      if (found) slugs.add(found.slug.toLowerCase());
+    }
+    descendantSlugsBySlug.set(cat.slug.toLowerCase(), slugs);
+  }
+
+  return { descendantSlugsBySlug };
+}
+
 function DualRangeSlider({
   min,
   max,
@@ -145,11 +182,15 @@ function SidebarSection({
 
 function Sidebar({
   categories,
+  products,
+  hierarchyMap,
   filters,
   onFiltersChange,
   onClear,
 }: {
   categories: CategoryItem[];
+  products: WooProduct[];
+  hierarchyMap: { descendantSlugsBySlug: Map<string, Set<string>> };
   filters: Filters;
   onFiltersChange: (patch: Partial<Filters>) => void;
   onClear: () => void;
@@ -162,10 +203,25 @@ function Sidebar({
 
   const [showAllCategories, setShowAllCategories] = useState(false);
   const usableCategories = useMemo(() => {
-    const withProducts = categories.filter((c) => (c.count ?? 0) > 0);
-    const topLevel = withProducts.filter((c) => !c.parent);
-    return topLevel.length > 0 ? topLevel : withProducts;
+    // All active top-level main categories configured by admin
+    const mains = categories.filter(
+      (c) => (!c.parent || c.parent === 0) && (c as { is_active?: boolean }).is_active !== false
+    );
+    return mains.length > 0 ? mains : categories.filter((c) => (c as { is_active?: boolean }).is_active !== false);
   }, [categories]);
+
+  const getLiveProductCount = useCallback(
+    (catSlug: string) => {
+      const targetSlugs =
+        hierarchyMap.descendantSlugsBySlug.get(catSlug.toLowerCase()) ||
+        new Set([catSlug.toLowerCase()]);
+      return products.filter((p) =>
+        p.categories.some((c) => targetSlugs.has(c.slug.toLowerCase()))
+      ).length;
+    },
+    [hierarchyMap, products]
+  );
+
   const visibleCategories = showAllCategories
     ? usableCategories
     : usableCategories.slice(0, CATEGORY_PREVIEW);
@@ -232,7 +288,7 @@ function Sidebar({
                     </span>
                   </div>
                 </div>
-                <span className="text-[11px] text-white/50">{cat.count}</span>
+                <span className="text-[11px] text-white/50">{getLiveProductCount(cat.slug)}</span>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -333,6 +389,8 @@ function MobileDrawer({
   open,
   onClose,
   categories,
+  products,
+  hierarchyMap,
   filters,
   onFiltersChange,
   onClear,
@@ -340,6 +398,8 @@ function MobileDrawer({
   open: boolean;
   onClose: () => void;
   categories: CategoryItem[];
+  products: WooProduct[];
+  hierarchyMap: { descendantSlugsBySlug: Map<string, Set<string>> };
   filters: Filters;
   onFiltersChange: (patch: Partial<Filters>) => void;
   onClear: () => void;
@@ -369,6 +429,8 @@ function MobileDrawer({
         </div>
         <Sidebar
           categories={categories}
+          products={products}
+          hierarchyMap={hierarchyMap}
           filters={filters}
           onFiltersChange={onFiltersChange}
           onClear={onClear}
@@ -395,6 +457,10 @@ export function ProductsShell({
   categories: WooCategory[];
 }) {
   const searchParams = useSearchParams();
+
+  const hierarchyMap = useMemo(() => {
+    return buildCategoryHierarchyMap(categories);
+  }, [categories]);
 
   const [filters, setFilters] = useState<Filters>({
     search: searchParams.get("q") || "",
@@ -430,7 +496,18 @@ export function ProductsShell({
     }
 
     if (filters.categories.length > 0) {
-      result = result.filter((p) => p.categories.some((c) => filters.categories.includes(c.slug)));
+      const activeTargetSlugs = new Set<string>();
+      for (const catSlug of filters.categories) {
+        const descendants = hierarchyMap.descendantSlugsBySlug.get(catSlug.toLowerCase());
+        if (descendants && descendants.size > 0) {
+          for (const s of descendants) activeTargetSlugs.add(s);
+        } else {
+          activeTargetSlugs.add(catSlug.toLowerCase());
+        }
+      }
+      result = result.filter((p) =>
+        p.categories.some((c) => activeTargetSlugs.has(c.slug.toLowerCase()))
+      );
     }
 
     result = result.filter((p) => {
@@ -458,7 +535,7 @@ export function ProductsShell({
     }
 
     return result;
-  }, [products, filters]);
+  }, [products, filters, hierarchyMap]);
 
   // Reset to page 1 whenever the filtered list changes (adjust state during render)
   const [prevFiltered, setPrevFiltered] = useState(filtered);
@@ -506,6 +583,8 @@ export function ProductsShell({
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         categories={categories}
+        products={products}
+        hierarchyMap={hierarchyMap}
         filters={filters}
         onFiltersChange={patchFilters}
         onClear={clearFilters}
@@ -517,6 +596,8 @@ export function ProductsShell({
           <div className="sticky top-24">
             <Sidebar
               categories={categories}
+              products={products}
+              hierarchyMap={hierarchyMap}
               filters={filters}
               onFiltersChange={patchFilters}
               onClear={clearFilters}

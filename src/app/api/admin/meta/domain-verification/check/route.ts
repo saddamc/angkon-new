@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPixelSettings, savePixelSettings } from "@/server/pixel-settings";
 import { requireSuperAdminSession } from "@/server/admin-auth";
 import {
   CANONICAL_ROOT_DOMAIN,
   CANONICAL_SITE_URL,
   CANONICAL_NAMESERVERS,
-  verifyDnsTxtRecord,
-  verifyHtmlMetaTag,
+  listTenantDomains,
+  checkDomainHealth,
+  recordOwnershipConfirmation,
+  addTenantDomain,
+  deleteTenantDomain,
+  getDomainAuditHistory,
+  normalizeRootDomain,
+  ensureTenantPrimaryDomain,
 } from "@/server/meta-domain";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/admin/meta/domain-verification/check
- * Runs live DNS TXT lookup on "angkon.net" (Namecheap) and storefront HTML <meta> tag check.
- * Strictly separates DNS TXT status, HTML tag status, and Meta Business Manager ownership status.
+ * Returns full domain verification overview, multi-domain registry, live diagnostics, and audit history.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,96 +27,85 @@ export async function GET(request: NextRequest) {
       return auth.response || NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const settings = await getPixelSettings(auth.tenantId);
-    const token = (settings.domainVerificationToken || "").trim();
-    const verificationMethod = settings.domainVerificationMethod || "dns_txt";
+    const { searchParams } = new URL(request.url);
+    const requestedDomain = searchParams.get("domain")?.trim();
+    const runLiveCheck = searchParams.get("live") === "true";
 
-    if (!token) {
-      return NextResponse.json({
-        ok: true,
-        domain: CANONICAL_ROOT_DOMAIN,
-        nameservers: CANONICAL_NAMESERVERS,
-        tokenConfigured: false,
-        token: "",
-        verificationMethod,
-        dnsTxt: {
-          status: "NOT_FOUND",
-          domain: CANONICAL_ROOT_DOMAIN,
-          recordsExamined: 0,
-          nameservers: CANONICAL_NAMESERVERS,
-          allTxtRecords: [],
-          details: "No Meta Domain Verification Token is configured in store settings.",
-        },
-        htmlMetaTag: {
-          status: "NOT_CHECKED",
-          url: CANONICAL_SITE_URL,
-          details: "Token not configured.",
-        },
-        metaOwnership: {
-          status: "NEEDS_VERIFICATION",
-          verified: false,
-          verifiedAt: null,
-          source: null,
-          confirmedBy: null,
-        },
-        message: "No Meta Domain Verification Token is configured. Please enter and save the token from Meta Business Manager.",
+    const tenantId = auth.tenantId;
+
+    // Ensure primary domain (angkon.net) is initialized
+    await ensureTenantPrimaryDomain(tenantId);
+
+    // List all tenant-scoped domains
+    const domains = await listTenantDomains(tenantId);
+
+    const targetDomain = requestedDomain
+      ? normalizeRootDomain(requestedDomain)
+      : (domains.find((d) => d.isPrimary)?.domain || CANONICAL_ROOT_DOMAIN);
+
+    let activeDomainDoc = domains.find((d) => d.domain === targetDomain) || domains[0];
+
+    // Optionally run a live check if requested, or if never checked before
+    let liveDnsResult = null;
+    let liveHtmlResult = null;
+
+    if (runLiveCheck || !activeDomainDoc.lastCheckedAt) {
+      const checkRes = await checkDomainHealth({
+        tenantId,
+        domainName: targetDomain,
+        actor: auth.user || "super_admin",
       });
+      activeDomainDoc = checkRes.domainDoc;
+      liveDnsResult = checkRes.dnsResult;
+      liveHtmlResult = checkRes.htmlResult;
     }
 
-    // 1. Live DNS TXT Verification on root domain (angkon.net directly, never www.angkon.net)
-    const dnsResult = await verifyDnsTxtRecord(CANONICAL_ROOT_DOMAIN, token, { timeoutMs: 6000 });
-
-    // 2. Live Storefront HTML <meta> Tag Verification
-    const htmlResult = await verifyHtmlMetaTag(CANONICAL_SITE_URL, token, { timeoutMs: 6000 });
-
-    // 3. Meta Business Manager Ownership Status
-    // Spec rule: Do not automatically mark ownership verified just because DNS is detected.
-    const isMetaOwnershipVerified = Boolean(settings.metaOwnershipVerified);
-    const metaOwnershipStatus: "VERIFIED" | "NEEDS_VERIFICATION" = isMetaOwnershipVerified
-      ? "VERIFIED"
-      : "NEEDS_VERIFICATION";
-
-    let summaryMessage = "";
-    if (dnsResult.status === "DETECTED") {
-      summaryMessage = `DNS TXT record verified on ${CANONICAL_ROOT_DOMAIN} (${CANONICAL_NAMESERVERS.join(", ")}).`;
-    } else if (dnsResult.status === "ERROR") {
-      summaryMessage = `DNS TXT verification error on ${CANONICAL_ROOT_DOMAIN}: ${dnsResult.error}`;
-    } else {
-      summaryMessage = `DNS TXT record not found on ${CANONICAL_ROOT_DOMAIN}. Examined ${dnsResult.recordsExamined} records.`;
-    }
+    // Retrieve recent append-only audit trail
+    const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
 
     return NextResponse.json({
       ok: true,
-      domain: CANONICAL_ROOT_DOMAIN,
+      domain: activeDomainDoc.domain,
+      isPrimary: activeDomainDoc.isPrimary,
       nameservers: CANONICAL_NAMESERVERS,
-      tokenConfigured: true,
-      token,
-      verificationMethod,
-      dnsTxt: {
-        status: dnsResult.status,
-        domain: dnsResult.domain,
-        recordsExamined: dnsResult.recordsExamined,
-        matchedRecord: dnsResult.matchedRecord,
-        allTxtRecords: dnsResult.allTxtRecords,
-        nameservers: dnsResult.nameservers,
-        details: dnsResult.details,
-        error: dnsResult.error,
-      },
-      htmlMetaTag: {
-        status: htmlResult.status,
-        url: htmlResult.url,
-        detectedToken: htmlResult.detectedToken,
-        details: htmlResult.details,
-        error: htmlResult.error,
-      },
-      metaOwnership: {
-        status: metaOwnershipStatus,
-        verified: isMetaOwnershipVerified,
-        verifiedAt: settings.metaOwnershipVerifiedAt || null,
-        source: settings.metaOwnershipSource || null,
-        confirmedBy: settings.metaOwnershipConfirmedBy || null,
-      },
-      message: summaryMessage,
+      verificationToken: activeDomainDoc.verificationToken,
+      verificationMethod: activeDomainDoc.verificationMethod,
+      lifecycleState: activeDomainDoc.lifecycleState,
+      dnsStatus: activeDomainDoc.dnsStatus,
+      htmlStatus: activeDomainDoc.htmlStatus,
+      metaOwnershipStatus: activeDomainDoc.metaOwnershipStatus,
+      metaOwnershipVerified: activeDomainDoc.metaOwnershipVerified,
+      metaOwnershipVerifiedAt: activeDomainDoc.metaOwnershipVerifiedAt,
+      metaOwnershipSource: activeDomainDoc.metaOwnershipSource,
+      metaOwnershipConfirmedBy: activeDomainDoc.metaOwnershipConfirmedBy,
+      lastCheckedAt: activeDomainDoc.lastCheckedAt,
+      lastSuccessfulCheckAt: activeDomainDoc.lastSuccessfulCheckAt,
+      lastFailedCheckAt: activeDomainDoc.lastFailedCheckAt,
+      lastExaminedRecords: activeDomainDoc.lastExaminedRecords || [],
+      lastMatchedRecord: activeDomainDoc.lastMatchedRecord,
+      lastDetails: activeDomainDoc.lastDetails,
+      lastError: activeDomainDoc.lastError,
+      domains: domains.map((d) => ({
+        id: String(d._id),
+        domain: d.domain,
+        isPrimary: d.isPrimary,
+        lifecycleState: d.lifecycleState,
+        dnsStatus: d.dnsStatus,
+        htmlStatus: d.htmlStatus,
+        metaOwnershipStatus: d.metaOwnershipStatus,
+        metaOwnershipVerified: d.metaOwnershipVerified,
+        verificationMethod: d.verificationMethod,
+        lastCheckedAt: d.lastCheckedAt,
+      })),
+      liveResults: liveDnsResult
+        ? {
+            dns: liveDnsResult,
+            html: liveHtmlResult,
+          }
+        : null,
+      auditHistory,
+      siteUrl: CANONICAL_SITE_URL,
+      message: `Domain '${activeDomainDoc.domain}' status: ${activeDomainDoc.lifecycleState}.`,
     });
   } catch (error) {
     console.error("GET /api/admin/meta/domain-verification/check error:", error);
@@ -125,7 +118,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/admin/meta/domain-verification/check
- * Allows an authorized super-admin to securely record or toggle confirmed Meta Business Manager ownership.
+ * Performs management operations: manual recheck, ownership confirmation, adding/deleting domains.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -135,49 +128,111 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { action, verified, source, verificationMethod } = body;
+    const { action, domain, verified, source, customToken, verificationMethod, limit } = body;
+    const tenantId = auth.tenantId;
+    const actor = auth.user || "super_admin";
 
-    if (action !== "confirm_meta_ownership") {
-      return NextResponse.json({ ok: false, error: "Invalid action" }, { status: 400 });
+    const targetDomain = domain ? normalizeRootDomain(domain) : CANONICAL_ROOT_DOMAIN;
+
+    // 1. Action: Manual DNS / HTML Recheck
+    if (action === "recheck_dns" || action === "check_domain") {
+      const checkRes = await checkDomainHealth({
+        tenantId,
+        domainName: targetDomain,
+        actor,
+      });
+
+      const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
+
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        domain: checkRes.domainDoc.domain,
+        lifecycleState: checkRes.domainDoc.lifecycleState,
+        dnsStatus: checkRes.domainDoc.dnsStatus,
+        htmlStatus: checkRes.domainDoc.htmlStatus,
+        metaOwnershipStatus: checkRes.domainDoc.metaOwnershipStatus,
+        dnsResult: checkRes.dnsResult,
+        htmlResult: checkRes.htmlResult,
+        lastCheckedAt: checkRes.domainDoc.lastCheckedAt,
+        lastSuccessfulCheckAt: checkRes.domainDoc.lastSuccessfulCheckAt,
+        lastFailedCheckAt: checkRes.domainDoc.lastFailedCheckAt,
+        auditHistory,
+        message: checkRes.dnsResult.details,
+      });
     }
 
-    const currentSettings = await getPixelSettings(auth.tenantId);
-
-    const isVerified = verified !== false;
-    const updatedSettings = {
-      ...currentSettings,
-      metaOwnershipVerified: isVerified,
-      metaOwnershipVerifiedAt: isVerified ? new Date().toISOString() : undefined,
-      metaOwnershipSource: isVerified
-        ? (source as "meta_business_manager" | "manual_confirmation") || "meta_business_manager"
-        : undefined,
-      metaOwnershipConfirmedBy: isVerified ? auth.user || "super_admin" : undefined,
-      domainVerificationMethod: verificationMethod || currentSettings.domainVerificationMethod || "dns_txt",
-    };
-
-    await savePixelSettings(updatedSettings, auth.tenantId);
-
-    return NextResponse.json({
-      ok: true,
-      success: true,
-      domain: CANONICAL_ROOT_DOMAIN,
-      metaOwnership: {
-        status: isVerified ? "VERIFIED" : "NEEDS_VERIFICATION",
+    // 2. Action: Record / Revoke Meta Business Manager Ownership
+    if (action === "confirm_meta_ownership") {
+      const isVerified = verified !== false;
+      const updatedDoc = await recordOwnershipConfirmation({
+        tenantId,
+        domainName: targetDomain,
         verified: isVerified,
-        verifiedAt: updatedSettings.metaOwnershipVerifiedAt || null,
-        source: updatedSettings.metaOwnershipSource || null,
-        confirmedBy: updatedSettings.metaOwnershipConfirmedBy || null,
-      },
-      verificationMethod: updatedSettings.domainVerificationMethod,
-      message: isVerified
-        ? `Meta Business Manager ownership recorded as VERIFIED for ${CANONICAL_ROOT_DOMAIN}.`
-        : `Meta Business Manager ownership status reset to NEEDS_VERIFICATION.`,
-    });
+        actor,
+        source: source || "meta_business_manager",
+      });
+
+      const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
+
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        domain: updatedDoc.domain,
+        lifecycleState: updatedDoc.lifecycleState,
+        metaOwnershipStatus: updatedDoc.metaOwnershipStatus,
+        metaOwnershipVerified: updatedDoc.metaOwnershipVerified,
+        metaOwnershipVerifiedAt: updatedDoc.metaOwnershipVerifiedAt,
+        metaOwnershipSource: updatedDoc.metaOwnershipSource,
+        metaOwnershipConfirmedBy: updatedDoc.metaOwnershipConfirmedBy,
+        auditHistory,
+        message: isVerified
+          ? `Meta Business Manager ownership recorded as VERIFIED for ${updatedDoc.domain}.`
+          : `Meta Business Manager ownership revoked for ${updatedDoc.domain}.`,
+      });
+    }
+
+    // 3. Action: Add New Tenant Domain
+    if (action === "add_domain") {
+      const newDomain = await addTenantDomain({
+        tenantId,
+        domainInput: domain,
+        customToken,
+        verificationMethod,
+        actor,
+      });
+
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        domain: newDomain,
+        message: `Domain '${newDomain.domain}' added successfully. Configured verification method: ${newDomain.verificationMethod}.`,
+      });
+    }
+
+    // 4. Action: Delete Secondary Domain
+    if (action === "delete_domain") {
+      const result = await deleteTenantDomain(tenantId, targetDomain, actor);
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        message: result.message,
+      });
+    }
+
+    // 5. Action: Get Audit History
+    if (action === "get_audit_history") {
+      const history = await getDomainAuditHistory(tenantId, targetDomain, Number(limit) || 50);
+      return NextResponse.json({
+        ok: true,
+        history,
+      });
+    }
+
+    return NextResponse.json({ ok: false, error: "Unsupported action." }, { status: 400 });
   } catch (error) {
     console.error("POST /api/admin/meta/domain-verification/check error:", error);
-    return NextResponse.json(
-      { ok: false, error: "Internal error saving Meta ownership verification" },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : "Internal error";
+    return NextResponse.json({ ok: false, error: msg }, { status: 400 });
   }
 }

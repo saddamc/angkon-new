@@ -20,9 +20,7 @@ const lato = Lato({
   display: "swap",
 });
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://www.angkon.net");
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.angkon.net";
 
 export async function generateMetadata(): Promise<Metadata> {
   const pixelSettings = await getPixelSettings().catch(() => null);
@@ -30,9 +28,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(siteUrl),
-    title: "ANGKON — House of Modern Heritage",
+    title: {
+      default: "ANGKON — Premium Women's Clothing & Designer Ethnic Wear in Bangladesh",
+      template: "%s | ANGKON",
+    },
     description:
-      "ANGKON — HOUSE OF MODERN HERITAGE. Premium fashion and modern heritage apparel crafted with excellence in Bangladesh. Showroom: HOUSE OF MODERN HERITAGE — H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212.",
+      "ANGKON — House of Modern Heritage. Discover luxury women's clothing, 3-piece embroidered suits, and designer ethnic wear in Bangladesh. Safe Cash on Delivery nationwide. Showroom: Niketan, Gulshan, Dhaka.",
     icons: {
       icon: "/logo.jpeg",
       shortcut: "/logo.jpeg",

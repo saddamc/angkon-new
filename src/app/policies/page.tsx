@@ -3,8 +3,13 @@ import Link from "next/link";
 import { MessageCircle, MapPin, Truck, RotateCcw, ShieldCheck, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Policies — ANGKON",
+  title: {
+    absolute: "Policies — Shipping, Returns & Privacy | ANGKON",
+  },
   description: "Official store policies for ANGKON: Delivery timing, refund and exchange policy, and privacy policy.",
+  alternates: {
+    canonical: "/policies",
+  },
 };
 
 export default function PoliciesPage() {

@@ -74,10 +74,63 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const node = path[path.length - 1];
   const name = categoryDisplayName(node.name);
+  const canonicalPathSegments = path.map((n) => n.slug).join("/");
+
+  // Targeted commercial intent titles and descriptions for Bangladesh market
+  let seoTitle = `${name} | ANGKON`;
+  let seoDescription =
+    node.description ||
+    `Shop authentic ${name} at ANGKON. Premium ethnic fashion in Bangladesh with Cash on Delivery across all 64 districts.`;
+
+  const normalizedSlug = node.slug.toLowerCase();
+  if (normalizedSlug === "ethnic-wear" || lookupSlug === "ethnic-wear") {
+    seoTitle = "Three-Piece Dresses & Luxury Embroidered Suits for Women | ANGKON BD";
+    seoDescription =
+      "Shop designer three-piece dresses and luxury embroidered suits for women in Bangladesh. Curated collections with Cash on Delivery across all 64 districts.";
+  } else if (normalizedSlug === "women") {
+    seoTitle = "Women's Ethnic Wear & Designer Outfits in Bangladesh | ANGKON";
+    seoDescription =
+      "Explore premium women's clothing at ANGKON. From exquisite embroidered three-piece ensembles to luxury festive attire, discover sophisticated fashion crafted for every occasion.";
+  } else if (normalizedSlug === "men") {
+    seoTitle = "Men's Ethnic Wear & Modern Heritage Attire in Bangladesh | ANGKON";
+    seoDescription =
+      "Shop contemporary ethnic wear for men in Bangladesh. Premium fabrics, precision tailoring, and heritage styles designed for sophistication.";
+  } else if (normalizedSlug === "accessories") {
+    seoTitle = "Women's & Men's Fashion Accessories in Bangladesh | ANGKON";
+    seoDescription =
+      "Complete your look with handcrafted luxury accessories at ANGKON. Premium caps, jewelry, and fashion essentials delivered nationwide.";
+  } else if (normalizedSlug.includes("tawakkal")) {
+    seoTitle = "Tawakkal Wada Collection — Luxury 3-Piece Embroidered Suits | ANGKON";
+    seoDescription =
+      "Shop the authentic Tawakkal Wada 3-piece collection in Bangladesh. Features premium embroidered long kameez, printed trousers, and coordinated gradient dupattas at BDT 7,990.";
+  } else if (normalizedSlug.includes("guzel") || normalizedSlug.includes("dastaan")) {
+    seoTitle = "Güzel Dastaan Designer Embroidered Suits | ANGKON";
+    seoDescription =
+      "Discover the Güzel Dastaan collection at ANGKON: luxury embroidered 3-piece suits featuring intricate zari needlework, pearl embellishments, and designer borders.";
+  } else if (normalizedSlug.includes("aiman")) {
+    seoTitle = "Aiman Aisha Festive Embroidered Suits & Gararas | ANGKON";
+    seoDescription =
+      "Shop Aiman Aisha luxury festive collections at ANGKON. Exquisite pastel floral embroidery, pearl detailing, and statement garara silhouettes with nationwide COD.";
+  } else if (normalizedSlug.includes("safa")) {
+    seoTitle = "Safa-Marwa Luxury Embroidered 3-Piece Suits | ANGKON";
+    seoDescription =
+      "Explore Safa-Marwa designer 3-piece suits at ANGKON. Striking contrast floral embroidery and delicate lace details tailored for festive celebrations.";
+  }
+
   return {
-    title: `${name} | ANGKON`,
-    description: node.description || `Shop ${name} at ANGKON.`,
-    ...(node.image?.src ? { openGraph: { images: [node.image.src] } } : {}),
+    title: {
+      absolute: seoTitle,
+    },
+    description: seoDescription,
+    alternates: {
+      canonical: `/product-category/${canonicalPathSegments}`,
+    },
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      url: `/product-category/${canonicalPathSegments}`,
+      ...(node.image?.src ? { images: [node.image.src] } : {}),
+    },
   };
 }
 
@@ -122,8 +175,32 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   const showSubcategories = hasSubcategories && page === 1;
   const currentPathString = `/product-category/${slug.join("/")}`;
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://www.angkon.net",
+      },
+      ...path.map((item, idx) => ({
+        "@type": "ListItem",
+        position: idx + 2,
+        name: categoryDisplayName(item.name),
+        item: `https://www.angkon.net/product-category/${path.slice(0, idx + 1).map((p) => p.slug).join("/")}`,
+      })),
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-[#400604] text-white">
+      {/* Category Breadcrumb Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <div className="mx-auto max-w-[1440px] px-4 sm:px-5 lg:px-6 pt-4 sm:pt-6 pb-12">
         <div className="lg:grid lg:grid-cols-[250px_1fr] xl:grid-cols-[270px_1fr] lg:gap-8 xl:gap-10">
           

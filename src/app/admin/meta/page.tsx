@@ -372,7 +372,7 @@ export default function MetaSuiteOverviewPage() {
             <div>
               <div className="text-sm font-bold text-stone-900 flex items-center gap-1.5">
                 <Globe className="h-4 w-4 text-emerald-600" />
-                <span>angkon.com.bd</span>
+                <span>angkon.net</span>
               </div>
               <p className="text-[11px] text-stone-500 mt-1 leading-snug">
                 {domainVerified === true

@@ -7,8 +7,14 @@ import type { WooProduct } from "@/types/product";
 import { getShippingSettings } from "@/server/shipping";
 
 export const metadata: Metadata = {
-  title: "On Sale — ANGKON",
-  description: "Special promotional discounts and clearance prices across ANGKON collections.",
+  title: {
+    absolute: "Sale & Special Offers — Designer Women's Suits | ANGKON",
+  },
+  description:
+    "Exclusive offers and seasonal sales on premium women's three-piece dresses and luxury ethnic wear at ANGKON. Enjoy nationwide doorstep delivery and Cash on Delivery.",
+  alternates: {
+    canonical: "/sale",
+  },
 };
 
 export const dynamic = "force-dynamic";

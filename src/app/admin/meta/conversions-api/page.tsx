@@ -154,7 +154,7 @@ export default function MetaConversionsApiPage() {
         event_name: "Purchase",
         event_time: 1740000000,
         event_id: "order_ANG_84920",
-        event_source_url: "https://angkon.com.bd/thankyou-for-shopping",
+        event_source_url: "https://www.angkon.net/thankyou-for-shopping",
         action_source: "website",
         user_data: {
           em: "2492f31e86... (SHA-256 hashed customer email)",

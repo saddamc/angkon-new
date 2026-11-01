@@ -16,8 +16,14 @@ const COLLECTION_PILLS = [
 ];
 
 export const metadata: Metadata = {
-  title: "All Products — ANGKON",
-  description: "Browse the full ANGKON collection.",
+  title: {
+    absolute: "Women's Dresses & Premium Three-Piece Suits Online | ANGKON",
+  },
+  description:
+    "Browse ANGKON's curated collection of women's dresses and luxury 3-piece embroidered suits. Handcrafted fabrics, modern heritage aesthetics, and fast doorstep delivery across Bangladesh.",
+  alternates: {
+    canonical: "/products",
+  },
 };
 
 // Cached and refreshed every 5 minutes instead of rendering on every request.

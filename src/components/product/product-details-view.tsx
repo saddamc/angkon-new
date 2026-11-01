@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -269,20 +269,60 @@ export function ProductDetailsView({
     setFailedImages((prev) => (prev[src] ? prev : { ...prev, [src]: true }));
   };
 
-  const resolveImageSrc = (src: string | undefined): string => {
-    if (!src) return FALLBACK_PRODUCT_IMAGE;
-    return failedImages[src] ? FALLBACK_PRODUCT_IMAGE : src;
-  };
+  const resolveImageSrc = useCallback(
+    (src: string | undefined): string => {
+      if (!src) return FALLBACK_PRODUCT_IMAGE;
+      return failedImages[src] ? FALLBACK_PRODUCT_IMAGE : src;
+    },
+    [failedImages]
+  );
 
-  const images =
-    product.images.length > 0
+  const images = useMemo(() => {
+    return product.images && product.images.length > 0
       ? product.images
       : [{ id: 0, src: FALLBACK_PRODUCT_IMAGE, alt: product.name, name: product.name }];
+  }, [product.images, product.name]);
   const rawActiveImg = images[activeImage]?.src ?? images[0]?.src;
-  const rawLightboxImg = images[lightboxIndex]?.src ?? images[0]?.src;
   const activeImg = resolveImageSrc(rawActiveImg);
-  const lightboxImg = resolveImageSrc(rawLightboxImg);
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
+
+  // Touch gesture support for fluid mobile gallery browsing
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const distance = touchStartX.current - touchEndX.current;
+    if (distance > 45 && images.length > 1) {
+      // Swiped left -> next image
+      setIsZoomed(false);
+      setActiveImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+    } else if (distance < -45 && images.length > 1) {
+      // Swiped right -> previous image
+      setIsZoomed(false);
+      setActiveImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // Eagerly pre-cache all gallery images so image switching is 100% instant from the first second
+  useEffect(() => {
+    images.forEach((img, idx) => {
+      if (!img.src || idx === 0) return;
+      const resolved = resolveImageSrc(img.src);
+      const preloader = new window.Image();
+      preloader.src = resolved;
+    });
+  }, [images, resolveImageSrc]);
 
   // Genuine customer selectable variation attributes (e.g. Size)
   const variationAttrs = useMemo(() => {
@@ -373,11 +413,11 @@ export function ProductDetailsView({
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 xl:gap-14 items-start">
 
-          {/* LEFT: Image Gallery with In-Place Hover Zoom */}
+          {/* LEFT: Image Gallery with In-Place Hover Zoom & Instant Switching */}
           <div className="flex flex-col w-full lg:sticky lg:top-24 lg:self-start">
             {/* Main Image Container */}
             <div
-              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#340402] border border-[#E1B76F]/25 rounded-none cursor-default select-none shadow-md"
+              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#340402] border border-[#E1B76F]/25 rounded-none cursor-default select-none shadow-md touch-pan-y"
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={(e) => {
@@ -386,8 +426,11 @@ export function ProductDetailsView({
                 const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
                 setZoomPos({ x, y });
               }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
-              {/* In-Place Zoomable Image */}
+              {/* In-Place Zoomable Stacked Image Gallery (Pre-warmed with silky cross-fade) */}
               <div
                 className="relative w-full h-full"
                 style={{
@@ -397,16 +440,62 @@ export function ProductDetailsView({
                   willChange: "transform, transform-origin",
                 }}
               >
-                <Image
-                  src={activeImg}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover pointer-events-none"
-                  priority
-                  onError={() => markImageFailed(rawActiveImg)}
-                />
+                {images.map((img, i) => {
+                  const resolvedSrc = resolveImageSrc(img.src);
+                  const isCurrent = activeImage === i;
+                  return (
+                    <div
+                      key={img.id ?? i}
+                      className={`absolute inset-0 transition-opacity duration-200 ease-in-out ${
+                        isCurrent
+                          ? "opacity-100 z-10 pointer-events-auto"
+                          : "opacity-0 z-0 pointer-events-none"
+                      }`}
+                    >
+                      <Image
+                        src={resolvedSrc}
+                        alt={img.alt || `${product.name} - View ${i + 1}`}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover pointer-events-none select-none"
+                        priority={i === 0}
+                        loading={i < 4 ? "eager" : "lazy"}
+                        onError={() => markImageFailed(img.src)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
+
+              {/* Prev / Next Chevrons on Main Image */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsZoomed(false);
+                      setActiveImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                    }}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#400604]/85 text-white/90 border border-[#E1B76F]/35 shadow-md opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[#400604] hover:text-white hover:scale-105 cursor-pointer backdrop-blur-xs"
+                    aria-label="Previous product image"
+                  >
+                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsZoomed(false);
+                      setActiveImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#400604]/85 text-white/90 border border-[#E1B76F]/35 shadow-md opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[#400604] hover:text-white hover:scale-105 cursor-pointer backdrop-blur-xs"
+                    aria-label="Next product image"
+                  >
+                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </button>
+                </>
+              )}
 
               {/* Sale badge */}
               {pricing.hasSale && (
@@ -438,19 +527,23 @@ export function ProductDetailsView({
                     <button
                       key={img.id ?? i}
                       type="button"
-                      onClick={() => setActiveImage(i)}
+                      onClick={() => {
+                        setIsZoomed(false);
+                        setActiveImage(i);
+                      }}
                       className={`relative aspect-[4/5] w-full overflow-hidden bg-[#340402] transition-all cursor-pointer ${
                         activeImage === i
-                          ? "border border-[#E1B76F] opacity-100 ring-1 ring-[#E1B76F]"
-                          : "border border-transparent opacity-75 hover:opacity-100 hover:border-[#E1B76F]/40"
+                          ? "border-2 border-[#E1B76F] opacity-100 ring-2 ring-[#E1B76F]/30 shadow-xs"
+                          : "border border-stone-800/60 opacity-70 hover:opacity-100 hover:border-[#E1B76F]/50"
                       }`}
                     >
                       <Image
                         src={thumbSrc}
-                        alt={img.alt || product.name}
+                        alt={img.alt || `${product.name} Thumbnail ${i + 1}`}
                         fill
                         sizes="120px"
                         className="object-cover"
+                        loading={i < 4 ? "eager" : "lazy"}
                         onError={() => markImageFailed(img.src)}
                       />
                     </button>
@@ -924,15 +1017,30 @@ export function ProductDetailsView({
                 lightboxZoomed ? "scale-[1.65] cursor-zoom-out" : "scale-100 cursor-zoom-in"
               }`}
             >
-              <Image
-                src={lightboxImg}
-                alt={product.name}
-                fill
-                className="object-contain"
-                priority
-                sizes="100vw"
-                onError={() => markImageFailed(rawLightboxImg)}
-              />
+              {images.map((img, i) => {
+                const resolved = resolveImageSrc(img.src);
+                const isCurrent = lightboxIndex === i;
+                return (
+                  <div
+                    key={img.id ?? i}
+                    className={`absolute inset-0 transition-opacity duration-200 ease-in-out ${
+                      isCurrent
+                        ? "opacity-100 z-10 pointer-events-auto"
+                        : "opacity-0 z-0 pointer-events-none"
+                    }`}
+                  >
+                    <Image
+                      src={resolved}
+                      alt={img.alt || `${product.name} Lightbox View ${i + 1}`}
+                      fill
+                      className="object-contain"
+                      priority={isCurrent}
+                      sizes="100vw"
+                      onError={() => markImageFailed(img.src)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 

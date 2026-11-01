@@ -16,9 +16,14 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About Us & Flagship Showroom — HOUSE OF MODERN HERITAGE | ANGKON",
+  title: {
+    absolute: "About Us & Flagship Showroom — House of Modern Heritage | ANGKON",
+  },
   description:
     "Discover ANGKON, Bangladesh's modern heritage fashion house bridging tradition and contemporary street aesthetics. Visit our flagship showroom in Niketan, Gulshan, Dhaka.",
+  alternates: {
+    canonical: "/about",
+  },
 };
 
 const MAPS_SHORT_URL = "https://maps.app.goo.gl/hwrj3KgQ6NdSYp3R8";

@@ -59,20 +59,75 @@ export default async function HomePage() {
     bannerPairs.push(pair);
   }
 
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.angkon.net/#organization",
+        "name": "ANGKON",
+        "alternateName": "ANGKON — House of Modern Heritage",
+        "url": "https://www.angkon.net",
+        "logo": "https://www.angkon.net/logo.jpeg",
+        "description":
+          "Premium women's clothing and designer ethnic wear brand in Bangladesh. Specializing in authentic 3-piece embroidered suits, luxury festive wear, and modern heritage fashion.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "H-93, (Ground floor), Road: 2, Block-A, Niketan",
+          "addressLocality": "Gulshan, Dhaka",
+          "postalCode": "1212",
+          "addressCountry": "BD",
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+8801711000000",
+          "contactType": "customer service",
+          "areaServed": "BD",
+          "availableLanguage": ["en", "bn"],
+        },
+        "sameAs": [
+          "https://www.facebook.com/angkon",
+          "https://www.instagram.com/angkon",
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.angkon.net/#website",
+        "url": "https://www.angkon.net",
+        "name": "ANGKON",
+        "publisher": { "@id": "https://www.angkon.net/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://www.angkon.net/search?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-[#400604] text-white">
+      {/* Search Engine Organization & WebSite JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+
       {/* Floating cart shortcut */}
       <FloatingCartButton />
 
       {/* ── 1. Top Hero Banner (ANGKON House of Modern Heritage - Full Width Edge to Edge) ── */}
       <section className="w-full overflow-hidden">
+        <h1 className="sr-only">
+          ANGKON — Premium Women&apos;s Clothing &amp; Designer Ethnic Wear in Bangladesh
+        </h1>
         <Link
           href="/products"
           className="group block w-full overflow-hidden bg-[#340402]"
         >
           <Image
             src="/banners/HERO1.webp"
-            alt="ANGKON — House of Modern Heritage"
+            alt="ANGKON — House of Modern Heritage | Premium Women's Clothing & Designer Ethnic Wear in Bangladesh"
             width={1920}
             height={917}
             priority

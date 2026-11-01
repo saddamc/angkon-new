@@ -56,9 +56,12 @@ export default function AdminLayout({
 }) {
   const { logout, authFetch } = useAuth();
   const pathname = usePathname();
+  const isMetaRoute = pathname.startsWith("/admin/meta");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Desktop: icon-only by default; click toggle for full labels
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  // Hover flyout state (Meta Business Suite style: expand on hover, hide on leave)
+  const [sidebarHovered, setSidebarHovered] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<{
@@ -233,17 +236,29 @@ export default function AdminLayout({
   const pageTitle = currentNav ? currentNav.label : "Admin";
   const PageIcon = currentNav ? currentNav.icon : LayoutDashboard;
 
+  // Desktop effective expanded state:
+  // On Meta routes, sidebar is in collapsed icon-rail mode by default (78px, matching user's image media_1793568009257_a97b6430.png).
+  // When hovered on Meta routes, it expands over the top to 220px to show our full sidebar labels!
+  // On regular admin routes, sidebar follows the user's manual toggle (sidebarExpanded).
+  const isDesktopExpanded = isMetaRoute ? sidebarHovered : sidebarExpanded;
+
   return (
     <div
       style={{
-        ["--admin-sidebar-width" as string]: sidebarExpanded ? "220px" : "78px",
+        ["--admin-sidebar-width" as string]: isDesktopExpanded ? "220px" : "78px",
       }}
-      className="flex min-h-screen bg-[#f0f0f8] font-sans antialiased text-gray-800"
+      className="flex h-screen overflow-hidden bg-[#f0f0f8] font-sans antialiased text-gray-800"
     >
-      {/* ── Sidebar ────────────────────────────────────────── */}
+      {/* ── Main Sidebar (Untouched original, hover-expand on Meta routes) ── */}
       <aside
+        onMouseEnter={() => {
+          if (isMetaRoute) setSidebarHovered(true);
+        }}
+        onMouseLeave={() => {
+          if (isMetaRoute) setSidebarHovered(false);
+        }}
         className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-purple-100 shadow-[2px_0_20px_rgba(123,97,255,0.06)] transition-all duration-300 ease-in-out
-          ${sidebarExpanded ? "w-[220px]" : "w-[78px]"}
+          ${isDesktopExpanded ? "w-[220px] shadow-2xl" : "w-[78px]"}
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
         {/* Brand header */}
@@ -252,10 +267,10 @@ export default function AdminLayout({
             type="button"
             onClick={toggleSidebarExpanded}
             className={`hidden lg:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#400604] border border-stone-200/90 shadow-sm hover:scale-105 transition-all duration-200 ${
-              sidebarExpanded ? "" : "mx-auto"
+              isDesktopExpanded ? "" : "mx-auto"
             }`}
-            title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-            aria-label={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            title={isDesktopExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            aria-label={isDesktopExpanded ? "Collapse sidebar" : "Expand sidebar"}
           >
             <Image
               src="/logo.jpeg"
@@ -274,26 +289,15 @@ export default function AdminLayout({
               className="h-full w-full object-cover"
             />
           </div>
-          {sidebarExpanded && (
-            <>
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="text-[14px] font-bold tracking-tight text-[#400604] whitespace-nowrap">
-                  ANGKON
-                </p>
-                <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 whitespace-nowrap">
-                  Admin Panel
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={toggleSidebarExpanded}
-                className="hidden lg:flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition"
-                title="Collapse sidebar"
-                aria-label="Collapse sidebar"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-            </>
+          {isDesktopExpanded && (
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <p className="text-[14px] font-bold tracking-tight text-[#400604] whitespace-nowrap">
+                ANGKON
+              </p>
+              <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 whitespace-nowrap">
+                Admin Panel
+              </p>
+            </div>
           )}
         </div>
 
@@ -324,7 +328,7 @@ export default function AdminLayout({
                 />
                 <span
                   className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${
-                    sidebarExpanded
+                    isDesktopExpanded
                       ? "w-auto opacity-100"
                       : "w-0 opacity-0"
                   }`}
@@ -332,7 +336,7 @@ export default function AdminLayout({
                   {label}
                 </span>
                 {/* Tooltip when collapsed on desktop */}
-                {!sidebarExpanded && (
+                {!isDesktopExpanded && (
                   <div className="absolute left-full ml-3 hidden group-hover:flex items-center z-[100] pointer-events-none">
                     <div className="rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-medium text-white shadow-lg whitespace-nowrap">
                       {label}
@@ -343,30 +347,6 @@ export default function AdminLayout({
             );
           })}
         </nav>
-
-        {/* Desktop Collapse Footer Button */}
-        <div className="hidden lg:flex items-center justify-center h-12 border-t border-purple-50 flex-shrink-0 px-2">
-          {sidebarExpanded ? (
-            <button
-              type="button"
-              onClick={toggleSidebarExpanded}
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-2 py-2 text-[11px] font-medium text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-              <span>Collapse Menu</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={toggleSidebarExpanded}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-400 hover:bg-purple-50 hover:text-purple-600 transition"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          )}
-        </div>
       </aside>
 
       {/* Mobile overlay */}
@@ -379,12 +359,16 @@ export default function AdminLayout({
 
       {/* ── Main Content Area ───────────────────────────── */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          sidebarExpanded ? "lg:ml-[220px]" : "lg:ml-[78px]"
+        className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden transition-all duration-300 ${
+          isMetaRoute
+            ? "lg:ml-[78px]"
+            : sidebarExpanded
+            ? "lg:ml-[220px]"
+            : "lg:ml-[78px]"
         }`}
       >
         {/* Top Header */}
-        <header className="sticky top-0 z-30 h-[68px] bg-white/80 backdrop-blur-lg border-b border-purple-100 flex items-center px-6 gap-4">
+        <header className="shrink-0 z-30 h-[68px] bg-white/80 backdrop-blur-lg border-b border-purple-100 flex items-center px-6 gap-4">
           {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}
@@ -607,7 +591,13 @@ export default function AdminLayout({
         )}
 
         {/* Content Body */}
-        <main className="flex-1 p-5 lg:p-7 overflow-auto">{children}</main>
+        <main
+          className={`flex-1 min-h-0 ${
+            isMetaRoute ? "p-0 overflow-hidden flex flex-col" : "p-5 lg:p-7 overflow-y-auto"
+          }`}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

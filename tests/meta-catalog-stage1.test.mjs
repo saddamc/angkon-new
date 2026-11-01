@@ -4,11 +4,22 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { registerHooks } from "node:module";
+import { setProducts } from "./stubs/db-state.mjs";
+
+// Redirect the database modules to in-memory stubs so the endpoint tests do
+// not require a live MongoDB connection.
+const DB_STUBS = {
+  "@/lib/mongodb": "tests/stubs/mongodb-stub.mjs",
+  "@/models/Product": "tests/stubs/product-stub.mjs",
+};
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier === "next/server") {
       return nextResolve("next/server.js", context);
+    }
+    if (DB_STUBS[specifier]) {
+      return nextResolve(pathToFileURL(path.resolve(process.cwd(), DB_STUBS[specifier])).href, context);
     }
     if (specifier.startsWith("@/")) {
       const subpath = specifier.slice(2);
@@ -425,6 +436,7 @@ test("API Endpoint: authorized with ?feed_key=... returning XML and security hea
   const previousKey = process.env.META_CATALOG_FEED_KEY;
   try {
     process.env.META_CATALOG_FEED_KEY = "super-secret-meta-key-2026";
+    setProducts([sampleProduct(), sampleProduct({ id: 228002, name: "Tawakkal Wada – Deep Emerald Green 3-Piece", slug: "tawakkal-wada-deep-emerald-green" })]);
     const { GET } = await import("../src/app/api/meta/catalog-feed/route.ts");
     const { NextRequest } = await import("next/server");
 
@@ -443,6 +455,7 @@ test("API Endpoint: authorized with ?feed_key=... returning XML and security hea
     assert.ok(xml.includes("<rss version=\"2.0\""));
     assert.ok(xml.includes("ANGKON Product Catalog Feed"));
   } finally {
+    setProducts([]);
     process.env.META_CATALOG_FEED_KEY = previousKey;
   }
 });
@@ -451,6 +464,7 @@ test("API Endpoint: authorized via header x-feed-key and supports format=json", 
   const previousKey = process.env.META_CATALOG_FEED_KEY;
   try {
     process.env.META_CATALOG_FEED_KEY = "super-secret-meta-key-2026";
+    setProducts([sampleProduct()]);
     const { GET } = await import("../src/app/api/meta/catalog-feed/route.ts");
     const { NextRequest } = await import("next/server");
 
@@ -466,6 +480,7 @@ test("API Endpoint: authorized via header x-feed-key and supports format=json", 
     assert.ok(json.items);
     assert.ok(json.pagination);
   } finally {
+    setProducts([]);
     process.env.META_CATALOG_FEED_KEY = previousKey;
   }
 });

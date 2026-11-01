@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { isMetaSuiteEnabled, verifyAdminToken } from "@/server/admin-auth";
+import { MetaSuiteShell } from "./meta-shell";
 
 export default async function MetaRoutesLayout({
   children,
@@ -20,5 +21,5 @@ export default async function MetaRoutesLayout({
     redirect("/admin/dashboard");
   }
 
-  return <>{children}</>;
+  return <MetaSuiteShell>{children}</MetaSuiteShell>;
 }

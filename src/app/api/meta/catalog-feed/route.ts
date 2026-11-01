@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { generateMetaCatalogFeed } from "@/lib/integrations/meta";
-import REAL_PRODUCTS from "@/data/real-products.json";
+import { buildCatalogVisibilityFilter } from "@/server/meta-catalog";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -47,6 +47,99 @@ function isKeyAuthorized(providedKey: string): boolean {
   return false;
 }
 
+/**
+ * Machine-readable reason for a failed fetch. Deliberately coarse: it tells an
+ * operator what went wrong without echoing driver messages, connection strings,
+ * or secrets.
+ */
+type FeedFailureReason = "database-unavailable" | "no-eligible-products" | "internal-error";
+
+const UNAVAILABLE_MESSAGE = "ANGKON catalog feed is temporarily unavailable. Please retry shortly.";
+
+/**
+ * Meta treats an unparseable or failing feed as "retry later", but treats a
+ * well-formed *empty* feed as "delete every product". Every failure path below
+ * therefore answers 503 with an empty channel instead of emitting zero <item>
+ * entries inside an otherwise valid feed.
+ */
+function unavailableResponse(format: string, reason: FeedFailureReason): NextResponse {
+  const sharedHeaders = {
+    "Cache-Control": "no-store",
+    "Retry-After": "300",
+    "X-Robots-Tag": "noindex, nofollow",
+    "X-Catalog-Reason": reason,
+  };
+
+  if (format === "json") {
+    return NextResponse.json(
+      { error: UNAVAILABLE_MESSAGE, reason, generatedAt: new Date().toISOString() },
+      { status: 503, headers: sharedHeaders }
+    );
+  }
+
+  const errorXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
+  <channel>
+    <title>ANGKON Product Catalog Feed</title>
+    <description>${UNAVAILABLE_MESSAGE}</description>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+  </channel>
+</rss>`;
+
+  return new NextResponse(errorXml, {
+    status: 503,
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      ...sharedHeaders,
+    },
+  });
+}
+
+type ProductQueryResult =
+  | { ok: true; products: unknown[] }
+  | { ok: false; reason: FeedFailureReason };
+
+/**
+ * Loads every Meta-eligible product using the canonical visibility filter that
+ * the Stage 3A feed already relies on.
+ *
+ * Important: `src/models/Product.ts` declares no `status` field, so a query such
+ * as `{ status: { $in: ["publish", "published"] } }` matches zero documents and
+ * used to fall through to a baked-in snapshot of the original 7 products.
+ * `buildCatalogVisibilityFilter()` treats a missing field as "not restricted",
+ * which is what this schema actually requires.
+ *
+ * A zero-row result is reported as a failure rather than an empty catalog, so
+ * Meta cannot interpret it as an instruction to delete every product.
+ */
+async function queryEligibleProducts(): Promise<ProductQueryResult> {
+  try {
+    await connectToDatabase();
+
+    const products = await Product.collection
+      .find(buildCatalogVisibilityFilter())
+      .sort({ id: -1 })
+      .toArray();
+
+    if (products.length === 0) {
+      console.warn(
+        "[Meta Catalog Feed] database returned zero eligible products; refusing to serve a static snapshot."
+      );
+      return { ok: false, reason: "no-eligible-products" };
+    }
+
+    return { ok: true, products };
+  } catch (dbErr) {
+    // Driver detail stays in server logs; feed consumers only ever see the
+    // generic message produced by `unavailableResponse`.
+    console.warn(
+      "[Meta Catalog Feed] product query failed:",
+      dbErr instanceof Error ? dbErr.message : dbErr
+    );
+    return { ok: false, reason: "database-unavailable" };
+  }
+}
+
 export async function GET(request: NextRequest) {
   const providedKey = extractProvidedKey(request);
   const isAuthorized = isKeyAuthorized(providedKey);
@@ -76,25 +169,12 @@ export async function GET(request: NextRequest) {
   const baseUrl = siteUrl.replace(/\/+$/, "");
 
   try {
-    let products: unknown[] = [];
-
-    try {
-      await connectToDatabase();
-      products = await Product.find({
-        status: { $in: ["publish", "published"] },
-      })
-        .sort({ id: -1 })
-        .lean();
-    } catch (dbErr) {
-      console.warn("MongoDB catalog feed query warning, using local catalog fallback:", dbErr);
-      products = REAL_PRODUCTS as unknown[];
+    const queryResult = await queryEligibleProducts();
+    if (!queryResult.ok) {
+      return unavailableResponse(format, queryResult.reason);
     }
 
-    if (!products || products.length === 0) {
-      products = REAL_PRODUCTS as unknown[];
-    }
-
-    const feedResult = generateMetaCatalogFeed(products, {
+    const feedResult = generateMetaCatalogFeed(queryResult.products, {
       baseUrl,
       feedUrl: `${baseUrl}/api/meta/catalog-feed`,
       page,
@@ -146,24 +226,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("GET /api/meta/catalog-feed error:", error);
 
-    const message = "ANGKON catalog feed is temporarily unavailable. Please retry shortly.";
-    const errorXml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
-  <channel>
-    <title>ANGKON Product Catalog Feed</title>
-    <description>${message}</description>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-  </channel>
-</rss>`;
-
-    return new NextResponse(errorXml, {
-      status: 503,
-      headers: {
-        "Content-Type": "application/xml; charset=utf-8",
-        "Cache-Control": "no-store",
-        "Retry-After": "300",
-        "X-Robots-Tag": "noindex, nofollow",
-      },
-    });
+    return unavailableResponse(format, "internal-error");
   }
 }

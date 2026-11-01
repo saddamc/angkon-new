@@ -847,77 +847,58 @@ export default function MetaPixelEventsManagerPage() {
         </div>
       )}
 
-      {/* ── 4. Main Executive Header Section ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200/60 px-2 py-0.5 rounded-md">
-                Meta Events Telemetry
+      {/* ── 4. Telemetry Status & Operational Controls ── */}
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                enabled && isConnected
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
+                  : isConnected
+                  ? "bg-amber-50 text-amber-800 border-amber-200/80"
+                  : "bg-stone-100 text-stone-600 border-stone-200"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    enabled && isConnected
+                      ? "bg-emerald-400"
+                      : isConnected
+                      ? "bg-amber-400"
+                      : "bg-stone-400"
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    enabled && isConnected
+                      ? "bg-emerald-500"
+                      : isConnected
+                      ? "bg-amber-500"
+                      : "bg-stone-500"
+                  }`}
+                />
               </span>
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border transition-colors ${
-                  enabled && isConnected
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                    : isConnected
-                    ? "bg-amber-50 text-amber-800 border-amber-200/80"
-                    : "bg-stone-100 text-stone-600 border-stone-200"
-                }`}
-              >
-                <span className="relative flex h-1.5 w-1.5">
-                  <span
-                    className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                      enabled && isConnected
-                        ? "bg-emerald-400"
-                        : isConnected
-                        ? "bg-amber-400"
-                        : "bg-stone-400"
-                    }`}
-                  />
-                  <span
-                    className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
-                      enabled && isConnected
-                        ? "bg-emerald-500"
-                        : isConnected
-                        ? "bg-amber-500"
-                        : "bg-stone-500"
-                    }`}
-                  />
-                </span>
-                <span>
-                  {enabled && isConnected
-                    ? "Tracking Active"
-                    : isConnected
-                    ? "Tracking Paused"
-                    : "Not Configured"}
-                </span>
+              <span>
+                {enabled && isConnected
+                  ? "Tracking Active & Verified"
+                  : isConnected
+                  ? "Tracking Paused"
+                  : "Dataset Not Configured"}
               </span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
-              Meta Events Manager
-            </h1>
-            <p className="text-xs sm:text-[13px] text-stone-500 max-w-xl leading-relaxed">
-              Real-time browser Pixel &amp; server Conversions API telemetry with verifiable delivery status and deduplication.
-            </p>
+            </span>
+            <span className="text-xs text-stone-400 font-medium hidden md:inline">
+              Real-time browser Pixel &amp; server CAPI telemetry with deduplication
+            </span>
           </div>
 
           {/* Action Strip */}
-          <div className="flex flex-wrap items-center gap-2 self-start md:self-auto shrink-0">
-            <a
-              href={launchTestModeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition shadow-2xs cursor-pointer"
-            >
-              <PlayCircle className="h-3.5 w-3.5 text-stone-500" />
-              <span>Launch Test Mode</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
             <button
               type="button"
               onClick={() => setActiveTab("diagnostics")}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition shadow-2xs cursor-pointer"
             >
               <FlaskConical className="h-3.5 w-3.5 text-stone-500" />
               <span>Test Events</span>
@@ -926,7 +907,7 @@ export default function MetaPixelEventsManagerPage() {
             <button
               type="button"
               onClick={reloadEvents}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white hover:bg-stone-800 transition shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 transition shadow-2xs cursor-pointer"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               <span>Refresh Feed</span>

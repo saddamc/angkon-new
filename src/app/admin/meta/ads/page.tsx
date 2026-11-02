@@ -20,6 +20,11 @@ import {
   Globe,
   Sliders,
   RotateCcw,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Lock,
+  X,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
 import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
@@ -59,6 +64,8 @@ export default function MetaAdsPage() {
   const [marketingSettings, setMarketingSettings] = useState<PublicAdminMetaMarketingSettings | null>(null);
   const [adAccountId, setAdAccountId] = useState("");
   const [marketingToken, setMarketingToken] = useState("");
+  const [isEditingToken, setIsEditingToken] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   const [savingCredentials, setSavingCredentials] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
 
@@ -212,6 +219,8 @@ export default function MetaAdsPage() {
       if (res.ok && data.ok) {
         setMarketingSettings(data.settings);
         setMarketingToken("");
+        setIsEditingToken(false);
+        setShowToken(false);
         setMessage({
           type: "success",
           text: `Verified & connected Meta Ad Account '${data.account?.accountName || data.settings?.accountName}' (${data.account?.accountCurrency || "BDT"}).`,
@@ -462,20 +471,97 @@ export default function MetaAdsPage() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1.5">
-              Marketing API Access Token (OAuth / System User)
-            </label>
-            <input
-              type="password"
-              value={marketingToken}
-              onChange={(e) => setMarketingToken(e.target.value)}
-              placeholder={
-                marketingSettings?.hasAccessToken
-                  ? `${marketingSettings.maskedAccessToken} (Saved — enter new to replace)`
-                  : "EAAG... (Paste token with ads_read permission)"
-              }
-              className="w-full rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-mono text-stone-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 transition shadow-2xs"
-            />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
+                Marketing API Access Token
+              </label>
+              {marketingSettings?.hasAccessToken && !isEditingToken ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Configured (AES-256-GCM)
+                </span>
+              ) : (
+                <span className="text-[10px] text-stone-400 font-mono">OAuth / System User</span>
+              )}
+            </div>
+
+            {marketingSettings?.hasAccessToken && !isEditingToken ? (
+              <div className="rounded-xl border border-stone-200/90 bg-stone-50/90 p-2.5 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-mono text-xs font-bold text-stone-900 tracking-wider truncate">
+                      {marketingSettings.maskedAccessToken || "EAAG••••••••••••••••"}
+                    </div>
+                    <div className="text-[10px] text-stone-500">
+                      Encrypted at rest · Never exposed to browser or logs
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsEditingToken(true)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition shadow-2xs shrink-0 cursor-pointer"
+                >
+                  <KeyRound className="h-3 w-3 text-stone-500" />
+                  <span>Replace</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <input
+                    type={showToken ? "text" : "password"}
+                    value={marketingToken}
+                    onChange={(e) => setMarketingToken(e.target.value)}
+                    placeholder="EAAG... (Paste token with ads_read permission)"
+                    autoComplete="new-password"
+                    className="w-full rounded-xl border border-stone-200 pl-3.5 pr-16 py-2 text-xs font-mono text-stone-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 transition shadow-2xs bg-white"
+                  />
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowToken(!showToken)}
+                      className="p-1 text-stone-400 hover:text-stone-700 transition cursor-pointer"
+                      title={showToken ? "Hide token" : "Show token"}
+                    >
+                      {showToken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                    {marketingSettings?.hasAccessToken && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingToken(false);
+                          setMarketingToken("");
+                        }}
+                        className="p-1 text-stone-400 hover:text-rose-600 transition cursor-pointer"
+                        title="Cancel replace and keep current token"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-stone-500 px-0.5">
+                  <span>Requires Meta token with <code className="font-mono text-stone-700">ads_read</code> permission.</span>
+                  {marketingSettings?.hasAccessToken && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingToken(false);
+                        setMarketingToken("");
+                      }}
+                      className="text-stone-600 hover:underline cursor-pointer"
+                    >
+                      Keep existing token
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-1">
@@ -504,7 +590,7 @@ export default function MetaAdsPage() {
               className="inline-flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-stone-800 transition disabled:opacity-40 cursor-pointer"
             >
               <Save className="h-3.5 w-3.5" />
-              <span>{savingCredentials ? "Saving..." : "Save & Verify Credentials"}</span>
+              <span>{savingCredentials ? "Saving..." : isEditingToken ? "Save & Verify New Token" : "Save Settings"}</span>
             </button>
           </div>
         </form>

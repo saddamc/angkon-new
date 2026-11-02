@@ -635,6 +635,16 @@ async function executeJobSlices(
   token: string,
   currency: string
 ): Promise<void> {
+  // Ensure legacy / obsolete indexes are dropped so they never block upserts
+  try {
+    if (MetaAdReport.collection) {
+      await MetaAdReport.collection.dropIndex("tenantId_1_adAccountId_1_campaignId_1_date_1").catch(() => {});
+      await MetaAdReport.collection.dropIndex("campaignId_1").catch(() => {});
+    }
+  } catch {
+    // Non-fatal if index already dropped or collection not initialized
+  }
+
   let totalRecords = job.totalRecords || 0;
   let totalSpend = job.totalSpend || 0;
   let completedCount = job.completedSlices || 0;

@@ -52,6 +52,14 @@ async function run() {
   await page.screenshot({ path: dashboardPath, fullPage: false });
   console.log("Saved admin dashboard screenshot to:", dashboardPath);
 
+  // ── 0b. Overview Route Screenshot ──
+  console.log("Navigating desktop to http://localhost:3001/admin/meta ...");
+  await page.goto("http://localhost:3001/admin/meta", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1500);
+  const overviewPath = path.join(ARTIFACT_DIR, "meta-overview-scrolled.png");
+  await page.screenshot({ path: overviewPath, fullPage: false });
+  console.log("Saved overview desktop screenshot to:", overviewPath);
+
   // ── 1. Meta Events Manager (Main sidebar in collapsed 78px state like media_1793568009257_a97b6430.png) ──
   console.log("Navigating desktop to http://localhost:3001/admin/meta/pixel ...");
   await page.goto("http://localhost:3001/admin/meta/pixel", { waitUntil: "domcontentloaded" });

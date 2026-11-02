@@ -589,7 +589,7 @@ export function MetaNavigationHeader({
   const isConnected = Boolean(pixelId && pixelId.trim().length >= 8);
 
   return (
-    <header className="shrink-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 mb-6 sticky top-0 z-20 shadow-2xs">
+    <header className="shrink-0 bg-white border border-slate-200/90 rounded-xl px-4 sm:px-6 py-3 mb-6 shadow-2xs">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Left: Mobile Drawer Trigger + Active Route Title + Info Tooltip */}
         <div className="flex items-center gap-3">

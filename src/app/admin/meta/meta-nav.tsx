@@ -20,6 +20,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  Settings,
 } from "lucide-react";
 import {
   useState,
@@ -345,38 +346,19 @@ export function MetaSuiteSidebar({
           : "w-[250px] h-full"
       }`}
     >
-      {/* ── Header: Meta Business Suite Identity & Portfolio ── */}
-      <div className="shrink-0 p-3.5 border-b border-[#dbe2ea]/80">
+      {/* ── Header: Meta Business Suite Navigation ── */}
+      <div className="shrink-0 px-4 py-3.5 border-b border-[#dbe2ea]/80">
         {!collapsed ? (
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <span className="text-[16px] font-bold text-slate-900 tracking-tight shrink-0">
-                Settings
-              </span>
-              <span className="text-slate-300 font-light text-sm select-none">|</span>
-              <div className="flex items-center justify-between gap-2 min-w-0 flex-1 px-1.5 py-1 rounded-lg hover:bg-slate-200/60 transition cursor-pointer group">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="h-6 w-6 rounded bg-[#f6c344] text-[#7a4e03] font-black text-xs flex items-center justify-center shadow-xs shrink-0">
-                    A
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-slate-900 truncate leading-tight">
-                      ANGKON
-                    </p>
-                    <p className="text-[9px] text-slate-500 truncate leading-tight">
-                      Business portfolio
-                    </p>
-                  </div>
-                </div>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-700 transition shrink-0 ml-1" />
-              </div>
-            </div>
+            <span className="text-[15px] font-bold text-slate-900 tracking-tight">
+              Settings
+            </span>
 
             {isDrawer ? (
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition cursor-pointer"
+                className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition cursor-pointer"
                 aria-label="Close navigation"
               >
                 <X className="h-4 w-4" />
@@ -385,8 +367,8 @@ export function MetaSuiteSidebar({
           </div>
         ) : (
           <div className="flex justify-center group relative">
-            <div className="h-7 w-7 rounded bg-[#f6c344] text-[#7a4e03] font-black text-xs flex items-center justify-center shadow-xs cursor-default">
-              A
+            <div className="h-7 w-7 rounded-lg bg-slate-200/80 text-slate-700 flex items-center justify-center cursor-default">
+              <Settings className="h-4 w-4" />
             </div>
             <div
               role="tooltip"
@@ -394,7 +376,7 @@ export function MetaSuiteSidebar({
             >
               <div className="relative rounded-lg bg-[#1c2a38] text-white px-3 py-1.5 text-[11px] font-semibold shadow-xl whitespace-nowrap border border-slate-700/80 flex items-center gap-1.5">
                 <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-[#1c2a38]" />
-                <span>ANGKON Portfolio</span>
+                <span>Settings</span>
               </div>
             </div>
           </div>

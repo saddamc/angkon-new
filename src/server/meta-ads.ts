@@ -14,6 +14,7 @@ import {
   createAndRunAdImportJob,
   fetchMetaDailyInsightsSlice,
   ParsedMetaInsightRecord,
+  deduplicateFields,
 } from "./meta-marketing-api";
 import { DEFAULT_TENANT_ID } from "./tenant";
 
@@ -51,7 +52,10 @@ export async function fetchMetaCampaigns(options?: {
     );
   }
 
-  let endpoint: string | null = `https://graph.facebook.com/${META_MARKETING_API_VERSION}/${actId}/campaigns?fields=id,name,status,effective_status,objective,start_time,stop_time&limit=50`;
+  const fields = deduplicateFields(
+    "id,name,status,effective_status,objective,start_time,stop_time"
+  );
+  let endpoint: string | null = `https://graph.facebook.com/${META_MARKETING_API_VERSION}/${actId}/campaigns?fields=${fields}&limit=50`;
 
   const allCampaigns: MetaCampaignItem[] = [];
 
@@ -82,6 +86,7 @@ export async function fetchMetaDailyInsights(options: {
   adAccountId?: string;
   token?: string;
   tenantId?: string;
+  fields?: string | string[];
 }): Promise<ParsedMetaInsightRecord[]> {
   const { records } = await fetchMetaDailyInsightsSlice({
     since: options.since,
@@ -90,6 +95,7 @@ export async function fetchMetaDailyInsights(options: {
     tenantId: options.tenantId,
     adAccountId: options.adAccountId,
     token: options.token,
+    fields: options.fields,
   });
 
   return records;

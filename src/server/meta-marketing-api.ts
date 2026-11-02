@@ -181,7 +181,10 @@ export async function verifyAdAccountCredentials(options: {
     throw new Error("Marketing API Access Token is required.");
   }
 
-  const endpoint = `https://graph.facebook.com/${META_MARKETING_API_VERSION}/${actId}?fields=id,name,currency,timezone_name,timezone_offset_hours_utc,account_status,business_name,amount_spent`;
+  const accountFields = deduplicateFields(
+    "id,name,currency,timezone_name,timezone_offset_hours_utc,account_status,business_name,amount_spent"
+  );
+  const endpoint = `https://graph.facebook.com/${META_MARKETING_API_VERSION}/${actId}?fields=${accountFields}`;
 
   try {
     interface AccountResponse {
@@ -289,6 +292,79 @@ export function generate30DaySlices(sinceStr: string, untilStr: string) {
   return slices;
 }
 
+/**
+ * Normalizes and deduplicates a comma-separated or array list of field names.
+ * Ensures each field appears exactly once, preserving deterministic ordering
+ * and stripping any empty or whitespace strings.
+ */
+export function deduplicateFieldsList(fields: string | string[]): string[] {
+  const rawList = Array.isArray(fields)
+    ? fields
+    : typeof fields === "string"
+    ? fields.split(",")
+    : [];
+
+  const seen = new Set<string>();
+  const unique: string[] = [];
+
+  for (const raw of rawList) {
+    const field = String(raw || "").trim();
+    if (field && !seen.has(field)) {
+      seen.add(field);
+      unique.push(field);
+    }
+  }
+
+  return unique;
+}
+
+/**
+ * Returns a deduplicated comma-separated string of field names.
+ */
+export function deduplicateFields(fields: string | string[]): string {
+  return deduplicateFieldsList(fields).join(",");
+}
+
+/**
+ * Core metrics requested across all ad reporting levels.
+ */
+export const META_INSIGHT_COMMON_METRICS = [
+  "spend",
+  "impressions",
+  "clicks",
+  "reach",
+  "frequency",
+  "cpc",
+  "cpm",
+  "ctr",
+  "cost_per_action_type",
+  "purchase_roas",
+  "actions",
+  "action_values",
+  "date_start",
+] as const;
+
+/**
+ * Builds the canonical, deduplicated fields list for a given reporting level.
+ * Guarantees that campaign_id, adset_id, ad_id and metric fields are never duplicated.
+ */
+export function buildInsightsFieldsForLevel(level: MetaAdReportingLevel = "campaign"): string {
+  let levelSpecificFields: string[] = [];
+
+  if (level === "adset") {
+    levelSpecificFields = ["campaign_id", "campaign_name", "adset_id", "adset_name"];
+  } else if (level === "ad") {
+    levelSpecificFields = ["campaign_id", "campaign_name", "adset_id", "adset_name", "ad_id", "ad_name"];
+  } else if (level === "account") {
+    levelSpecificFields = ["account_id", "account_name"];
+  } else {
+    // default: "campaign"
+    levelSpecificFields = ["campaign_id", "campaign_name"];
+  }
+
+  return deduplicateFields([...levelSpecificFields, ...META_INSIGHT_COMMON_METRICS]);
+}
+
 export interface FetchInsightsOptions {
   since: string;
   until: string;
@@ -298,6 +374,7 @@ export interface FetchInsightsOptions {
   tenantId?: string;
   adAccountId?: string;
   token?: string;
+  fields?: string | string[];
 }
 
 export interface ParsedMetaInsightRecord {
@@ -376,14 +453,9 @@ export async function fetchMetaDailyInsightsSlice(
   const actionWindowsParam = encodeURIComponent(JSON.stringify(attributionConfig.actionAttributionWindows));
   const actionReportTimeParam = attributionConfig.actionReportTime;
 
-  let fields =
-    "campaign_id,campaign_name,spend,impressions,clicks,reach,frequency,cpc,cpm,ctr,cost_per_action_type,purchase_roas,actions,action_values,date_start";
-
-  if (level === "adset") {
-    fields = `campaign_id,adset_id,adset_name,${fields}`;
-  } else if (level === "ad") {
-    fields = `campaign_id,adset_id,ad_id,ad_name,${fields}`;
-  }
+  const fields = options.fields
+    ? deduplicateFields(options.fields)
+    : buildInsightsFieldsForLevel(level);
 
   let endpoint: string | null = `https://graph.facebook.com/${META_MARKETING_API_VERSION}/${actId}/insights?level=${level}&fields=${fields}&time_range=${encodeURIComponent(
     timeRange

@@ -19,8 +19,9 @@ import {
   PanelLeftOpen,
   Info,
   Plus,
-  Search,
+  BookOpen,
 } from "lucide-react";
+import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
 import {
   useState,
   useEffect,
@@ -46,6 +47,13 @@ export interface MetaNavGroup {
   collapsible?: boolean;
   items: MetaNavItem[];
 }
+
+// ── Centralized Color Gradient Tokens (Calibrated Meta Business Suite) ──
+export const META_SIDEBAR_GRADIENT =
+  "linear-gradient(180deg, #F5EDF8 0%, #EAE8F6 48%, #DFEBF8 100%)";
+
+export const META_CANVAS_GRADIENT =
+  "radial-gradient(ellipse 80% 50% at 12% -5%, rgba(210, 226, 252, 0.75) 0%, transparent 65%), radial-gradient(ellipse 70% 45% at 88% -5%, rgba(236, 220, 250, 0.65) 0%, transparent 60%), linear-gradient(115deg, #E6ECF8 0%, #F0EAF8 48%, #DFEAF7 100%)";
 
 // ── 1. Navigation Structure (Exact specification) ─────────────────────
 // - Overview
@@ -332,7 +340,10 @@ export function MetaSuiteSidebar({
   return (
     <aside
       aria-label="Meta Marketing Suite Navigation"
-      className={`relative flex flex-col shrink-0 bg-[#f0f4f9] border-r border-[#dbe2ea] text-slate-800 transition-all duration-300 ease-in-out select-none ${
+      style={{
+        background: META_SIDEBAR_GRADIENT,
+      }}
+      className={`relative flex flex-col shrink-0 border-r border-[#dbe2ea] text-slate-800 transition-all duration-300 ease-in-out select-none ${
         isDrawer
           ? "w-[260px] h-full shadow-2xl z-50 overflow-y-auto"
           : collapsed
@@ -346,7 +357,7 @@ export function MetaSuiteSidebar({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/60 transition cursor-pointer"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-[#1c2a38]/8 transition cursor-pointer"
             aria-label="Close navigation"
           >
             <X className="h-4 w-4" />
@@ -381,7 +392,7 @@ export function MetaSuiteSidebar({
                     className={`relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       isActive
                         ? "bg-[#243342] text-white font-semibold shadow-xs"
-                        : "text-slate-800 hover:bg-slate-200/60 hover:text-slate-900 font-medium"
+                        : "text-slate-800 hover:bg-[#1c2a38]/8 hover:text-slate-900 font-medium"
                     }`}
                   >
                     <Icon
@@ -401,7 +412,7 @@ export function MetaSuiteSidebar({
                       className={`flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                         isActive
                           ? "bg-[#243342] text-white font-semibold shadow-xs"
-                          : "text-slate-500 hover:bg-slate-200/70 hover:text-slate-800"
+                          : "text-slate-500 hover:bg-[#1c2a38]/8 hover:text-slate-800"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -429,7 +440,7 @@ export function MetaSuiteSidebar({
                 <button
                   type="button"
                   onClick={() => toggleGroup(group.id)}
-                  className="w-full flex items-center justify-between px-2.5 py-2 text-[13px] font-bold text-slate-800 hover:bg-slate-200/50 rounded-lg transition cursor-pointer"
+                  className="w-full flex items-center justify-between px-2.5 py-2 text-[13px] font-bold text-slate-800 hover:bg-[#1c2a38]/8 rounded-lg transition cursor-pointer"
                   aria-expanded={isGroupExpanded}
                 >
                   <span className="flex items-center gap-2.5">
@@ -463,7 +474,7 @@ export function MetaSuiteSidebar({
                           className={`flex items-center rounded-lg pl-9 pr-3 py-1.5 text-[13px] transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                             isActive
                               ? "bg-[#243342] text-white font-semibold shadow-xs"
-                              : "text-slate-700 hover:bg-slate-200/70 hover:text-slate-900 font-normal"
+                              : "text-slate-700 hover:bg-[#1c2a38]/8 hover:text-slate-900 font-normal"
                           }`}
                         >
                           <span className="truncate">{item.label}</span>
@@ -490,7 +501,7 @@ export function MetaSuiteSidebar({
                           className={`flex items-center justify-center h-9 w-9 mx-auto rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                             isActive
                               ? "bg-[#243342] text-white font-semibold shadow-xs"
-                              : "text-slate-500 hover:bg-slate-200/70 hover:text-slate-800"
+                              : "text-slate-500 hover:bg-[#1c2a38]/8 hover:text-slate-800"
                           }`}
                         >
                           <Icon
@@ -560,7 +571,7 @@ export function MetaSuiteSidebar({
 }
 
 // ── 5. Contextual Top Navigation Header ──────────────────────────────
-// Authentic Meta Business Suite top bar: Title with (i) tooltip, Search bar, and + Add action.
+// Authentic Meta Business Suite top bar: Title, Info Tooltip, Asset Locator Guide & Actions.
 export function MetaNavigationHeader({
   pixelId = "",
   testEventCode = "",
@@ -569,6 +580,7 @@ export function MetaNavigationHeader({
   testEventCode?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const { openMobile, activeItem } = useMetaNav();
 
   const handleCopyId = () => {
@@ -581,132 +593,138 @@ export function MetaNavigationHeader({
   const isConnected = Boolean(pixelId && pixelId.trim().length >= 8);
 
   return (
-    <header className="shrink-0 bg-white border border-slate-200/90 rounded-xl px-4 sm:px-6 py-3 mb-6 shadow-2xs">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Left: Mobile Drawer Trigger + Active Route Title + Info Tooltip */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={openMobile}
-            className="lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-md border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-            title="Open Meta Suite navigation"
-            aria-label="Open Meta Suite navigation"
-          >
-            <Menu className="h-4 w-4" />
-          </button>
+    <>
+      <header className="shrink-0 bg-white border border-slate-200/90 rounded-2xl px-4 sm:px-6 py-3.5 mb-6 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Left: Mobile Drawer Trigger + Active Route Title + Info Tooltip */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={openMobile}
+              className="lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              title="Open Meta Suite navigation"
+              aria-label="Open Meta Suite navigation"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
 
-          <div className="flex items-center gap-2">
-            <h1 className="text-[17px] font-bold text-slate-900 tracking-tight">
-              {activeItem.label}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                {activeItem.label}
+              </h1>
 
-            {/* Info Icon with Tooltip */}
-            <div className="group relative">
-              <button
-                type="button"
-                className="text-slate-400 hover:text-slate-700 transition cursor-help p-0.5 rounded-full"
-                aria-label="Route Information"
-              >
-                <Info className="h-4 w-4" />
-              </button>
-              <div
-                role="tooltip"
-                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[100] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-64 p-2.5 rounded-lg bg-[#1c2a38] text-white text-[11px] leading-relaxed shadow-xl border border-slate-700/80"
-              >
-                <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-[#1c2a38]" />
-                <p className="font-semibold text-slate-200 mb-0.5">{activeItem.label}</p>
-                <p className="text-slate-300">
-                  {activeItem.label === "Overview"
-                    ? "Meta Business Suite ecosystem telemetry, asset health, and conversion funnel analytics."
-                    : activeItem.label === "Events Manager"
-                    ? "Manage Meta Datasets, browser Pixel SDK, and live customer conversion event telemetry."
-                    : activeItem.label === "Conversions API"
-                    ? "Monitor server-side Graph API v22.0 delivery, deduplication ledger, and background retry queue."
-                    : activeItem.label === "Ads & Attribution"
-                    ? "Synchronize Meta Ad accounts, campaign performance metrics, and multi-touch ROAS attribution."
-                    : activeItem.label === "Catalog Feed"
-                    ? "Manage Facebook Product Catalog XML feed synchronization and product taxonomy compliance."
-                    : "Verify domain ownership and Aggregated Event Measurement (AEM) protocols for angkon.net."}
-                </p>
+              {/* Info Icon with Tooltip */}
+              <div className="group relative">
+                <button
+                  type="button"
+                  className="text-slate-400 hover:text-slate-700 transition cursor-help p-0.5 rounded-full"
+                  aria-label="Route Information"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+                <div
+                  role="tooltip"
+                  className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-[100] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-72 p-3 rounded-xl bg-slate-900 text-white text-[11px] leading-relaxed shadow-2xl border border-slate-700/80"
+                >
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
+                  <p className="font-bold text-slate-100 mb-0.5">{activeItem.label}</p>
+                  <p className="text-slate-300">
+                    {activeItem.label === "Overview"
+                      ? "Meta Business Suite ecosystem telemetry, asset health, and conversion funnel analytics."
+                      : activeItem.label === "Events Manager"
+                      ? "Manage Meta Datasets, browser Pixel SDK, and live customer conversion event telemetry."
+                      : activeItem.label === "Conversions API"
+                      ? "Monitor server-side Graph API v22.0 delivery, deduplication ledger, and background retry queue."
+                      : activeItem.label === "Ads & Attribution"
+                      ? "Synchronize Meta Ad accounts, campaign performance metrics, and multi-touch ROAS attribution."
+                      : activeItem.label === "Catalog Feed"
+                      ? "Manage Facebook Product Catalog XML feed synchronization and product taxonomy compliance."
+                      : "Verify domain ownership and Aggregated Event Measurement (AEM) protocols for angkon.net."}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {testEventCode && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                <AlertTriangle className="h-3 w-3 text-amber-600" />
-                Test: {testEventCode}
-              </span>
+              {testEventCode && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                  <AlertTriangle className="h-3 w-3 text-amber-600" />
+                  Test: {testEventCode}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Asset Locator Guide + Dataset ID Pill + External Links */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            {/* Meta Asset Locator & Setup Guide Launcher */}
+            <button
+              type="button"
+              onClick={() => setIsGuideOpen(true)}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl border border-blue-200 bg-blue-50/90 hover:bg-blue-100 text-blue-800 text-xs font-semibold transition cursor-pointer shadow-2xs"
+              title="Where to find all IDs and tokens in Facebook Business Manager"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+              <span className="hidden sm:inline">Meta Asset Guide</span>
+              <span className="sm:hidden">Guide</span>
+            </button>
+
+            {/* Connected Dataset Pill */}
+            {isConnected && (
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl font-mono">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-slate-500 font-sans text-[11px]">ID:</span>
+                <span>{pixelId}</span>
+                <button
+                  type="button"
+                  onClick={handleCopyId}
+                  className="p-0.5 hover:text-slate-900 transition rounded hover:bg-slate-200/60 cursor-pointer"
+                  title="Copy Dataset ID"
+                  aria-label="Copy Dataset ID"
+                >
+                  {copied ? (
+                    <Check className="h-3 w-3 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-3 w-3 text-slate-400" />
+                  )}
+                </button>
+              </div>
             )}
+
+            {/* External Link to Meta Business Suite */}
+            <a
+              href={
+                isConnected
+                  ? `https://eventsmanager.facebook.com/events_manager2/list/dataset/${pixelId}`
+                  : "https://business.facebook.com"
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
+              title="Open in Meta Business Suite"
+            >
+              <span>Meta Suite</span>
+              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+            </a>
+
+            {/* Primary Meta Action Button */}
+            <a
+              href={
+                isConnected
+                  ? `https://eventsmanager.facebook.com/events_manager2/list/dataset/${pixelId}`
+                  : "https://business.facebook.com"
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-xl bg-[#1877f2] hover:bg-[#166fe5] text-white text-xs font-semibold shadow-2xs transition cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Event</span>
+            </a>
           </div>
         </div>
+      </header>
 
-        {/* Right: Search by name or ID + Dataset ID + + Add button */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* Search Input matching Meta Business Suite */}
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search by name or ID"
-              className="h-8 pl-8 pr-3 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-44 sm:w-56 transition"
-              readOnly
-            />
-          </div>
-
-          {/* Connected Dataset Pill */}
-          {isConnected && (
-            <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md font-mono">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-slate-500 font-sans text-[11px]">ID:</span>
-              <span>{pixelId}</span>
-              <button
-                type="button"
-                onClick={handleCopyId}
-                className="p-0.5 hover:text-slate-900 transition rounded hover:bg-slate-200/60 cursor-pointer"
-                title="Copy Dataset ID"
-                aria-label="Copy Dataset ID"
-              >
-                {copied ? (
-                  <Check className="h-3 w-3 text-emerald-600" />
-                ) : (
-                  <Copy className="h-3 w-3 text-slate-400" />
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* External Link to Meta */}
-          <a
-            href={
-              isConnected
-                ? `https://eventsmanager.facebook.com/events_manager2/list/dataset/${pixelId}`
-                : "https://business.facebook.com"
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
-            title="Open in Meta Business Suite"
-          >
-            <span>Meta Suite</span>
-            <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-          </a>
-
-          {/* Primary Meta Blue Action Button: + Add */}
-          <a
-            href={
-              isConnected
-                ? `https://eventsmanager.facebook.com/events_manager2/list/dataset/${pixelId}`
-                : "https://business.facebook.com"
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-md bg-[#1877f2] hover:bg-[#166fe5] text-white text-xs font-semibold shadow-xs transition cursor-pointer"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Add</span>
-          </a>
-        </div>
-      </div>
-    </header>
+      {/* Global Meta Asset Locator Modal */}
+      <MetaAssetLocatorModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+    </>
   );
 }

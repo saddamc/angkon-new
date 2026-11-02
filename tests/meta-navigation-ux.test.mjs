@@ -55,15 +55,17 @@ test("Meta Navigation UX: 2. Lucide icons are imported and bound to each item", 
   assert.ok(metaNavContent.includes("Globe"), "Globe icon used for Domain Verification");
 });
 
-test("Meta Navigation UX: 3. Visual Styling matches Meta Business Suite spec (bg #f0f4f9, active #243342)", () => {
+test("Meta Navigation UX: 3. Visual Styling matches Meta Business Suite spec (gradient or #f0f4f9, active #243342)", () => {
   const metaNavContent = fs.readFileSync(
     path.resolve("src/app/admin/meta/meta-nav.tsx"),
     "utf-8"
   );
 
   assert.ok(
-    metaNavContent.includes("bg-[#f0f4f9]"),
-    "Sidebar background must match Meta Business Suite #f0f4f9"
+    metaNavContent.includes("#F5EDF8") ||
+      metaNavContent.includes("#F5EFF8") ||
+      metaNavContent.includes("bg-[#f0f4f9]"),
+    "Sidebar background must match Meta Business Suite gradient or #f0f4f9"
   );
   assert.ok(
     metaNavContent.includes("bg-[#243342]"),

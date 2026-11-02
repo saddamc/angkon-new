@@ -404,7 +404,7 @@ export default function MetaDomainVerificationPage() {
   const badgeInfo = getLifecycleBadge(lifecycle);
 
   return (
-    <div className="space-y-6 max-w-7xl pb-24 text-stone-900 font-sans antialiased">
+    <div className="space-y-6 max-w-7xl pb-24 text-slate-900 font-sans antialiased">
       {/* ── 1. Unified Navigation ── */}
       <MetaNavigationHeader pixelId={pixelId} testEventCode={settings?.testEventCode} />
 
@@ -434,18 +434,18 @@ export default function MetaDomainVerificationPage() {
       )}
 
       {/* ── 3. Executive Hero Card ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/70 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
               <Globe className="h-3 w-3 text-emerald-600" />
               <span>Apple iOS 14.5+ Brand Safety &amp; AEM</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
               Root Domain Verification &amp; Aggregated Event Measurement
-            </h1>
-            <p className="text-xs sm:text-[13px] text-stone-600 max-w-2xl leading-relaxed">
-              Meta requires root domain ownership verification to configure conversion event priority in Aggregated Event Measurement (AEM). Production domain <strong className="text-stone-900">angkon.net</strong> is managed on Namecheap with live DNS TXT verification.
+            </h2>
+            <p className="text-xs sm:text-[13px] text-slate-600 max-w-2xl leading-relaxed">
+              Meta requires root domain ownership verification to configure conversion event priority in Aggregated Event Measurement (AEM). Production domain <strong className="text-slate-900">angkon.net</strong> is managed on Namecheap with live DNS TXT verification.
             </p>
           </div>
 
@@ -453,9 +453,9 @@ export default function MetaDomainVerificationPage() {
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 shadow-2xs hover:bg-stone-50 hover:border-stone-300 transition cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition cursor-pointer shrink-0"
             >
-              <Plus className="h-3.5 w-3.5 text-stone-500" />
+              <Plus className="h-3.5 w-3.5 text-slate-500" />
               <span>Add Domain</span>
             </button>
 
@@ -463,18 +463,18 @@ export default function MetaDomainVerificationPage() {
               href="https://business.facebook.com/settings/brand-safety/domains"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 shadow-2xs hover:bg-stone-50 hover:border-stone-300 transition cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition cursor-pointer shrink-0"
             >
               <span>Meta Domains</span>
-              <ExternalLink className="h-3.5 w-3.5 text-stone-400" />
+              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
             </a>
           </div>
         </div>
 
         {/* Multi-Domain Registry Selector */}
         {checkResult && checkResult.domains && checkResult.domains.length > 0 && (
-          <div className="pt-3 border-t border-stone-100 flex items-center gap-2 overflow-x-auto text-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 shrink-0">
+          <div className="pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto text-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
               Domains:
             </span>
             {checkResult.domains.map((d) => (
@@ -484,8 +484,8 @@ export default function MetaDomainVerificationPage() {
                 onClick={() => fetchDomainOverview(d.domain, false)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-semibold text-xs transition cursor-pointer shrink-0 ${
                   d.domain === selectedDomain
-                    ? "bg-stone-900 text-white border-stone-900 shadow-2xs"
-                    : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100"
+                    ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                    : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
                 }`}
               >
                 <span>{d.domain}</span>
@@ -501,7 +501,7 @@ export default function MetaDomainVerificationPage() {
                       e.stopPropagation();
                       void handleDeleteDomain(d.domain);
                     }}
-                    className="ml-1 text-stone-400 hover:text-rose-500"
+                    className="ml-1 text-slate-400 hover:text-rose-500"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -513,19 +513,19 @@ export default function MetaDomainVerificationPage() {
       </div>
 
       {/* ── 4. Domain Health & Lifecycle Bar ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-stone-100">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2.5">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badgeInfo.bg}`}>
                 <span className={`h-2 w-2 rounded-full ${badgeInfo.dot} animate-pulse`} />
                 <span>{badgeInfo.label}</span>
               </span>
-              <span className="text-xs text-stone-500">
-                Target Root Domain: <strong className="font-mono text-stone-900">{rootDomain}</strong>
+              <span className="text-xs text-slate-500">
+                Target Root Domain: <strong className="font-mono text-slate-900">{rootDomain}</strong>
               </span>
             </div>
-            <p className="text-xs text-stone-500 mt-1.5 leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
               {badgeInfo.desc}
             </p>
           </div>
@@ -546,11 +546,11 @@ export default function MetaDomainVerificationPage() {
         {/* Three Independent Pillars (Section D) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
           {/* Pillar 1: DNS TXT Verification */}
-          <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-4 flex flex-col justify-between space-y-3">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-                  <Server className="h-3.5 w-3.5 text-stone-600" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Server className="h-3.5 w-3.5 text-slate-600" />
                   DNS TXT Verification
                 </span>
                 <span
@@ -565,25 +565,25 @@ export default function MetaDomainVerificationPage() {
                   {checkResult ? checkResult.dnsStatus : "CHECKING..."}
                 </span>
               </div>
-              <div className="text-sm font-bold text-stone-900 mt-2">
+              <div className="text-sm font-bold text-slate-900 mt-2">
                 {rootDomain} (Apex DNS)
               </div>
-              <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                 {checkResult?.lastDetails || "Querying live DNS TXT records directly on Namecheap..."}
               </p>
             </div>
-            <div className="pt-2.5 border-t border-stone-200/60 text-[11px] text-stone-500 flex items-center justify-between">
+            <div className="pt-2.5 border-t border-slate-200/60 text-[11px] text-slate-500 flex items-center justify-between">
               <span>Provider: <strong>Namecheap</strong></span>
               <span>Records: <strong>{checkResult?.lastExaminedRecords?.length || 0}</strong></span>
             </div>
           </div>
 
           {/* Pillar 2: HTML Meta Tag Verification */}
-          <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-4 flex flex-col justify-between space-y-3">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-                  <FileCode className="h-3.5 w-3.5 text-stone-600" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <FileCode className="h-3.5 w-3.5 text-slate-600" />
                   HTML Meta Tag
                 </span>
                 <span
@@ -591,32 +591,32 @@ export default function MetaDomainVerificationPage() {
                     isHtmlDetected
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : checkResult?.htmlStatus === "NOT_CHECKED"
-                      ? "bg-stone-100 text-stone-600 border-stone-200"
+                      ? "bg-slate-100 text-slate-600 border-slate-200"
                       : "bg-amber-50 text-amber-800 border-amber-200"
                   }`}
                 >
                   {checkResult ? checkResult.htmlStatus : "CHECKING..."}
                 </span>
               </div>
-              <div className="text-sm font-bold text-stone-900 mt-2">
+              <div className="text-sm font-bold text-slate-900 mt-2">
                 https://{rootDomain}/
               </div>
-              <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                 Injected in root HTML <code>&lt;head&gt;</code> of all storefront pages via Next.js metadata.
               </p>
             </div>
-            <div className="pt-2.5 border-t border-stone-200/60 text-[11px] text-stone-500 flex items-center justify-between">
+            <div className="pt-2.5 border-t border-slate-200/60 text-[11px] text-slate-500 flex items-center justify-between">
               <span>Channel: <strong>Storefront Head</strong></span>
               <span>Role: <strong>Secondary</strong></span>
             </div>
           </div>
 
           {/* Pillar 3: Meta Business Manager Ownership */}
-          <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-4 flex flex-col justify-between space-y-3">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 flex flex-col justify-between space-y-3">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
-                  <Shield className="h-3.5 w-3.5 text-stone-600" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-slate-600" />
                   Meta Ownership
                 </span>
                 <span
@@ -629,10 +629,10 @@ export default function MetaDomainVerificationPage() {
                   {isOwnershipVerified ? "VERIFIED" : "NEEDS_VERIFICATION"}
                 </span>
               </div>
-              <div className="text-sm font-bold text-stone-900 mt-2">
+              <div className="text-sm font-bold text-slate-900 mt-2">
                 Meta Business Manager
               </div>
-              <p className="text-[11px] text-stone-500 mt-1 leading-relaxed">
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
                 {isOwnershipVerified
                   ? `Confirmed in Meta Business Manager on ${
                       checkResult?.metaOwnershipVerifiedAt
@@ -642,9 +642,9 @@ export default function MetaDomainVerificationPage() {
                   : "Meta Business Manager confirmation required."}
               </p>
             </div>
-            <div className="pt-2.5 border-t border-stone-200/60 text-[11px] text-stone-500 flex items-center justify-between">
+            <div className="pt-2.5 border-t border-slate-200/60 text-[11px] text-slate-500 flex items-center justify-between">
               <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3 text-stone-400" />
+                <Clock className="h-3 w-3 text-slate-400" />
                 <span>{isOwnershipVerified ? "Confirmed" : "Action Req."}</span>
               </div>
               <button
@@ -660,7 +660,7 @@ export default function MetaDomainVerificationPage() {
         </div>
 
         {/* Timestamps Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-[11px] text-stone-500 border-t border-stone-100">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-[11px] text-slate-500 border-t border-slate-100">
           <div className="flex items-center gap-4">
             <span>
               Last Checked:{" "}
@@ -690,10 +690,10 @@ export default function MetaDomainVerificationPage() {
       </div>
 
       {/* ── 5. Token Configuration & Snippets ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <form onSubmit={handleSaveToken} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1.5">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
               Meta Domain Verification Token for {rootDomain}
             </label>
             <div className="flex flex-col sm:flex-row gap-2.5">
@@ -702,7 +702,7 @@ export default function MetaDomainVerificationPage() {
                 value={domainToken}
                 onChange={(e) => setDomainToken(e.target.value)}
                 placeholder="e.g. c82us1ogm8zgy1u7zn8v7dcvzpt1a2"
-                className="flex-1 rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-mono text-stone-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 transition shadow-2xs"
+                className="flex-1 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-mono text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100 transition shadow-2xs"
               />
               <button
                 type="submit"
@@ -713,14 +713,14 @@ export default function MetaDomainVerificationPage() {
                 <span>{saving ? "Saving..." : "Save Token"}</span>
               </button>
             </div>
-            <p className="text-[11px] text-stone-400 mt-1.5 flex items-center gap-1">
+            <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
               <Info className="h-3 w-3" />
               Obtained from Meta Business Manager &gt; Brand Safety and Suitability &gt; Domains.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-medium text-stone-700">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Primary Method:</span>
+          <div className="flex items-center gap-4 text-xs font-medium text-slate-700">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Primary Method:</span>
             <label className="inline-flex items-center gap-1.5 cursor-pointer">
               <input
                 type="radio"
@@ -749,10 +749,10 @@ export default function MetaDomainVerificationPage() {
         {/* Code Snippets */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
           {/* Method 1: DNS TXT Record */}
-          <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-stone-800">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
               <span className="flex items-center gap-1.5">
-                <Server className="h-3.5 w-3.5 text-stone-600" />
+                <Server className="h-3.5 w-3.5 text-slate-600" />
                 <span>Method 1: DNS TXT Record (Namecheap)</span>
               </span>
               <button
@@ -764,19 +764,19 @@ export default function MetaDomainVerificationPage() {
                 <span>{copiedDns ? "Copied!" : "Copy DNS Record"}</span>
               </button>
             </div>
-            <pre className="bg-stone-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <pre className="bg-slate-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {dnsSnippet}
             </pre>
-            <p className="text-[11px] text-stone-500 leading-normal">
+            <p className="text-[11px] text-slate-500 leading-normal">
               In Namecheap cPanel or Advanced DNS, add a <strong>TXT Record</strong> with Host: <code>@</code> and Value: <code>{dnsSnippet}</code>.
             </p>
           </div>
 
           {/* Method 2: HTML Meta Tag */}
-          <div className="rounded-xl border border-stone-200/80 bg-stone-50/70 p-3.5 space-y-2">
-            <div className="flex items-center justify-between text-xs font-semibold text-stone-800">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 space-y-2">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
               <span className="flex items-center gap-1.5">
-                <FileCode className="h-3.5 w-3.5 text-stone-600" />
+                <FileCode className="h-3.5 w-3.5 text-slate-600" />
                 <span>Method 2: HTML &lt;head&gt; Meta Tag (Auto-Injected)</span>
               </span>
               <button
@@ -788,10 +788,10 @@ export default function MetaDomainVerificationPage() {
                 <span>{copiedMeta ? "Copied!" : "Copy HTML Tag"}</span>
               </button>
             </div>
-            <pre className="bg-stone-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <pre className="bg-slate-900 text-emerald-400 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto shadow-inner [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {metaTagSnippet}
             </pre>
-            <p className="text-[11px] text-stone-500 leading-normal">
+            <p className="text-[11px] text-slate-500 leading-normal">
               Automatically injected into <code>&lt;head&gt;</code> on all <strong>https://{rootDomain}</strong> pages via Next.js metadata.
             </p>
           </div>
@@ -799,8 +799,8 @@ export default function MetaDomainVerificationPage() {
 
         {/* Examined TXT Records Inspector */}
         {checkResult && checkResult.lastExaminedRecords && checkResult.lastExaminedRecords.length > 0 && (
-          <div className="pt-3 border-t border-stone-100 space-y-1.5">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+          <div className="pt-3 border-t border-slate-100 space-y-1.5">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Live Namecheap DNS TXT Records Detected on {rootDomain} ({checkResult.lastExaminedRecords.length} records):
             </div>
             <div className="space-y-1">
@@ -810,7 +810,7 @@ export default function MetaDomainVerificationPage() {
                   className={`p-2 rounded-lg text-[11px] font-mono border flex items-center justify-between ${
                     rec.includes("facebook-domain-verification")
                       ? "bg-emerald-50/80 border-emerald-300 text-emerald-900 font-bold"
-                      : "bg-stone-50 border-stone-200 text-stone-600"
+                      : "bg-slate-50 border-slate-200 text-slate-600"
                   }`}
                 >
                   <span className="truncate flex-1">{rec}</span>
@@ -820,7 +820,7 @@ export default function MetaDomainVerificationPage() {
                     </span>
                   )}
                   {rec.startsWith("v=spf") && (
-                    <span className="text-[10px] bg-stone-200 text-stone-700 px-1.5 py-0.5 rounded font-bold ml-2">
+                    <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold ml-2">
                       SPF Record
                     </span>
                   )}
@@ -832,56 +832,56 @@ export default function MetaDomainVerificationPage() {
       </div>
 
       {/* ── 6. Verification History Timeline (Section 5) ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <History className="h-4 w-4 text-stone-600" />
-            <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+            <History className="h-4 w-4 text-slate-600" />
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Verification Audit History ({rootDomain})
             </h3>
           </div>
-          <span className="text-[11px] text-stone-400">Append-Only Audit Trail</span>
+          <span className="text-[11px] text-slate-400">Append-Only Audit Trail</span>
         </div>
 
         {checkResult && checkResult.auditHistory && checkResult.auditHistory.length > 0 ? (
-          <div className="divide-y divide-stone-100 max-h-72 overflow-y-auto">
+          <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
             {checkResult.auditHistory.map((item) => (
               <div key={item._id} className="py-2.5 flex items-start justify-between gap-3 text-xs">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-stone-800 uppercase tracking-wider text-[10px] bg-stone-100 px-2 py-0.5 rounded">
+                    <span className="font-semibold text-slate-800 uppercase tracking-wider text-[10px] bg-slate-100 px-2 py-0.5 rounded">
                       {item.action.replace(/_/g, " ")}
                     </span>
-                    <span className="font-bold text-stone-900">
+                    <span className="font-bold text-slate-900">
                       State: {item.newState}
                     </span>
                   </div>
-                  <p className="text-[11px] text-stone-500">
+                  <p className="text-[11px] text-slate-500">
                     {item.details || "Domain verification check executed."}
                   </p>
                 </div>
-                <div className="text-right text-[11px] text-stone-400 shrink-0">
+                <div className="text-right text-[11px] text-slate-400 shrink-0">
                   <div>{new Date(item.createdAt).toLocaleString()}</div>
-                  <div className="text-[10px] text-stone-500">By {item.actor}</div>
+                  <div className="text-[10px] text-slate-500">By {item.actor}</div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-stone-400 italic text-xs py-4 text-center">
+          <div className="text-slate-400 italic text-xs py-4 text-center">
             No audit records logged yet for this domain.
           </div>
         )}
       </div>
 
       {/* ── 7. Aggregated Event Measurement (AEM) Priority Hierarchy ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-stone-100">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-slate-100">
           <div>
-            <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Aggregated Event Measurement (AEM) 8-Event Priority Tier
             </h3>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               When iOS 14.5+ users opt out of tracking, Meta only receives the single highest-priority event configured in this hierarchy
             </p>
           </div>
@@ -894,26 +894,26 @@ export default function MetaDomainVerificationPage() {
           {AEM_PRIORITY_LIST.map((item) => (
             <div
               key={item.priority}
-              className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border border-stone-100 bg-stone-50/50 hover:bg-stone-50 transition gap-2"
+              className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition gap-2"
             >
               <div className="flex items-center gap-3">
-                <span className="h-6 w-6 rounded-lg bg-stone-900 text-white flex items-center justify-center text-xs font-black shrink-0">
+                <span className="h-6 w-6 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-black shrink-0">
                   #{item.priority}
                 </span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-stone-900">{item.name}</span>
+                    <span className="text-xs font-bold text-slate-900">{item.name}</span>
                     <span className={`rounded-full px-2 py-0.2 text-[10px] font-bold border ${item.badge}`}>
                       {item.level}
                     </span>
                   </div>
-                  <p className="text-[11px] text-stone-500 mt-0.5">{item.description}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{item.description}</p>
                 </div>
               </div>
 
-              <div className="text-left sm:text-right text-xs font-medium text-stone-600 sm:self-center">
+              <div className="text-left sm:text-right text-xs font-medium text-slate-600 sm:self-center">
                 <span>Optimization: </span>
-                <span className="font-bold text-stone-800">{item.optimization}</span>
+                <span className="font-bold text-slate-800">{item.optimization}</span>
               </div>
             </div>
           ))}
@@ -923,13 +923,13 @@ export default function MetaDomainVerificationPage() {
       {/* ── Add Domain Modal ── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-stone-200 space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <h3 className="text-base font-bold text-stone-900">Add Additional Domain</h3>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900">Add Additional Domain</h3>
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-stone-400 hover:text-stone-700 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -937,7 +937,7 @@ export default function MetaDomainVerificationPage() {
 
             <form onSubmit={handleAddDomainSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold uppercase tracking-wider text-stone-600 mb-1">
+                <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                   Domain Name (FQDN)
                 </label>
                 <input
@@ -946,15 +946,15 @@ export default function MetaDomainVerificationPage() {
                   value={newDomainInput}
                   onChange={(e) => setNewDomainInput(e.target.value)}
                   placeholder="e.g. angkon-outlet.com"
-                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2 font-mono text-stone-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 />
-                <p className="text-[10px] text-stone-400 mt-1">
+                <p className="text-[10px] text-slate-400 mt-1">
                   Enter the root domain. Subdomains will be automatically normalized.
                 </p>
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-stone-600 mb-1">
+                <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                   Custom Verification Token (Optional)
                 </label>
                 <input
@@ -962,29 +962,29 @@ export default function MetaDomainVerificationPage() {
                   value={newDomainToken}
                   onChange={(e) => setNewDomainToken(e.target.value)}
                   placeholder="Leave blank to auto-generate"
-                  className="w-full rounded-xl border border-stone-200 px-3.5 py-2 font-mono text-stone-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 px-3.5 py-2 font-mono text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 />
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-stone-600 mb-1">
+                <label className="block font-bold uppercase tracking-wider text-slate-600 mb-1">
                   Verification Method
                 </label>
                 <select
                   value={newDomainMethod}
                   onChange={(e) => setNewDomainMethod(e.target.value as "dns_txt" | "html_meta_tag")}
-                  className="w-full rounded-xl border border-stone-200 px-3 py-2 text-stone-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                 >
                   <option value="dns_txt">DNS TXT Record (Recommended)</option>
                   <option value="html_meta_tag">HTML &lt;head&gt; Meta Tag</option>
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl border border-stone-200 text-stone-600 font-semibold hover:bg-stone-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>

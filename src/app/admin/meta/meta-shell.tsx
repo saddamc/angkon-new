@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import {
   MetaNavProvider,
   MetaSuiteSidebar,
   useMetaNav,
+  META_SIDEBAR_GRADIENT,
+  META_CANVAS_GRADIENT,
 } from "./meta-nav";
+
+// Re-export centralized CSS gradient tokens matching Meta Business Suite
+export { META_SIDEBAR_GRADIENT, META_CANVAS_GRADIENT };
 
 function MetaSuiteLayoutInner({ children }: { children: ReactNode }) {
   const { isMobileOpen, closeMobile } = useMetaNav();
+  const pathname = usePathname();
+  const isEventsPage = pathname?.startsWith("/admin/meta/events");
 
   // Close mobile drawer on Escape key press
   useEffect(() => {
@@ -22,7 +30,12 @@ function MetaSuiteLayoutInner({ children }: { children: ReactNode }) {
   }, [isMobileOpen, closeMobile]);
 
   return (
-    <div className="relative flex flex-col lg:flex-row h-full w-full bg-[#f8fafc] text-stone-900 font-sans antialiased overflow-hidden">
+    <div
+      className="relative flex flex-col lg:flex-row h-full w-full text-slate-900 font-sans antialiased overflow-hidden"
+      style={{
+        background: META_CANVAS_GRADIENT,
+      }}
+    >
       {/* ── Desktop Persistent Sidebar (Expandable: 250px / Collapsible: 68px) ── */}
       <div className="hidden lg:flex shrink-0 h-full z-20">
         <MetaSuiteSidebar />
@@ -44,15 +57,30 @@ function MetaSuiteLayoutInner({ children }: { children: ReactNode }) {
           />
 
           {/* Slide-out Sidebar Drawer */}
-          <div className="relative z-50 flex h-full max-w-[280px] w-full flex-col bg-[#f0f4f9] shadow-2xl animate-in slide-in-from-left duration-200">
+          <div
+            className="relative z-50 flex h-full max-w-[280px] w-full flex-col shadow-2xl animate-in slide-in-from-left duration-200"
+            style={{
+              background: META_SIDEBAR_GRADIENT,
+            }}
+          >
             <MetaSuiteSidebar isDrawer onClose={closeMobile} />
           </div>
         </div>
       )}
 
       {/* ── Main Content Area: expands dynamically when sidebar collapses ── */}
-      <div className="flex-1 min-w-0 h-full p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        <div className="w-full max-w-7xl mx-auto">{children}</div>
+      <div
+        id="meta-canvas-scroll"
+        className={`flex-1 min-w-0 h-full overflow-y-auto ${
+          isEventsPage ? "p-2 sm:p-3 lg:p-4" : "p-4 sm:p-6 lg:p-8"
+        }`}
+        style={{
+          background: META_CANVAS_GRADIENT,
+          backgroundAttachment: "fixed",
+          backgroundColor: "#DFEAF7",
+        }}
+      >
+        <div className={`w-full ${isEventsPage ? "w-full" : "max-w-7xl mx-auto"}`}>{children}</div>
       </div>
     </div>
   );

@@ -367,7 +367,13 @@ export default function AdminLayout({
         }`}
       >
         {/* Top Header */}
-        <header className="shrink-0 z-30 h-[68px] bg-white/80 backdrop-blur-lg border-b border-purple-100 flex items-center px-6 gap-4">
+        <header
+          className={`shrink-0 z-30 h-[68px] flex items-center px-6 gap-4 backdrop-blur-md transition-colors ${
+            isMetaRoute
+              ? "bg-white/95 border-b border-[#dbe3ee] shadow-2xs"
+              : "bg-white/80 backdrop-blur-lg border-b border-purple-100"
+          }`}
+        >
           {/* Mobile menu button */}
           <button
             onClick={() => setSidebarOpen(true)}

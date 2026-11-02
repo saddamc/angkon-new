@@ -25,9 +25,12 @@ import {
   ShoppingBag,
   Store,
   XCircle,
+  BookOpen,
 } from "lucide-react";
 import Link from "next/link";
 import { MetaNavigationHeader } from "../meta-nav";
+import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
+import { InfoPopover } from "@/components/admin/meta/info-popover";
 import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
 import type {
   MetaCatalogConnectionState,
@@ -199,9 +202,9 @@ const toneClasses: Record<Tone, { badge: string; icon: string; panel: string }> 
     panel: "border-rose-100",
   },
   neutral: {
-    badge: "bg-stone-100 text-stone-600 border-stone-200",
-    icon: "bg-stone-100 text-stone-500",
-    panel: "border-stone-200",
+    badge: "bg-slate-100 text-slate-600 border-slate-200",
+    icon: "bg-slate-100 text-slate-500",
+    panel: "border-slate-200",
   },
   pending: {
     badge: "bg-blue-50 text-blue-700 border-blue-200",
@@ -264,7 +267,7 @@ function DiagnosticCard({
             {icon}
           </div>
           <div className="min-w-0">
-            <h4 className="text-xs font-bold text-stone-900">{title}</h4>
+            <h4 className="text-xs font-bold text-slate-900">{title}</h4>
             <span
               className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${styles.badge}`}
             >
@@ -274,8 +277,8 @@ function DiagnosticCard({
         </div>
         {action}
       </div>
-      <p className="mt-2.5 text-[11px] leading-relaxed text-stone-600">{detail}</p>
-      {meta && <p className="mt-1.5 font-mono text-[10px] text-stone-500">{meta}</p>}
+      <p className="mt-2.5 text-[11px] leading-relaxed text-slate-600">{detail}</p>
+      {meta && <p className="mt-1.5 font-mono text-[10px] text-slate-500">{meta}</p>}
     </div>
   );
 }
@@ -298,6 +301,8 @@ export default function MetaCatalogPage() {
   const [catalogId, setCatalogId] = useState("");
   const [businessId, setBusinessId] = useState("");
   const [catalogToken, setCatalogToken] = useState("");
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [guideAssetId, setGuideAssetId] = useState("catalog_id");
   const [savingCatalog, setSavingCatalog] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [formMessage, setFormMessage] = useState<{ type: "success" | "error"; text: string } | null>(
@@ -645,21 +650,21 @@ export default function MetaCatalogPage() {
   const catalogConnectionTone = connectionTone(catalogConnectionState);
 
   return (
-    <div className="min-w-0 max-w-7xl space-y-6 pb-24 font-sans text-stone-900 antialiased">
+    <div className="min-w-0 max-w-7xl space-y-6 pb-24 font-sans text-slate-900 antialiased">
       <MetaNavigationHeader pixelId={pixelId} testEventCode={settings?.testEventCode} />
 
       {/* ── 1. Hero ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs sm:p-6">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-2">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/70 bg-purple-50 px-2.5 py-0.5 text-[11px] font-bold text-purple-800">
               <ShoppingBag className="h-3 w-3 text-purple-600" />
               <span>Meta Commerce Catalog</span>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-stone-900 sm:text-2xl">
+            <h2 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
               Product Catalog Feed &amp; Commerce Manager Setup
-            </h1>
-            <p className="max-w-3xl text-xs leading-relaxed text-stone-600 sm:text-[13px]">
+            </h2>
+            <p className="max-w-3xl text-xs leading-relaxed text-slate-600 sm:text-[13px]">
               Publish a validated RSS 2.0 product feed for Facebook &amp; Instagram Shops and
               Dynamic Product Ads. Feed item IDs use the same numeric product ID as the browser
               Pixel and server Conversions API.
@@ -673,7 +678,7 @@ export default function MetaCatalogPage() {
                 <ShieldCheck className="h-3 w-3" />
                 Currency: BDT
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 font-semibold text-stone-600">
+              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-semibold text-slate-600">
                 <Activity className="h-3 w-3" />
                 RSS 2.0 / XML
               </span>
@@ -695,7 +700,7 @@ export default function MetaCatalogPage() {
               type="button"
               onClick={() => void loadData()}
               disabled={refreshing}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 shadow-2xs transition hover:bg-stone-50 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
@@ -703,11 +708,11 @@ export default function MetaCatalogPage() {
           </div>
         </div>
 
-        <div className="mt-4 border-t border-stone-100 pt-4">
+        <div className="mt-4 border-t border-slate-100 pt-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Production scheduled-feed URL
                 </span>
                 <span
@@ -719,12 +724,12 @@ export default function MetaCatalogPage() {
                 >
                   {feedInfo?.productionIsPublicHttps ? "HTTPS" : "CHECK CONFIGURATION"}
                 </span>
-                <span className="font-mono text-[10px] text-stone-500">
+                <span className="font-mono text-[10px] text-slate-500">
                   source: {feedInfo?.productionSource || "resolving..."}
                 </span>
               </div>
-              <div className="min-w-0 rounded-xl border border-stone-200/80 bg-stone-50 px-3.5 py-2 shadow-2xs">
-                <code className="block break-all font-mono text-xs text-stone-800">
+              <div className="min-w-0 rounded-xl border border-slate-200/80 bg-slate-50 px-3.5 py-2 shadow-2xs">
+                <code className="block break-all font-mono text-xs text-slate-800">
                   {productionUrl || "Resolving canonical production URL..."}
                 </code>
               </div>
@@ -748,9 +753,9 @@ export default function MetaCatalogPage() {
                 href={productionUrl || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 shadow-2xs transition hover:bg-stone-50"
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
               >
-                <ExternalLink className="h-3.5 w-3.5 text-stone-400" />
+                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
                 <span>Open Feed</span>
               </a>
             </div>
@@ -801,56 +806,56 @@ export default function MetaCatalogPage() {
 
       {/* ── 2. KPI cards ── */}
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Valid feed items
             </span>
             <PackageCheck className="h-4 w-4 text-emerald-600" />
           </div>
-          <div className="mt-1.5 text-2xl font-black text-stone-900">{validCount}</div>
+          <div className="mt-1.5 text-2xl font-black text-slate-900">{validCount}</div>
           <p className="mt-1 text-[11px] leading-snug text-emerald-700">
             Products that passed every required feed check.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Invalid feed items
             </span>
-            <ShieldAlert className={`h-4 w-4 ${invalidCount > 0 ? "text-rose-600" : "text-stone-400"}`} />
+            <ShieldAlert className={`h-4 w-4 ${invalidCount > 0 ? "text-rose-600" : "text-slate-400"}`} />
           </div>
-          <div className="mt-1.5 text-2xl font-black text-stone-900">{invalidCount}</div>
-          <p className={`mt-1 text-[11px] leading-snug ${invalidCount > 0 ? "text-rose-700" : "text-stone-500"}`}>
+          <div className="mt-1.5 text-2xl font-black text-slate-900">{invalidCount}</div>
+          <p className={`mt-1 text-[11px] leading-snug ${invalidCount > 0 ? "text-rose-700" : "text-slate-500"}`}>
             {invalidCount > 0
               ? "These rows are excluded from the XML and listed below."
               : "No local validation errors detected."}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Excluded from catalog
             </span>
-            <XCircle className="h-4 w-4 text-stone-400" />
+            <XCircle className="h-4 w-4 text-slate-400" />
           </div>
-          <div className="mt-1.5 text-2xl font-black text-stone-900">{excludedCount}</div>
-          <p className="mt-1 text-[11px] leading-snug text-stone-500">
+          <div className="mt-1.5 text-2xl font-black text-slate-900">{excludedCount}</div>
+          <p className="mt-1 text-[11px] leading-snug text-slate-500">
             Draft, private, deleted, inactive, or hidden products are never emitted.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
               Category mapping
             </span>
             <Globe className="h-4 w-4 text-purple-600" />
           </div>
-          <div className="mt-1.5 text-2xl font-black text-stone-900">{classificationPct}%</div>
-          <p className="mt-1 text-[11px] leading-snug text-stone-500">
+          <div className="mt-1.5 text-2xl font-black text-slate-900">{classificationPct}%</div>
+          <p className="mt-1 text-[11px] leading-snug text-slate-500">
             {mappedCount} specific, {genericCount} product-type fallback, {unmappedCount} unmapped.
             This is coverage, not a claim that every item is perfectly classified.
           </p>
@@ -858,16 +863,16 @@ export default function MetaCatalogPage() {
       </div>
 
       {/* ── 3. Setup: scheduled feed ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs sm:p-6">
-        <div className="flex flex-col gap-2 border-b border-stone-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700">
                 OPTION A
               </span>
-              <h2 className="text-sm font-bold text-stone-900">Scheduled feed (recommended)</h2>
+              <h2 className="text-sm font-bold text-slate-900">Scheduled feed (recommended)</h2>
             </div>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600">
               No Meta API token is required. Paste the production HTTPS URL into Commerce Manager
               and let Meta fetch it on a schedule.
             </p>
@@ -876,11 +881,11 @@ export default function MetaCatalogPage() {
             href="https://business.facebook.com/commerce"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-700 shadow-2xs transition hover:bg-stone-50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50"
           >
-            <Store className="h-3.5 w-3.5 text-stone-400" />
+            <Store className="h-3.5 w-3.5 text-slate-400" />
             <span>Commerce Manager</span>
-            <ExternalLink className="h-3 w-3 text-stone-400" />
+            <ExternalLink className="h-3 w-3 text-slate-400" />
           </a>
         </div>
 
@@ -907,14 +912,14 @@ export default function MetaCatalogPage() {
               body: "ANGKON can serve the XML, but only Meta can confirm import. Check Commerce Manager for item errors and status.",
             },
           ].map((item) => (
-            <div key={item.step} className="rounded-xl border border-stone-200/70 bg-stone-50/60 p-4">
+            <div key={item.step} className="rounded-xl border border-slate-200/70 bg-slate-50/60 p-4">
               <div className="flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 text-[10px] font-bold text-white">
                   {item.step}
                 </span>
-                <span className="text-xs font-bold text-stone-900">{item.title}</span>
+                <span className="text-xs font-bold text-slate-900">{item.title}</span>
               </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-stone-600">{item.body}</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{item.body}</p>
             </div>
           ))}
         </div>
@@ -927,18 +932,18 @@ export default function MetaCatalogPage() {
       </div>
 
       {/* ── 4. Setup: Catalog API (optional) ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs sm:p-6">
-        <div className="flex flex-col gap-2 border-b border-stone-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-stone-600">
+              <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                 OPTION B
               </span>
-              <h2 className="text-sm font-bold text-stone-900">Catalog API (advanced, optional)</h2>
+              <h2 className="text-sm font-bold text-slate-900">Catalog API (advanced, optional)</h2>
             </div>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600">
               Separate from CAPI. Requires a customer-authorized Meta app with{" "}
-              <code className="rounded bg-stone-100 px-1 py-0.5 font-mono text-[10px]">
+              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px]">
                 catalog_management
               </code>{" "}
               permission. This page never reuses your Conversions API token.
@@ -957,9 +962,23 @@ export default function MetaCatalogPage() {
           <form onSubmit={saveCatalogSetup} className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
-                  Meta Catalog ID
-                </span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <span>Meta Catalog ID</span>
+                    <InfoPopover metricKey="catalog-id" iconSize="xs" />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGuideAssetId("catalog_id");
+                      setIsGuideOpen(true);
+                    }}
+                    className="text-[10px] text-purple-600 hover:text-purple-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <BookOpen className="h-3 w-3" />
+                    <span>Where to find this?</span>
+                  </button>
+                </div>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -967,12 +986,12 @@ export default function MetaCatalogPage() {
                   onChange={(event) => setCatalogId(event.target.value)}
                   placeholder="e.g. 123456789012345"
                   autoComplete="off"
-                  className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 font-mono text-xs text-stone-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   Meta Business ID (optional)
                 </span>
                 <input
@@ -982,13 +1001,13 @@ export default function MetaCatalogPage() {
                   onChange={(event) => setBusinessId(event.target.value)}
                   placeholder="Business Manager ID"
                   autoComplete="off"
-                  className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 font-mono text-xs text-stone-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
                 />
               </label>
             </div>
 
             <label className="block">
-              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Catalog API access token
               </span>
               <input
@@ -1001,9 +1020,9 @@ export default function MetaCatalogPage() {
                     : "Dedicated catalog_management token"
                 }
                 autoComplete="new-password"
-                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 font-mono text-xs text-stone-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 outline-none transition focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
               />
-              <span className="mt-1 block text-[10px] leading-relaxed text-stone-500">
+              <span className="mt-1 block text-[10px] leading-relaxed text-slate-500">
                 Stored server-side and never returned to the browser. Do not paste your CAPI token.
               </span>
             </label>
@@ -1012,7 +1031,7 @@ export default function MetaCatalogPage() {
               <button
                 type="submit"
                 disabled={savingCatalog}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-stone-900 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-stone-800 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-2xs transition hover:bg-slate-800 disabled:opacity-50"
               >
                 {savingCatalog ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1041,9 +1060,9 @@ export default function MetaCatalogPage() {
                   type="button"
                   onClick={() => void clearCatalogSetup()}
                   disabled={savingCatalog}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-semibold text-stone-600 transition hover:bg-stone-50 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <XCircle className="h-3.5 w-3.5 text-stone-400" />
+                  <XCircle className="h-3.5 w-3.5 text-slate-400" />
                   <span>Clear API setup</span>
                 </button>
               )}
@@ -1068,37 +1087,37 @@ export default function MetaCatalogPage() {
             )}
           </form>
 
-          <div className="space-y-3 rounded-xl border border-stone-200/70 bg-stone-50/60 p-4">
-            <h3 className="text-xs font-bold text-stone-900">Current API state</h3>
+          <div className="space-y-3 rounded-xl border border-slate-200/70 bg-slate-50/60 p-4">
+            <h3 className="text-xs font-bold text-slate-900">Current API state</h3>
             <dl className="space-y-2 text-[11px]">
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-stone-500">Catalog ID</dt>
-                <dd className="break-all text-right font-mono font-semibold text-stone-800">
+                <dt className="text-slate-500">Catalog ID</dt>
+                <dd className="break-all text-right font-mono font-semibold text-slate-800">
                   {catalogSettings?.catalogId || "Not set"}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-stone-500">Credential</dt>
-                <dd className="break-all text-right font-mono font-semibold text-stone-800">
+                <dt className="text-slate-500">Credential</dt>
+                <dd className="break-all text-right font-mono font-semibold text-slate-800">
                   {catalogSettings?.hasCatalogApiToken
                     ? catalogSettings.maskedCatalogApiToken
                     : "Not set"}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-stone-500">Catalog name</dt>
-                <dd className="text-right font-semibold text-stone-800">
+                <dt className="text-slate-500">Catalog name</dt>
+                <dd className="text-right font-semibold text-slate-800">
                   {catalogSettings?.catalogName || "Not verified"}
                 </dd>
               </div>
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-stone-500">Last verified</dt>
-                <dd className="text-right font-semibold text-stone-800">
+                <dt className="text-slate-500">Last verified</dt>
+                <dd className="text-right font-semibold text-slate-800">
                   {formatDateTime(catalogSettings?.lastVerifiedAt)}
                 </dd>
               </div>
             </dl>
-            <p className="border-t border-stone-200 pt-2 text-[10px] leading-relaxed text-stone-500">
+            <p className="border-t border-slate-200 pt-2 text-[10px] leading-relaxed text-slate-500">
               {catalogSettings?.connectionDetail ||
                 "Catalog API management is not configured. Scheduled-feed setup still works."}
             </p>
@@ -1108,17 +1127,17 @@ export default function MetaCatalogPage() {
 
       {/* ── 4.5. Stage 2: Scheduled Feed Registration & Import Monitoring ── */}
       <div className="rounded-2xl border border-purple-200/90 bg-white p-5 shadow-xs sm:p-6">
-        <div className="flex flex-col gap-2 border-b border-stone-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-2 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-[10px] font-bold text-purple-700">
                 STAGE 2 INTEGRATION
               </span>
-              <h2 className="text-sm font-bold text-stone-900">
+              <h2 className="text-sm font-bold text-slate-900">
                 Meta Commerce Scheduled Feed Registration &amp; Monitoring
               </h2>
             </div>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600">
               Registers ANGKON&apos;s verified XML feed URL directly with Meta&apos;s Product Feeds API and retrieves actual ingestion telemetry from Meta Commerce Manager.
             </p>
           </div>
@@ -1129,7 +1148,7 @@ export default function MetaCatalogPage() {
                   ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                   : metaConfig?.feedRegistrationStatus === "FAILED"
                   ? "border-rose-200 bg-rose-50 text-rose-800"
-                  : "border-stone-200 bg-stone-50 text-stone-700"
+                  : "border-slate-200 bg-slate-50 text-slate-700"
               }`}
             >
               Feed: {metaConfig?.feedRegistrationStatus || "UNREGISTERED"}
@@ -1145,26 +1164,26 @@ export default function MetaCatalogPage() {
         <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Registered Feed Name
                 </span>
-                <p className="mt-1 text-xs font-semibold text-stone-900">
+                <p className="mt-1 text-xs font-semibold text-slate-900">
                   {metaConfig?.feedName || "ANGKON Production Catalog Feed"}
                 </p>
-                <p className="mt-0.5 text-[11px] text-stone-500">
+                <p className="mt-0.5 text-[11px] text-slate-500">
                   Schedule: Daily at 04:00 AM BD Time (UTC+6)
                 </p>
               </div>
 
-              <div className="rounded-xl border border-stone-200/80 bg-stone-50/50 p-3.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Graph API Version
                 </span>
-                <p className="mt-1 font-mono text-xs font-semibold text-stone-900">
+                <p className="mt-1 font-mono text-xs font-semibold text-slate-900">
                   {metaConfig?.graphApiVersion || "v22.0"}
                 </p>
-                <p className="mt-0.5 text-[11px] text-stone-500">
+                <p className="mt-0.5 text-[11px] text-slate-500">
                   Credentials encrypted with AES-256-GCM at rest
                 </p>
               </div>
@@ -1208,9 +1227,9 @@ export default function MetaCatalogPage() {
                   type="button"
                   onClick={() => void disconnectFeedRegistration()}
                   disabled={registeringFeed}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 transition hover:bg-stone-50 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
-                  <XCircle className="h-3.5 w-3.5 text-stone-400" />
+                  <XCircle className="h-3.5 w-3.5 text-slate-400" />
                   <span>Unbind Feed</span>
                 </button>
               )}
@@ -1228,7 +1247,7 @@ export default function MetaCatalogPage() {
 
           <div className="space-y-3 rounded-xl border border-purple-100 bg-purple-50/40 p-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-stone-900">Latest Meta Import Batch</h3>
+              <h3 className="text-xs font-bold text-slate-900">Latest Meta Import Batch</h3>
               <span
                 className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${
                   metaConfig?.lastImportStatus === "SUCCESS"
@@ -1239,7 +1258,7 @@ export default function MetaCatalogPage() {
                     ? "border-rose-200 bg-rose-50 text-rose-800"
                     : metaConfig?.lastImportStatus === "RUNNING"
                     ? "border-blue-200 bg-blue-50 text-blue-800"
-                    : "border-stone-200 bg-stone-100 text-stone-600"
+                    : "border-slate-200 bg-slate-100 text-slate-600"
                 }`}
               >
                 {metaConfig?.lastImportStatus || "NOT_STARTED"}
@@ -1248,8 +1267,8 @@ export default function MetaCatalogPage() {
 
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-lg bg-white p-2.5 border border-purple-100/60 shadow-2xs">
-                <span className="block text-[10px] font-bold text-stone-500 uppercase">Processed</span>
-                <span className="text-lg font-black text-stone-900">
+                <span className="block text-[10px] font-bold text-slate-500 uppercase">Processed</span>
+                <span className="text-lg font-black text-slate-900">
                   {metaConfig?.lastImportStats?.productsProcessed ?? 0}
                 </span>
               </div>
@@ -1273,7 +1292,7 @@ export default function MetaCatalogPage() {
               </div>
             </div>
 
-            <p className="border-t border-purple-200/50 pt-2 text-[10px] leading-relaxed text-stone-600">
+            <p className="border-t border-purple-200/50 pt-2 text-[10px] leading-relaxed text-slate-600">
               {metaConfig?.lastSuccessfulImportAt
                 ? `Last successful import confirmed by Meta: ${formatDateTime(metaConfig.lastSuccessfulImportAt)}`
                 : "No successful import records found yet. Click 'Fetch Meta Import Telemetry' after Meta runs the first scheduled pull."}
@@ -1286,8 +1305,8 @@ export default function MetaCatalogPage() {
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-sm font-bold text-stone-900">Feed diagnostics</h2>
-            <p className="text-xs leading-relaxed text-stone-600">
+            <h2 className="text-sm font-bold text-slate-900">Feed diagnostics</h2>
+            <p className="text-xs leading-relaxed text-slate-600">
               Serving XML does not mean Meta imported it. Each state below is reported separately.
             </p>
           </div>
@@ -1472,28 +1491,28 @@ export default function MetaCatalogPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-3">
-          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
             <div className="flex items-center gap-2">
-              <Clock3 className="h-4 w-4 text-stone-400" />
-              <h4 className="text-xs font-bold text-stone-900">Last updated</h4>
+              <Clock3 className="h-4 w-4 text-slate-400" />
+              <h4 className="text-xs font-bold text-slate-900">Last updated</h4>
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-stone-600">
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
               Feed generated: <strong>{formatDateTime(diagnostics?.generatedAt)}</strong>
             </p>
-            <p className="mt-1 text-[11px] leading-relaxed text-stone-600">
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
               Latest product change:{" "}
               <strong>{formatDateTime(diagnostics?.latestProductUpdatedAt)}</strong>
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
             <div className="flex items-center gap-2">
-              <Link2 className="h-4 w-4 text-stone-400" />
-              <h4 className="text-xs font-bold text-stone-900">Identifier alignment</h4>
+              <Link2 className="h-4 w-4 text-slate-400" />
+              <h4 className="text-xs font-bold text-slate-900">Identifier alignment</h4>
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-stone-600">
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
               Canonical ID is the numeric product ID. Legacy{" "}
-              <code className="rounded bg-stone-100 px-1 py-0.5 font-mono text-[10px]">
+              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px]">
                 wc_post_228001
               </code>{" "}
               is normalized to{" "}
@@ -1504,25 +1523,25 @@ export default function MetaCatalogPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs">
             <div className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-stone-400" />
-              <h4 className="text-xs font-bold text-stone-900">Taxonomy coverage</h4>
+              <Globe className="h-4 w-4 text-slate-400" />
+              <h4 className="text-xs font-bold text-slate-900">Taxonomy coverage</h4>
             </div>
             {Object.keys(coverage?.byCategory || {}).length > 0 ? (
-              <ul className="mt-2 space-y-1 text-[11px] text-stone-600">
+              <ul className="mt-2 space-y-1 text-[11px] text-slate-600">
                 {Object.entries(coverage?.byCategory || {})
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 3)
                   .map(([category, count]) => (
                     <li key={category} className="flex items-start justify-between gap-2">
                       <span className="line-clamp-2">{category}</span>
-                      <span className="shrink-0 font-mono font-semibold text-stone-800">{count}</span>
+                      <span className="shrink-0 font-mono font-semibold text-slate-800">{count}</span>
                     </li>
                   ))}
               </ul>
             ) : (
-              <p className="mt-2 text-[11px] text-stone-500">
+              <p className="mt-2 text-[11px] text-slate-500">
                 No specific taxonomy mappings yet. Product type is still emitted from the real store
                 categories.
               </p>
@@ -1532,32 +1551,32 @@ export default function MetaCatalogPage() {
       </div>
 
       {/* ── 6. Product preview ── */}
-      <div className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 p-4 sm:p-5">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 p-4 sm:p-5">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-900">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
               Catalog feed products preview
             </h3>
-            <p className="mt-0.5 text-xs text-stone-500">
+            <p className="mt-0.5 text-xs text-slate-500">
               IDs shown here are the exact identifiers sent to Meta in the feed, Pixel, and CAPI.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-lg bg-stone-100 px-2.5 py-1 font-mono text-[11px] font-semibold text-stone-600">
+            <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-[11px] font-semibold text-slate-600">
               {items.length} loaded
             </span>
-            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-stone-400" />}
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />}
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="p-10 text-center text-xs text-stone-500">
+          <div className="p-10 text-center text-xs text-slate-500">
             {loading ? "Loading catalog items..." : "No valid products are available for the feed."}
           </div>
         ) : (
           <div className="max-w-full overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-xs">
-              <thead className="border-b border-stone-100 bg-stone-50/80 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+              <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Item ID</th>
                   <th className="px-4 py-3">Product</th>
@@ -1567,22 +1586,22 @@ export default function MetaCatalogPage() {
                   <th className="px-4 py-3 text-right">Storefront</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-slate-100">
                 {items.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-stone-50/60">
+                  <tr key={item.id} className="transition hover:bg-slate-50/60">
                     <td className="px-4 py-3 font-mono font-bold text-purple-700">{item.id}</td>
                     <td className="max-w-xs px-4 py-3">
-                      <div className="truncate font-semibold text-stone-800">{item.title}</div>
-                      <div className="truncate text-[10px] text-stone-400">
+                      <div className="truncate font-semibold text-slate-800">{item.title}</div>
+                      <div className="truncate text-[10px] text-slate-400">
                         {item.brand || "ANGKON"}
                         {item.size ? ` · ${item.size}` : ""}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-bold text-stone-900">
+                    <td className="whitespace-nowrap px-4 py-3 font-bold text-slate-900">
                       {item.sale_price ? (
                         <span>
                           <span className="text-emerald-700">{item.sale_price}</span>
-                          <span className="ml-1 text-[10px] font-normal text-stone-400 line-through">
+                          <span className="ml-1 text-[10px] font-normal text-slate-400 line-through">
                             {item.price}
                           </span>
                         </span>
@@ -1602,11 +1621,11 @@ export default function MetaCatalogPage() {
                       </span>
                     </td>
                     <td className="max-w-[220px] px-4 py-3">
-                      <div className="truncate text-[11px] text-stone-600">
+                      <div className="truncate text-[11px] text-slate-600">
                         {item.google_product_category || "Product-type fallback"}
                       </div>
                       {item.product_type && (
-                        <div className="truncate text-[10px] text-stone-400">{item.product_type}</div>
+                        <div className="truncate text-[10px] text-slate-400">{item.product_type}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -1629,13 +1648,13 @@ export default function MetaCatalogPage() {
       </div>
 
       {/* ── 7. Invalid items ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-900">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
               Local validation errors
             </h3>
-            <p className="mt-0.5 text-xs text-stone-500">
+            <p className="mt-0.5 text-xs text-slate-500">
               Rows listed here are not present in the XML feed.
             </p>
           </div>
@@ -1651,7 +1670,7 @@ export default function MetaCatalogPage() {
         </div>
 
         {!diagnostics ? (
-          <p className="pt-4 text-xs text-stone-500">Running local validation...</p>
+          <p className="pt-4 text-xs text-slate-500">Running local validation...</p>
         ) : diagnostics.invalidSamples.length === 0 ? (
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 text-[11px] text-emerald-800">
             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -1660,25 +1679,25 @@ export default function MetaCatalogPage() {
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[620px] text-left text-xs">
-              <thead className="border-b border-stone-100 text-[10px] font-bold uppercase tracking-wider text-stone-500">
+              <thead className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="py-2 pr-4">Product</th>
                   <th className="py-2 pr-4">Item ID</th>
                   <th className="py-2">Reasons</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-slate-100">
                 {diagnostics.invalidSamples.map((issue, index) => (
                   <tr key={`${issue.productId || issue.slug || "invalid"}-${index}`}>
                     <td className="max-w-[260px] py-3 pr-4">
-                      <div className="truncate font-semibold text-stone-800">
+                      <div className="truncate font-semibold text-slate-800">
                         {issue.name || "(untitled product)"}
                       </div>
-                      <div className="truncate font-mono text-[10px] text-stone-400">
+                      <div className="truncate font-mono text-[10px] text-slate-400">
                         {issue.slug || "no slug"}
                       </div>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[11px] text-stone-600">
+                    <td className="py-3 pr-4 font-mono text-[11px] text-slate-600">
                       {issue.productId || "—"}
                     </td>
                     <td className="py-3">
@@ -1708,14 +1727,14 @@ export default function MetaCatalogPage() {
       </div>
 
       {/* ── 8. Footer guidance ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs sm:p-6">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 text-amber-700">
             <AlertTriangle className="h-4 w-4" />
           </div>
           <div className="min-w-0 space-y-1.5">
-            <h3 className="text-xs font-bold text-stone-900">What ANGKON can and cannot confirm</h3>
-            <p className="text-[11px] leading-relaxed text-stone-600">
+            <h3 className="text-xs font-bold text-slate-900">What ANGKON can and cannot confirm</h3>
+            <p className="text-[11px] leading-relaxed text-slate-600">
               ANGKON generates and serves this XML feed and validates required fields. It can also
               verify optional Catalog API access when credentials are configured. Only Meta can
               confirm that a scheduled feed was fetched, that products were imported, or why Meta
@@ -1742,6 +1761,13 @@ export default function MetaCatalogPage() {
           </div>
         </div>
       </div>
+
+      {/* Global Meta Asset Locator Guide Modal */}
+      <MetaAssetLocatorModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        defaultAssetId={guideAssetId}
+      />
     </div>
   );
 }

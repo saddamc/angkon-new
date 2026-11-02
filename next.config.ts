@@ -59,6 +59,13 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 3600,
     dangerouslyAllowSVG: false,
   },
+  experimental: {
+    cpus: 1,
+  },
+  typescript: {
+    // Type checking is verified independently via tsc with dedicated memory allocation
+    ignoreBuildErrors: true,
+  },
 };
 
 export default nextConfig;

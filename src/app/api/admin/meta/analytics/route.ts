@@ -3,11 +3,19 @@ import { requireSuperAdminSession } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import { MetaAdReport } from "@/models/MetaAdReport";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type Period = "today" | "7d" | "30d" | "month" | "year";
+
+function toUTCDateString(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 function getPeriodRange(period: Period): { start: Date; label: string } {
   const now = new Date();
@@ -145,6 +153,41 @@ export async function GET(request: NextRequest) {
     // ── Products ───────────────────────────────────────────────────────────
     const totalProducts = await Product.countDocuments();
 
+    // ── Meta Marketing Ad Telemetry (Spend & Blended ROAS) ─────────────────
+    let totalAdSpend = 0;
+    let totalAdClicks = 0;
+    let totalAdImpressions = 0;
+    let adCurrency = "BDT";
+
+    try {
+      const startStr = toUTCDateString(start);
+      const adReports = await MetaAdReport.find({
+        tenantId: auth.tenantId,
+        level: "campaign",
+        date: { $gte: startStr },
+      })
+        .select("spend impressions clicks currency")
+        .lean();
+
+      for (const r of adReports) {
+        totalAdSpend += r.spend || 0;
+        totalAdClicks += r.clicks || 0;
+        totalAdImpressions += r.impressions || 0;
+        if (r.currency) adCurrency = r.currency;
+      }
+    } catch {
+      // Non-fatal if ad report collection empty
+    }
+
+    // Currency conversion: In Bangladesh, Meta Ad accounts commonly bill in USD ($)
+    // while the storefront collects payments in BDT (৳).
+    // Use official commercial benchmark (1 USD ≈ 120 BDT) to reconcile.
+    const USD_TO_BDT_RATE = 120;
+    const spendInBdt = adCurrency === "USD" ? totalAdSpend * USD_TO_BDT_RATE : totalAdSpend;
+
+    const blendedRoas =
+      spendInBdt > 0 ? Math.round((totalRevenue / spendInBdt) * 100) / 100 : 0;
+
     return NextResponse.json({
       period,
       periodLabel: label,
@@ -157,6 +200,16 @@ export async function GET(request: NextRequest) {
         net: Math.round((totalRevenue - cancelledRevenue) * 100) / 100,
         aov: Math.round(aov * 100) / 100,
         shipping: Math.round(shippingTotal * 100) / 100,
+      },
+      adSpend: {
+        total: Math.round(totalAdSpend * 100) / 100,
+        currency: adCurrency,
+        currencySymbol: adCurrency === "USD" ? "$" : "৳",
+        totalInBdt: Math.round(spendInBdt * 100) / 100,
+        exchangeRate: adCurrency === "USD" ? USD_TO_BDT_RATE : 1,
+        clicks: totalAdClicks,
+        impressions: totalAdImpressions,
+        blendedRoas,
       },
       orders: {
         total: totalOrders,

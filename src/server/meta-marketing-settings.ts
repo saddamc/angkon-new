@@ -249,3 +249,40 @@ export async function updateMetaMarketingSettings(
 
   return updated;
 }
+
+/**
+ * Disconnects Meta Marketing API credentials by zeroing out the encrypted token.
+ */
+export async function disconnectMetaMarketingSettings(
+  tenantId: string = DEFAULT_TENANT_ID
+): Promise<MetaMarketingSettings> {
+  await connectToDatabase();
+  const current = await getMetaMarketingSettings(tenantId);
+
+  const updated: MetaMarketingSettings = {
+    ...current,
+    accessToken: "",
+    status: "unconfigured",
+    lastVerifiedAt: undefined,
+    lastErrorMessage: undefined,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const dbPayload = {
+    ...updated,
+    accessToken: "",
+  };
+
+  await Settings.findOneAndUpdate(
+    { tenantId, key: META_MARKETING_SETTINGS_KEY },
+    {
+      $set: {
+        value: dbPayload,
+        updatedAt: new Date(),
+      },
+    },
+    { upsert: true, new: true }
+  );
+
+  return updated;
+}

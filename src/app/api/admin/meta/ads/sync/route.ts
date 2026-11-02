@@ -79,3 +79,50 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = await requireSuperAdminSession(request);
+    if (!auth.authorized) {
+      return auth.response || NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const jobId = searchParams.get("jobId");
+    const status = searchParams.get("status");
+
+    await connectToDatabase();
+
+    if (jobId) {
+      const res = await MetaAdImportJob.deleteOne({ tenantId: auth.tenantId, jobId });
+      return NextResponse.json({
+        ok: true,
+        tenantId: auth.tenantId,
+        message: `Deleted job ${jobId}`,
+        deletedCount: res.deletedCount,
+      });
+    }
+
+    if (status === "failed") {
+      const res = await MetaAdImportJob.deleteMany({
+        tenantId: auth.tenantId,
+        status: "failed",
+      });
+      return NextResponse.json({
+        ok: true,
+        tenantId: auth.tenantId,
+        message: `Cleared ${res.deletedCount} failed sync job(s).`,
+        deletedCount: res.deletedCount,
+      });
+    }
+
+    return NextResponse.json(
+      { ok: false, error: "Specify jobId or status=failed to delete." },
+      { status: 400 }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error deleting sync jobs";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}
+

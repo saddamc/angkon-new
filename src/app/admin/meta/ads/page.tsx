@@ -23,10 +23,20 @@ import {
   KeyRound,
   Eye,
   EyeOff,
-  Lock,
   X,
+  BookOpen,
+  Trash2,
+  Pencil,
+  Copy,
+  Plus,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
+import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
+import { InfoPopover } from "@/components/admin/meta/info-popover";
+import {
+  ConfigureAdAccountModal,
+  MetaConfirmWarningModal,
+} from "@/components/admin/meta/meta-credential-modals";
 import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
 import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
 import type { DualLedgerAttributionReport } from "@/server/meta-ads";
@@ -66,8 +76,25 @@ export default function MetaAdsPage() {
   const [marketingToken, setMarketingToken] = useState("");
   const [isEditingToken, setIsEditingToken] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [guideAssetId, setGuideAssetId] = useState("ad_account_id");
   const [savingCredentials, setSavingCredentials] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+
+  // Credential Modal & Warning Modal States
+  const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
+  const [warningModalState, setWarningModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    confirmButtonText?: string;
+    onConfirm: () => Promise<void> | void;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+  });
 
   // Level selection tab: "campaign" | "adset" | "ad"
   const [reportingLevel, setReportingLevel] = useState<"campaign" | "adset" | "ad">("campaign");
@@ -199,6 +226,99 @@ export default function MetaAdsPage() {
     void refreshCampaigns();
   }, [marketingSettings?.hasAccessToken, refreshCampaigns]);
 
+  // Save Decoupled Credentials via Modal
+  const handleSaveAdAccountCredentials = async (newAccountId: string, newToken: string) => {
+    setSavingCredentials(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/meta/ads/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adAccountId: newAccountId.trim(),
+          accessToken: newToken.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMarketingSettings(data.settings);
+        setAdAccountId(data.settings?.adAccountId || newAccountId);
+        setMarketingToken("");
+        setIsEditingToken(false);
+        setShowToken(false);
+        setMessage({
+          type: "success",
+          text: `Verified & connected Meta Ad Account '${data.account?.accountName || data.settings?.accountName}' (${data.account?.accountCurrency || "BDT"}).`,
+        });
+        void refreshCampaigns();
+        return true;
+      } else {
+        setMessage({
+          type: "error",
+          text: data.error || "Failed to save or verify Marketing API credentials.",
+        });
+        throw new Error(data.error || "Failed to save or verify Marketing API credentials.");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error saving Marketing API credentials.";
+      setMessage({ type: "error", text: msg });
+      throw err;
+    } finally {
+      setSavingCredentials(false);
+    }
+  };
+
+  const handleRequestDisconnectAdAccount = () => {
+    setWarningModalState({
+      isOpen: true,
+      title: "Disconnect Meta Ad Account?",
+      description:
+        "This will remove the saved Marketing API access token from the AES-256 encrypted vault. Daily ad spend imports, multi-level campaign insights, and dual-ledger ROAS reconciliation will be paused until you reconnect.",
+      confirmButtonText: "Disconnect & Remove Token",
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/admin/meta/ads/credentials", { method: "DELETE" });
+          const data = await res.json();
+          if (res.ok && data.ok) {
+            setMarketingSettings(data.settings);
+            setAdAccountId("");
+            setCampaigns([]);
+            setMessage({ type: "success", text: "Meta Ad Account disconnected successfully." });
+          } else {
+            setMessage({ type: "error", text: data.error || "Failed to disconnect ad account." });
+          }
+        } catch {
+          setMessage({ type: "error", text: "Network error disconnecting ad account." });
+        }
+      },
+    });
+  };
+
+  const handleRequestDismissJob = (jobId: string) => {
+    setWarningModalState({
+      isOpen: true,
+      title: "Remove Sync Record?",
+      description: `This will remove sync record #${jobId} from your local historical ledger.`,
+      confirmButtonText: "Remove Record",
+      onConfirm: async () => {
+        await handleDismissJob(jobId);
+      },
+    });
+  };
+
+  const handleRequestClearFailedJobs = () => {
+    setWarningModalState({
+      isOpen: true,
+      title: "Clear All Failed Sync Jobs?",
+      description: "This will remove all failed synchronization attempts from your ledger history.",
+      confirmButtonText: "Clear Failed Jobs",
+      onConfirm: async () => {
+        await handleClearFailedJobs();
+      },
+    });
+  };
+
   // Save Decoupled Credentials
   const handleSaveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,11 +446,66 @@ export default function MetaAdsPage() {
     }
   };
 
+  const handleDismissJob = async (jobId: string) => {
+    try {
+      const res = await fetch(`/api/admin/meta/ads/sync?jobId=${jobId}`, { method: "DELETE" });
+      if (res.ok) {
+        void refreshSyncJobs();
+        setMessage({ type: "info", text: `Removed job ${jobId} from history.` });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleClearFailedJobs = async () => {
+    try {
+      const res = await fetch("/api/admin/meta/ads/sync?status=failed", { method: "DELETE" });
+      if (res.ok) {
+        void refreshSyncJobs();
+        setMessage({ type: "success", text: "Cleared previous failed sync jobs from history." });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleRetryJob = async (job: ImportJobSummary) => {
+    setSyncing(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/meta/ads/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          since: job.requestedRange?.since || since,
+          until: job.requestedRange?.until || until,
+          level: job.level || reportingLevel,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setMessage({
+          type: "success",
+          text: `Retried sync for ${job.level} completed: ${data.job?.totalRecords || 0} records imported.`,
+        });
+        void refreshAttribution(since, until, reportingLevel);
+        void refreshSyncJobs();
+      } else {
+        setMessage({ type: "error", text: data.error || "Retry sync failed." });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Network error during sync retry." });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const pixelId = pixelSettings?.pixelId || "";
   const currencySymbol = report?.metaPlatformMetrics?.currency === "USD" ? "$" : "৳";
 
   return (
-    <div className="space-y-6 max-w-7xl pb-24 text-stone-900 font-sans antialiased">
+    <div className="space-y-6 max-w-7xl pb-24 text-slate-900 font-sans antialiased">
       {/* ── 1. Unified Navigation ── */}
       <MetaNavigationHeader pixelId={pixelId} testEventCode={pixelSettings?.testEventCode} />
 
@@ -364,17 +539,17 @@ export default function MetaAdsPage() {
       )}
 
       {/* ── 3. Executive Hero Card ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/70 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
               <BarChart3 className="h-3 w-3 text-amber-600" />
               <span>Meta Marketing API v22.0 (Strict Read-Only ads_read)</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
+            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
               Ad Account Attribution &amp; Dual-Ledger Financial Audit
-            </h1>
-            <p className="text-xs sm:text-[13px] text-stone-600 max-w-3xl leading-relaxed">
+            </h2>
+            <p className="text-xs sm:text-[13px] text-slate-600 max-w-3xl leading-relaxed">
               Connect your authorized Meta Ad Account to audit daily ad performance, inspect level-isolated metrics (Campaign, Ad Set, Ad), and reconcile Meta platform-attributed conversions against actual realized store cash.
             </p>
           </div>
@@ -383,23 +558,23 @@ export default function MetaAdsPage() {
             href="https://adsmanager.facebook.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2 text-xs font-semibold text-stone-700 shadow-2xs hover:bg-stone-50 hover:border-stone-300 transition cursor-pointer self-start md:self-auto shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition cursor-pointer self-start md:self-auto shrink-0"
           >
             <span>Open Meta Ads Manager</span>
-            <ExternalLink className="h-3.5 w-3.5 text-stone-400" />
+            <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
           </a>
         </div>
       </div>
 
       {/* ── 4. Decoupled Marketing API Credentials & Account Status ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-stone-100">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
               Meta Marketing API Settings (Decoupled)
             </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
-              Decoupled from Pixel/CAPI tokens. Requires a System User or OAuth token with <code className="bg-stone-100 px-1 py-0.5 rounded text-stone-700 font-mono text-[11px]">ads_read</code> permission.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Decoupled from Pixel/CAPI tokens. Requires a System User or OAuth token with <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono text-[11px]">ads_read</code> permission.
             </p>
           </div>
           <div>
@@ -419,7 +594,7 @@ export default function MetaAdsPage() {
                 <span>Token Expired (Code 190)</span>
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-bold text-stone-600 border border-stone-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 border border-slate-200">
                 <span>Unconfigured</span>
               </span>
             )}
@@ -428,183 +603,204 @@ export default function MetaAdsPage() {
 
         {/* Ad Account Metadata Banner */}
         {marketingSettings?.accountName && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-stone-50 p-3.5 rounded-xl border border-stone-200/80 text-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs">
             <div>
-              <span className="text-[10px] uppercase font-bold text-stone-400 block">Account Name</span>
-              <span className="font-semibold text-stone-800">{marketingSettings.accountName}</span>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Account Name</span>
+              <span className="font-semibold text-slate-800">{marketingSettings.accountName}</span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-stone-400 flex items-center gap-1">
-                <Coins className="h-3 w-3 text-stone-500" />
+              <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                <Coins className="h-3 w-3 text-slate-500" />
                 Currency
               </span>
-              <span className="font-semibold text-stone-800 font-mono">{marketingSettings.accountCurrency || "BDT"}</span>
+              <span className="font-semibold text-slate-800 font-mono">{marketingSettings.accountCurrency || "BDT"}</span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-stone-400 flex items-center gap-1">
-                <Globe className="h-3 w-3 text-stone-500" />
+              <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
+                <Globe className="h-3 w-3 text-slate-500" />
                 Timezone
               </span>
-              <span className="font-semibold text-stone-800">{marketingSettings.accountTimezoneName} (UTC+{marketingSettings.accountTimezoneOffsetHours})</span>
+              <span className="font-semibold text-slate-800">{marketingSettings.accountTimezoneName} (UTC+{marketingSettings.accountTimezoneOffsetHours})</span>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-stone-400 block">Attribution Key</span>
-              <span className="font-mono text-[11px] text-stone-600 truncate block" title={marketingSettings.attributionConfigKey}>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block">Attribution Key</span>
+              <span className="font-mono text-[11px] text-slate-600 truncate block" title={marketingSettings.attributionConfigKey}>
                 {marketingSettings.attributionConfigKey}
               </span>
             </div>
           </div>
         )}
 
-        <form onSubmit={handleSaveCredentials} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-600 mb-1.5">
-              Meta Ad Account ID
-            </label>
-            <input
-              type="text"
-              value={adAccountId}
-              onChange={(e) => setAdAccountId(e.target.value)}
-              placeholder="e.g. act_1234567890 or 1234567890"
-              className="w-full rounded-xl border border-stone-200 px-3.5 py-2 text-xs font-mono text-stone-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 transition shadow-2xs"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
-                Marketing API Access Token
-              </label>
-              {marketingSettings?.hasAccessToken && !isEditingToken ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Configured (AES-256-GCM)
-                </span>
-              ) : (
-                <span className="text-[10px] text-stone-400 font-mono">OAuth / System User</span>
-              )}
-            </div>
-
-            {marketingSettings?.hasAccessToken && !isEditingToken ? (
-              <div className="rounded-xl border border-stone-200/90 bg-stone-50/90 p-2.5 flex items-center justify-between gap-3 shadow-2xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-mono text-xs font-bold text-stone-900 tracking-wider truncate">
-                      {marketingSettings.maskedAccessToken || "EAAG••••••••••••••••"}
-                    </div>
-                    <div className="text-[10px] text-stone-500">
-                      Encrypted at rest · Never exposed to browser or logs
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsEditingToken(true)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition shadow-2xs shrink-0 cursor-pointer"
-                >
-                  <KeyRound className="h-3 w-3 text-stone-500" />
-                  <span>Replace</span>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-1.5">
-                <div className="relative">
-                  <input
-                    type={showToken ? "text" : "password"}
-                    value={marketingToken}
-                    onChange={(e) => setMarketingToken(e.target.value)}
-                    placeholder="EAAG... (Paste token with ads_read permission)"
-                    autoComplete="new-password"
-                    className="w-full rounded-xl border border-stone-200 pl-3.5 pr-16 py-2 text-xs font-mono text-stone-800 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 transition shadow-2xs bg-white"
-                  />
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowToken(!showToken)}
-                      className="p-1 text-stone-400 hover:text-stone-700 transition cursor-pointer"
-                      title={showToken ? "Hide token" : "Show token"}
-                    >
-                      {showToken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
-                    {marketingSettings?.hasAccessToken && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsEditingToken(false);
-                          setMarketingToken("");
-                        }}
-                        className="p-1 text-stone-400 hover:text-rose-600 transition cursor-pointer"
-                        title="Cancel replace and keep current token"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[10px] text-stone-500 px-0.5">
-                  <span>Requires Meta token with <code className="font-mono text-stone-700">ads_read</code> permission.</span>
-                  {marketingSettings?.hasAccessToken && (
+        {/* Credential Cards or Setup CTA */}
+        {marketingSettings?.hasAccessToken || adAccountId ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: Meta Ad Account ID */}
+              <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/60 flex flex-col justify-between gap-3 shadow-2xs">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <span>Meta Ad Account ID</span>
+                      <InfoPopover metricKey="ad-account-id" iconSize="xs" />
+                    </span>
                     <button
                       type="button"
                       onClick={() => {
-                        setIsEditingToken(false);
-                        setMarketingToken("");
+                        setGuideAssetId("ad_account_id");
+                        setIsGuideOpen(true);
                       }}
-                      className="text-stone-600 hover:underline cursor-pointer"
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
                     >
-                      Keep existing token
+                      <BookOpen className="h-3 w-3" />
+                      <span>Where to find this?</span>
                     </button>
-                  )}
+                  </div>
+                  <div className="font-mono text-sm font-bold text-slate-900 tracking-wide">
+                    {adAccountId || "Unassigned"}
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Linked to Meta Marketing API v22.0
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                  <span className="text-[11px] text-slate-500 font-medium">Target Account</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsAdAccountModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    <span>Edit in Modal</span>
+                  </button>
                 </div>
               </div>
-            )}
-          </div>
 
-          <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-1">
+              {/* Card 2: Marketing API Access Token */}
+              <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/60 flex flex-col justify-between gap-3 shadow-2xs">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <span>Marketing API Access Token</span>
+                      <InfoPopover metricKey="capi-token" iconSize="xs" />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGuideAssetId("marketing_token");
+                        setIsGuideOpen(true);
+                      }}
+                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <BookOpen className="h-3 w-3" />
+                      <span>System User Guide</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
+                      {marketingSettings?.maskedAccessToken || "EAAG••••••••••••••••"}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500">
+                    Encrypted with AES-256-GCM · Strict <code className="font-mono text-[10px]">ads_read</code> scope
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Vault Secured
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsAdAccountModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  >
+                    <KeyRound className="h-3 w-3" />
+                    <span>Replace in Modal</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsAdAccountModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-400 transition cursor-pointer shadow-2xs"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-slate-600" />
+                  <span>Configure / Edit Credentials in Modal</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={testingConnection}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  {testingConnection ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Verifying via Graph API v22.0...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      <span>Verify Connection</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleRequestDisconnectAdAccount}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/60 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition cursor-pointer shadow-2xs"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+                <span>Disconnect Account</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center space-y-3">
+            <div className="mx-auto h-12 w-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+              <KeyRound className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900">
+                Connect Meta Ad Account &amp; Marketing API
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                Connect your Meta Ad Account ID and System User token with <code className="font-mono text-[11px] text-slate-700">ads_read</code> scope to audit campaign spend, level-isolated metrics, and dual-ledger ROAS reconciliation.
+              </p>
+            </div>
             <button
               type="button"
-              onClick={handleTestConnection}
-              disabled={testingConnection || (!marketingToken && !marketingSettings?.hasAccessToken)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-100 transition disabled:opacity-40 cursor-pointer shadow-2xs"
+              onClick={() => setIsAdAccountModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1877F2] hover:bg-[#166FE5] px-4 py-2.5 text-xs font-semibold text-white transition cursor-pointer shadow-xs"
             >
-              {testingConnection ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Verifying via Graph API v22.0...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  <span>Verify Ad Account Connection</span>
-                </>
-              )}
-            </button>
-
-            <button
-              type="submit"
-              disabled={savingCredentials}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-stone-900 px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-stone-800 transition disabled:opacity-40 cursor-pointer"
-            >
-              <Save className="h-3.5 w-3.5" />
-              <span>{savingCredentials ? "Saving..." : isEditingToken ? "Save & Verify New Token" : "Save Settings"}</span>
+              <Plus className="h-4 w-4" />
+              <span>Configure Ad Account Credentials in Modal</span>
             </button>
           </div>
-        </form>
+        )}
       </div>
 
       {/* ── 5. Level Switcher & Audit Controls ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-4">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Level Switcher Tabs */}
           <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
               Reporting Isolation Level (Prevents Double-Counting)
             </span>
-            <div className="inline-flex rounded-xl bg-stone-100 p-1 border border-stone-200/80">
+            <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80">
               {(["campaign", "adset", "ad"] as const).map((lvl) => (
                 <button
                   key={lvl}
@@ -612,8 +808,8 @@ export default function MetaAdsPage() {
                   onClick={() => setReportingLevel(lvl)}
                   className={`px-3 py-1.5 text-xs font-bold rounded-lg transition capitalize cursor-pointer ${
                     reportingLevel === lvl
-                      ? "bg-white text-stone-900 shadow-2xs border border-stone-200/60"
-                      : "text-stone-500 hover:text-stone-800"
+                      ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
+                      : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
                   {lvl === "campaign" ? "Campaign Level" : lvl === "adset" ? "Ad Set Level" : "Ad Level"}
@@ -624,15 +820,15 @@ export default function MetaAdsPage() {
 
           {/* Date Picker & Sync Actions */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-semibold text-stone-700 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-200">
-              <Calendar className="h-3.5 w-3.5 text-stone-400" />
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <input
                 type="date"
                 value={since}
                 onChange={(e) => setSince(e.target.value)}
                 className="font-mono text-xs bg-transparent focus:outline-none"
               />
-              <span className="text-stone-400">to</span>
+              <span className="text-slate-400">to</span>
               <input
                 type="date"
                 value={until}
@@ -645,7 +841,7 @@ export default function MetaAdsPage() {
               type="button"
               onClick={() => void refreshAttribution(since, until, reportingLevel)}
               disabled={loadingReport}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 transition cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loadingReport ? "animate-spin" : ""}`} />
               <span>Refresh</span>
@@ -674,20 +870,20 @@ export default function MetaAdsPage() {
       </div>
 
       {/* ── 6. Dual-Ledger Financial Reconciliation (Platform Claims vs. Real Store Cash) ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white shadow-xs overflow-hidden">
-        <div className="px-5 sm:px-6 py-3.5 bg-stone-50 border-b border-stone-200/90 flex flex-wrap items-center justify-between gap-2">
+      <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
+        <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-b border-slate-200/90 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Dual-Ledger Audit: Meta Claimed Conversions vs. Real Store Cash Collected
             </h3>
           </div>
-          <span className="text-[11px] font-mono text-stone-500">
-            Active Level: <strong className="uppercase text-stone-800">{reportingLevel}</strong> | Tenant: {marketingSettings?.tenantId || "angkon-main"}
+          <span className="text-[11px] font-mono text-slate-500">
+            Active Level: <strong className="uppercase text-slate-800">{reportingLevel}</strong> | Tenant: {marketingSettings?.tenantId || "angkon-main"}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
           {/* Card A: Meta Platform Reported */}
           <div className="p-5 sm:p-6 space-y-3 bg-blue-50/20">
             <div className="text-[11px] font-bold uppercase tracking-wider text-blue-700 flex items-center justify-between">
@@ -702,22 +898,22 @@ export default function MetaAdsPage() {
             <div>
               {report?.metaPlatformMetrics?.isAvailable === false ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-stone-400">Unavailable</span>
+                  <span className="text-xl font-bold text-slate-400">Unavailable</span>
                   <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">
                     Sync Required
                   </span>
                 </div>
               ) : (
-                <div className="text-2xl font-black text-stone-900">
+                <div className="text-2xl font-black text-slate-900">
                   {currencySymbol} {(report?.metaPlatformMetrics.totalSpend ?? 0).toLocaleString("en-BD")}
                 </div>
               )}
-              <p className="text-[11px] text-stone-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 Meta Ad Spend ({report?.metaPlatformMetrics?.currency || "BDT"})
               </p>
             </div>
 
-            <div className="pt-2 border-t border-blue-100/60 space-y-1.5 text-xs text-stone-700">
+            <div className="pt-2 border-t border-blue-100/60 space-y-1.5 text-xs text-slate-700">
               <div className="flex justify-between">
                 <span>Impressions / Reach:</span>
                 <strong className="font-bold">
@@ -725,15 +921,21 @@ export default function MetaAdsPage() {
                   {(report?.metaPlatformMetrics.totalReach || 0).toLocaleString("en-BD")}
                 </strong>
               </div>
-              <div className="flex justify-between">
-                <span>Clicks / CTR:</span>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1">
+                  <span>Clicks / CTR:</span>
+                  <InfoPopover metricKey="ctr" iconSize="xs" />
+                </span>
                 <strong className="font-bold">
                   {(report?.metaPlatformMetrics.totalClicks || 0).toLocaleString("en-BD")} (
                   {report?.metaPlatformMetrics.avgCtr ?? 0}%)
                 </strong>
               </div>
-              <div className="flex justify-between">
-                <span>Avg CPC / CPM:</span>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1">
+                  <span>Avg CPC / CPM:</span>
+                  <InfoPopover metricKey="cpc" iconSize="xs" />
+                </span>
                 <strong className="font-bold">
                   {currencySymbol}{report?.metaPlatformMetrics.avgCpc ?? 0} / {currencySymbol}{report?.metaPlatformMetrics.avgCpm ?? 0}
                 </strong>
@@ -750,8 +952,11 @@ export default function MetaAdsPage() {
                   {currencySymbol} {(report?.metaPlatformMetrics.metaReportedRevenue ?? 0).toLocaleString("en-BD")}
                 </strong>
               </div>
-              <div className="flex justify-between text-blue-700 font-bold pt-1 border-t border-blue-100">
-                <span>Meta Claimed ROAS:</span>
+              <div className="flex justify-between items-center text-blue-700 font-bold pt-1 border-t border-blue-100">
+                <span className="flex items-center gap-1">
+                  <span>Meta Claimed ROAS:</span>
+                  <InfoPopover metricKey="meta-roas" iconSize="xs" />
+                </span>
                 <span>
                   {report?.metaPlatformMetrics?.metaClaimedRoas !== null && report?.metaPlatformMetrics?.metaClaimedRoas !== undefined
                     ? `${report.metaPlatformMetrics.metaClaimedRoas}x`
@@ -776,12 +981,12 @@ export default function MetaAdsPage() {
               <div className="text-2xl font-black text-emerald-900">
                 ৳ {(report?.actualStoreMetrics.netRealizedCash || 0).toLocaleString("en-BD")}
               </div>
-              <p className="text-[11px] text-stone-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 mt-0.5">
                 Settled Online Payments + Settled COD (Less Refunds)
               </p>
             </div>
 
-            <div className="pt-2 border-t border-emerald-100/60 space-y-1.5 text-xs text-stone-700">
+            <div className="pt-2 border-t border-emerald-100/60 space-y-1.5 text-xs text-slate-700">
               <div className="flex justify-between">
                 <span>Total Orders Created:</span>
                 <strong className="font-bold">{report?.actualStoreMetrics.totalOrders || 0}</strong>
@@ -810,39 +1015,39 @@ export default function MetaAdsPage() {
           </div>
 
           {/* Card C: Cross-System Comparison & Diagnostic Disclaimer */}
-          <div className="p-5 sm:p-6 space-y-3 bg-stone-50/60 flex flex-col justify-between">
+          <div className="p-5 sm:p-6 space-y-3 bg-slate-50/60 flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-stone-700 flex items-center justify-between">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <Percent className="h-3.5 w-3.5 text-stone-500" />
+                  <Percent className="h-3.5 w-3.5 text-slate-500" />
                   Cross-System Diagnostic
                 </span>
-                <span className="text-[10px] font-mono bg-stone-200/80 text-stone-700 px-1.5 py-0.5 rounded">
+                <span className="text-[10px] font-mono bg-slate-200/80 text-slate-700 px-1.5 py-0.5 rounded">
                   Dual-Ledger
                 </span>
               </div>
               <div>
                 {report?.reconciliationDiagnostics?.isAvailable === false ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-stone-400">—</span>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 border border-stone-200">
+                    <span className="text-xl font-bold text-slate-400">—</span>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                       Awaiting Sync
                     </span>
                   </div>
                 ) : (
-                  <div className="text-2xl font-black text-stone-900">
+                  <div className="text-2xl font-black text-slate-900">
                     {report?.actualStoreMetrics.storeRealizedCashPerMetaSpend !== null &&
                     report?.actualStoreMetrics.storeRealizedCashPerMetaSpend !== undefined
                       ? `${report.actualStoreMetrics.storeRealizedCashPerMetaSpend}x`
                       : "—"}
                   </div>
                 )}
-                <p className="text-[11px] text-stone-500 mt-0.5 font-medium">
+                <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
                   Store Realized Cash / Meta Ad Spend (Cross-System Diagnostic)
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-stone-200/60 space-y-1.5 text-xs text-stone-600">
+              <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-xs text-slate-600">
                 <div className="flex justify-between">
                   <span>Purchase Count Gap:</span>
                   <span className="font-mono">
@@ -878,25 +1083,37 @@ export default function MetaAdsPage() {
       </div>
 
       {/* ── 7. Resumable Slice Ingestion Jobs & Rate-Limit Audit ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <Sliders className="h-4 w-4 text-stone-600" />
-            <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+            <Sliders className="h-4 w-4 text-slate-600" />
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Historical Synchronization Jobs ({syncJobs.length})
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={() => void refreshSyncJobs()}
-            className="text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer"
-          >
-            Refresh Jobs
-          </button>
+          <div className="flex items-center gap-3">
+            {syncJobs.some((j) => j.status === "failed") && (
+              <button
+                type="button"
+                onClick={handleRequestClearFailedJobs}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-800 cursor-pointer inline-flex items-center gap-1"
+              >
+                <Trash2 className="h-3 w-3" />
+                <span>Clear Failed Logs</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void refreshSyncJobs()}
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+            >
+              Refresh Jobs
+            </button>
+          </div>
         </div>
 
         {syncJobs.length === 0 ? (
-          <div className="text-center py-6 text-xs text-stone-500">
+          <div className="text-center py-6 text-xs text-slate-500">
             No historical sync jobs recorded yet. Click &quot;Sync Insights&quot; above to import ad performance.
           </div>
         ) : (
@@ -904,12 +1121,12 @@ export default function MetaAdsPage() {
             {syncJobs.map((job) => (
               <div
                 key={job.jobId}
-                className="p-3.5 rounded-xl border border-stone-200 bg-stone-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-stone-800">{job.jobId}</span>
-                    <span className="uppercase text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-200 text-stone-700">
+                    <span className="font-mono font-bold text-slate-800">{job.jobId}</span>
+                    <span className="uppercase text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
                       {job.level}
                     </span>
                     <span
@@ -926,31 +1143,69 @@ export default function MetaAdsPage() {
                       {job.status}
                     </span>
                   </div>
-                  <div className="text-stone-500 text-[11px]">
+                  <div className="text-slate-500 text-[11px]">
                     Range: {job.requestedRange?.since} to {job.requestedRange?.until} | Slices:{" "}
                     {job.completedSlices}/{job.totalSlices} | Records: {job.totalRecords} | Spend:{" "}
                     {job.currency} {(job.totalSpend || 0).toLocaleString("en-BD")}
                   </div>
                   {job.errorMessage && (
-                    <div className="text-rose-600 text-[11px] font-mono">{job.errorMessage}</div>
+                    <div className="text-rose-600 text-[11px] font-mono leading-tight max-w-2xl bg-rose-50/80 p-2 rounded-lg border border-rose-200/60 mt-1">
+                      {job.errorMessage}
+                    </div>
                   )}
                 </div>
 
-                {job.status === "paused_rate_limit" && (
-                  <button
-                    type="button"
-                    onClick={() => handleResumeJob(job.jobId)}
-                    disabled={resumingJobId === job.jobId}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition cursor-pointer shadow-2xs self-start sm:self-auto shrink-0"
-                  >
-                    {resumingJobId === job.jobId ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    )}
-                    <span>Resume Slices</span>
-                  </button>
-                )}
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  {job.status === "paused_rate_limit" && (
+                    <button
+                      type="button"
+                      onClick={() => handleResumeJob(job.jobId)}
+                      disabled={resumingJobId === job.jobId}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition cursor-pointer shadow-2xs"
+                    >
+                      {resumingJobId === job.jobId ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      )}
+                      <span>Resume Slices</span>
+                    </button>
+                  )}
+
+                  {job.status === "failed" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleRetryJob(job)}
+                        disabled={syncing}
+                        className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer shadow-2xs disabled:opacity-50"
+                      >
+                        <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
+                        <span>Retry Sync</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRequestDismissJob(job.jobId)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer shadow-2xs"
+                        title="Dismiss this failed job from history"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span>Dismiss</span>
+                      </button>
+                    </>
+                  )}
+
+                  {job.status === "completed" && (
+                    <button
+                      type="button"
+                      onClick={() => handleRequestDismissJob(job.jobId)}
+                      className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                      title="Clear log"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -958,11 +1213,11 @@ export default function MetaAdsPage() {
       </div>
 
       {/* ── 8. Active Campaigns Telemetry ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-stone-600" />
-            <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">
+            <Layers className="h-4 w-4 text-slate-600" />
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Ad Account Campaigns Telemetry ({campaigns.length})
             </h3>
           </div>
@@ -970,32 +1225,32 @@ export default function MetaAdsPage() {
             type="button"
             onClick={() => void refreshCampaigns()}
             disabled={loadingCampaigns || !marketingSettings?.hasAccessToken}
-            className="text-xs font-semibold text-stone-600 hover:text-stone-900 disabled:opacity-40 cursor-pointer"
+            className="text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40 cursor-pointer"
           >
             {loadingCampaigns ? "Loading..." : "Refresh Campaigns"}
           </button>
         </div>
 
         {campaigns.length === 0 ? (
-          <div className="text-center py-8 text-xs text-stone-500">
+          <div className="text-center py-8 text-xs text-slate-500">
             {marketingSettings?.hasAccessToken
               ? "No campaigns found in this Meta Ad Account."
               : "Save your Meta Ad Account ID and authorized Marketing API token to load live campaigns."}
           </div>
         ) : (
-          <div className="divide-y divide-stone-100">
+          <div className="divide-y divide-slate-100">
             {campaigns.map((camp) => (
               <div key={camp.id} className="py-3 flex items-center justify-between text-xs">
                 <div>
-                  <div className="font-semibold text-stone-900">{camp.name}</div>
-                  <div className="text-[11px] text-stone-400 font-mono mt-0.5">ID: {camp.id}</div>
+                  <div className="font-semibold text-slate-900">{camp.name}</div>
+                  <div className="text-[11px] text-slate-400 font-mono mt-0.5">ID: {camp.id}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                       camp.effective_status === "ACTIVE"
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-stone-100 text-stone-600"
+                        : "bg-slate-100 text-slate-600"
                     }`}
                   >
                     {camp.effective_status}
@@ -1006,6 +1261,37 @@ export default function MetaAdsPage() {
           </div>
         )}
       </div>
+
+      {/* Global Meta Asset Locator Guide Modal */}
+      <MetaAssetLocatorModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+        defaultAssetId={guideAssetId}
+      />
+
+      {/* ── Meta White Credential Modals ── */}
+      <ConfigureAdAccountModal
+        isOpen={isAdAccountModalOpen}
+        onClose={() => setIsAdAccountModalOpen(false)}
+        currentAccountId={adAccountId}
+        hasExistingToken={Boolean(marketingSettings?.hasAccessToken)}
+        onSaveCredentials={handleSaveAdAccountCredentials}
+        onRequestDisconnect={handleRequestDisconnectAdAccount}
+        onOpenLocator={(assetId) => {
+          setGuideAssetId(assetId);
+          setIsGuideOpen(true);
+        }}
+      />
+
+      {/* Standardized White Destructive Warning Confirmation Modal */}
+      <MetaConfirmWarningModal
+        isOpen={warningModalState.isOpen}
+        onClose={() => setWarningModalState((prev) => ({ ...prev, isOpen: false }))}
+        title={warningModalState.title}
+        description={warningModalState.description}
+        confirmButtonText={warningModalState.confirmButtonText}
+        onConfirm={warningModalState.onConfirm}
+      />
     </div>
   );
 }

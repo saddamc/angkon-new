@@ -3,7 +3,7 @@ import {
   getPixelSettings,
   savePixelSettings,
   getPublicAdminPixelSettings,
-  getPixelEvents,
+  getDurablePixelEvents,
   PixelSettings,
 } from "@/server/pixel-settings";
 import { requireSuperAdminSession } from "@/server/admin-auth";
@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
     }
 
     const settings = await getPixelSettings(auth.tenantId);
-    const { events } = getPixelEvents(auth.tenantId);
-    const safeSettings = getPublicAdminPixelSettings(settings, events);
+    const durable = await getDurablePixelEvents(auth.tenantId, 100);
+    const safeSettings = getPublicAdminPixelSettings(settings, durable.events);
 
     return NextResponse.json(safeSettings, {
       headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
     }
 
     const saved = await savePixelSettings(body, auth.tenantId);
-    const { events } = getPixelEvents(auth.tenantId);
-    const safeSettings = getPublicAdminPixelSettings(saved, events);
+    const durable = await getDurablePixelEvents(auth.tenantId, 100);
+    const safeSettings = getPublicAdminPixelSettings(saved, durable.events);
 
     return NextResponse.json({ success: true, settings: safeSettings });
   } catch (error) {

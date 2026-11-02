@@ -49,6 +49,7 @@ export function getRotationKeys(): Buffer[] {
   const fallbacks = [
     process.env.ENCRYPTION_KEY,
     process.env.JWT_SECRET,
+    "angkon_secure_jwt_secret_2026",
     "angkon_catalog_secret_key_2026_fallback",
     "angkon_meta_secure_token_secret_key_2026_primary",
   ]

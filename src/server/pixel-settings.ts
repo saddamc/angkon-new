@@ -672,19 +672,36 @@ export async function getDurablePixelEvents(
   try {
     await connectToDatabase();
 
-    const docs = await MetaEventLog.find({ tenantId: safeTenant })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
+    const [aggregateCounts, aggregateTotal, statusCounts, docs] = await Promise.all([
+      MetaEventLog.aggregate([
+        { $match: { tenantId: safeTenant } },
+        { $group: { _id: "$eventName", count: { $sum: 1 } } },
+      ]),
+      MetaEventLog.countDocuments({ tenantId: safeTenant }),
+      MetaEventLog.aggregate([
+        { $match: { tenantId: safeTenant } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+      MetaEventLog.find({ tenantId: safeTenant })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean(),
+    ]);
 
     const stats: Record<string, number> = {
-      total: docs.length,
+      total: aggregateTotal,
       PageView: 0,
       ViewContent: 0,
       AddToCart: 0,
       InitiateCheckout: 0,
       Purchase: 0,
     };
+
+    for (const item of aggregateCounts) {
+      if (item._id && typeof item.count === "number") {
+        stats[item._id] = item.count;
+      }
+    }
 
     const deliveryStats = {
       queued: 0,
@@ -693,6 +710,12 @@ export async function getDurablePixelEvents(
       retrying: 0,
       failed: 0,
     };
+
+    for (const item of statusCounts) {
+      if (item._id && deliveryStats[item._id as keyof typeof deliveryStats] !== undefined) {
+        deliveryStats[item._id as keyof typeof deliveryStats] = item.count;
+      }
+    }
 
     // Index events by eventId to compute truthful deduplication evidence
     const eventIdMap = new Map<string, Set<string>>();
@@ -720,13 +743,6 @@ export async function getDurablePixelEvents(
     }
 
     const events: PixelEventRecord[] = docs.map((doc) => {
-      if (stats[doc.eventName] !== undefined) {
-        stats[doc.eventName]++;
-      }
-      if (deliveryStats[doc.status as keyof typeof deliveryStats] !== undefined) {
-        deliveryStats[doc.status as keyof typeof deliveryStats]++;
-      }
-
       return {
         id: String(doc._id),
         tenantId: doc.tenantId,

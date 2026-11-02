@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { validateSslcommerzTransaction, createPaymentTrackingToken } from "@/server/sslcommerz";
-import { sendMetaCapiEvent } from "@/server/meta-capi";
+import { sendMetaCapiEvent, extractClientIp } from "@/server/meta-capi";
 
 export async function POST(request: NextRequest) {
   return handleCallback(request);
@@ -108,7 +108,7 @@ async function handleCallback(request: NextRequest) {
             city: order.customer.city,
             district: order.customer.district,
             postalCode: order.customer.postalCode,
-            clientIp: request.headers.get("x-forwarded-for")?.split(",")[0].trim() || undefined,
+            clientIp: extractClientIp(request),
             clientUserAgent: request.headers.get("user-agent") || undefined,
             fbp,
             fbc,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaEventLog } from "@/models/MetaEventLog";
 import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/pixel-settings";
-import { sendMetaCapiEvent } from "@/server/meta-capi";
+import { sendMetaCapiEvent, extractClientIp } from "@/server/meta-capi";
 
 export const dynamic = "force-dynamic";
 
@@ -166,10 +166,7 @@ export async function POST(request: NextRequest) {
           request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")
             ? request.nextUrl.origin
             : "https://www.angkon.net";
-        const clientIp =
-          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-          request.headers.get("x-real-ip") ||
-          undefined;
+        const clientIp = extractClientIp(request);
         const clientUserAgent = request.headers.get("user-agent") || undefined;
         const fbp = request.cookies.get("_fbp")?.value;
         const fbc = request.cookies.get("_fbc")?.value;

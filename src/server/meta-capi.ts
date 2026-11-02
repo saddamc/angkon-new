@@ -3,6 +3,9 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { MetaEventLog, MetaEventStatus, IMetaEventLog } from "@/models/MetaEventLog";
 import { getPixelSettings, DEFAULT_TENANT_ID } from "./pixel-settings";
 import { normalizeMetaContentId, normalizeMetaContentIds } from "@/lib/meta-product-id";
+import { sanitizeClientIp, extractClientIp, isValidIp, isPublicIp } from "./client-ip";
+
+export { extractClientIp, sanitizeClientIp, isValidIp, isPublicIp };
 
 const GRAPH_API_VERSION = "v22.0";
 export const MAX_RETRY_ATTEMPTS = 5;
@@ -123,10 +126,16 @@ export function buildMetaUserData(userData?: MetaCapiUserData): Record<string, u
   if (hashedZp) result.zp = [hashedZp];
 
   // IP, User-Agent, and Cookies MUST remain plaintext (never hashed)
-  if (userData.clientIp && userData.clientIp !== "::1" && userData.clientIp !== "127.0.0.1") {
-    result.client_ip_address = userData.clientIp;
+  const validIp = sanitizeClientIp(userData.clientIp);
+  if (validIp) {
+    result.client_ip_address = validIp;
   }
-  if (userData.clientUserAgent) {
+
+  // Meta Conversions API Diagnostic Rule:
+  // "Your server is sending a user agent parameter but it isn't sending an IP address parameter for one or more events.
+  //  User agent and IP address must be sent together, otherwise your user agent data may not be useful."
+  // If client_ip_address cannot be resolved (or is invalid/loopback), client_user_agent must NOT be sent alone.
+  if (userData.clientUserAgent && result.client_ip_address) {
     result.client_user_agent = userData.clientUserAgent;
   }
   if (userData.fbp) {

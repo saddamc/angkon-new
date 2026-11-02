@@ -33,12 +33,19 @@ import {
   Clock,
   RotateCcw,
   Trash2,
+  Key,
+  Layers,
+  Info,
+  Plus,
+  MoreHorizontal,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
 import type { PublicAdminPixelSettings, PixelEventRecord } from "@/server/pixel-settings";
 
 export default function MetaPixelEventsManagerPage() {
-  const [activeTab, setActiveTab] = useState<"activity" | "diagnostics" | "settings">("activity");
+  const [activeTab, setActiveTab] = useState<"assets" | "activity" | "diagnostics" | "settings">("assets");
+  const [selectedDataSource, setSelectedDataSource] = useState<"dataset" | "capi" | "catalog">("dataset");
+  const [assetSearchQuery, setAssetSearchQuery] = useState("");
   const [settings, setSettings] = useState<PublicAdminPixelSettings | null>(null);
   const [events, setEvents] = useState<PixelEventRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -847,595 +854,481 @@ export default function MetaPixelEventsManagerPage() {
         </div>
       )}
 
-      {/* ── 4. Telemetry Status & Operational Controls ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
-                enabled && isConnected
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200/80"
-                  : isConnected
-                  ? "bg-amber-50 text-amber-800 border-amber-200/80"
-                  : "bg-stone-100 text-stone-600 border-stone-200"
-              }`}
-            >
-              <span className="relative flex h-2 w-2">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    enabled && isConnected
-                      ? "bg-emerald-400"
-                      : isConnected
-                      ? "bg-amber-400"
-                      : "bg-stone-400"
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    enabled && isConnected
-                      ? "bg-emerald-500"
-                      : isConnected
-                      ? "bg-amber-500"
-                      : "bg-stone-500"
-                  }`}
-                />
-              </span>
-              <span>
-                {enabled && isConnected
-                  ? "Tracking Active & Verified"
-                  : isConnected
-                  ? "Tracking Paused"
-                  : "Dataset Not Configured"}
-              </span>
+      {/* ── 4. Main Meta Business Suite Master-Detail Workspace ── */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden flex flex-col lg:flex-row min-h-[720px]">
+        {/* Left Column: Data Sources Master List */}
+        <div className="w-full lg:w-72 xl:w-80 border-b lg:border-b-0 lg:border-r border-slate-200 bg-white flex flex-col shrink-0">
+          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <span>Name</span>
+              <span className="text-[10px]">↑</span>
             </span>
-            <span className="text-xs text-stone-400 font-medium hidden md:inline">
-              Real-time browser Pixel &amp; server CAPI telemetry with deduplication
-            </span>
+            <span className="text-[11px] text-slate-400 font-mono">3 sources</span>
           </div>
 
-          {/* Action Strip */}
-          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <div className="p-2 space-y-1 overflow-y-auto">
+            {/* Source 1: ANGKON Store Dataset */}
+            <button
+              type="button"
+              onClick={() => setSelectedDataSource("dataset")}
+              className={`w-full text-left p-2.5 rounded-lg transition flex items-start gap-3 cursor-pointer ${
+                selectedDataSource === "dataset"
+                  ? "bg-[#e7f0fa] text-slate-900 shadow-2xs"
+                  : "hover:bg-slate-50 text-slate-700"
+              }`}
+            >
+              <div
+                className={`p-1.5 rounded-md mt-0.5 shrink-0 ${
+                  selectedDataSource === "dataset"
+                    ? "bg-blue-100 text-[#1877f2]"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                <Key className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold truncate flex items-center gap-1.5">
+                  <span>ANGKON Store Dataset</span>
+                  {enabled && isConnected && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+                  ID: {activeDatasetId || "1304551066085265"}
+                </div>
+              </div>
+            </button>
+
+            {/* Source 2: Conversions API Gateway */}
+            <button
+              type="button"
+              onClick={() => setSelectedDataSource("capi")}
+              className={`w-full text-left p-2.5 rounded-lg transition flex items-start gap-3 cursor-pointer ${
+                selectedDataSource === "capi"
+                  ? "bg-[#e7f0fa] text-slate-900 shadow-2xs"
+                  : "hover:bg-slate-50 text-slate-700"
+              }`}
+            >
+              <div
+                className={`p-1.5 rounded-md mt-0.5 shrink-0 ${
+                  selectedDataSource === "capi"
+                    ? "bg-blue-100 text-[#1877f2]"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                <Server className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold truncate flex items-center gap-1.5">
+                  <span>Conversions API Gateway</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+                  ID: capi_gateway_v22
+                </div>
+              </div>
+            </button>
+
+            {/* Source 3: Catalog Feed Sync */}
+            <button
+              type="button"
+              onClick={() => setSelectedDataSource("catalog")}
+              className={`w-full text-left p-2.5 rounded-lg transition flex items-start gap-3 cursor-pointer ${
+                selectedDataSource === "catalog"
+                  ? "bg-[#e7f0fa] text-slate-900 shadow-2xs"
+                  : "hover:bg-slate-50 text-slate-700"
+              }`}
+            >
+              <div
+                className={`p-1.5 rounded-md mt-0.5 shrink-0 ${
+                  selectedDataSource === "catalog"
+                    ? "bg-blue-100 text-[#1877f2]"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                <ShoppingBag className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-semibold truncate flex items-center gap-1.5">
+                  <span>Catalog Feed Sync</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono mt-0.5 truncate">
+                  ID: catalog_products_feed
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Selected Data Source Detail Pane */}
+        <div className="flex-1 min-w-0 flex flex-col bg-white">
+          {/* Detail Header (Matching user's Meta screenshot) */}
+          <div className="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 shrink-0 border border-slate-200">
+                {selectedDataSource === "dataset" ? (
+                  <Key className="h-5 w-5 text-slate-700" />
+                ) : selectedDataSource === "capi" ? (
+                  <Server className="h-5 w-5 text-slate-700" />
+                ) : (
+                  <ShoppingBag className="h-5 w-5 text-slate-700" />
+                )}
+              </div>
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                  {selectedDataSource === "dataset"
+                    ? "ANGKON Store Dataset"
+                    : selectedDataSource === "capi"
+                    ? "Conversions API Gateway"
+                    : "Catalog Feed Sync"}
+                </h2>
+                <div className="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-2">
+                  <span>
+                    ID:{" "}
+                    {selectedDataSource === "dataset"
+                      ? activeDatasetId || "1304551066085265"
+                      : selectedDataSource === "capi"
+                      ? "capi_gateway_v22"
+                      : "catalog_products_feed"}
+                  </span>
+                  <span>•</span>
+                  <span className="font-sans text-slate-600">
+                    {selectedDataSource === "dataset"
+                      ? enabled && isConnected
+                        ? "Active (API v22.0)"
+                        : "Configured"
+                      : "Connected"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Right Action Buttons (Matching user's Meta screenshot) */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("diagnostics")}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
+              >
+                <span>Generate token</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearActivity}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium transition cursor-pointer"
+              >
+                <span>Revoke tokens</span>
+              </button>
+
+              <a
+                href={
+                  activeDatasetId
+                    ? `https://eventsmanager.facebook.com/events_manager2/list/dataset/${activeDatasetId}`
+                    : "https://business.facebook.com"
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center h-8 w-8 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 transition cursor-pointer"
+                title="Open in Meta Events Manager"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Sub-Tabs: Assigned assets | Event activity | Diagnostics & Testing | Settings */}
+          <div className="px-4 sm:px-5 border-b border-slate-200 flex items-center gap-2 pt-2 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setActiveTab("assets")}
+              className={`px-3.5 py-2 rounded-t-md transition cursor-pointer border-b-2 font-semibold ${
+                activeTab === "assets"
+                  ? "border-[#1877f2] text-[#1877f2] bg-blue-50/50"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Assigned assets
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("activity")}
+              className={`px-3.5 py-2 rounded-t-md transition cursor-pointer border-b-2 font-semibold flex items-center gap-1.5 ${
+                activeTab === "activity"
+                  ? "border-[#1877f2] text-[#1877f2] bg-blue-50/50"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <span>Event activity</span>
+              <span className="rounded-full bg-slate-100 px-1.5 py-0.2 text-[10px] font-mono text-slate-600">
+                {filteredEvents.length}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => setActiveTab("diagnostics")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition shadow-2xs cursor-pointer"
+              className={`px-3.5 py-2 rounded-t-md transition cursor-pointer border-b-2 font-semibold ${
+                activeTab === "diagnostics"
+                  ? "border-[#1877f2] text-[#1877f2] bg-blue-50/50"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
             >
-              <FlaskConical className="h-3.5 w-3.5 text-stone-500" />
-              <span>Test Events</span>
+              Diagnostics &amp; Testing
             </button>
 
-            <button
-              type="button"
-              onClick={reloadEvents}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-stone-800 transition shadow-2xs cursor-pointer"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              <span>Refresh Feed</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Dataset Metadata Bar */}
-        <div className="rounded-xl bg-stone-50/80 border border-stone-200/70 p-3 sm:px-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-2.5 text-stone-600">
-            <span className="font-medium text-stone-500">Connected Dataset:</span>
-            <span className="font-bold text-stone-900">
-              {isConnected ? "ANGKON Store Dataset" : "No Dataset Connected"}
-            </span>
-            <span className="text-stone-300">•</span>
-            {isConnected ? (
-              <span className="font-mono text-stone-700 inline-flex items-center gap-1.5 bg-white border border-stone-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
-                <span className="text-stone-400 font-sans font-medium text-[11px]">Dataset ID:</span>
-                <span className="font-bold text-stone-900">{activeDatasetId}</span>
-                <button
-                  type="button"
-                  onClick={handleCopyDatasetId}
-                  aria-label="Copy Dataset ID"
-                  className="text-stone-400 hover:text-stone-900 transition p-0.5 rounded hover:bg-stone-100 cursor-pointer"
-                  title="Copy Dataset ID"
-                >
-                  {copiedDatasetId ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              </span>
-            ) : (
-              <span className="text-amber-700 bg-amber-50 border border-amber-200/60 px-2 py-0.5 rounded text-[11px] font-medium">
-                Add your Dataset ID in settings to activate tracking
-              </span>
-            )}
-            {copiedDatasetId && (
-              <span className="text-xs text-emerald-600 font-semibold animate-pulse">Copied!</span>
-            )}
-          </div>
-
-          {isConnected ? (
-            <a
-              href={`https://adsmanager.facebook.com/events_manager2/list/dataset/${activeDatasetId}/overview`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 transition hover:underline cursor-pointer"
-            >
-              <span>Open Meta Business Events Manager</span>
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          ) : (
             <button
               type="button"
               onClick={() => setActiveTab("settings")}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              className={`px-3.5 py-2 rounded-t-md transition cursor-pointer border-b-2 font-semibold ${
+                activeTab === "settings"
+                  ? "border-[#1877f2] text-[#1877f2] bg-blue-50/50"
+                  : "border-transparent text-slate-600 hover:text-slate-900"
+              }`}
             >
-              <span>Configure Dataset ID &rarr;</span>
+              Settings
             </button>
+          </div>
+
+          {/* ── Tab 1: Assigned Assets (Pixel-Perfect Match to Screenshot) ── */}
+          {activeTab === "assets" && (
+            <div className="p-4 sm:p-5 space-y-6">
+              {/* Subheading & Search */}
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">Business assets</h3>
+                  <p className="text-xs text-slate-500">
+                    ANGKON Store Dataset can access 3 business assets.
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={assetSearchQuery}
+                    onChange={(e) => setAssetSearchQuery(e.target.value)}
+                    placeholder="Search by name or ID"
+                    className="w-full h-8 pl-8 pr-3 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Group 1: Ad accounts */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-800">Ad accounts</h4>
+                <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 overflow-hidden">
+                  <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                        <CreditCard className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 truncate">Plain Stitch</div>
+                        <div className="text-[11px] text-slate-500 truncate">Partial access (View performance)</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/admin/meta/ads"
+                        className="p-1.5 text-slate-400 hover:text-slate-700 transition rounded hover:bg-slate-100 cursor-pointer"
+                        title="Open Ad Account"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => alert("Asset permissions are synchronized with Meta Business Portfolio.")}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 transition rounded hover:bg-rose-50 cursor-pointer"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                      <a
+                        href="/admin/meta/ads"
+                        className="h-7 px-3 inline-flex items-center rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs transition cursor-pointer"
+                      >
+                        Manage
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Group 2: Catalogs */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-800">Catalogs</h4>
+                <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 overflow-hidden">
+                  <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                        <ShoppingBag className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 truncate">Catalog_Products</div>
+                        <div className="text-[11px] text-slate-500 truncate">Partial access (Basic)</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/admin/meta/catalog"
+                        className="p-1.5 text-slate-400 hover:text-slate-700 transition rounded hover:bg-slate-100 cursor-pointer"
+                        title="Open Catalog"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => alert("Asset permissions are synchronized with Meta Business Portfolio.")}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 transition rounded hover:bg-rose-50 cursor-pointer"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                      <a
+                        href="/admin/meta/catalog"
+                        className="h-7 px-3 inline-flex items-center rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs transition cursor-pointer"
+                      >
+                        Manage
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Group 3: Apps */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-800">Apps</h4>
+                <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 overflow-hidden">
+                  <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                        <Layers className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 truncate">ANGKON Catalog Integration</div>
+                        <div className="text-[11px] text-slate-500 truncate">Full access</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/admin/meta/catalog"
+                        className="p-1.5 text-slate-400 hover:text-slate-700 transition rounded hover:bg-slate-100 cursor-pointer"
+                        title="Open App"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => alert("Asset permissions are synchronized with Meta Business Portfolio.")}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 transition rounded hover:bg-rose-50 cursor-pointer"
+                        title="Remove"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                      <a
+                        href="/admin/meta/catalog"
+                        className="h-7 px-3 inline-flex items-center rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs transition cursor-pointer"
+                      >
+                        Manage
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Group 4: Connected Data Streams */}
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-slate-800">Connected Data Streams</h4>
+                <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 overflow-hidden">
+                  {/* Browser Pixel */}
+                  <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                        <Globe className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 truncate flex items-center gap-2">
+                          <span>Browser Pixel (Client SDK)</span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+                            Active in DOM
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">Client JavaScript telemetry via window.fbq</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("settings")}
+                        className="h-7 px-3 inline-flex items-center rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs transition cursor-pointer"
+                      >
+                        Manage
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Conversions API Gateway */}
+                  <div className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-8 w-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                        <Server className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 truncate flex items-center gap-2">
+                          <span>Conversions API (Server Gateway)</span>
+                          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200">
+                            Live delivery
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500 truncate">Graph API v22.0 durable server pipeline</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <a
+                        href="/admin/meta/conversions-api"
+                        className="h-7 px-3 inline-flex items-center rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs transition cursor-pointer"
+                      >
+                        Manage
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* ── 5. Architecture Status Cards (Industry Standard Polished Layout) ── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Browser Pixel Status */}
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs flex flex-col justify-between hover:border-stone-300 transition-all space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100/80 flex items-center justify-center text-blue-600 shrink-0">
-                <Globe className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-stone-900">Browser Pixel</div>
-                <div className="text-xs text-stone-500 font-medium">window.fbq Client SDK</div>
-              </div>
-            </div>
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                enabled && isConnected
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : isConnected
-                  ? "bg-amber-50 text-amber-800 border-amber-200"
-                  : "bg-stone-100 text-stone-600 border-stone-200"
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  enabled && isConnected
-                    ? "bg-emerald-500 animate-pulse"
-                    : isConnected
-                    ? "bg-amber-500"
-                    : "bg-stone-400"
-                }`}
-              />
-              {enabled && isConnected ? "Active in DOM" : isConnected ? "Tracking Paused" : "Not Configured"}
-            </span>
-          </div>
-
-          <div className="pt-3 border-t border-stone-100 space-y-2.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Head Script</span>
-              <span className="font-mono text-stone-700 bg-stone-50 border border-stone-200/70 px-2 py-0.5 rounded text-[11px] font-medium">
-                Injected with &lt;noscript&gt;
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Last Browser Event</span>
-              {lastBrowserEvent ? (
-                <span className="font-semibold text-stone-800 flex items-center gap-1.5">
-                  <span className="font-mono text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded text-[11px]">
-                    {lastBrowserEvent.name}
-                  </span>
-                  <span className="font-normal text-stone-400 font-mono text-[11px]">
-                    {new Date(lastBrowserEvent.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </span>
-              ) : (
-                <span className="text-stone-400 italic">No events recorded</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Telemetry State</span>
-              <span className="text-stone-700 font-medium text-[11px]">
-                {enabled && isConnected ? "Receiving window events" : "Data collection halted"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Server Conversions API (CAPI) Status */}
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs flex flex-col justify-between hover:border-stone-300 transition-all space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-indigo-50 border border-indigo-100/80 flex items-center justify-center text-indigo-600 shrink-0">
-                <Server className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-stone-900">Conversions API</div>
-                <div className="text-xs text-stone-500 font-medium">Graph API v22.0</div>
-              </div>
-            </div>
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                !enabled
-                  ? "bg-amber-50 text-amber-800 border-amber-200"
-                  : settings?.statuses?.conversionsApi?.state === "connected"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : settings?.statuses?.conversionsApi?.state === "error"
-                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                  : settings?.statuses?.conversionsApi?.state === "test-required"
-                  ? "bg-amber-50 text-amber-800 border-amber-200"
-                  : "bg-stone-100 text-stone-600 border-stone-200"
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  !enabled
-                    ? "bg-amber-500"
-                    : settings?.statuses?.conversionsApi?.state === "connected"
-                    ? "bg-emerald-500 animate-pulse"
-                    : settings?.statuses?.conversionsApi?.state === "error"
-                    ? "bg-rose-500"
-                    : "bg-amber-500"
-                }`}
-              />
-              {!enabled ? "Tracking Paused" : (settings?.statuses?.conversionsApi?.label || (settings?.hasCapiAccessToken ? "Test Required" : "Token Required"))}
-            </span>
-          </div>
-
-          <div className="pt-3 border-t border-stone-100 space-y-2.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Access Token</span>
-              {settings?.hasCapiAccessToken ? (
-                <code className="text-[11px] font-mono text-stone-800 font-semibold bg-stone-50 border border-stone-200/70 px-2 py-0.5 rounded">
-                  {settings.maskedCapiAccessToken}
-                </code>
-              ) : (
-                <span className="text-[11px] text-amber-800 font-semibold bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded">
-                  Token Required in CAPI tab
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Last Server Event</span>
-              {lastServerEvent ? (
-                <span className="font-semibold text-stone-800 flex items-center gap-1.5">
-                  <span className="font-mono text-indigo-700 bg-indigo-50 border border-indigo-200/60 px-1.5 py-0.5 rounded text-[11px]">
-                    {lastServerEvent.name}
-                  </span>
-                  <span className="font-normal text-stone-400 font-mono text-[11px]">
-                    {new Date(lastServerEvent.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </span>
-              ) : (
-                <span className="text-stone-400 italic">No server events recorded</span>
-              )}
-            </div>
-            {deliveryStats && (deliveryStats.queued > 0 || deliveryStats.retrying > 0) ? (
-              <div className="flex items-center justify-between">
-                <span className="text-amber-700 font-medium">Queue Backlog</span>
-                <span className="font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[11px]">
-                  {deliveryStats.queued} queued, {deliveryStats.retrying} retrying
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-stone-500 font-medium">Pipeline Mode</span>
-                <span className="text-stone-700 font-medium text-[11px]">Durable Mongo Queue &amp; Retry</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Event Deduplication Status */}
-        <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs flex flex-col justify-between hover:border-stone-300 transition-all space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-100/80 flex items-center justify-center text-emerald-600 shrink-0">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-sm font-bold text-stone-900">Deduplication Engine</div>
-                <div className="text-xs text-stone-500 font-medium">Deterministic 48h Merge Engine</div>
-              </div>
-            </div>
-            <span
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                settings?.statuses?.deduplication?.state === "connected"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : settings?.statuses?.deduplication?.state === "test-required"
-                  ? "bg-amber-50 text-amber-800 border-amber-200"
-                  : "bg-stone-100 text-stone-600 border-stone-200"
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  settings?.statuses?.deduplication?.state === "connected"
-                    ? "bg-emerald-500 animate-pulse"
-                    : settings?.statuses?.deduplication?.state === "test-required"
-                    ? "bg-amber-500"
-                    : "bg-stone-400"
-                }`}
-              />
-              {settings?.statuses?.deduplication?.label || "Protected"}
-            </span>
-          </div>
-
-          <div className="pt-3 border-t border-stone-100 space-y-2.5 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Shared Key</span>
-              <code className="text-[11px] font-mono text-stone-800 font-semibold bg-stone-50 border border-stone-200/70 px-2 py-0.5 rounded">
-                event_id: order_&#123;id&#125;
-              </code>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Paired Telemetry</span>
-              <span className="font-mono text-stone-800 bg-stone-50 border border-stone-200/70 px-2 py-0.5 rounded text-[11px]">
-                {dedupStats ? `${dedupStats.pairedCount} deduplicated pairs` : "Tracking active"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-stone-500 font-medium">Idempotency Guard</span>
-              <span className="font-mono text-stone-700 bg-stone-50 border border-stone-200/70 px-2 py-0.5 rounded text-[11px]">
-                sessionStorage + DB Lock
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 6. Event Overview Metrics (Executive KPI Dashboard) ── */}
-      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-stone-100">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-stone-900">
-              Standard Conversion Event Metrics
-            </h3>
-            <p className="text-xs text-stone-500 mt-0.5">
-              Real-time conversion volume verified by persistent store ledger and server-side Conversions API pipeline.
-            </p>
-          </div>
-
-          {/* Date range filter */}
-          <div className="flex items-center gap-2 text-xs">
-            <Clock className="h-3.5 w-3.5 text-stone-400" />
-            <span className="text-stone-500 font-medium">Time Window:</span>
-            <select
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value as "all" | "24h" | "today")}
-              className="rounded-xl border border-stone-200 bg-stone-50/80 px-3 py-1.5 text-xs font-semibold text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-200 cursor-pointer shadow-2xs"
-            >
-              <option value="all">All Recorded</option>
-              <option value="24h">Last 24 Hours</option>
-              <option value="today">Today Only</option>
-            </select>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 py-2">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-28 rounded-2xl bg-stone-100 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-            {/* Total Events */}
-            <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-2xs hover:shadow-xs hover:border-stone-300 transition-all flex flex-col justify-between min-h-[115px]">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-stone-600 flex items-center gap-1.5">
-                  <Activity className="h-3.5 w-3.5 text-stone-500" />
-                  <span>Total Events</span>
-                </span>
-                <span className="text-[11px] font-mono font-semibold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full">
-                  All
-                </span>
-              </div>
-              <div className="my-1.5">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
-                  {eventMetrics.total.toLocaleString()}
+          {/* ── Tab 2: Activity Stream (The Live Event Feed) ── */}
+          {activeTab === "activity" && (
+            <div className="p-4 sm:p-5 space-y-4">
+              {/* Summary Counter Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                <div className="p-2">
+                  <div className="text-[11px] text-slate-500 font-medium">Total Events</div>
+                  <div className="text-lg font-bold text-slate-900">{eventMetrics.total.toLocaleString()}</div>
                 </div>
-                <div className="text-[11px] text-stone-400 mt-0.5">
-                  Verified in ledger
+                <div className="p-2">
+                  <div className="text-[11px] text-slate-500 font-medium">PageView</div>
+                  <div className="text-lg font-bold text-blue-700">{eventMetrics.PageView.toLocaleString()}</div>
+                </div>
+                <div className="p-2">
+                  <div className="text-[11px] text-slate-500 font-medium">ViewContent</div>
+                  <div className="text-lg font-bold text-purple-700">{eventMetrics.ViewContent.toLocaleString()}</div>
+                </div>
+                <div className="p-2">
+                  <div className="text-[11px] text-slate-500 font-medium">AddToCart</div>
+                  <div className="text-lg font-bold text-amber-700">{eventMetrics.AddToCart.toLocaleString()}</div>
+                </div>
+                <div className="p-2">
+                  <div className="text-[11px] text-slate-500 font-medium">Purchase</div>
+                  <div className="text-lg font-bold text-emerald-700">{eventMetrics.Purchase.toLocaleString()}</div>
                 </div>
               </div>
-            </div>
 
-            {/* PageView */}
-            <div className={`rounded-2xl border p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between min-h-[115px] ${trackPageView ? "border-stone-200/90 bg-white hover:border-blue-300" : "border-stone-200 bg-stone-50/60 opacity-80"}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-semibold text-stone-800 flex items-center gap-1.5 truncate">
-                  <Eye className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                  <span>PageView</span>
-                </span>
-                {trackPageView ? (
-                  eventMetrics.total > 0 && (
-                    <span className="text-[11px] font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100/60 shrink-0">
-                      {Math.round((eventMetrics.PageView / eventMetrics.total) * 100)}%
-                    </span>
-                  )
-                ) : (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                    Silenced
-                  </span>
-                )}
-              </div>
-              <div className="my-1.5">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
-                  {eventMetrics.PageView.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-stone-400 mt-0.5">
-                  {trackPageView ? (eventMetrics.PageView === 1 ? "1 page visit" : `${eventMetrics.PageView} page visits`) : "Trigger paused in settings"}
-                </div>
-              </div>
-            </div>
-
-            {/* ViewContent */}
-            <div className={`rounded-2xl border p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between min-h-[115px] ${trackViewContent ? "border-stone-200/90 bg-white hover:border-purple-300" : "border-stone-200 bg-stone-50/60 opacity-80"}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-semibold text-stone-800 flex items-center gap-1.5 truncate">
-                  <Sparkles className="h-3.5 w-3.5 text-purple-600 shrink-0" />
-                  <span>ViewContent</span>
-                </span>
-                {trackViewContent ? (
-                  eventMetrics.total > 0 && (
-                    <span className="text-[11px] font-mono font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-100/60 shrink-0">
-                      {Math.round((eventMetrics.ViewContent / eventMetrics.total) * 100)}%
-                    </span>
-                  )
-                ) : (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                    Silenced
-                  </span>
-                )}
-              </div>
-              <div className="my-1.5">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
-                  {eventMetrics.ViewContent.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-stone-400 mt-0.5">
-                  {trackViewContent ? (eventMetrics.ViewContent === 1 ? "1 product view" : `${eventMetrics.ViewContent} product views`) : "Trigger paused in settings"}
-                </div>
-              </div>
-            </div>
-
-            {/* AddToCart */}
-            <div className={`rounded-2xl border p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between min-h-[115px] ${trackAddToCart ? "border-stone-200/90 bg-white hover:border-amber-300" : "border-stone-200 bg-stone-50/60 opacity-80"}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-semibold text-stone-800 flex items-center gap-1.5 truncate">
-                  <ShoppingBag className="h-3.5 w-3.5 text-amber-600 shrink-0" />
-                  <span>AddToCart</span>
-                </span>
-                {trackAddToCart ? (
-                  eventMetrics.total > 0 && (
-                    <span className="text-[11px] font-mono font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100/60 shrink-0">
-                      {Math.round((eventMetrics.AddToCart / eventMetrics.total) * 100)}%
-                    </span>
-                  )
-                ) : (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                    Silenced
-                  </span>
-                )}
-              </div>
-              <div className="my-1.5">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
-                  {eventMetrics.AddToCart.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-stone-400 mt-0.5">
-                  {trackAddToCart ? (eventMetrics.AddToCart === 1 ? "1 cart action" : `${eventMetrics.AddToCart} cart actions`) : "Trigger paused in settings"}
-                </div>
-              </div>
-            </div>
-
-            {/* InitiateCheckout */}
-            <div className={`rounded-2xl border p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between min-h-[115px] ${trackInitiateCheckout ? "border-stone-200/90 bg-white hover:border-indigo-300" : "border-stone-200 bg-stone-50/60 opacity-80"}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-semibold text-stone-800 flex items-center gap-1.5 truncate">
-                  <ShoppingCart className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                  <span>Checkout</span>
-                </span>
-                {trackInitiateCheckout ? (
-                  eventMetrics.total > 0 && (
-                    <span className="text-[11px] font-mono font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100/60 shrink-0">
-                      {Math.round((eventMetrics.InitiateCheckout / eventMetrics.total) * 100)}%
-                    </span>
-                  )
-                ) : (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                    Silenced
-                  </span>
-                )}
-              </div>
-              <div className="my-1.5">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">
-                  {eventMetrics.InitiateCheckout.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-stone-400 mt-0.5">
-                  {trackInitiateCheckout ? (eventMetrics.InitiateCheckout === 1 ? "1 checkout step" : `${eventMetrics.InitiateCheckout} checkouts`) : "Trigger paused in settings"}
-                </div>
-              </div>
-            </div>
-
-            {/* Purchase */}
-            <div className={`rounded-2xl border p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between min-h-[115px] ${trackPurchase ? "border-stone-200/90 bg-white hover:border-emerald-300" : "border-stone-200 bg-stone-50/60 opacity-80"}`}>
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5 truncate">
-                  <CreditCard className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                  <span>Purchase</span>
-                </span>
-                {trackPurchase ? (
-                  eventMetrics.total > 0 && (
-                    <span className="text-[11px] font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100/60 shrink-0">
-                      {Math.round((eventMetrics.Purchase / eventMetrics.total) * 100)}%
-                    </span>
-                  )
-                ) : (
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
-                    Silenced
-                  </span>
-                )}
-              </div>
-              <div className="my-1.5">
-                <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-700">
-                  {eventMetrics.Purchase.toLocaleString()}
-                </div>
-                <div className="text-[11px] text-stone-400 mt-0.5">
-                  {trackPurchase ? (eventMetrics.Purchase === 1 ? "1 verified order" : `${eventMetrics.Purchase} orders`) : "Trigger paused in settings"}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── 7. Sub-Tabs Navigation (Clean & High-Contrast) ── */}
-      <div className="flex items-center border-b border-stone-200 gap-6 sm:gap-8 text-xs font-bold overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none]">
-        <button
-          type="button"
-          onClick={() => setActiveTab("activity")}
-          className={`flex items-center gap-2 pb-3 border-b-2 transition cursor-pointer ${
-            activeTab === "activity"
-              ? "border-stone-900 text-stone-900"
-              : "border-transparent text-stone-400 hover:text-stone-700"
-          }`}
-        >
-          <Activity className="h-4 w-4" />
-          <span>Activity Stream &amp; Logs</span>
-          <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-mono text-stone-700">
-            {filteredEvents.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("diagnostics")}
-          className={`flex items-center gap-2 pb-3 border-b-2 transition cursor-pointer ${
-            activeTab === "diagnostics"
-              ? "border-stone-900 text-stone-900"
-              : "border-transparent text-stone-400 hover:text-stone-700"
-          }`}
-        >
-          <FlaskConical className="h-4 w-4" />
-          <span>Testing &amp; Diagnostics Playground</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("settings")}
-          className={`flex items-center gap-2 pb-3 border-b-2 transition cursor-pointer ${
-            activeTab === "settings"
-              ? "border-stone-900 text-stone-900"
-              : "border-transparent text-stone-400 hover:text-stone-700"
-          }`}
-        >
-          <Sliders className="h-4 w-4" />
-          <span>Dataset Configuration</span>
-        </button>
-      </div>
-
-      {/* ── 8. Tab 1: Event Activity Stream & Table (Linear/Stripe Quality) ── */}
-      {activeTab === "activity" && (
-        <div className="space-y-4">
-          {/* Table Toolbar & Filters */}
-          <div className="rounded-xl border border-stone-200/90 bg-white p-4 shadow-xs space-y-3">
+              {/* Table Toolbar & Filters */}
+              <div className="rounded-xl border border-stone-200/90 bg-white p-4 shadow-xs space-y-3">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               {/* Search Bar */}
               <div className="relative flex-1 max-w-md">
@@ -2451,6 +2344,8 @@ export default function MetaPixelEventsManagerPage() {
           </div>
         </form>
       )}
+        </div>
+      </div>
     </div>
   );
 }

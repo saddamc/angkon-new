@@ -11,7 +11,7 @@ import { getCheckoutSettings } from "@/server/checkout-settings";
 import { clientIp, rateLimit } from "@/server/rate-limit";
 import { getAllDbProducts } from "@/lib/db/products";
 import { initiateSslcommerzPayment } from "@/server/sslcommerz";
-import { sendMetaCapiEvent } from "@/server/meta-capi";
+import { sendMetaCapiEvent, extractClientIp } from "@/server/meta-capi";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 
@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
                 city: customerData.city,
                 district: customerData.district,
                 postalCode: customerData.postalCode,
-                clientIp: clientIp(request),
+                clientIp: extractClientIp(request),
                 clientUserAgent: request.headers.get("user-agent") || undefined,
                 fbp,
                 fbc,

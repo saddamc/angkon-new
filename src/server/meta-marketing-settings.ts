@@ -2,6 +2,11 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_TENANT_ID } from "./tenant";
 import { PIXEL_SETTINGS_KEY } from "./pixel-settings";
+import {
+  encryptTokenString,
+  decryptTokenString,
+  maskSecret as maskSecretSecure,
+} from "@/lib/security/token-encryption";
 
 export const META_MARKETING_SETTINGS_KEY = "meta_marketing";
 
@@ -80,10 +85,7 @@ export const DEFAULT_MARKETING_SETTINGS: MetaMarketingSettings = {
 };
 
 export function maskSecret(secret?: string): string {
-  if (!secret) return "";
-  const clean = secret.trim();
-  if (clean.length <= 8) return "••••••••";
-  return `${clean.slice(0, 4)}••••••••${clean.slice(-4)}`;
+  return maskSecretSecure(secret);
 }
 
 /**
@@ -114,7 +116,7 @@ export async function getMetaMarketingSettings(
     return {
       tenantId,
       adAccountId: v.adAccountId || "",
-      accessToken: v.accessToken || "",
+      accessToken: typeof v.accessToken === "string" ? decryptTokenString(v.accessToken) : "",
       accountName: v.accountName || "",
       accountCurrency: v.accountCurrency || "BDT",
       accountTimezoneName: v.accountTimezoneName || "Asia/Dhaka",
@@ -143,7 +145,10 @@ export async function getMetaMarketingSettings(
   if (legacyDoc && legacyDoc.value) {
     const legacyVal = legacyDoc.value as Record<string, unknown>;
     const legacyAdAccount = typeof legacyVal.adAccountId === "string" ? legacyVal.adAccountId : "";
-    const legacyToken = typeof legacyVal.marketingApiAccessToken === "string" ? legacyVal.marketingApiAccessToken : "";
+    const legacyToken =
+      typeof legacyVal.marketingApiAccessToken === "string"
+        ? decryptTokenString(legacyVal.marketingApiAccessToken)
+        : "";
 
     if (legacyAdAccount || legacyToken) {
       return {
@@ -226,11 +231,16 @@ export async function updateMetaMarketingSettings(
     updatedAt: new Date().toISOString(),
   };
 
+  const dbPayload = {
+    ...updated,
+    accessToken: encryptTokenString(updated.accessToken),
+  };
+
   await Settings.findOneAndUpdate(
     { tenantId, key: META_MARKETING_SETTINGS_KEY },
     {
       $set: {
-        value: updated,
+        value: dbPayload,
         updatedAt: new Date(),
       },
     },

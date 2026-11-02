@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
       { source: "/men", destination: "/product-category/men", permanent: false },
       { source: "/men/:subcategory", destination: "/product-category/men/:subcategory", permanent: false },
       { source: "/category/:slug", destination: "/product-category/:slug", permanent: true },
+      { source: "/admin/meta/pixel", destination: "/admin/meta/events?tab=events-manager", permanent: false },
+      { source: "/admin/meta/conversions-api", destination: "/admin/meta/events?tab=conversions-api", permanent: false },
     ];
   },
   images: {

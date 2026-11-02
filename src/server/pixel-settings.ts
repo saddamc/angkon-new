@@ -3,6 +3,11 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { DEFAULT_TENANT_ID } from "./tenant";
+import {
+  encryptTokenString,
+  decryptTokenString,
+  maskSecret as maskSecretSecure,
+} from "@/lib/security/token-encryption";
 
 export { DEFAULT_TENANT_ID };
 export const PIXEL_SETTINGS_KEY = "pixel";
@@ -88,10 +93,7 @@ export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
  * Example: "EAAG...1234" -> "EAAG••••••••1234"
  */
 export function maskSecret(secret?: string): string {
-  if (!secret) return "";
-  const clean = secret.trim();
-  if (clean.length <= 8) return "••••••••";
-  return `${clean.slice(0, 4)}••••••••${clean.slice(-4)}`;
+  return maskSecretSecure(secret);
 }
 
 /**
@@ -330,9 +332,14 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
         : undefined,
     metaOwnershipConfirmedBy:
       typeof source.metaOwnershipConfirmedBy === "string" ? source.metaOwnershipConfirmedBy : undefined,
-    capiAccessToken: typeof source.capiAccessToken === "string" ? source.capiAccessToken.trim() : "",
+    capiAccessToken:
+      typeof source.capiAccessToken === "string"
+        ? decryptTokenString(source.capiAccessToken.trim())
+        : "",
     marketingApiAccessToken:
-      typeof source.marketingApiAccessToken === "string" ? source.marketingApiAccessToken.trim() : "",
+      typeof source.marketingApiAccessToken === "string"
+        ? decryptTokenString(source.marketingApiAccessToken.trim())
+        : "",
     adAccountId,
     trackPageView: source.trackPageView !== false,
     trackViewContent: source.trackViewContent !== false,
@@ -460,18 +467,25 @@ export async function savePixelSettings(
     safeTenant
   );
 
+  // Encrypt sensitive Meta access tokens at rest before persisting to MongoDB
+  const dbPayload = {
+    ...normalized,
+    capiAccessToken: encryptTokenString(normalized.capiAccessToken),
+    marketingApiAccessToken: encryptTokenString(normalized.marketingApiAccessToken),
+  };
+
   // Store update strictly scoped to (tenantId, key) with resilient direct collection fallback
   try {
     await Settings.findOneAndUpdate(
       { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY },
-      { $set: { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY, value: normalized } },
+      { $set: { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY, value: dbPayload } },
       { upsert: true, new: true, setDefaultsOnInsert: true, strict: false }
     );
   } catch (dbErr) {
     console.warn("[PixelSettings] Mongoose findOneAndUpdate failed, falling back to direct collection update:", dbErr);
     await Settings.collection.updateOne(
       { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY },
-      { $set: { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY, value: normalized } },
+      { $set: { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY, value: dbPayload } },
       { upsert: true }
     );
   }

@@ -15,6 +15,7 @@ import {
   Sparkles,
   RefreshCw,
   PlayCircle,
+  BarChart2,
 } from "lucide-react";
 import { MetaNavigationHeader } from "./meta-nav";
 import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
@@ -25,6 +26,16 @@ export default function MetaSuiteOverviewPage() {
   const [stats, setStats] = useState<Record<string, number>>({});
   const [catalogCount, setCatalogCount] = useState<number | null>(null);
   const [domainVerified, setDomainVerified] = useState<boolean | null>(null);
+
+  const [analyticsData, setAnalyticsData] = useState<{
+    revenue: { total: number; paid: number; pending: number; net: number; aov: number };
+    orders: { total: number; cancelled: number; completed: number };
+    customers: { total: number; new: number };
+    products: { total: number };
+  } | null>(null);
+  const [timeseries, setTimeseries] = useState<Array<{ date: string; revenue: number; orders: number }>>([]);
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<"today" | "7d" | "30d" | "month">("30d");
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -91,6 +102,38 @@ export default function MetaSuiteOverviewPage() {
     };
   }, []);
 
+  // ── Analytics period-driven fetch ──────────────────────────────────────
+  useEffect(() => {
+    let ignore = false;
+    setAnalyticsLoading(true);
+    Promise.allSettled([
+      fetch(`/api/admin/meta/analytics?period=${analyticsPeriod}`),
+      fetch(
+        `/api/admin/meta/analytics/timeseries?days=${
+          analyticsPeriod === "today" ? 1 : analyticsPeriod === "7d" ? 7 : 30
+        }`
+      ),
+    ])
+      .then(([aRes, tsRes]) => {
+        if (ignore) return;
+        if (aRes.status === "fulfilled" && aRes.value.ok) {
+          void aRes.value.json().then((a) => !ignore && setAnalyticsData(a as typeof analyticsData));
+        }
+        if (tsRes.status === "fulfilled" && tsRes.value.ok) {
+          void tsRes.value.json().then(
+            (ts: { series?: Array<{ date: string; revenue: number; orders: number }> }) =>
+              !ignore && setTimeseries(ts.series ?? [])
+          );
+        }
+      })
+      .finally(() => {
+        if (!ignore) setAnalyticsLoading(false);
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [analyticsPeriod]);
+
   const pixelId = settings?.pixelId ?? "";
   const isPixelEnabled = Boolean(pixelId && settings?.enabled);
   const isCapiActive = Boolean(settings?.hasCapiAccessToken);
@@ -142,6 +185,119 @@ export default function MetaSuiteOverviewPage() {
         </button>
       </div>
 
+      {/* ── Business Intelligence KPIs ── */}
+      <div className="space-y-4">
+        {/* Period selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+              <BarChart2 className="h-4 w-4 text-emerald-600" />
+              <span>Business Intelligence</span>
+              <span className="text-xs font-normal text-stone-500">(Orders &amp; Revenue from Store)</span>
+            </h2>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white p-1 shadow-xs">
+            {(["today", "7d", "30d", "month"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setAnalyticsPeriod(p)}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                  analyticsPeriod === p
+                    ? "bg-stone-900 text-white shadow-xs"
+                    : "text-stone-600 hover:bg-stone-100"
+                }`}
+              >
+                {p === "today" ? "Today" : p === "7d" ? "7 Days" : p === "30d" ? "30 Days" : "Month"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* KPI Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {/* Revenue */}
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-2">Total Revenue</div>
+            <div className="text-2xl font-black text-stone-900">
+              {analyticsData ? (
+                `৳${analyticsData.revenue.total.toLocaleString("en-BD")}`
+              ) : (
+                <span className={`text-lg ${analyticsLoading ? "text-stone-300" : "text-stone-300"}`}>Loading…</span>
+              )}
+            </div>
+            {analyticsData && (
+              <div className="text-[11px] text-stone-500 mt-1">
+                Paid: ৳{analyticsData.revenue.paid.toLocaleString("en-BD")}
+              </div>
+            )}
+          </div>
+
+          {/* Orders */}
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-2">Orders</div>
+            <div className="text-2xl font-black text-stone-900">
+              {analyticsData ? (
+                analyticsData.orders.total
+              ) : (
+                <span className="text-stone-300 text-lg">—</span>
+              )}
+            </div>
+            {analyticsData && (
+              <div className="text-[11px] text-stone-500 mt-1">
+                Completed: {analyticsData.orders.completed}
+              </div>
+            )}
+          </div>
+
+          {/* AOV */}
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-2">Avg. Order Value</div>
+            <div className="text-2xl font-black text-stone-900">
+              {analyticsData ? (
+                `৳${analyticsData.revenue.aov.toLocaleString("en-BD")}`
+              ) : (
+                <span className="text-stone-300 text-lg">—</span>
+              )}
+            </div>
+            <div className="text-[11px] text-stone-500 mt-1">Per order</div>
+          </div>
+
+          {/* Customers */}
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-2">Customers</div>
+            <div className="text-2xl font-black text-stone-900">
+              {analyticsData ? (
+                analyticsData.customers.total
+              ) : (
+                <span className="text-stone-300 text-lg">—</span>
+              )}
+            </div>
+            {analyticsData && (
+              <div className="text-[11px] text-emerald-600 font-semibold mt-1">
+                +{analyticsData.customers.new} new this period
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Revenue Sparkline */}
+        {timeseries.length > 0 && (
+          <div className="rounded-2xl border border-stone-200/90 bg-white p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                Revenue — Last 30 Days
+              </div>
+              <div className="text-xs text-stone-500 font-mono">
+                ৳{timeseries.reduce((s, d) => s + d.revenue, 0).toLocaleString("en-BD")}
+              </div>
+            </div>
+            <RevenueSparkline data={timeseries} />
+          </div>
+        )}
+      </div>
+
       {/* ── 3. 5 Meta Integration Asset Status Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
         {/* Asset 1: Browser Pixel */}
@@ -189,7 +345,7 @@ export default function MetaSuiteOverviewPage() {
               {stats.total ?? totalCapturedEvents} events
             </span>
             <Link
-              href="/admin/meta/pixel"
+              href="/admin/meta/events?tab=events-manager"
               className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800"
             >
               <span>Manage</span>
@@ -245,7 +401,7 @@ export default function MetaSuiteOverviewPage() {
               {isCapiActive ? "SHA-256 Enabled" : "Not Configured"}
             </span>
             <Link
-              href="/admin/meta/conversions-api"
+              href="/admin/meta/events?tab=conversions-api"
               className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
             >
               <span>Gateway</span>
@@ -430,7 +586,7 @@ export default function MetaSuiteOverviewPage() {
             </div>
             <div className="pt-2">
               <Link
-                href="/admin/meta/pixel"
+                href="/admin/meta/events?tab=diagnostics"
                 className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-blue-700 transition"
               >
                 <PlayCircle className="h-3.5 w-3.5" />
@@ -527,7 +683,7 @@ export default function MetaSuiteOverviewPage() {
             </div>
             <div className="pt-4 mt-2 border-t border-stone-100">
               <Link
-                href="/admin/meta/pixel"
+                href="/admin/meta/events?tab=events-manager"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800"
               >
                 <span>Open Events Manager</span>
@@ -554,7 +710,7 @@ export default function MetaSuiteOverviewPage() {
             </div>
             <div className="pt-4 mt-2 border-t border-stone-100">
               <Link
-                href="/admin/meta/conversions-api"
+                href="/admin/meta/events?tab=conversions-api"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800"
               >
                 <span>Configure CAPI Gateway</span>
@@ -625,6 +781,40 @@ export default function MetaSuiteOverviewPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RevenueSparkline({
+  data,
+}: {
+  data: Array<{ date: string; revenue: number; orders: number }>;
+}) {
+  const max = Math.max(...data.map((d) => d.revenue), 1);
+
+  return (
+    <div className="relative h-16 flex items-end gap-[2px]">
+      {data.map((d) => {
+        const height = max > 0 ? Math.max((d.revenue / max) * 100, 4) : 4;
+        return (
+          <div
+            key={d.date}
+            title={`${d.date}: ৳${d.revenue.toLocaleString("en-BD")} (${d.orders} orders)`}
+            className="group relative flex-1 rounded-t-sm transition-all duration-150"
+            style={{
+              height: `${height}%`,
+              backgroundColor: d.revenue > 0 ? "#10b981" : "#e7e5e4",
+            }}
+          >
+            {/* Tooltip */}
+            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10 hidden group-hover:block bg-stone-900 text-white text-[10px] rounded px-2 py-1 whitespace-nowrap pointer-events-none shadow-lg">
+              <div>{d.date}</div>
+              <div className="font-bold">৳{d.revenue.toLocaleString("en-BD")}</div>
+              <div>{d.orders} orders</div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

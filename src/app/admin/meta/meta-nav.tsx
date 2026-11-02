@@ -7,13 +7,10 @@ import {
   Layers,
   ShoppingBag,
   Globe,
-  Server,
   ExternalLink,
-  PlayCircle,
   Copy,
   Check,
   BarChart3,
-  ShieldCheck,
   AlertTriangle,
   ChevronDown,
   Menu,
@@ -76,14 +73,9 @@ export const META_NAV_GROUPS: MetaNavGroup[] = [
     collapsible: true,
     items: [
       {
-        href: "/admin/meta/pixel",
+        href: "/admin/meta/events",
         label: "Events Manager",
         icon: Activity,
-      },
-      {
-        href: "/admin/meta/conversions-api",
-        label: "Conversions API",
-        icon: Server,
       },
     ],
   },
@@ -154,7 +146,7 @@ export function getActiveItem(pathname: string): MetaNavItem {
 }
 
 // ── Meta Loop Brand Icon ──────────────────────────────────────────────
-function MetaLoopIcon({ className = "h-5 w-5" }: { className?: string }) {
+function _MetaLoopIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 36 36"

@@ -28,11 +28,8 @@ test("Meta Navigation UX: 1. Group structure covers all six routes precisely", (
   assert.ok(metaNavContent.includes('"/admin/meta"'), "/admin/meta route exists");
   assert.ok(metaNavContent.includes('"Overview"'), "Overview item exists");
 
-  assert.ok(metaNavContent.includes('"/admin/meta/pixel"'), "/admin/meta/pixel route exists");
+  assert.ok(metaNavContent.includes('"/admin/meta/events"'), "/admin/meta/events route exists");
   assert.ok(metaNavContent.includes('"Events Manager"'), "Events Manager item exists");
-
-  assert.ok(metaNavContent.includes('"/admin/meta/conversions-api"'), "/admin/meta/conversions-api route exists");
-  assert.ok(metaNavContent.includes('"Conversions API"'), "Conversions API item exists");
 
   assert.ok(metaNavContent.includes('"/admin/meta/ads"'), "/admin/meta/ads route exists");
   assert.ok(metaNavContent.includes('"Ads & Attribution"'), "Ads & Attribution item exists");
@@ -53,7 +50,6 @@ test("Meta Navigation UX: 2. Lucide icons are imported and bound to each item", 
   // Check Lucide icons used for each item
   assert.ok(metaNavContent.includes("Layers"), "Layers icon used for Overview");
   assert.ok(metaNavContent.includes("Activity"), "Activity icon used for Events Manager");
-  assert.ok(metaNavContent.includes("Server"), "Server icon used for Conversions API");
   assert.ok(metaNavContent.includes("BarChart3"), "BarChart3 icon used for Ads & Attribution");
   assert.ok(metaNavContent.includes("ShoppingBag"), "ShoppingBag icon used for Catalog Feed");
   assert.ok(metaNavContent.includes("Globe"), "Globe icon used for Domain Verification");
@@ -139,9 +135,10 @@ test("Meta Navigation UX: 6. Shared Layout Shell and Single Component Implementa
   );
 });
 
-test("Meta Navigation UX: 7. All six route page files exist and are verified", () => {
+test("Meta Navigation UX: 7. All route page files and backward-compatible redirects exist", () => {
   const routes = [
     "src/app/admin/meta/page.tsx",
+    "src/app/admin/meta/events/page.tsx",
     "src/app/admin/meta/pixel/page.tsx",
     "src/app/admin/meta/conversions-api/page.tsx",
     "src/app/admin/meta/ads/page.tsx",
@@ -152,4 +149,11 @@ test("Meta Navigation UX: 7. All six route page files exist and are verified", (
   for (const route of routes) {
     assert.ok(fs.existsSync(path.resolve(route)), `Route file ${route} must exist`);
   }
+
+  // Verify redirects are implemented in legacy routes
+  const pixelContent = fs.readFileSync(path.resolve("src/app/admin/meta/pixel/page.tsx"), "utf-8");
+  const capiContent = fs.readFileSync(path.resolve("src/app/admin/meta/conversions-api/page.tsx"), "utf-8");
+
+  assert.ok(pixelContent.includes("redirect("), "Pixel page must implement redirect");
+  assert.ok(capiContent.includes("redirect("), "Conversions API page must implement redirect");
 });

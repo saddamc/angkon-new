@@ -60,9 +60,9 @@ async function run() {
   await page.screenshot({ path: overviewPath, fullPage: false });
   console.log("Saved overview desktop screenshot to:", overviewPath);
 
-  // ── 1. Meta Events Manager (Main sidebar in collapsed 78px state like media_1793568009257_a97b6430.png) ──
-  console.log("Navigating desktop to http://localhost:3001/admin/meta/pixel ...");
-  await page.goto("http://localhost:3001/admin/meta/pixel", { waitUntil: "domcontentloaded" });
+  // ── 1. Meta Events Manager (Consolidated /admin/meta/events) ──
+  console.log("Navigating desktop to http://localhost:3001/admin/meta/events ...");
+  await page.goto("http://localhost:3001/admin/meta/events?tab=events-manager", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1500);
 
   const expandedPath = path.join(ARTIFACT_DIR, "meta-nav-desktop-expanded.png");

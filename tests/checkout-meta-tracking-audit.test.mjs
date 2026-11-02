@@ -876,7 +876,10 @@ test("Audit Criterion 23: CAPI PageView payload contains no currency, value, or 
 
 test("Audit Criterion 24 & 25: Admin simulator blocks fake window.fbq in production and requires test_event_code for CAPI", async () => {
   const fs = await import("node:fs");
-  const pixelAdminContent = fs.readFileSync("src/app/admin/meta/pixel/page.tsx", "utf8");
+  const pixelAdminFile = fs.existsSync("src/app/admin/meta/events/page.tsx")
+    ? "src/app/admin/meta/events/page.tsx"
+    : "src/app/admin/meta/pixel/page.tsx";
+  const pixelAdminContent = fs.readFileSync(pixelAdminFile, "utf8");
   const capiTestApi = fs.readFileSync("src/app/api/admin/meta/capi/test/route.ts", "utf8");
 
   // Verify simulator does not call fbq track
@@ -896,7 +899,10 @@ test("Audit Criterion 24 & 25: Admin simulator blocks fake window.fbq in product
 
 test("Audit Criterion 26: Old static 9700 BDT simulator value is eliminated from active code", async () => {
   const fs = await import("node:fs");
-  const pixelAdminContent = fs.readFileSync("src/app/admin/meta/pixel/page.tsx", "utf8");
+  const pixelAdminFile = fs.existsSync("src/app/admin/meta/events/page.tsx")
+    ? "src/app/admin/meta/events/page.tsx"
+    : "src/app/admin/meta/pixel/page.tsx";
+  const pixelAdminContent = fs.readFileSync(pixelAdminFile, "utf8");
   assert.ok(
     !pixelAdminContent.includes("value: 9700"),
     "Admin simulator must not hardcode static 9700 BDT"

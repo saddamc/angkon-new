@@ -16,7 +16,6 @@ import {
   X,
   Bell,
   ChevronRight,
-  ChevronLeft,
   BarChart3,
   FolderOpen,
   PanelLeft,

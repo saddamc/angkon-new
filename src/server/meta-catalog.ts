@@ -4,6 +4,10 @@ import { Settings } from "@/models/Settings";
 import { maskSecret } from "./pixel-settings";
 import { DEFAULT_TENANT_ID } from "./tenant";
 import {
+  encryptTokenString,
+  decryptTokenString,
+} from "@/lib/security/token-encryption";
+import {
   buildCatalogFeed,
   buildFeedUrl,
   generateCatalogXml,
@@ -97,7 +101,9 @@ export function normalizeMetaCatalogSettings(
     tenantId: resolvedTenant,
     catalogId: normalizeMetaCatalogId(source.catalogId),
     catalogApiToken:
-      typeof source.catalogApiToken === "string" ? source.catalogApiToken.trim() : "",
+      typeof source.catalogApiToken === "string"
+        ? decryptTokenString(source.catalogApiToken.trim())
+        : "",
     businessId: typeof source.businessId === "string" ? source.businessId.trim() : "",
     catalogName: typeof source.catalogName === "string" ? source.catalogName : undefined,
     metaProductCount:
@@ -220,6 +226,11 @@ export async function saveMetaCatalogSettings(
     safeTenant
   );
 
+  const dbPayload = {
+    ...normalized,
+    catalogApiToken: encryptTokenString(normalized.catalogApiToken),
+  };
+
   try {
     await Settings.findOneAndUpdate(
       { tenantId: safeTenant, key: META_CATALOG_SETTINGS_KEY },
@@ -227,7 +238,7 @@ export async function saveMetaCatalogSettings(
         $set: {
           tenantId: safeTenant,
           key: META_CATALOG_SETTINGS_KEY,
-          value: normalized,
+          value: dbPayload,
         },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true, strict: false }
@@ -243,7 +254,7 @@ export async function saveMetaCatalogSettings(
         $set: {
           tenantId: safeTenant,
           key: META_CATALOG_SETTINGS_KEY,
-          value: normalized,
+          value: dbPayload,
         },
       },
       { upsert: true }

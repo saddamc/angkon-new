@@ -555,6 +555,13 @@ export default function CheckoutPage() {
   }
 
   // ── 2. Order Success Screen ────────────────────────────────────────────────
+  // Derived once, before any early return. The order-success screen also reads
+  // `isEmailVerified`, and declaring it further down threw a TDZ ReferenceError
+  // the moment the success screen rendered.
+  const isLoggedIn = Boolean(checkoutConfig?.user);
+  const loggedInEmail = checkoutConfig?.user?.email || "";
+  const isEmailVerified = Boolean(checkoutConfig?.user?.emailVerified);
+
   if (submitted) {
     const isGuestOrder = !checkoutConfig?.user || accountInfo?.status === "created";
     const guestEmail = accountInfo?.email || confirmedCustomer?.phone || "your email";
@@ -749,10 +756,6 @@ export default function CheckoutPage() {
   }
 
   // ── 4. Main Checkout Flow ──────────────────────────────────────────────────
-  const isLoggedIn = Boolean(checkoutConfig?.user);
-  const loggedInEmail = checkoutConfig?.user?.email || "";
-  const isEmailVerified = Boolean(checkoutConfig?.user?.emailVerified);
-
   return (
     <div className="min-h-screen bg-[#400604] text-white">
       {/* Top Breadcrumb */}
@@ -780,7 +783,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit((data) => onSubmit(data))}>
           <div className="grid gap-8 lg:grid-cols-[1.18fr_0.82fr] xl:grid-cols-[1.2fr_0.8fr] items-start">
 
             {/* ── LEFT COLUMN: Form Steps ── */}

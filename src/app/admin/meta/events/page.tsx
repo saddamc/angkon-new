@@ -108,6 +108,18 @@ const DEFAULT_META_TIMESERIES: PerformanceDataPoint[] = [
   { date: "2026-11-02 11:00", timeLabel: "11:00 AM", formattedDateTime: "11/02/26, 11:00 AM", events: 35, websiteEvents: 35, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
 ];
 
+/**
+ * Human label for Meta's reported event volume.
+ *
+ * `null` means the Dataset Quality API did not return a count for this event —
+ * the UI must say so rather than inventing a number. Test events are isolated
+ * by Meta and never surface in production reporting at all.
+ */
+function formatMetaReported(eventName: string, value: number | null): string {
+  if (eventName === "TestEvent") return "Isolated";
+  return value === null ? "Not reported" : value.toLocaleString();
+}
+
 export default function MetaEventsConsolidatedPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -289,11 +301,18 @@ export default function MetaEventsConsolidatedPage() {
   // Live Event Match Quality from Meta's Dataset Quality API. The value is
   // cached module-wide, so the KPI tile and the breakdown panel below share
   // one request.
-  const { state: emqState } = useEventMatchQuality();
+  const { state: emqState, reload: reloadEmq } = useEventMatchQuality();
 
   // Derived EMQ figures shared by the KPI tile below and the breakdown panel.
+  // `emqEvents` is memoised: the ternary below would otherwise allocate a new
+  // [] on every render and retrigger every consumer that lists it as a dep.
   const emqScore = emqState.status === "ready" ? emqState.report.compositeScore : null;
-  const emqEvents = emqState.status === "ready" ? emqState.report.events : [];
+  const emqEvents = useMemo(
+    () => (emqState.status === "ready" ? emqState.report.events : []),
+    [emqState]
+  );
+  const emqStatus = emqState.status;
+  const emqReason = emqState.status === "error" ? emqState.reason : null;
   const bestEmqEvent = emqEvents
     .filter((event) => event.score !== null)
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
@@ -406,6 +425,17 @@ export default function MetaEventsConsolidatedPage() {
   useEffect(() => {
     void fetchTelemetry();
   }, [fetchTelemetry]);
+
+  // Auto-refresh: keep the local ledger and Meta's reported volume in step
+  // without a manual page reload. The EMQ module cache is 60s, so forcing a
+  // reload on the same cadence lands just as it expires.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      void fetchTelemetry();
+      reloadEmq();
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [fetchTelemetry, reloadEmq]);
 
   // Load timeseries telemetry for Shadcn Chart
   useEffect(() => {
@@ -705,18 +735,28 @@ export default function MetaEventsConsolidatedPage() {
           hasScore: true,
         };
       }
-      if (emqState.status === "loading") {
+      if (emqStatus === "loading") {
         return { score: null, label: "Loading...", quality: "", hasScore: false };
       }
-      if (emqState.status === "error") {
+      if (emqStatus === "error") {
         return {
           score: null,
-          label: emqState.reason === "no-permission" ? "Permission req." : "Unavailable",
-          quality: emqState.reason === "no-permission" ? "Scope ads_read" : "Meta API error",
+          label: emqReason === "no-permission" ? "Permission req." : "Unavailable",
+          quality: emqReason === "no-permission" ? "Scope ads_read" : "Meta API error",
           hasScore: false,
         };
       }
       return { score: null, label: "Waiting for Meta", quality: "Awaiting rollup", hasScore: false };
+    };
+
+    /**
+     * Meta-reported event volume for this event name, straight from the
+     * Dataset Quality API. Null means Meta has not reported a count — the UI
+     * must show that, never a fabricated number.
+     */
+    const getEmqTotal = (eventName: string): number | null => {
+      const match = emqEvents.find((e) => e.eventName.toLowerCase() === eventName.toLowerCase());
+      return match?.totalEventCount ?? null;
     };
 
     const pvEmq = getRealEmq("PageView");
@@ -724,6 +764,12 @@ export default function MetaEventsConsolidatedPage() {
     const atcEmq = getRealEmq("AddToCart");
     const icEmq = getRealEmq("InitiateCheckout");
     const purEmq = getRealEmq("Purchase");
+
+    const pvMetaTotal = getEmqTotal("PageView");
+    const vcMetaTotal = getEmqTotal("ViewContent");
+    const atcMetaTotal = getEmqTotal("AddToCart");
+    const icMetaTotal = getEmqTotal("InitiateCheckout");
+    const purMetaTotal = getEmqTotal("Purchase");
 
     const rawEvents = [
       {
@@ -741,8 +787,11 @@ export default function MetaEventsConsolidatedPage() {
         emqQuality: pvEmq.quality,
         emqScore: pvEmq.score,
         total: eventStats.PageView ?? 982,
-        metaReported: "~1,600",
-        metaNote: "Meta-reported direct browser hits (fbevents.js) over rolling 28-day window. Discrepancy vs ANGKON (982) is due to ad-blockers and privacy filters on client-side API telemetry.",
+        metaReported: pvMetaTotal,
+        metaNote:
+          pvMetaTotal !== null
+            ? `Meta Dataset Quality reports ${pvMetaTotal.toLocaleString()} PageView events for the current window. The local ANGKON ledger counts verified storefront hits; ad-blockers and privacy filters can widen the gap.`
+            : "Meta has not reported a PageView volume for this dataset yet. The local ANGKON ledger is the only source of truth until Meta rolls one up.",
         lastReceived: getEventTimeAgo("PageView"),
         description: "Tracks all storefront URL visits, referrals, and initial visitor attribution cookies (_fbp, _fbc).",
         browserPct: pageViewSplit.browserPct,
@@ -764,8 +813,11 @@ export default function MetaEventsConsolidatedPage() {
         emqQuality: vcEmq.quality,
         emqScore: vcEmq.score,
         total: eventStats.ViewContent ?? 230,
-        metaReported: "321",
-        metaNote: "Meta Events Manager reported total. ANGKON local ledger counts 230 verified product views.",
+        metaReported: vcMetaTotal,
+        metaNote:
+          vcMetaTotal !== null
+            ? `Meta Dataset Quality reports ${vcMetaTotal.toLocaleString()} ViewContent events for the current window.`
+            : "Meta has not reported a ViewContent volume for this dataset yet.",
         lastReceived: getEventTimeAgo("ViewContent"),
         description: "Fires when shoppers view saree and apparel product detail pages. Matches product IDs to Dynamic Product Ads Catalog.",
         browserPct: viewContentSplit.browserPct,
@@ -787,8 +839,11 @@ export default function MetaEventsConsolidatedPage() {
         emqQuality: atcEmq.quality,
         emqScore: atcEmq.score,
         total: eventStats.AddToCart ?? 15,
-        metaReported: "77",
-        metaNote: "Meta Events Manager reported cart additions. ANGKON local database logged 15 verified store carts.",
+        metaReported: atcMetaTotal,
+        metaNote:
+          atcMetaTotal !== null
+            ? `Meta Dataset Quality reports ${atcMetaTotal.toLocaleString()} AddToCart events for the current window.`
+            : "Meta has not reported an AddToCart volume for this dataset yet.",
         lastReceived: getEventTimeAgo("AddToCart"),
         description: "Captures product additions to cart with item price and currency (BDT). Used for abandoned cart re-targeting.",
         browserPct: addToCartSplit.browserPct,
@@ -810,8 +865,11 @@ export default function MetaEventsConsolidatedPage() {
         emqQuality: icEmq.quality,
         emqScore: icEmq.score,
         total: eventStats.InitiateCheckout ?? 9,
-        metaReported: "52",
-        metaNote: "Meta Events Manager recorded checkout attempts. ANGKON local database records 9 checkout sessions.",
+        metaReported: icMetaTotal,
+        metaNote:
+          icMetaTotal !== null
+            ? `Meta Dataset Quality reports ${icMetaTotal.toLocaleString()} InitiateCheckout events for the current window.`
+            : "Meta has not reported an InitiateCheckout volume for this dataset yet.",
         lastReceived: getEventTimeAgo("InitiateCheckout"),
         description: "Tracks opening of the checkout drawer/page before order submission.",
         browserPct: checkoutSplit.browserPct,
@@ -833,8 +891,11 @@ export default function MetaEventsConsolidatedPage() {
         emqQuality: purEmq.quality,
         emqScore: purEmq.score,
         total: eventStats.Purchase ?? 26,
-        metaReported: "57",
-        metaNote: "Meta reported purchases over 28-day window. ANGKON local ledger counts 26 paid/COD orders.",
+        metaReported: purMetaTotal,
+        metaNote:
+          purMetaTotal !== null
+            ? `Meta Dataset Quality reports ${purMetaTotal.toLocaleString()} Purchase events for the current window.`
+            : "Meta has not reported a Purchase volume for this dataset yet.",
         lastReceived: getEventTimeAgo("Purchase"),
         description: "Fires upon confirmed order completion. Deduplicated across client browser and server CAPI via unique order number.",
         browserPct: purchaseSplit.browserPct,
@@ -856,7 +917,9 @@ export default function MetaEventsConsolidatedPage() {
         emqQuality: "Test sandbox",
         emqScore: null,
         total: testStats?.total ?? (testEvents.length || 0),
-        metaReported: "0 (Isolated)",
+        // Test events are isolated by Meta and never appear in production
+        // reporting, so there is no Meta-reported volume to show.
+        metaReported: null,
         metaNote: "Test events are dispatched with test_event_code to verify CAPI and browser pixel connectivity. Meta isolates them in the Test Events tool and excludes them from live production reporting.",
         lastReceived: testEvents[0]?.timestamp ? "Recently tested" : "No test events yet",
         description: "Diagnostic validation events sent to verify Graph API v22.0 server dispatches before processing production customer transactions.",
@@ -880,7 +943,7 @@ export default function MetaEventsConsolidatedPage() {
         r.name.toLowerCase().includes(q) ||
         r.displayName.toLowerCase().includes(q)
     );
-  }, [eventStats, eventsTableSearch, eventsTableFilter, emqScore, getEventChannelSplit, getEventTimeAgo, testStats, testEvents]);
+  }, [eventStats, eventsTableSearch, eventsTableFilter, emqEvents, emqStatus, emqReason, getEventChannelSplit, getEventTimeAgo, testStats, testEvents]);
 
   const handleOpenEventDrawer = useCallback((row: (typeof metaEventsRows)[0]) => {
     const matchingEmq = emqEvents.find((e) => e.eventName.toLowerCase() === row.name.toLowerCase());
@@ -895,7 +958,7 @@ export default function MetaEventsConsolidatedPage() {
       emqScore: row.emqScore,
       emqQuality: row.emqQuality,
       localCount: row.total,
-      metaCount: row.metaReported,
+      metaCount: formatMetaReported(row.name, row.metaReported),
       lastReceived: row.lastReceived,
       integration: row.integration,
       browserPct: row.browserPct,
@@ -2021,7 +2084,7 @@ export default function MetaEventsConsolidatedPage() {
                               </div>
                               <div className="text-[10.5px] text-blue-700 font-mono font-medium flex items-center gap-1">
                                 <span className="text-[10px] text-slate-400 font-sans font-medium">Meta:</span>
-                                <span>{row.metaReported}</span>
+                                <span>{formatMetaReported(row.name, row.metaReported)}</span>
                               </div>
                             </div>
                           </td>

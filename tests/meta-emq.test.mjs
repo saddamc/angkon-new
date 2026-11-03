@@ -251,6 +251,48 @@ test("EMQ: preserves freshness and spend without interpreting them", () => {
   assert.equal(purchase.spend, 12000.5);
 });
 
+test("EMQ: exposes Meta's reported event volume, or null when absent", () => {
+  const report = normaliseDatasetQuality(datasetQualityPayload(), "123");
+
+  // Meta put the denominator on the diagnostic, so the normaliser falls back
+  // to the largest diagnostic total for that event.
+  const purchase = report.events.find((event) => event.eventName === "Purchase");
+  assert.equal(purchase.totalEventCount, 1000);
+
+  // ViewContent carries no count at all — it must stay null so the UI can say
+  // "Not reported" instead of inventing a number.
+  const view = report.events.find((event) => event.eventName === "ViewContent");
+  assert.equal(view.totalEventCount, null);
+});
+
+test("EMQ: a count on the event itself wins over the diagnostic fallback", () => {
+  const report = normaliseDatasetQuality(
+    {
+      web: [
+        {
+          event_name: "Purchase",
+          total_event_count: 42,
+          diagnostics: [
+            { name: "Missing email", total_event_count: 1000 },
+          ],
+        },
+      ],
+    },
+    "123"
+  );
+
+  assert.equal(report.events[0].totalEventCount, 42);
+});
+
+test("EMQ: never reports a count for events Meta did not describe", () => {
+  const report = normaliseDatasetQuality(
+    { web: [{ event_name: "Purchase" }] },
+    "123"
+  );
+
+  assert.equal(report.events[0].totalEventCount, null);
+});
+
 test("EMQ: empty or malformed payloads degrade instead of throwing", () => {
   for (const payload of [{}, null, [], "nonsense", { web: [] }, { web: [{}] }]) {
     const report = normaliseDatasetQuality(payload, "123");

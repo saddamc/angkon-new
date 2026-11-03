@@ -51,6 +51,12 @@ export interface EmqEvent {
   /** Machine value Meta reports (e.g. REAL_TIME), shown verbatim. */
   freshness: string | null;
   spend: number | null;
+  /**
+   * Meta-reported event volume for this event name, when Meta exposes it.
+   * Null when the Dataset Quality payload omits a count — callers must treat
+   * null as "not reported" and never invent a number.
+   */
+  totalEventCount: number | null;
   /** Extra Meta-reported values we surface without interpreting. */
   extras: Record<string, string>;
 }
@@ -290,6 +296,20 @@ function normaliseEvent(raw: unknown): EmqEvent | null {
     if (text !== null && text.length <= 120) extras[key] = text;
   }
 
+  // Meta reports the event volume either directly on the event or as the
+  // denominator of a diagnostic. Take the direct reading first, then the
+  // largest diagnostic denominator as a best-effort fallback.
+  const directEventCount = readFirstNumber([
+    raw.total_event_count,
+    raw.total_events,
+    raw.event_count,
+    raw.events_count,
+  ]);
+  const diagnosticEventCount = diagnostics.reduce<number | null>((max, entry) => {
+    if (entry.totalEventCount === null) return max;
+    return max === null || entry.totalEventCount > max ? entry.totalEventCount : max;
+  }, null);
+
   return {
     eventName,
     score: scores.length ? scores[0] : null,
@@ -306,6 +326,7 @@ function normaliseEvent(raw: unknown): EmqEvent | null {
         : raw.data_freshness
     ),
     spend: readFirstNumber([raw.event_spend, raw.spend]),
+    totalEventCount: directEventCount ?? diagnosticEventCount,
     extras,
   };
 }

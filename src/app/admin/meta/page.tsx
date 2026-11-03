@@ -673,7 +673,9 @@ export default function MetaSuiteOverviewPage() {
               </div>
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 whitespace-nowrap ${
-                  pixelStatus?.state === "connected"
+                  settings === null
+                    ? "bg-slate-100 text-slate-500 border border-slate-200"
+                    : pixelStatus?.state === "connected"
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : pixelStatus?.state === "test-required" || pixelStatus?.state === "configured"
                     ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -682,7 +684,9 @@ export default function MetaSuiteOverviewPage() {
               >
                 <span
                   className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    pixelStatus?.state === "connected"
+                    settings === null
+                      ? "bg-slate-300 animate-pulse"
+                      : pixelStatus?.state === "connected"
                       ? "bg-emerald-500 animate-pulse"
                       : pixelStatus?.state === "test-required"
                       ? "bg-amber-500"
@@ -754,7 +758,9 @@ export default function MetaSuiteOverviewPage() {
               </div>
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 whitespace-nowrap ${
-                  capiStatus?.state === "connected"
+                  settings === null
+                    ? "bg-slate-100 text-slate-500 border border-slate-200"
+                    : capiStatus?.state === "connected"
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : capiStatus?.state === "test-required" || capiStatus?.state === "configured"
                     ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -765,7 +771,9 @@ export default function MetaSuiteOverviewPage() {
               >
                 <span
                   className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    capiStatus?.state === "connected"
+                    settings === null
+                      ? "bg-slate-300 animate-pulse"
+                      : capiStatus?.state === "connected"
                       ? "bg-emerald-500 animate-pulse"
                       : capiStatus?.state === "test-required"
                       ? "bg-amber-500"
@@ -841,7 +849,9 @@ export default function MetaSuiteOverviewPage() {
               </div>
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 whitespace-nowrap ${
-                  isMarketingConnected
+                  marketingSettings === null
+                    ? "bg-slate-100 text-slate-500 border border-slate-200"
+                    : isMarketingConnected
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : marketingSettings?.status === "rate_limited"
                     ? "bg-amber-50 text-amber-700 border border-amber-200"
@@ -850,7 +860,9 @@ export default function MetaSuiteOverviewPage() {
               >
                 <span
                   className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    isMarketingConnected
+                    marketingSettings === null
+                      ? "bg-slate-300 animate-pulse"
+                      : isMarketingConnected
                       ? "bg-emerald-500 animate-pulse"
                       : "bg-slate-400"
                   }`}
@@ -979,14 +991,20 @@ export default function MetaSuiteOverviewPage() {
               </div>
               <span
                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 whitespace-nowrap ${
-                  domainVerified === true
+                  domainVerified === null
+                    ? "bg-slate-100 text-slate-500 border border-slate-200"
+                    : domainVerified === true
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                     : "bg-amber-50 text-amber-700 border border-amber-200"
                 }`}
               >
                 <span
                   className={`h-1.5 w-1.5 rounded-full shrink-0 ${
-                    domainVerified === true ? "bg-emerald-500" : "bg-amber-400"
+                    domainVerified === null
+                      ? "bg-slate-300 animate-pulse"
+                      : domainVerified === true
+                      ? "bg-emerald-500"
+                      : "bg-amber-400"
                   }`}
                 />
                 {domainVerified === null

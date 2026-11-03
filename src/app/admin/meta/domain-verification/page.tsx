@@ -320,6 +320,14 @@ export default function MetaDomainVerificationPage() {
 
   // ── Dynamic Status Badge Configuration ────────────────────────────────
   const badgeInfo = useMemo(() => {
+    if (checking || !checkResult) {
+      return {
+        label: "CHECKING STATUS",
+        badgeClass: "bg-slate-100 text-slate-600 border-slate-200",
+        dotClass: "bg-slate-300 animate-pulse",
+        desc: "Verifying live DNS records and Meta Business Manager ownership...",
+      };
+    }
     const state = checkResult?.lifecycleState;
     switch (state) {
       case "VERIFIED":

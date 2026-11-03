@@ -461,6 +461,14 @@ export default function MetaAdsPage() {
 
   // Connection Indicator Evaluation
   const renderConnectionStatus = () => {
+    if (loading || marketingSettings === null) {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 border border-slate-200">
+          <span className="h-1.5 w-1.5 rounded-full bg-slate-300 animate-pulse" />
+          <span>Auditing credentials…</span>
+        </span>
+      );
+    }
     if (marketingSettings?.status === "connected" || marketingSettings?.status === "assets_retrieved") {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">

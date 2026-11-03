@@ -343,10 +343,36 @@ export default function CheckoutPage() {
   };
 
   // Submit Order
-  const onSubmit = async (data: CheckoutFormValues) => {
+  const onSubmit = async (data: CheckoutFormValues, skipVerification = false) => {
     setPlacing(true);
     setSubmitError(null);
+
     try {
+      let config = checkoutConfig;
+      if (!config) {
+        config = await loadCheckoutConfig();
+        setCheckoutConfig(config);
+      }
+
+      // If email verification is required and customer is not verified for this email, prompt code verification:
+      const rawEmail = typeof data?.email === "string" ? data.email.trim().toLowerCase() : "";
+      const userEmail = typeof config?.user?.email === "string" ? config.user.email.trim().toLowerCase() : "";
+      const isVerifiedForEmail =
+        skipVerification === true || Boolean(config?.user?.emailVerified && userEmail && userEmail === rawEmail);
+
+      if (config?.requireEmailVerification && !isVerifiedForEmail) {
+        pendingOrderValues.current = data;
+        const sent = await requestEmailCode(data.email, data.name);
+        setPlacing(false);
+        setVerifyDialog({
+          email: data.email,
+          name: data.name,
+          phone: data.phone,
+          resendAfter: sent.ok ? sent.resendAfter : 60,
+        });
+        return;
+      }
+
       const activeTestCode =
         (typeof window !== "undefined" && window.__angkon_meta_test_code) ||
         (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("test_event_code") || undefined : undefined);
@@ -477,7 +503,7 @@ export default function CheckoutPage() {
       },
     }));
     if (pendingOrderValues.current) {
-      void onSubmit(pendingOrderValues.current);
+      void onSubmit(pendingOrderValues.current, true);
     }
   };
 
@@ -547,6 +573,11 @@ export default function CheckoutPage() {
             Thank you for shopping with <strong className="text-[#E1B76F]">ANGKON</strong>.{" "}
             {orderId && <span className="font-bold text-white">Order #{orderId}</span>} has been placed.
           </p>
+          {(accountInfo?.emailVerified || isEmailVerified) && (
+            <p className="mt-2 text-xs text-emerald-400 font-semibold inline-flex items-center justify-center gap-1.5">
+              <CheckCircle className="h-4 w-4 text-emerald-400" /> Email verified
+            </p>
+          )}
 
           {/* Confirmed Details Card */}
           <div className="mt-6 rounded-2xl border border-[#E1B76F]/30 bg-[#2b0403] p-5 sm:p-7 text-left w-full space-y-3.5 text-sm text-white/90 shadow-2xl">
@@ -887,16 +918,22 @@ export default function CheckoutPage() {
 
                 {/* Email address */}
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-white">
-                    Email address <span className="text-[#E1B76F]">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-white">
+                      Email address <span className="text-[#E1B76F]">*</span>
+                    </label>
+                    {isLoggedIn && isEmailVerified && (
+                      <span className="text-xs text-emerald-400 font-medium">Verified — you&apos;re signed in.</span>
+                    )}
+                  </div>
                   <input
                     type="email"
                     placeholder="you@example.com"
                     autoComplete="email"
+                    readOnly={isLoggedIn && isEmailVerified}
                     className={`h-11 w-full rounded-xl border bg-[#340402] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
-                      errors.email ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"
-                    }`}
+                      isLoggedIn && isEmailVerified ? "opacity-80 cursor-not-allowed " : ""
+                    }${errors.email ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"}`}
                     {...register("email", {
                       required: "Email is required",
                       pattern: { value: /^\S+@\S+\.\S+$/, message: "Please enter a valid email address" },

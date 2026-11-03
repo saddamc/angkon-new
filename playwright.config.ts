@@ -1,4 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const PORT = Number(process.env.E2E_PORT || 3001);
 const BASE_URL = process.env.E2E_BASE_URL || `http://localhost:${PORT}`;
@@ -7,7 +12,8 @@ export default defineConfig({
   testDir: "./e2e",
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  fullyParallel: true,
+  fullyParallel: !process.env.CI,
+  workers: process.env.CI ? 2 : 1,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {

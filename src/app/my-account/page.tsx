@@ -176,6 +176,11 @@ export default function MyAccountPage() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("verify");
+    if (key && VERIFY_NOTICES[key]) {
+      setNotice(VERIFY_NOTICES[key]);
+    }
     // Drop ?verify=… from the address bar so a refresh doesn't repeat the message.
     if (window.location.search.includes("verify=")) {
       window.history.replaceState(null, "", window.location.pathname);

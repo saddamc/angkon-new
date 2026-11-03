@@ -1309,6 +1309,11 @@ export default function MetaEventsConsolidatedPage() {
                   <span className="h-2 w-2 rounded-full bg-purple-500" />
                   <span className="font-semibold text-purple-700">Scope needed</span>
                 </>
+              ) : syncStatus === "unavailable" || loading ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
+                  <span className="font-semibold text-slate-500">Checking sync…</span>
+                </>
               ) : (
                 <>
                   <span className="h-2 w-2 rounded-full bg-rose-500" />

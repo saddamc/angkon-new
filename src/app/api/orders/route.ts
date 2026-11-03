@@ -138,15 +138,17 @@ export async function POST(request: NextRequest) {
       console.error("Order session check:", gateErr);
     }
 
-    // When guest checkout is explicitly disabled in settings, enforce that customer must be logged in & verified:
-    if (!checkoutSettings.allowGuestCheckout) {
-      if (!sessionUser) {
-        return NextResponse.json(
-          { error: "Guest checkout is disabled. Please log in or create an account to place your order.", code: "LOGIN_REQUIRED" },
-          { status: 403 },
-        );
-      }
-      if (checkoutSettings.requireEmailVerification && (!sessionUser.emailVerified || normalizeEmail(sessionUser.email) !== orderEmail)) {
+    // When guest checkout is explicitly disabled in settings, enforce that customer must be logged in:
+    if (!checkoutSettings.allowGuestCheckout && !sessionUser) {
+      return NextResponse.json(
+        { error: "Guest checkout is disabled. Please log in or create an account to place your order.", code: "LOGIN_REQUIRED" },
+        { status: 403 },
+      );
+    }
+
+    // When email verification is required, enforce that customer must have verified their email:
+    if (checkoutSettings.requireEmailVerification) {
+      if (!sessionUser || !sessionUser.emailVerified || normalizeEmail(sessionUser.email) !== orderEmail) {
         return NextResponse.json(
           { error: "Please verify your email address to place your order.", code: "EMAIL_VERIFICATION_REQUIRED" },
           { status: 403 },

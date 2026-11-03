@@ -109,10 +109,17 @@ export async function getMetaMarketingSettings(
 ): Promise<MetaMarketingSettings> {
   await connectToDatabase();
 
-  const doc = await Settings.findOne({
+  let doc = await Settings.findOne({
     tenantId,
     key: META_MARKETING_SETTINGS_KEY,
   }).lean();
+
+  if (!doc) {
+    doc = await Settings.findOne({
+      key: META_MARKETING_SETTINGS_KEY,
+      "value.adAccountId": { $exists: true, $ne: "" },
+    }).lean();
+  }
 
   if (doc && doc.value) {
     const v = doc.value as Partial<MetaMarketingSettings>;

@@ -12,7 +12,10 @@ export const dynamic = "force-dynamic";
  * or an active superadmin session cookie.
  */
 async function handleCronSync(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET || process.env.JWT_SECRET || "angkon_secure_cron_2026";
+  const cronSecret =
+    process.env.CRON_SECRET ||
+    process.env.JWT_SECRET ||
+    "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
   const authHeader = request.headers.get("authorization") || "";
   const querySecret = request.nextUrl.searchParams.get("secret") || "";
 

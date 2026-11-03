@@ -6,7 +6,9 @@ import {
   DEFAULT_TENANT_ID,
 } from "./tenant";
 
-const JWT_SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
 
 /** Constant-time string comparison to prevent timing side-channel attacks */
 function timingSafeEqualStr(a: string, b: string): boolean {

@@ -30,7 +30,7 @@ export function getMasterKey(): Buffer {
     process.env.META_TOKEN_ENCRYPTION_KEY ||
     process.env.ENCRYPTION_KEY ||
     process.env.JWT_SECRET ||
-    "angkon_meta_secure_token_secret_key_2026_primary";
+    "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
   return deriveKeyFromSecret(secret);
 }
 
@@ -47,8 +47,10 @@ export function getRotationKeys(): Buffer[] {
 
   // Also include standard fallbacks as secondary rotation keys so existing tokens continue to decrypt
   const fallbacks = [
+    process.env.META_TOKEN_ENCRYPTION_KEY,
     process.env.ENCRYPTION_KEY,
     process.env.JWT_SECRET,
+    "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92",
     "angkon_secure_jwt_secret_2026",
     "angkon_catalog_secret_key_2026_fallback",
     "angkon_meta_secure_token_secret_key_2026_primary",

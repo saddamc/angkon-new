@@ -401,6 +401,26 @@ export async function getPixelSettings(
 
     if (doc?.value) {
       const normalized = normalizePixelSettings(doc.value, safeTenant);
+      if (normalized.pixelId) {
+        pixelSettingsCacheMap.set(safeTenant, { data: normalized, expiresAt: now + CACHE_TTL_MS });
+        return normalized;
+      }
+    }
+
+    // Secondary fallback: find any configured pixel settings document in the database
+    const configuredDoc = (await Settings.findOne({
+      key: PIXEL_SETTINGS_KEY,
+      "value.pixelId": { $exists: true, $ne: "" },
+    }, null, { strict: false }).lean().catch(() => null)) as SettingsDoc | null;
+
+    if (configuredDoc?.value) {
+      const normalized = normalizePixelSettings(configuredDoc.value, safeTenant);
+      pixelSettingsCacheMap.set(safeTenant, { data: normalized, expiresAt: now + CACHE_TTL_MS });
+      return normalized;
+    }
+
+    if (doc?.value) {
+      const normalized = normalizePixelSettings(doc.value, safeTenant);
       pixelSettingsCacheMap.set(safeTenant, { data: normalized, expiresAt: now + CACHE_TTL_MS });
       return normalized;
     }

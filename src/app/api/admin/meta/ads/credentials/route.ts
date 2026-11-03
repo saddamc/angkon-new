@@ -10,6 +10,56 @@ import { verifyAdAccountCredentials } from "@/server/meta-marketing-api";
 
 export const dynamic = "force-dynamic";
 
+export async function GET(request: NextRequest) {
+  try {
+    const auth = await requireSuperAdminSession(request);
+    if (!auth.authorized) {
+      return auth.response || NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const verify = searchParams.get("verify") === "true";
+
+    const publicSettings = await getPublicMetaMarketingSettings(auth.tenantId);
+
+    if (verify && publicSettings.hasAccessToken && publicSettings.adAccountId) {
+      const fullSettings = await getMetaMarketingSettings(auth.tenantId);
+      try {
+        const verifiedAccount = await verifyAdAccountCredentials({
+          adAccountId: fullSettings.adAccountId,
+          token: fullSettings.accessToken,
+          tenantId: auth.tenantId,
+        });
+
+        const refreshed = await getPublicMetaMarketingSettings(auth.tenantId);
+        return NextResponse.json({
+          ok: true,
+          tenantId: auth.tenantId,
+          settings: refreshed,
+          account: verifiedAccount,
+        });
+      } catch (err) {
+        const refreshed = await getPublicMetaMarketingSettings(auth.tenantId);
+        return NextResponse.json({
+          ok: false,
+          tenantId: auth.tenantId,
+          settings: refreshed,
+          error: err instanceof Error ? err.message : "Ad Account verification failed",
+        }, { status: 400 });
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      tenantId: auth.tenantId,
+      settings: publicSettings,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Error reading ad account credentials";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireSuperAdminSession(request);
@@ -44,16 +94,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save initial update
+    // Save initial update as "configured"
     await updateMetaMarketingSettings(auth.tenantId, {
       adAccountId: accountIdToUse,
       accessToken: tokenToUse,
       attributionConfig,
+      status: "configured",
     });
 
     // Test & verify connection against Meta Graph API
     let verifiedAccount = null;
     let verificationError: string | null = null;
+    let failureStatus: "permission_denied" | "token_expired" | "error" = "error";
 
     try {
       verifiedAccount = await verifyAdAccountCredentials({
@@ -63,6 +115,16 @@ export async function POST(request: NextRequest) {
       });
     } catch (err) {
       verificationError = err instanceof Error ? err.message : "Verification failed";
+      const errMsg = verificationError.toLowerCase();
+      if (errMsg.includes("permission") || errMsg.includes("ads_read") || errMsg.includes("scope") || errMsg.includes("code 200") || errMsg.includes("code 100")) {
+        failureStatus = "permission_denied";
+      } else if (errMsg.includes("token") || errMsg.includes("expired") || errMsg.includes("code 190")) {
+        failureStatus = "token_expired";
+      }
+      await updateMetaMarketingSettings(auth.tenantId, {
+        status: failureStatus,
+        lastErrorMessage: verificationError,
+      });
     }
 
     const publicSettings = await getPublicMetaMarketingSettings(auth.tenantId);

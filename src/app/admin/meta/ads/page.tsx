@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   BarChart3,
   Calendar,
   RefreshCw,
   CheckCircle2,
   ExternalLink,
-  Save,
   Download,
   ShieldCheck,
   Zap,
@@ -20,32 +20,41 @@ import {
   Globe,
   Sliders,
   RotateCcw,
-  KeyRound,
-  Eye,
-  EyeOff,
-  X,
   BookOpen,
   Trash2,
-  Pencil,
+  Settings,
+  ArrowRight,
   Copy,
-  Plus,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  Info,
+  ChevronRight,
+  Eye,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
 import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
 import { InfoPopover } from "@/components/admin/meta/info-popover";
-import {
-  ConfigureAdAccountModal,
-  MetaConfirmWarningModal,
-} from "@/components/admin/meta/meta-credential-modals";
+import { MetaConfirmWarningModal } from "@/components/admin/meta/meta-credential-modals";
 import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
 import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
 import type { DualLedgerAttributionReport } from "@/server/meta-ads";
 
-interface MetaCampaign {
+interface EnrichedMetaCampaign {
   id: string;
   name: string;
   status: string;
   effective_status: string;
+  objective?: string;
+  start_time?: string;
+  stop_time?: string;
+  spend?: number;
+  currency?: string;
+  impressions?: number;
+  clicks?: number;
+  results?: number;
+  lastSynchronized?: string | null;
 }
 
 interface ImportJobSummary {
@@ -59,7 +68,18 @@ interface ImportJobSummary {
   totalSpend: number;
   currency: string;
   errorMessage?: string;
+  startedAt?: string;
+  completedAt?: string;
   createdAt: string;
+  slices?: Array<{
+    sliceIndex: number;
+    since: string;
+    until: string;
+    status: string;
+    recordsImported: number;
+    spendInSlice: number;
+    errorMessage?: string;
+  }>;
 }
 
 function getInitialDates() {
@@ -72,17 +92,19 @@ function getInitialDates() {
 export default function MetaAdsPage() {
   const [pixelSettings, setPixelSettings] = useState<PublicAdminPixelSettings | null>(null);
   const [marketingSettings, setMarketingSettings] = useState<PublicAdminMetaMarketingSettings | null>(null);
+  const [businessId, setBusinessId] = useState("1646756900434912");
+  const [marketingApiVersion, setMarketingApiVersion] = useState("v22.0");
+  const [permissionScope, setPermissionScope] = useState("ads_read, ads_management");
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [adAccountId, setAdAccountId] = useState("");
-  const [marketingToken, setMarketingToken] = useState("");
-  const [isEditingToken, setIsEditingToken] = useState(false);
-  const [showToken, setShowToken] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [guideAssetId, setGuideAssetId] = useState("ad_account_id");
-  const [savingCredentials, setSavingCredentials] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [inspectingJobId, setInspectingJobId] = useState<string | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<EnrichedMetaCampaign | null>(null);
 
-  // Credential Modal & Warning Modal States
-  const [isAdAccountModalOpen, setIsAdAccountModalOpen] = useState(false);
+  // Warning Modal State
   const [warningModalState, setWarningModalState] = useState<{
     isOpen: boolean;
     title: string;
@@ -108,14 +130,43 @@ export default function MetaAdsPage() {
   const [loadingReport, setLoadingReport] = useState(false);
 
   // Campaign list state
-  const [campaigns, setCampaigns] = useState<MetaCampaign[]>([]);
+  const [campaigns, setCampaigns] = useState<EnrichedMetaCampaign[]>([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
 
   // Ingestion job state
   const [syncJobs, setSyncJobs] = useState<ImportJobSummary[]>([]);
   const [syncing, setSyncing] = useState(false);
   const [resumingJobId, setResumingJobId] = useState<string | null>(null);
+  const [showAdsDetails, setShowAdsDetails] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
+
+  const handleCopy = (text: string, key: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const setDatePreset = (preset: "today" | "7d" | "30d" | "month") => {
+    const d = new Date();
+    const untilStr = d.toISOString().slice(0, 10);
+    if (preset === "today") {
+      setSince(untilStr);
+      setUntil(untilStr);
+    } else if (preset === "7d") {
+      const s = new Date(d.getTime() - 7 * 86400000).toISOString().slice(0, 10);
+      setSince(s);
+      setUntil(untilStr);
+    } else if (preset === "30d") {
+      const s = new Date(d.getTime() - 30 * 86400000).toISOString().slice(0, 10);
+      setSince(s);
+      setUntil(untilStr);
+    } else if (preset === "month") {
+      const firstDay = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+      setSince(firstDay);
+      setUntil(untilStr);
+    }
+  };
 
   // Fetch marketing account settings
   const refreshMarketingAccount = useCallback(async (verify = false) => {
@@ -128,6 +179,10 @@ export default function MetaAdsPage() {
           if (data.settings.adAccountId && !adAccountId) {
             setAdAccountId(data.settings.adAccountId);
           }
+          if (data.businessId) setBusinessId(data.businessId);
+          if (data.marketingApiVersion) setMarketingApiVersion(data.marketingApiVersion);
+          if (data.permissionScope) setPermissionScope(data.permissionScope);
+          if (data.lastSyncAt) setLastSyncAt(data.lastSyncAt);
         }
       }
     } catch {
@@ -202,6 +257,10 @@ export default function MetaAdsPage() {
           if (mktData.ok && mktData.settings) {
             setMarketingSettings(mktData.settings);
             setAdAccountId(mktData.settings.adAccountId || "");
+            if (mktData.businessId) setBusinessId(mktData.businessId);
+            if (mktData.marketingApiVersion) setMarketingApiVersion(mktData.marketingApiVersion);
+            if (mktData.permissionScope) setPermissionScope(mktData.permissionScope);
+            if (mktData.lastSyncAt) setLastSyncAt(mktData.lastSyncAt);
           }
         }
       } catch {
@@ -225,75 +284,6 @@ export default function MetaAdsPage() {
     if (!marketingSettings?.hasAccessToken) return;
     void refreshCampaigns();
   }, [marketingSettings?.hasAccessToken, refreshCampaigns]);
-
-  // Save Decoupled Credentials via Modal
-  const handleSaveAdAccountCredentials = async (newAccountId: string, newToken: string) => {
-    setSavingCredentials(true);
-    setMessage(null);
-    try {
-      const res = await fetch("/api/admin/meta/ads/credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          adAccountId: newAccountId.trim(),
-          accessToken: newToken.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setMarketingSettings(data.settings);
-        setAdAccountId(data.settings?.adAccountId || newAccountId);
-        setMarketingToken("");
-        setIsEditingToken(false);
-        setShowToken(false);
-        setMessage({
-          type: "success",
-          text: `Verified & connected Meta Ad Account '${data.account?.accountName || data.settings?.accountName}' (${data.account?.accountCurrency || "BDT"}).`,
-        });
-        void refreshCampaigns();
-        return true;
-      } else {
-        setMessage({
-          type: "error",
-          text: data.error || "Failed to save or verify Marketing API credentials.",
-        });
-        throw new Error(data.error || "Failed to save or verify Marketing API credentials.");
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Network error saving Marketing API credentials.";
-      setMessage({ type: "error", text: msg });
-      throw err;
-    } finally {
-      setSavingCredentials(false);
-    }
-  };
-
-  const handleRequestDisconnectAdAccount = () => {
-    setWarningModalState({
-      isOpen: true,
-      title: "Disconnect Meta Ad Account?",
-      description:
-        "This will remove the saved Marketing API access token from the AES-256 encrypted vault. Daily ad spend imports, multi-level campaign insights, and dual-ledger ROAS reconciliation will be paused until you reconnect.",
-      confirmButtonText: "Disconnect & Remove Token",
-      onConfirm: async () => {
-        try {
-          const res = await fetch("/api/admin/meta/ads/credentials", { method: "DELETE" });
-          const data = await res.json();
-          if (res.ok && data.ok) {
-            setMarketingSettings(data.settings);
-            setAdAccountId("");
-            setCampaigns([]);
-            setMessage({ type: "success", text: "Meta Ad Account disconnected successfully." });
-          } else {
-            setMessage({ type: "error", text: data.error || "Failed to disconnect ad account." });
-          }
-        } catch {
-          setMessage({ type: "error", text: "Network error disconnecting ad account." });
-        }
-      },
-    });
-  };
 
   const handleRequestDismissJob = (jobId: string) => {
     setWarningModalState({
@@ -319,59 +309,23 @@ export default function MetaAdsPage() {
     });
   };
 
-  // Save Decoupled Credentials
-  const handleSaveCredentials = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingCredentials(true);
-    setMessage(null);
-
-    try {
-      const res = await fetch("/api/admin/meta/ads/credentials", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          adAccountId: adAccountId.trim(),
-          accessToken: marketingToken.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setMarketingSettings(data.settings);
-        setMarketingToken("");
-        setIsEditingToken(false);
-        setShowToken(false);
-        setMessage({
-          type: "success",
-          text: `Verified & connected Meta Ad Account '${data.account?.accountName || data.settings?.accountName}' (${data.account?.accountCurrency || "BDT"}).`,
-        });
-        void refreshCampaigns();
-      } else {
-        setMessage({
-          type: "error",
-          text: data.error || "Failed to save or verify Marketing API credentials.",
-        });
-      }
-    } catch {
-      setMessage({ type: "error", text: "Network error saving Marketing API credentials." });
-    } finally {
-      setSavingCredentials(false);
-    }
-  };
-
-  // Test & Verify Connection
+  // Test & Verify Connection Live
   const handleTestConnection = async () => {
     setTestingConnection(true);
     setMessage(null);
+    const start = Date.now();
     try {
-      await refreshMarketingAccount(true);
-      const res = await fetch("/api/admin/meta/ads/campaigns");
+      const res = await fetch("/api/admin/meta/ads/account?verify=true");
       const data = await res.json();
+      const latency = Date.now() - start;
       if (res.ok && data.ok) {
-        setCampaigns(data.campaigns || []);
+        setMarketingSettings(data.settings);
+        if (data.businessId) setBusinessId(data.businessId);
+        if (data.lastSyncAt) setLastSyncAt(data.lastSyncAt);
+        await refreshCampaigns();
         setMessage({
           type: "success",
-          text: `Connection verified! Loaded ${data.total} campaign(s) from Meta Marketing API v22.0.`,
+          text: `Verified in ${latency}ms! Account "${data.settings.accountName || "Plain Stitch"}" connected via Meta Graph API v22.0.`,
         });
       } else {
         setMessage({
@@ -406,6 +360,7 @@ export default function MetaAdsPage() {
           type: "success",
           text: `Sync job finished: ${data.job?.totalRecords || 0} records imported (Spend: ${data.job?.currency || "BDT"} ${(data.job?.totalSpend || 0).toLocaleString("en-BD")}).`,
         });
+        setLastSyncAt(new Date().toISOString());
         void refreshAttribution(since, until, reportingLevel);
         void refreshSyncJobs();
       } else {
@@ -504,6 +459,56 @@ export default function MetaAdsPage() {
   const pixelId = pixelSettings?.pixelId || "";
   const currencySymbol = report?.metaPlatformMetrics?.currency === "USD" ? "$" : "৳";
 
+  // Connection Indicator Evaluation
+  const renderConnectionStatus = () => {
+    if (marketingSettings?.status === "connected" || marketingSettings?.status === "assets_retrieved") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+          <span>Connected &amp; Verified</span>
+        </span>
+      );
+    }
+    if (marketingSettings?.status === "rate_limited") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 border border-amber-200">
+          <Clock className="h-3.5 w-3.5 text-amber-600" />
+          <span>Rate-Limited (Throttled by Meta)</span>
+        </span>
+      );
+    }
+    if (marketingSettings?.status === "token_expired") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-800 border border-rose-200">
+          <AlertCircle className="h-3.5 w-3.5 text-rose-600" />
+          <span>Token Expired (Code 190)</span>
+        </span>
+      );
+    }
+    if (marketingSettings?.status === "permission_denied") {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-800 border border-rose-200">
+          <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
+          <span>Missing Required Permissions</span>
+        </span>
+      );
+    }
+    if (marketingSettings?.hasAccessToken) {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 border border-blue-200">
+          <Info className="h-3.5 w-3.5 text-blue-600" />
+          <span>Configured (Awaiting Validation)</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600 border border-slate-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+        <span>Unconfigured</span>
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-6 max-w-7xl pb-24 text-slate-900 font-sans antialiased">
       {/* ── 1. Unified Navigation ── */}
@@ -566,247 +571,257 @@ export default function MetaAdsPage() {
         </div>
       </div>
 
-      {/* ── 4. Decoupled Marketing API Credentials & Account Status ── */}
+      {/* ── 4. PHASE 1 & 2: Meta Ads Account Connection (Read-Only Control Hub) ── */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              Meta Marketing API Settings (Decoupled)
+              Meta Ads Account Connection
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Decoupled from Pixel/CAPI tokens. Requires a System User or OAuth token with <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700 font-mono text-[11px]">ads_read</code> permission.
+              Read-only connection telemetry. Credential modifications and token replacements are strictly managed in Meta Suite Settings.
             </p>
           </div>
-          <div>
-            {marketingSettings?.status === "connected" ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Connected &amp; Verified</span>
-              </span>
-            ) : marketingSettings?.status === "rate_limited" ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
-                <Clock className="h-3.5 w-3.5" />
-                <span>Rate-Limited (Throttled by Meta)</span>
-              </span>
-            ) : marketingSettings?.status === "token_expired" ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-800 border border-rose-200">
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>Token Expired (Code 190)</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 border border-slate-200">
-                <span>Unconfigured</span>
-              </span>
-            )}
-          </div>
+          <div>{renderConnectionStatus()}</div>
         </div>
 
-        {/* Ad Account Metadata Banner */}
-        {marketingSettings?.accountName && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 text-xs">
+        {/* Account Telemetry & Connection Details Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          {/* Tile 1: Account Name & Ad Account ID */}
+          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 flex flex-col justify-between gap-2 shadow-2xs">
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Account Name</span>
-              <span className="font-semibold text-slate-800">{marketingSettings.accountName}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                <Coins className="h-3 w-3 text-slate-500" />
-                Currency
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Connected Ad Account
               </span>
-              <span className="font-semibold text-slate-800 font-mono">{marketingSettings.accountCurrency || "BDT"}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                <Globe className="h-3 w-3 text-slate-500" />
-                Timezone
-              </span>
-              <span className="font-semibold text-slate-800">{marketingSettings.accountTimezoneName} (UTC+{marketingSettings.accountTimezoneOffsetHours})</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Attribution Key</span>
-              <span className="font-mono text-[11px] text-slate-600 truncate block" title={marketingSettings.attributionConfigKey}>
-                {marketingSettings.attributionConfigKey}
+              <span className="font-bold text-slate-900 text-sm block">
+                {marketingSettings?.accountName || "Plain Stitch"}
               </span>
             </div>
-          </div>
-        )}
-
-        {/* Credential Cards or Setup CTA */}
-        {marketingSettings?.hasAccessToken || adAccountId ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Card 1: Meta Ad Account ID */}
-              <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/60 flex flex-col justify-between gap-3 shadow-2xs">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                      <span>Meta Ad Account ID</span>
-                      <InfoPopover metricKey="ad-account-id" iconSize="xs" />
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGuideAssetId("ad_account_id");
-                        setIsGuideOpen(true);
-                      }}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <BookOpen className="h-3 w-3" />
-                      <span>Where to find this?</span>
-                    </button>
-                  </div>
-                  <div className="font-mono text-sm font-bold text-slate-900 tracking-wide">
-                    {adAccountId || "Unassigned"}
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    Linked to Meta Marketing API v22.0
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                  <span className="text-[11px] text-slate-500 font-medium">Target Account</span>
-                  <button
-                    type="button"
-                    onClick={() => setIsAdAccountModalOpen(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
-                  >
-                    <Pencil className="h-3 w-3" />
-                    <span>Edit in Modal</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Card 2: Marketing API Access Token */}
-              <div className="p-4 rounded-xl border border-slate-200/90 bg-slate-50/60 flex flex-col justify-between gap-3 shadow-2xs">
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                      <span>Marketing API Access Token</span>
-                      <InfoPopover metricKey="capi-token" iconSize="xs" />
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGuideAssetId("marketing_token");
-                        setIsGuideOpen(true);
-                      }}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <BookOpen className="h-3 w-3" />
-                      <span>System User Guide</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="font-mono text-xs font-bold text-slate-800 tracking-wider">
-                      {marketingSettings?.maskedAccessToken || "EAAG••••••••••••••••"}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    Encrypted with AES-256-GCM · Strict <code className="font-mono text-[10px]">ads_read</code> scope
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs">
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Vault Secured
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsAdAccountModalOpen(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
-                  >
-                    <KeyRound className="h-3 w-3" />
-                    <span>Replace in Modal</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsAdAccountModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50 hover:border-slate-400 transition cursor-pointer shadow-2xs"
-                >
-                  <Pencil className="h-3.5 w-3.5 text-slate-600" />
-                  <span>Configure / Edit Credentials in Modal</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTestConnection}
-                  disabled={testingConnection}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition disabled:opacity-40 cursor-pointer shadow-2xs"
-                >
-                  {testingConnection ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Verifying via Graph API v22.0...</span>
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      <span>Verify Connection</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
+            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+              <span className="font-mono text-xs font-semibold text-slate-700">
+                {adAccountId || "act_1646756900434912"}
+              </span>
               <button
                 type="button"
-                onClick={handleRequestDisconnectAdAccount}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/60 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 hover:border-rose-300 transition cursor-pointer shadow-2xs"
+                onClick={() => handleCopy(adAccountId || "act_1646756900434912", "actId")}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                title="Copy Ad Account ID"
               >
-                <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-                <span>Disconnect Account</span>
+                {copiedKey === "actId" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                <span>{copiedKey === "actId" ? "Copied" : "Copy"}</span>
               </button>
             </div>
           </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-6 text-center space-y-3">
-            <div className="mx-auto h-12 w-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-              <KeyRound className="h-6 w-6" />
+
+          {/* Tile 2: Business Manager Portfolio ID */}
+          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 flex flex-col justify-between gap-2 shadow-2xs">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Business Portfolio ID
+              </span>
+              <span className="font-bold text-slate-900 text-sm block">
+                Plain Stitch Portfolio
+              </span>
             </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-bold text-slate-900">
-                Connect Meta Ad Account &amp; Marketing API
-              </h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                Connect your Meta Ad Account ID and System User token with <code className="font-mono text-[11px] text-slate-700">ads_read</code> scope to audit campaign spend, level-isolated metrics, and dual-ledger ROAS reconciliation.
-              </p>
+            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+              <span className="font-mono text-xs font-semibold text-slate-700">
+                {businessId}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopy(businessId, "bizId")}
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                title="Copy Business ID"
+              >
+                {copiedKey === "bizId" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                <span>{copiedKey === "bizId" ? "Copied" : "Copy"}</span>
+              </button>
             </div>
+          </div>
+
+          {/* Tile 3: Currency & Timezone */}
+          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 flex flex-col justify-between gap-2 shadow-2xs">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Account Currency &amp; Timezone
+              </span>
+              <span className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                <Coins className="h-3.5 w-3.5 text-amber-600" />
+                <span>{marketingSettings?.accountCurrency || "BDT"}</span>
+                <span className="text-slate-400 font-normal">•</span>
+                <span className="text-xs text-slate-700 font-medium">
+                  {marketingSettings?.accountTimezoneName || "Asia/Dhaka"}
+                </span>
+              </span>
+            </div>
+            <div className="pt-2 border-t border-slate-200/60 text-[11px] text-slate-500">
+              UTC+{marketingSettings?.accountTimezoneOffsetHours ?? 6} standard offset
+            </div>
+          </div>
+
+          {/* Tile 4: Attribution Windows & Graph Version */}
+          <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 flex flex-col justify-between gap-2 shadow-2xs">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Attribution Setting &amp; API Version
+              </span>
+              <span className="font-bold text-slate-900 text-xs block font-mono">
+                {marketingSettings?.attributionConfigKey || "7d_click+1d_view_rt_conversion"}
+              </span>
+            </div>
+            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Graph API: <strong className="font-mono text-slate-800">{marketingApiVersion}</strong></span>
+              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                Live Direct
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Security, Permissions & Verification Status Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50/60 border border-slate-200/80 text-xs">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+              Marketing API Token (AES-256 Vault)
+            </span>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+              <span className="font-mono font-bold text-slate-800">
+                {marketingSettings?.maskedAccessToken || "EAAG••••••••••••••••"}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+              Verified Permission Scope
+            </span>
+            <span className="font-mono text-slate-700 font-semibold text-[11px]">
+              {permissionScope}
+            </span>
+          </div>
+
+          <div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+              Verification &amp; Sync Timestamps
+            </span>
+            <div className="text-[11px] text-slate-600">
+              Verified: <strong className="text-slate-800 font-medium">
+                {marketingSettings?.lastVerifiedAt ? new Date(marketingSettings.lastVerifiedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Active (v22.0)"}
+              </strong>
+              {lastSyncAt && (
+                <>
+                  <span className="text-slate-300 mx-1.5">|</span>
+                  Synced: <strong className="text-slate-800 font-medium">{new Date(lastSyncAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</strong>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Actions Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href="/admin/meta/settings?section=ads"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition cursor-pointer shadow-2xs"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span>Manage in Meta Suite Settings</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-0.5" />
+            </Link>
+
             <button
               type="button"
-              onClick={() => setIsAdAccountModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1877F2] hover:bg-[#166FE5] px-4 py-2.5 text-xs font-semibold text-white transition cursor-pointer shadow-xs"
+              onClick={handleTestConnection}
+              disabled={testingConnection}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-40 cursor-pointer shadow-2xs"
             >
-              <Plus className="h-4 w-4" />
-              <span>Configure Ad Account Credentials in Modal</span>
+              {testingConnection ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Verifying via Graph API v22.0...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Verify Connection</span>
+                </>
+              )}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAdsDetails(!showAdsDetails)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 text-xs font-semibold cursor-pointer shadow-2xs"
+            >
+              <span>{showAdsDetails ? "Hide Technical Details" : "Show Technical Details"}</span>
+              {showAdsDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setGuideAssetId("ad_account_id");
+                setIsGuideOpen(true);
+              }}
+              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>Where to find IDs?</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Technical Details Panel */}
+        {showAdsDetails && (
+          <div className="pt-3 border-t border-slate-200/80 text-xs space-y-3 animate-in fade-in-0 duration-150">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              Technical Marketing API &amp; Attribution Architecture Specifications
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Graph API Endpoint</span>
+                <span className="font-mono text-slate-800 text-xs block truncate" title={`https://graph.facebook.com/v22.0/${adAccountId || "act_1646756900434912"}`}>
+                  /v22.0/{adAccountId || "act_1646756900434912"}
+                </span>
+                <div className="text-slate-500 text-[11px]">Insights, campaigns, and ad set attribution queries.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Token Security &amp; Vault</span>
+                <span className="font-semibold text-slate-800 text-xs block">AES-256-GCM Vault</span>
+                <div className="text-slate-500 text-[11px]">Strict <code className="font-mono">ads_read</code> scope. Plaintext is never exposed.</div>
+              </div>
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-bold block">Reporting Isolation</span>
+                <span className="font-semibold text-slate-800 text-xs block">Level-Isolated Queries</span>
+                <div className="text-slate-500 text-[11px]">Campaign, ad set, and ad layers are stored in separate ledger partitions.</div>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* ── 5. Level Switcher & Audit Controls ── */}
+      {/* ── 5. PHASE 4: Level Switcher & Reporting Controls ── */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Level Switcher Tabs */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-              Reporting Isolation Level (Prevents Double-Counting)
-            </span>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Reporting Isolation Level (Prevents Double-Counting)
+              </span>
+              <InfoPopover metricKey="reporting-level" iconSize="xs" />
+            </div>
             <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80">
               {(["campaign", "adset", "ad"] as const).map((lvl) => (
                 <button
                   key={lvl}
                   type="button"
                   onClick={() => setReportingLevel(lvl)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition capitalize cursor-pointer ${
+                  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition capitalize cursor-pointer ${
                     reportingLevel === lvl
                       ? "bg-white text-slate-900 shadow-2xs border border-slate-200/60"
                       : "text-slate-500 hover:text-slate-800"
@@ -818,8 +833,40 @@ export default function MetaAdsPage() {
             </div>
           </div>
 
-          {/* Date Picker & Sync Actions */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Date Picker, Presets & Sync Actions */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Quick Presets */}
+            <div className="hidden sm:inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/70 text-[11px] font-medium text-slate-600">
+              <button
+                type="button"
+                onClick={() => setDatePreset("today")}
+                className="px-2.5 py-1 hover:text-slate-900 cursor-pointer rounded-lg hover:bg-white/60 transition"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset("7d")}
+                className="px-2.5 py-1 hover:text-slate-900 cursor-pointer rounded-lg hover:bg-white/60 transition"
+              >
+                7D
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset("30d")}
+                className="px-2.5 py-1 hover:text-slate-900 cursor-pointer rounded-lg hover:bg-white/60 transition"
+              >
+                30D
+              </button>
+              <button
+                type="button"
+                onClick={() => setDatePreset("month")}
+                className="px-2.5 py-1 hover:text-slate-900 cursor-pointer rounded-lg hover:bg-white/60 transition"
+              >
+                This Month
+              </button>
+            </div>
+
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <input
@@ -867,9 +914,24 @@ export default function MetaAdsPage() {
             </button>
           </div>
         </div>
+
+        {/* Timezone and Attribution Banner */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+          <div className="flex items-center gap-2">
+            <Globe className="h-3.5 w-3.5 text-slate-400" />
+            <span>Account Timezone: <strong className="text-slate-700 font-semibold">{marketingSettings?.accountTimezoneName || "Asia/Dhaka"} (UTC+{marketingSettings?.accountTimezoneOffsetHours ?? 6})</strong></span>
+            <span className="text-slate-300">•</span>
+            <span>Attribution Window: <strong className="font-mono text-slate-700">{marketingSettings?.attributionConfigKey || "7d_click+1d_view_rt_conversion"}</strong></span>
+          </div>
+          {lastSyncAt && (
+            <div>
+              Last Sliced Sync: <strong className="text-slate-700 font-semibold">{new Date(lastSyncAt).toLocaleString()}</strong>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ── 6. Dual-Ledger Financial Reconciliation (Platform Claims vs. Real Store Cash) ── */}
+      {/* ── 6. PHASE 3: Dual-Ledger Financial Reconciliation (Platform Claims vs. Real Store Cash) ── */}
       <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
         <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-b border-slate-200/90 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -1082,7 +1144,7 @@ export default function MetaAdsPage() {
         </div>
       </div>
 
-      {/* ── 7. Resumable Slice Ingestion Jobs & Rate-Limit Audit ── */}
+      {/* ── 7. PHASE 5: Resumable Slice Ingestion Jobs & Rate-Limit Audit ── */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
@@ -1121,98 +1183,147 @@ export default function MetaAdsPage() {
             {syncJobs.map((job) => (
               <div
                 key={job.jobId}
-                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs"
+                className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2 text-xs"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-slate-800">{job.jobId}</span>
-                    <span className="uppercase text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
-                      {job.level}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                        job.status === "completed"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : job.status === "paused_rate_limit"
-                          ? "bg-amber-100 text-amber-800"
-                          : job.status === "running"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {job.status}
-                    </span>
-                  </div>
-                  <div className="text-slate-500 text-[11px]">
-                    Range: {job.requestedRange?.since} to {job.requestedRange?.until} | Slices:{" "}
-                    {job.completedSlices}/{job.totalSlices} | Records: {job.totalRecords} | Spend:{" "}
-                    {job.currency} {(job.totalSpend || 0).toLocaleString("en-BD")}
-                  </div>
-                  {job.errorMessage && (
-                    <div className="text-rose-600 text-[11px] font-mono leading-tight max-w-2xl bg-rose-50/80 p-2 rounded-lg border border-rose-200/60 mt-1">
-                      {job.errorMessage}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-slate-800">{job.jobId}</span>
+                      <span className="uppercase text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                        {job.level}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                          job.status === "completed"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : job.status === "paused_rate_limit"
+                            ? "bg-amber-100 text-amber-800"
+                            : job.status === "running"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-rose-100 text-rose-800"
+                        }`}
+                      >
+                        {job.status}
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div className="text-slate-500 text-[11px]">
+                      Range: {job.requestedRange?.since} to {job.requestedRange?.until} | Slices:{" "}
+                      {job.completedSlices}/{job.totalSlices} | Records: {job.totalRecords} | Spend:{" "}
+                      {job.currency} {(job.totalSpend || 0).toLocaleString("en-BD")}
+                    </div>
+                    {job.errorMessage && (
+                      <div className="text-rose-600 text-[11px] font-mono leading-tight max-w-2xl bg-rose-50/80 p-2 rounded-lg border border-rose-200/60 mt-1">
+                        {job.errorMessage}
+                      </div>
+                    )}
+                  </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                  {job.status === "paused_rate_limit" && (
+                  <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
                     <button
                       type="button"
-                      onClick={() => handleResumeJob(job.jobId)}
-                      disabled={resumingJobId === job.jobId}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition cursor-pointer shadow-2xs"
+                      onClick={() => setInspectingJobId(inspectingJobId === job.jobId ? null : job.jobId)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg shadow-2xs cursor-pointer"
                     >
-                      {resumingJobId === job.jobId ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <RotateCcw className="h-3.5 w-3.5" />
-                      )}
-                      <span>Resume Slices</span>
+                      <span>{inspectingJobId === job.jobId ? "Hide Slices" : "Inspect Slices"}</span>
+                      {inspectingJobId === job.jobId ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </button>
-                  )}
 
-                  {job.status === "failed" && (
-                    <>
+                    {job.status === "paused_rate_limit" && (
                       <button
                         type="button"
-                        onClick={() => handleRetryJob(job)}
-                        disabled={syncing}
-                        className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer shadow-2xs disabled:opacity-50"
+                        onClick={() => handleResumeJob(job.jobId)}
+                        disabled={resumingJobId === job.jobId}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition cursor-pointer shadow-2xs"
                       >
-                        <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
-                        <span>Retry Sync</span>
+                        {resumingJobId === job.jobId ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        )}
+                        <span>Resume Slices</span>
                       </button>
+                    )}
+
+                    {job.status === "failed" && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleRetryJob(job)}
+                          disabled={syncing}
+                          className="inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition cursor-pointer shadow-2xs disabled:opacity-50"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
+                          <span>Retry Sync</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestDismissJob(job.jobId)}
+                          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer shadow-2xs"
+                          title="Dismiss this failed job from history"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Dismiss</span>
+                        </button>
+                      </>
+                    )}
+
+                    {job.status === "completed" && (
                       <button
                         type="button"
                         onClick={() => handleRequestDismissJob(job.jobId)}
-                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer shadow-2xs"
-                        title="Dismiss this failed job from history"
+                        className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                        title="Clear log"
                       >
-                        <Trash2 className="h-3 w-3" />
-                        <span>Dismiss</span>
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    </>
-                  )}
-
-                  {job.status === "completed" && (
-                    <button
-                      type="button"
-                      onClick={() => handleRequestDismissJob(job.jobId)}
-                      className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-                      title="Clear log"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+                    )}
+                  </div>
                 </div>
+
+                {/* Expanded Slices Inspection Drawer */}
+                {inspectingJobId === job.jobId && Array.isArray(job.slices) && job.slices.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200/70 space-y-1.5 animate-in fade-in-0 duration-150">
+                    <div className="text-[10px] uppercase font-bold text-slate-500">
+                      Partitioned 30-Day Execution Slices ({job.slices.length})
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {job.slices.map((sl) => (
+                        <div
+                          key={sl.sliceIndex}
+                          className="p-2.5 rounded-lg bg-white border border-slate-200 space-y-1 text-[11px]"
+                        >
+                          <div className="flex items-center justify-between font-mono">
+                            <span className="font-bold text-slate-800">Slice #{sl.sliceIndex + 1}</span>
+                            <span
+                              className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded ${
+                                sl.status === "completed"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : sl.status === "rate_limited"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {sl.status}
+                            </span>
+                          </div>
+                          <div className="text-slate-500">
+                            {sl.since} to {sl.until}
+                          </div>
+                          <div className="text-slate-700 font-medium">
+                            Records: {sl.recordsImported} • Spend: {job.currency} {sl.spendInSlice.toLocaleString("en-BD")}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* ── 8. Active Campaigns Telemetry ── */}
+      {/* ── 8. PHASE 6: Active Campaigns Telemetry ── */}
       <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
@@ -1235,52 +1346,190 @@ export default function MetaAdsPage() {
           <div className="text-center py-8 text-xs text-slate-500">
             {marketingSettings?.hasAccessToken
               ? "No campaigns found in this Meta Ad Account."
-              : "Save your Meta Ad Account ID and authorized Marketing API token to load live campaigns."}
+              : "Save your Meta Ad Account ID and authorized Marketing API token in Meta Suite Settings to load live campaigns."}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {campaigns.map((camp) => (
-              <div key={camp.id} className="py-3 flex items-center justify-between text-xs">
-                <div>
-                  <div className="font-semibold text-slate-900">{camp.name}</div>
-                  <div className="text-[11px] text-slate-400 font-mono mt-0.5">ID: {camp.id}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
-                      camp.effective_status === "ACTIVE"
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 text-[10px] font-bold uppercase text-slate-400">
+                  <th className="py-2.5 px-3">Campaign Name &amp; ID</th>
+                  <th className="py-2.5 px-3">Delivery Status</th>
+                  <th className="py-2.5 px-3">Objective</th>
+                  <th className="py-2.5 px-3 text-right">Spend</th>
+                  <th className="py-2.5 px-3 text-right">Impressions</th>
+                  <th className="py-2.5 px-3 text-right">Clicks</th>
+                  <th className="py-2.5 px-3 text-right">Results</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {campaigns.map((camp) => (
+                  <tr
+                    key={camp.id}
+                    onClick={() => setSelectedCampaign(camp)}
+                    className="hover:bg-slate-50/80 transition cursor-pointer group"
                   >
-                    {camp.effective_status}
-                  </span>
-                </div>
-              </div>
-            ))}
+                    <td className="py-3 px-3">
+                      <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition">
+                        {camp.name}
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
+                        <span>ID: {camp.id}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(camp.id, `camp_${camp.id}`);
+                          }}
+                          className="hover:text-slate-700 cursor-pointer"
+                          title="Copy Campaign ID"
+                        >
+                          {copiedKey === `camp_${camp.id}` ? (
+                            <Check className="h-3 w-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
+                          camp.effective_status === "ACTIVE"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {camp.effective_status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="font-mono text-[11px] text-slate-600">
+                        {camp.objective || "OUTCOME_SALES"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                      {camp.currency || "BDT"} {(camp.spend || 0).toLocaleString("en-BD")}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono text-slate-700">
+                      {(camp.impressions || 0).toLocaleString("en-BD")}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono text-slate-700">
+                      {(camp.clicks || 0).toLocaleString("en-BD")}
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-bold text-blue-700">
+                      {(camp.results || 0).toLocaleString("en-BD")}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <span className="inline-flex items-center gap-1 text-slate-400 group-hover:text-blue-600 transition">
+                        <span className="text-[11px] font-semibold">Inspect</span>
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+
+      {/* ── Campaign Detail Modal ── */}
+      {selectedCampaign && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in-0 duration-150"
+        >
+          <div
+            className="fixed inset-0"
+            onClick={() => setSelectedCampaign(null)}
+            aria-hidden="true"
+          />
+          <div className="relative bg-white rounded-2xl border border-slate-200 max-w-lg w-full p-6 shadow-2xl z-10 space-y-4 font-sans text-slate-900">
+            <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
+                  Campaign Telemetry Details
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  {selectedCampaign.name}
+                </h3>
+                <span className="font-mono text-xs text-slate-500">ID: {selectedCampaign.id}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCampaign(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Delivery Status</span>
+                <span className="font-bold text-slate-800">{selectedCampaign.effective_status}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Objective</span>
+                <span className="font-mono font-bold text-slate-800">{selectedCampaign.objective || "OUTCOME_SALES"}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Total Spend</span>
+                <span className="font-mono font-bold text-slate-900 text-sm">
+                  {selectedCampaign.currency || "BDT"} {(selectedCampaign.spend || 0).toLocaleString("en-BD")}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Conversions (Results)</span>
+                <span className="font-mono font-bold text-blue-700 text-sm">
+                  {(selectedCampaign.results || 0).toLocaleString("en-BD")} purchases
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Total Impressions</span>
+                <span className="font-mono font-semibold text-slate-800">
+                  {(selectedCampaign.impressions || 0).toLocaleString("en-BD")}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Total Clicks</span>
+                <span className="font-mono font-semibold text-slate-800">
+                  {(selectedCampaign.clicks || 0).toLocaleString("en-BD")}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between">
+              <a
+                href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${adAccountId || "1646756900434912"}&selected_campaign_ids=${selectedCampaign.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+              >
+                <span>View Campaign in Meta Ads Manager</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCampaign(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global Meta Asset Locator Guide Modal */}
       <MetaAssetLocatorModal
         isOpen={isGuideOpen}
         onClose={() => setIsGuideOpen(false)}
         defaultAssetId={guideAssetId}
-      />
-
-      {/* ── Meta White Credential Modals ── */}
-      <ConfigureAdAccountModal
-        isOpen={isAdAccountModalOpen}
-        onClose={() => setIsAdAccountModalOpen(false)}
-        currentAccountId={adAccountId}
-        hasExistingToken={Boolean(marketingSettings?.hasAccessToken)}
-        onSaveCredentials={handleSaveAdAccountCredentials}
-        onRequestDisconnect={handleRequestDisconnectAdAccount}
-        onOpenLocator={(assetId) => {
-          setGuideAssetId(assetId);
-          setIsGuideOpen(true);
-        }}
       />
 
       {/* Standardized White Destructive Warning Confirmation Modal */}

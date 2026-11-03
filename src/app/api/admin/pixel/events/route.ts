@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
         stats: durable.stats,
         deliveryStats: durable.deliveryStats,
         deduplicationStats: durable.deduplicationStats,
+        channelStats: durable.channelStats,
+        testStats: durable.testStats,
+        testEvents: durable.testEvents,
         events: durable.events,
       },
       {
@@ -85,7 +88,7 @@ export async function DELETE(request: NextRequest) {
       return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    clearPixelEvents(auth.tenantId);
+    await clearPixelEvents(auth.tenantId);
     return NextResponse.json({ success: true, message: "Activity stream cleared" });
   } catch (error) {
     console.error("DELETE /api/admin/pixel/events error:", error);

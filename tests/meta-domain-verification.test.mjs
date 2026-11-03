@@ -374,8 +374,13 @@ test("Stage 2C — 13: Dashboard UI reflects angkon.net, independent pillars, an
 
   assert.ok(!pageCode.includes("angkon.com.bd"), "Incorrect root domain must be completely eliminated");
   assert.ok(pageCode.includes("angkon.net"), "Displays angkon.net as primary root domain");
-  assert.ok(pageCode.includes("Verification History"), "Features verification history timeline");
+  // The dashboard now labels the timeline "Verification Audit History", and
+  // domain creation moved into the centralized Meta Suite Settings page.
+  assert.ok(pageCode.includes("Verification Audit History"), "Features verification history timeline");
   assert.ok(pageCode.includes("DNS TXT Verification"), "Features DNS TXT status pillar");
   assert.ok(pageCode.includes("Meta Ownership"), "Features independent Meta ownership pillar");
-  assert.ok(pageCode.includes("Add Domain"), "Supports multi-domain management modal");
+  assert.ok(
+    pageCode.includes("centralized in Meta Suite Settings"),
+    "Points users to Settings for multi-domain management"
+  );
 });

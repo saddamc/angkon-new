@@ -60,20 +60,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const testEventId =
+      (typeof body.eventId === "string" && body.eventId.trim()) ||
+      `test_capi_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    // Build realistic dummy e-commerce payload for simulation
+    const defaultCustomData: Record<string, unknown> =
+      targetEvent === "Purchase"
+        ? {
+            value: 1250,
+            currency: "BDT",
+            content_type: "product",
+            content_ids: ["228010"],
+            num_items: 1,
+            order_id: `test_${Date.now()}`,
+          }
+        : targetEvent === "AddToCart"
+        ? {
+            value: 1250,
+            currency: "BDT",
+            content_type: "product",
+            content_name: "Silk Jamdani Saree",
+            content_ids: ["228010"],
+          }
+        : targetEvent === "InitiateCheckout"
+        ? {
+            value: 1250,
+            currency: "BDT",
+            content_type: "product",
+            content_ids: ["228010"],
+            num_items: 1,
+          }
+        : targetEvent === "ViewContent"
+        ? {
+            value: 1250,
+            currency: "BDT",
+            content_type: "product",
+            content_name: "Silk Jamdani Saree",
+            content_ids: ["228010"],
+          }
+        : {};
+
+    const customData =
+      body.customData && typeof body.customData === "object"
+        ? { ...defaultCustomData, ...body.customData }
+        : defaultCustomData;
+
     const result = await testMetaCapiConnection(pixelId, token, testEventCode, auth.tenantId, {
-      eventName: body.eventName,
-      eventId: body.eventId,
+      eventName: targetEvent,
+      eventId: testEventId,
       eventSourceUrl: body.eventSourceUrl,
-      customData: body.customData,
+      customData,
     });
 
     if (result.success) {
       return NextResponse.json({
         ok: true,
         success: true,
+        eventName: targetEvent,
+        eventId: testEventId,
+        testEventCode,
         eventsReceived: result.eventsReceived ?? 1,
         message: `Connection successful! Meta received ${result.eventsReceived ?? 1} test event.`,
         fbtraceId: result.fbtraceId,
+        timestamp: new Date().toISOString(),
+        source: "server",
       });
     }
 

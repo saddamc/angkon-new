@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdminSession } from "@/server/admin-auth";
 import { getPixelSettings } from "@/server/pixel-settings";
+import { getMetaMarketingSettings } from "@/server/meta-marketing-settings";
 import {
   fetchEventMatchQuality,
   resolveEmqTokens,
@@ -36,8 +37,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const settings = await getPixelSettings(auth.tenantId);
-    const tokens = resolveEmqTokens(settings);
+    const [settings, marketingSettings] = await Promise.all([
+      getPixelSettings(auth.tenantId),
+      getMetaMarketingSettings(auth.tenantId).catch(() => null),
+    ]);
+
+    const resolvedSettings = {
+      ...settings,
+      marketingApiAccessToken:
+        settings.marketingApiAccessToken || marketingSettings?.accessToken || "",
+    };
+    const tokens = resolveEmqTokens(resolvedSettings);
 
     if (!settings.pixelId || !tokens.primary) {
       return NextResponse.json(

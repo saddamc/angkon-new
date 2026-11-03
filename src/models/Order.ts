@@ -20,11 +20,20 @@ export interface IOrderCustomer {
   postalCode?: string;
 }
 
+export interface IOrderVisitorContext {
+  clientIp?: string;
+  clientUserAgent?: string;
+  fbp?: string;
+  fbc?: string;
+  recordedAt?: Date;
+}
+
 export interface IOrder extends Document {
   orderNumber: string;
   /** Customer account that owns this order (set at checkout) */
   userId?: mongoose.Types.ObjectId | null;
   customer: IOrderCustomer;
+  visitorContext?: IOrderVisitorContext;
   items: IOrderItem[];
   subtotal: number;
   discount?: number;
@@ -65,11 +74,23 @@ const OrderCustomerSchema = new Schema<IOrderCustomer>(
   { _id: false }
 );
 
+const OrderVisitorContextSchema = new Schema<IOrderVisitorContext>(
+  {
+    clientIp: { type: String, default: "" },
+    clientUserAgent: { type: String, default: "" },
+    fbp: { type: String, default: "" },
+    fbc: { type: String, default: "" },
+    recordedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const OrderSchema = new Schema<IOrder>(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
     customer: { type: OrderCustomerSchema, required: true },
+    visitorContext: { type: OrderVisitorContextSchema, required: false },
     items: { type: [OrderItemSchema], required: true },
     subtotal: { type: Number, required: true, default: 0 },
     discount: { type: Number, default: 0 },

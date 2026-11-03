@@ -41,7 +41,7 @@ const NAV = [
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
   { href: "/admin/customers", label: "Customers", icon: Users },
   ...(isMetaEnabled
-    ? [{ href: "/admin/meta", label: "Meta Events Manager", icon: Activity }]
+    ? [{ href: "/admin/meta", label: "Meta Marketing", icon: Activity }]
     : []),
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
@@ -232,8 +232,27 @@ export default function AdminLayout({
 
   // Determine current page title
   const currentNav = filteredNav.find((item) => pathname.startsWith(item.href));
-  const pageTitle = currentNav ? currentNav.label : "Admin";
-  const PageIcon = currentNav ? currentNav.icon : LayoutDashboard;
+  let pageTitle = currentNav ? currentNav.label : "Admin";
+  let PageIcon = currentNav ? currentNav.icon : LayoutDashboard;
+
+  if (pathname.startsWith("/admin/meta")) {
+    if (pathname.startsWith("/admin/meta/events")) {
+      pageTitle = "Meta Events Manager";
+      PageIcon = Activity;
+    } else if (pathname.startsWith("/admin/meta/ads")) {
+      pageTitle = "Meta Ads & Attribution";
+      PageIcon = BarChart3;
+    } else if (pathname.startsWith("/admin/meta/catalog")) {
+      pageTitle = "Meta Catalog Feed";
+      PageIcon = Package;
+    } else if (pathname.startsWith("/admin/meta/domain-verification")) {
+      pageTitle = "Meta Domain Verification";
+      PageIcon = Activity;
+    } else {
+      pageTitle = "Meta Marketing Overview";
+      PageIcon = Activity;
+    }
+  }
 
   // Desktop effective expanded state:
   // On Meta routes, sidebar is in collapsed icon-rail mode by default (78px, matching user's image media_1793568009257_a97b6430.png).

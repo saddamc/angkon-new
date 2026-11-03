@@ -645,8 +645,81 @@ export function getPixelEvents(tenantId?: string): {
 }
 
 /**
+ * Privacy sanitization for URLs in telemetry logs.
+ * Redacts fbclid, tokens, session IDs, passwords, and sensitive query parameters.
+ */
+export function sanitizeTelemetryUrl(rawUrl?: string): string {
+  if (!rawUrl) return "/";
+  try {
+    const dummyBase = "https://www.angkon.net";
+    const isRelative = rawUrl.startsWith("/");
+    const parsed = new URL(isRelative ? `${dummyBase}${rawUrl}` : rawUrl);
+    const sensitiveKeys = [
+      "fbclid",
+      "token",
+      "access_token",
+      "capi_token",
+      "key",
+      "secret",
+      "auth",
+      "session_id",
+      "session",
+      "password",
+      "pass",
+      "email",
+      "phone",
+      "code",
+    ];
+
+    for (const key of Array.from(parsed.searchParams.keys())) {
+      const lower = key.toLowerCase();
+      if (
+        sensitiveKeys.some((s) => lower === s || lower.includes("token") || lower.includes("secret"))
+      ) {
+        parsed.searchParams.set(key, "[REDACTED]");
+      }
+    }
+
+    return isRelative ? `${parsed.pathname}${parsed.search}` : parsed.toString();
+  } catch {
+    return rawUrl.split("?")[0] || "/";
+  }
+}
+
+/**
+ * Sanitizes event parameters so raw emails, phone numbers, and secrets are never leaked in client responses.
+ */
+export function sanitizeTelemetryParameters(params?: Record<string, unknown>): Record<string, unknown> {
+  if (!params || typeof params !== "object") return {};
+  const safe: Record<string, unknown> = {};
+
+  for (const [key, val] of Object.entries(params)) {
+    const lower = key.toLowerCase();
+    if (
+      lower.includes("pass") ||
+      lower.includes("secret") ||
+      lower.includes("token") ||
+      lower.includes("auth")
+    ) {
+      safe[key] = "[REDACTED]";
+    } else if (lower === "email" && typeof val === "string") {
+      safe[key] = val.includes("@")
+        ? `${val.slice(0, 2)}***@${val.split("@")[1]}`
+        : "[REDACTED]";
+    } else if (lower === "phone" && typeof val === "string") {
+      safe[key] = val.length >= 6 ? `${val.slice(0, 4)}***${val.slice(-2)}` : "[REDACTED]";
+    } else {
+      safe[key] = val;
+    }
+  }
+
+  return safe;
+}
+
+/**
  * Loads real persistent telemetry records from MongoDB MetaEventLog.
  * Reconciles deduplication matching between browser and server events.
+ * Strictly separates production telemetry from test simulation events to prevent analytics pollution.
  */
 export async function getDurablePixelEvents(
   tenantId = DEFAULT_TENANT_ID,
@@ -660,32 +733,88 @@ export async function getDurablePixelEvents(
     accepted: number;
     retrying: number;
     failed: number;
+    deliverySuccessRate: number | null;
   };
   deduplicationStats: {
     pairedCount: number;
     browserOnlyCount: number;
     serverOnlyCount: number;
+    dedupRate: number | null;
+    totalUniqueEvents: number;
   };
+  channelStats: {
+    browserCount: number;
+    serverCount: number;
+    testCount: number;
+    browserRatio: number | null;
+    serverRatio: number | null;
+  };
+  testStats: Record<string, number>;
+  testEvents: PixelEventRecord[];
 }> {
   const safeTenant = tenantId?.trim() || DEFAULT_TENANT_ID;
 
   try {
     await connectToDatabase();
 
-    const [aggregateCounts, aggregateTotal, statusCounts, docs] = await Promise.all([
+    // Production filter: exclude test events and simulators
+    const productionMatch: Record<string, any> = {
+      tenantId: safeTenant,
+      $and: [
+        {
+          $or: [
+            { testEventCode: { $exists: false } },
+            { testEventCode: null },
+            { testEventCode: "" },
+          ],
+        },
+        { source: { $ne: "test_simulator" } },
+      ],
+    };
+
+    // Test filter: events with testEventCode or source === "test_simulator"
+    const testMatch: Record<string, any> = {
+      tenantId: safeTenant,
+      $or: [
+        { testEventCode: { $exists: true, $nin: [null, ""] } },
+        { source: "test_simulator" },
+      ],
+    };
+
+    const [
+      aggregateCounts,
+      aggregateTotal,
+      statusCounts,
+      channelCounts,
+      docs,
+      testDocs,
+      testCounts,
+    ] = await Promise.all([
       MetaEventLog.aggregate([
-        { $match: { tenantId: safeTenant } },
+        { $match: productionMatch },
         { $group: { _id: "$eventName", count: { $sum: 1 } } },
       ]),
-      MetaEventLog.countDocuments({ tenantId: safeTenant }),
+      MetaEventLog.countDocuments(productionMatch),
       MetaEventLog.aggregate([
-        { $match: { tenantId: safeTenant } },
+        { $match: productionMatch },
         { $group: { _id: "$status", count: { $sum: 1 } } },
       ]),
-      MetaEventLog.find({ tenantId: safeTenant })
+      MetaEventLog.aggregate([
+        { $match: productionMatch },
+        { $group: { _id: "$source", count: { $sum: 1 } } },
+      ]),
+      MetaEventLog.find(productionMatch)
         .sort({ createdAt: -1 })
         .limit(limit)
         .lean(),
+      MetaEventLog.find(testMatch)
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
+      MetaEventLog.aggregate([
+        { $match: testMatch },
+        { $group: { _id: "$eventName", count: { $sum: 1 } } },
+      ]),
     ]);
 
     const stats: Record<string, number> = {
@@ -703,23 +832,47 @@ export async function getDurablePixelEvents(
       }
     }
 
+    // Delivery stats for CAPI
     const deliveryStats = {
       queued: 0,
       processing: 0,
       accepted: 0,
       retrying: 0,
       failed: 0,
+      deliverySuccessRate: null as number | null,
     };
 
     for (const item of statusCounts) {
       if (item._id && deliveryStats[item._id as keyof typeof deliveryStats] !== undefined) {
-        deliveryStats[item._id as keyof typeof deliveryStats] = item.count;
+        (deliveryStats as Record<string, unknown>)[item._id] = item.count;
       }
     }
 
+    const totalCapiOutcomes = deliveryStats.accepted + deliveryStats.failed + deliveryStats.retrying;
+    deliveryStats.deliverySuccessRate =
+      totalCapiOutcomes > 0
+        ? Math.round((deliveryStats.accepted / totalCapiOutcomes) * 100)
+        : null;
+
+    // Channel delivery breakdown
+    let browserCount = 0;
+    let serverCount = 0;
+    for (const item of channelCounts) {
+      if (item._id === "browser") browserCount = item.count;
+      if (item._id === "server") serverCount = item.count;
+    }
+    const totalChannels = browserCount + serverCount;
+    const channelStats = {
+      browserCount,
+      serverCount,
+      testCount: testDocs.length,
+      browserRatio: totalChannels > 0 ? Math.round((browserCount / totalChannels) * 100) : null,
+      serverRatio: totalChannels > 0 ? Math.round((serverCount / totalChannels) * 100) : null,
+    };
+
     // Index events by eventId to compute truthful deduplication evidence
     const eventIdMap = new Map<string, Set<string>>();
-    for (const doc of docs) {
+    for (const doc of docs as any[]) {
       if (doc.eventId) {
         if (!eventIdMap.has(doc.eventId)) {
           eventIdMap.set(doc.eventId, new Set());
@@ -733,33 +886,53 @@ export async function getDurablePixelEvents(
     let serverOnlyCount = 0;
 
     for (const [, sources] of eventIdMap) {
-      if (sources.has("browser") && (sources.has("server") || sources.has("test_simulator"))) {
+      if (sources.has("browser") && sources.has("server")) {
         pairedCount++;
       } else if (sources.has("browser")) {
         browserOnlyCount++;
-      } else {
+      } else if (sources.has("server")) {
         serverOnlyCount++;
       }
     }
 
-    const events: PixelEventRecord[] = docs.map((doc) => {
-      return {
-        id: String(doc._id),
-        tenantId: doc.tenantId,
-        name: doc.eventName,
-        timestamp: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
-        url: doc.url || "/",
-        parameters: (doc.parameters as Record<string, unknown>) || {},
-        source: doc.source,
-        testEventCode: doc.testEventCode,
-        eventId: doc.eventId,
-        status: doc.status as PixelEventRecord["status"],
-        error: doc.error,
-        fbtraceId: doc.fbtraceId,
-        attemptCount: doc.attemptCount,
-        nextAttemptAt: doc.nextAttemptAt ? new Date(doc.nextAttemptAt).toISOString() : undefined,
-      };
+    const totalUniqueEvents = pairedCount + browserOnlyCount + serverOnlyCount;
+    const dedupRate =
+      totalUniqueEvents > 0 ? Math.round((pairedCount / totalUniqueEvents) * 100) : null;
+
+    const mapDocToRecord = (doc: any): PixelEventRecord => ({
+      id: String(doc._id),
+      tenantId: doc.tenantId,
+      name: doc.eventName,
+      timestamp: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+      url: sanitizeTelemetryUrl(doc.url),
+      parameters: sanitizeTelemetryParameters(doc.parameters as Record<string, unknown>),
+      source: doc.source,
+      testEventCode: doc.testEventCode,
+      eventId: doc.eventId,
+      status: doc.status as PixelEventRecord["status"],
+      error: doc.error,
+      fbtraceId: doc.fbtraceId,
+      attemptCount: doc.attemptCount,
+      nextAttemptAt: doc.nextAttemptAt ? new Date(doc.nextAttemptAt).toISOString() : undefined,
     });
+
+    const events: PixelEventRecord[] = docs.map(mapDocToRecord);
+    const testEvents: PixelEventRecord[] = testDocs.map(mapDocToRecord);
+
+    const testStats: Record<string, number> = {
+      total: testDocs.length,
+      PageView: 0,
+      ViewContent: 0,
+      AddToCart: 0,
+      InitiateCheckout: 0,
+      Purchase: 0,
+    };
+
+    for (const item of testCounts) {
+      if (item._id && typeof item.count === "number") {
+        testStats[item._id] = item.count;
+      }
+    }
 
     return {
       events,
@@ -769,7 +942,12 @@ export async function getDurablePixelEvents(
         pairedCount,
         browserOnlyCount,
         serverOnlyCount,
+        dedupRate,
+        totalUniqueEvents,
       },
+      channelStats,
+      testStats,
+      testEvents,
     };
   } catch (err) {
     console.warn("[Meta Ledger] Database query error, using memory buffer:", err);
@@ -783,12 +961,31 @@ export async function getDurablePixelEvents(
         accepted: inMem.events.filter((e) => e.status === "delivered" || e.status === "accepted").length,
         retrying: 0,
         failed: inMem.events.filter((e) => e.status === "failed").length,
+        deliverySuccessRate: null,
       },
       deduplicationStats: {
         pairedCount: 0,
         browserOnlyCount: inMem.events.filter((e) => e.source === "browser").length,
         serverOnlyCount: inMem.events.filter((e) => e.source === "server").length,
+        dedupRate: null,
+        totalUniqueEvents: inMem.events.length,
       },
+      channelStats: {
+        browserCount: inMem.events.filter((e) => e.source === "browser").length,
+        serverCount: inMem.events.filter((e) => e.source === "server").length,
+        testCount: inMem.events.filter((e) => e.source === "test_simulator").length,
+        browserRatio: null,
+        serverRatio: null,
+      },
+      testStats: {
+        total: 0,
+        PageView: 0,
+        ViewContent: 0,
+        AddToCart: 0,
+        InitiateCheckout: 0,
+        Purchase: 0,
+      },
+      testEvents: inMem.events.filter((e) => e.source === "test_simulator" || e.testEventCode),
     };
   }
 }

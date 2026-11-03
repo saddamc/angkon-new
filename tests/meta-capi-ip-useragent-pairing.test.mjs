@@ -135,5 +135,5 @@ test("Codebase Static Verification: meta-capi.ts pairs client_ip_address and cli
   assert.match(pixelEventsRoute, /clientIp\s*=\s*extractClientIp\(request\)/, "pixel events route must use extractClientIp");
 
   const sslCallbackRoute = fs.readFileSync("src/app/api/payment/sslcommerz/callback/route.ts", "utf8");
-  assert.match(sslCallbackRoute, /clientIp:\s*extractClientIp\(request\)/, "sslcommerz callback route must use extractClientIp");
+  assert.match(sslCallbackRoute, /extractClientIp\(request\)/, "sslcommerz callback route must use extractClientIp");
 });

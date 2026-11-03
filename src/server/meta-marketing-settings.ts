@@ -12,7 +12,10 @@ export const META_MARKETING_SETTINGS_KEY = "meta_marketing";
 
 export type MarketingApiConnectionStatus =
   | "unconfigured"
+  | "configured"
   | "connected"
+  | "assets_retrieved"
+  | "permission_denied"
   | "rate_limited"
   | "token_expired"
   | "error";

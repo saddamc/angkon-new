@@ -85,7 +85,9 @@ export type EmqFetchResult =
 
 const MATCH_KEY_LABELS: Record<string, string> = {
   em: "Email address",
+  email: "Email address",
   ph: "Phone number",
+  phone: "Phone number",
   fn: "First name",
   ln: "Last name",
   ct: "City",
@@ -100,7 +102,9 @@ const MATCH_KEY_LABELS: Record<string, string> = {
   fb_login_id: "Facebook login ID",
   anonymous_ip: "Anonymous IP",
   client_ip_address: "Client IP address",
+  ip_address: "Client IP address",
   client_user_agent: "Client user agent",
+  user_agent: "Client user agent",
   fbc: "Click ID (fbc)",
   fbp: "Browser ID (fbp)",
   predicted_ltv: "Predicted lifetime value",
@@ -202,7 +206,6 @@ function readFirstNumber(sources: unknown[]): number | null {
  */
 const EMQ_FIELDS =
   "web{event_name,event_match_quality{composite_score,match_key_feedback{identifier,coverage{percentage}}}," +
-  "diagnostics{name,description,solution,percentage,affected_event_count,total_event_count}," +
   "event_coverage,dedupe_key_feedback,data_freshness,event_spend,value_diagnostics,event_delay}";
 
 /* ──────────────────────────────────────────────────────────────────────────

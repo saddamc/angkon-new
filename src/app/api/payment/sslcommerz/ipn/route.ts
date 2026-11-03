@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { validateSslcommerzTransaction } from "@/server/sslcommerz";
+import { sendMetaCapiEvent } from "@/server/meta-capi";
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,7 +44,50 @@ export async function POST(request: NextRequest) {
       order.orderStatus = "processing";
     }
     order.notes = `${order.notes || ""} [IPN Verified: ValID=${valId}, Bank=${validation.bankTranId || "N/A"}]`.trim();
-    await order.save();
+
+    // Dispatch server-side Meta Conversions API (CAPI) Purchase event if callback hasn't already sent it
+    if (!order.notes?.includes("[CAPI_PURCHASE_SENT]")) {
+      order.notes = `${order.notes || ""} [CAPI_PURCHASE_SENT]`.trim();
+      await order.save();
+
+      try {
+        const appBase = process.env.NEXT_PUBLIC_APP_URL || "https://angkon.net";
+        await sendMetaCapiEvent({
+          eventName: "Purchase",
+          eventId: `order_${order.orderNumber}`,
+          eventSourceUrl: `${appBase}/checkout`,
+          userData: {
+            email: order.customer.email,
+            phone: order.customer.phone,
+            firstName: order.customer.fullName,
+            city: order.customer.city,
+            district: order.customer.district,
+            postalCode: order.customer.postalCode,
+            clientIp: order.visitorContext?.clientIp,
+            clientUserAgent: order.visitorContext?.clientUserAgent,
+            fbp: order.visitorContext?.fbp,
+            fbc: order.visitorContext?.fbc,
+          },
+          customData: {
+            value: order.total,
+            currency: "BDT",
+            order_id: order.orderNumber,
+            num_items: order.items.reduce((acc, it) => acc + it.quantity, 0),
+            content_ids: order.items.map((it) => it.productId),
+            content_type: "product",
+            contents: order.items.map((it) => ({
+              id: String(it.productId),
+              quantity: it.quantity,
+              item_price: it.price,
+            })),
+          },
+        });
+      } catch (err) {
+        console.warn("[Meta CAPI] SSLCOMMERZ IPN post-payment purchase error:", err);
+      }
+    } else {
+      await order.save();
+    }
 
     return NextResponse.json({ success: true, message: "IPN processed successfully" });
   } catch (error) {

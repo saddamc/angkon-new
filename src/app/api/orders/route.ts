@@ -281,10 +281,20 @@ export async function POST(request: NextRequest) {
       }
       const accountUser = account.user;
 
+      const orderClientIp = extractClientIp(request) || "";
+      const orderUserAgent = request.headers.get("user-agent") || "";
+
       const newOrder = await Order.create({
         orderNumber,
         userId: accountUser?._id ?? null,
         customer: customerData,
+        visitorContext: {
+          clientIp: orderClientIp,
+          clientUserAgent: orderUserAgent,
+          fbp: fbp || "",
+          fbc: fbc || "",
+          recordedAt: new Date(),
+        },
         items: itemsData,
         subtotal,
         discount,

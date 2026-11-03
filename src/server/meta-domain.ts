@@ -140,8 +140,9 @@ export function calculateLifecycleState(params: {
   htmlStatus: HtmlStatusType;
   metaOwnershipVerified: boolean;
   isMismatch: boolean;
+  isTimeoutOrNetworkError?: boolean;
 }): MetaDomainLifecycleState {
-  const { dnsStatus, htmlStatus, metaOwnershipVerified, isMismatch } = params;
+  const { dnsStatus, htmlStatus, metaOwnershipVerified, isMismatch, isTimeoutOrNetworkError } = params;
 
   if (isMismatch) {
     return "DNS_MISMATCH";
@@ -150,6 +151,11 @@ export function calculateLifecycleState(params: {
   const isMethodVerified = dnsStatus === "DETECTED" || htmlStatus === "DETECTED";
 
   if (metaOwnershipVerified && isMethodVerified) {
+    return "VERIFIED";
+  }
+
+  // Phase 7: Do not mark a previously verified domain unverified because of a temporary DNS timeout
+  if (metaOwnershipVerified && isTimeoutOrNetworkError) {
     return "VERIFIED";
   }
 
@@ -184,6 +190,7 @@ export interface DnsVerificationResult {
   details: string;
   error?: string;
   isMismatch: boolean;
+  isTimeout?: boolean;
 }
 
 /**
@@ -271,6 +278,7 @@ export async function verifyDnsTxtRecord(
   if (queryError) {
     result.status = "ERROR";
     result.error = queryError.message;
+    result.isTimeout = queryError.name === "TimeoutError" || queryError.message.includes("timed out");
     result.details = `DNS lookup on ${rootDomain} failed: ${queryError.message}`;
     return result;
   }
@@ -470,6 +478,24 @@ export async function ensureTenantPrimaryDomain(tenantId = "angkon-main"): Promi
       domainDoc.verificationToken = token;
       await domainDoc.save();
     }
+
+    // Cross-tenant reconciliation: if angkon.net was already confirmed in Meta Business Manager, inherit verified state
+    if (!domainDoc.metaOwnershipVerified) {
+      const verifiedCanonical = await MetaDomain.findOne({
+        domain: CANONICAL_ROOT_DOMAIN,
+        metaOwnershipVerified: true,
+      });
+
+      if (verifiedCanonical || pixelSettings.metaOwnershipVerified) {
+        domainDoc.metaOwnershipVerified = true;
+        domainDoc.metaOwnershipStatus = "VERIFIED";
+        domainDoc.lifecycleState = "VERIFIED";
+        domainDoc.metaOwnershipVerifiedAt = verifiedCanonical?.metaOwnershipVerifiedAt || new Date();
+        domainDoc.metaOwnershipSource = "meta_business_manager";
+        domainDoc.metaOwnershipConfirmedBy = "business_portfolio_reconciliation";
+        await domainDoc.save();
+      }
+    }
   }
 
   if (!domainDoc) {
@@ -610,41 +636,56 @@ export async function checkDomainHealth(params: {
   }
 
   const isMismatch = dnsResult.isMismatch || htmlResult.isMismatch;
+  const isTimeoutOrNetworkError = Boolean(dnsResult.isTimeout || dnsResult.error);
 
   const newState = calculateLifecycleState({
     dnsStatus: dnsResult.status,
     htmlStatus: htmlResult.status,
     metaOwnershipVerified: domainDoc.metaOwnershipVerified,
     isMismatch,
+    isTimeoutOrNetworkError,
   });
 
   domainDoc.lifecycleState = newState;
   await domainDoc.save();
 
-  // Record audit log
-  await MetaDomainAuditLog.create({
+  // Avoid duplicate audit logs for scheduled checks if result and state have not changed
+  const lastLog = await MetaDomainAuditLog.findOne({
     tenantId: safeTenant,
-    domainId: domainDoc._id as any,
     domain: domainDoc.domain,
-    action: isScheduled ? "scheduled_health_check" : "dns_check",
-    previousState,
-    newState,
-    verificationMethod: domainDoc.verificationMethod,
-    dnsResult: {
-      status: dnsResult.status,
-      recordsExamined: dnsResult.recordsExamined,
-      matchedRecord: dnsResult.matchedRecord,
-      error: dnsResult.error,
-    },
-    htmlResult: {
-      status: htmlResult.status,
-      detectedToken: htmlResult.detectedToken,
-      error: htmlResult.error,
-    },
-    actor: actor || (isScheduled ? "system_scheduler" : "super_admin"),
-    failureReason: !isSuccessful ? dnsResult.error || dnsResult.details : null,
-    details: dnsResult.details,
-  });
+  }).sort({ createdAt: -1 });
+
+  const isIdenticalConsecutive =
+    lastLog &&
+    lastLog.newState === newState &&
+    lastLog.dnsResult?.status === dnsResult.status &&
+    (isScheduled || (Date.now() - new Date(lastLog.createdAt).getTime() < 120_000 && lastLog.action === "dns_check"));
+
+  if (!isIdenticalConsecutive) {
+    await MetaDomainAuditLog.create({
+      tenantId: safeTenant,
+      domainId: domainDoc._id as any,
+      domain: domainDoc.domain,
+      action: isScheduled ? "scheduled_health_check" : "dns_check",
+      previousState,
+      newState,
+      verificationMethod: domainDoc.verificationMethod,
+      dnsResult: {
+        status: dnsResult.status,
+        recordsExamined: dnsResult.recordsExamined,
+        matchedRecord: dnsResult.matchedRecord,
+        error: dnsResult.error,
+      },
+      htmlResult: {
+        status: htmlResult.status,
+        detectedToken: htmlResult.detectedToken,
+        error: htmlResult.error,
+      },
+      actor: actor || (isScheduled ? "system_scheduler" : "super_admin"),
+      failureReason: !isSuccessful ? dnsResult.error || dnsResult.details : null,
+      details: dnsResult.details,
+    });
+  }
 
   return { domainDoc, dnsResult, htmlResult };
 }
@@ -796,4 +837,210 @@ export async function deleteTenantDomain(
   });
 
   return { success: true, message: `Domain '${normalized}' deleted successfully.` };
+}
+
+export interface GroupedDomainAuditItem {
+  _id: string;
+  domain: string;
+  action: string;
+  previousState?: string | null;
+  newState: string;
+  verificationMethod: string;
+  actor: string;
+  details?: string | null;
+  createdAt: string;
+  isGrouped: boolean;
+  groupCount: number;
+  firstCheckedAt?: string;
+  lastCheckedAt?: string;
+  dnsResult?: {
+    status?: string;
+    recordsExamined?: number;
+    matchedRecord?: string | null;
+    error?: string | null;
+  } | null;
+  htmlResult?: {
+    status?: string;
+    detectedToken?: string | null;
+    error?: string | null;
+  } | null;
+}
+
+/**
+ * Returns grouped audit history to eliminate repeated noisy verification entries,
+ * while preserving every discrete state change, error, and administrative mutation.
+ */
+export async function getGroupedDomainAuditHistory(
+  tenantId = "angkon-main",
+  domainName?: string,
+  limit = 50
+): Promise<GroupedDomainAuditItem[]> {
+  const rawLogs = await getDomainAuditHistory(tenantId, domainName, limit * 2);
+  const grouped: GroupedDomainAuditItem[] = [];
+
+  for (const log of rawLogs as any[]) {
+    const isCheckAction = log.action === "dns_check" || log.action === "scheduled_health_check";
+    const lastGroup = grouped[grouped.length - 1];
+
+    if (
+      lastGroup &&
+      isCheckAction &&
+      (lastGroup.action === "dns_check" || lastGroup.action === "scheduled_health_check") &&
+      lastGroup.newState === log.newState &&
+      lastGroup.dnsResult?.status === log.dnsResult?.status &&
+      (!log.previousState || log.previousState === log.newState)
+    ) {
+      lastGroup.isGrouped = true;
+      lastGroup.groupCount += 1;
+      lastGroup.firstCheckedAt = new Date(log.createdAt).toISOString();
+      lastGroup.details = `${lastGroup.groupCount} consecutive successful checks. Last verified ${new Date(lastGroup.lastCheckedAt || lastGroup.createdAt).toLocaleTimeString()}.`;
+    } else {
+      grouped.push({
+        _id: String(log._id),
+        domain: log.domain,
+        action: log.action,
+        previousState: log.previousState,
+        newState: log.newState,
+        verificationMethod: log.verificationMethod,
+        actor: log.actor,
+        details: log.details,
+        createdAt: new Date(log.createdAt).toISOString(),
+        isGrouped: false,
+        groupCount: 1,
+        firstCheckedAt: new Date(log.createdAt).toISOString(),
+        lastCheckedAt: new Date(log.createdAt).toISOString(),
+        dnsResult: log.dnsResult,
+        htmlResult: log.htmlResult,
+      });
+    }
+
+    if (grouped.length >= limit) break;
+  }
+
+  return grouped;
+}
+
+/**
+ * Sets a domain as the primary tenant domain.
+ */
+export async function setTenantPrimaryDomain(
+  tenantId: string,
+  domainName: string,
+  actor: string
+): Promise<IMetaDomain> {
+  await connectToDatabase();
+  const safeTenant = tenantId?.trim() || "angkon-main";
+  const normalized = normalizeRootDomain(domainName);
+
+  const targetDoc = await MetaDomain.findOne({ tenantId: safeTenant, domain: normalized });
+  if (!targetDoc) {
+    throw new Error(`Domain '${normalized}' not found.`);
+  }
+
+  await MetaDomain.updateMany({ tenantId: safeTenant, isPrimary: true }, { $set: { isPrimary: false } });
+  targetDoc.isPrimary = true;
+  await targetDoc.save();
+
+  await MetaDomainAuditLog.create({
+    tenantId: safeTenant,
+    domainId: targetDoc._id as any,
+    domain: normalized,
+    action: "primary_domain_updated" as any,
+    previousState: targetDoc.lifecycleState,
+    newState: targetDoc.lifecycleState,
+    verificationMethod: targetDoc.verificationMethod,
+    actor: actor || "super_admin",
+    details: `Domain '${normalized}' designated as primary root domain for this store.`,
+  });
+
+  return targetDoc;
+}
+
+export interface AemSlotDefinition {
+  slot: number;
+  name: string;
+  level: string;
+  optimization: string;
+  description: string;
+  badge: string;
+  isCalibrated: boolean;
+}
+
+export const AEM_CALIBRATED_EVENTS: Omit<AemSlotDefinition, "slot" | "isCalibrated">[] = [
+  {
+    name: "Purchase",
+    level: "Highest Priority (Tier 1)",
+    optimization: "Value Optimization (ROAS)",
+    description: "Tracks confirmed luxury orders. Must remain #1 for Meta conversion bidding.",
+    badge: "text-emerald-700 bg-emerald-50 border-emerald-200",
+  },
+  {
+    name: "InitiateCheckout",
+    level: "High Priority (Tier 2)",
+    optimization: "Conversion Funnel Progression",
+    description: "Tracks visitors opening the checkout page with cart contents.",
+    badge: "text-indigo-700 bg-indigo-50 border-indigo-200",
+  },
+  {
+    name: "AddToCart",
+    level: "Medium-High Priority (Tier 3)",
+    optimization: "Audience Remarketing",
+    description: "Tracks product size selections and cart additions.",
+    badge: "text-amber-800 bg-amber-50 border-amber-200",
+  },
+  {
+    name: "ViewContent",
+    level: "Medium Priority (Tier 4)",
+    optimization: "Dynamic Product Retargeting",
+    description: "Tracks specific attire detail views for catalog retargeting.",
+    badge: "text-purple-700 bg-purple-50 border-purple-200",
+  },
+  {
+    name: "PageView",
+    level: "Base Priority (Tier 5)",
+    optimization: "General Store Traffic",
+    description: "Base visitor volume across all landing pages.",
+    badge: "text-blue-700 bg-blue-50 border-blue-200",
+  },
+];
+
+export const MAX_AEM_SLOTS = 8;
+
+/**
+ * Returns current AEM 8-slot allocation:
+ * 5 slots calibrated to ANGKON e-commerce funnel, 3 available slots for future campaign expansion.
+ */
+export function getAemConfiguration(tenantId = "angkon-main") {
+  const calibratedSlots: AemSlotDefinition[] = AEM_CALIBRATED_EVENTS.map((item, idx) => ({
+    ...item,
+    slot: idx + 1,
+    isCalibrated: true,
+  }));
+
+  const emptySlots: AemSlotDefinition[] = [];
+  for (let s = calibratedSlots.length + 1; s <= MAX_AEM_SLOTS; s++) {
+    emptySlots.push({
+      slot: s,
+      name: `Slot #${s} — Available`,
+      level: `Unassigned (Tier ${s})`,
+      optimization: "Reserved for Custom Events",
+      description: "Available slot for future campaign objectives or custom pixel conversion rules.",
+      badge: "text-slate-400 bg-slate-50 border-slate-200",
+      isCalibrated: false,
+    });
+  }
+
+  return {
+    domain: CANONICAL_ROOT_DOMAIN,
+    maxSlots: MAX_AEM_SLOTS,
+    calibratedCount: calibratedSlots.length,
+    availableSlotsCount: emptySlots.length,
+    calibratedSlots,
+    allSlots: [...calibratedSlots, ...emptySlots],
+    localStatus: "CONFIGURED_LOCALLY",
+    metaSyncStatus: "MANUAL_VERIFICATION_REQUIRED",
+    metaApiLimitationNote:
+      "Meta Graph API v22.0 does not expose a public programmatic REST endpoint to query or mutate tenant Aggregated Event Measurement (AEM) slot priorities. Verification and slot mutation must be confirmed manually in Meta Business Settings > Events Manager > Aggregated Event Measurement.",
+    lastSynchronizedAt: null,
+  };
 }

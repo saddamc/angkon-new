@@ -93,8 +93,10 @@ async function handleCallback(request: NextRequest) {
       order.notes = `${order.notes || ""} [CAPI_PURCHASE_SENT]`.trim();
       await order.save();
 
-      const fbp = request.cookies.get("_fbp")?.value;
-      const fbc = request.cookies.get("_fbc")?.value;
+      const fbp = request.cookies.get("_fbp")?.value || order.visitorContext?.fbp;
+      const fbc = request.cookies.get("_fbc")?.value || order.visitorContext?.fbc;
+      const resolvedClientIp = order.visitorContext?.clientIp || extractClientIp(request);
+      const resolvedClientUserAgent = order.visitorContext?.clientUserAgent || request.headers.get("user-agent") || undefined;
 
       try {
         await sendMetaCapiEvent({
@@ -108,8 +110,8 @@ async function handleCallback(request: NextRequest) {
             city: order.customer.city,
             district: order.customer.district,
             postalCode: order.customer.postalCode,
-            clientIp: extractClientIp(request),
-            clientUserAgent: request.headers.get("user-agent") || undefined,
+            clientIp: resolvedClientIp,
+            clientUserAgent: resolvedClientUserAgent,
             fbp,
             fbc,
           },

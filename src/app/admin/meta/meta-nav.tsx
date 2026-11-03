@@ -20,6 +20,7 @@ import {
   Info,
   Plus,
   BookOpen,
+  Settings,
 } from "lucide-react";
 import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
 import {
@@ -115,6 +116,19 @@ export const META_NAV_GROUPS: MetaNavGroup[] = [
         href: "/admin/meta/domain-verification",
         label: "Domain Verification",
         icon: Globe,
+      },
+    ],
+  },
+  {
+    id: "settings-group",
+    label: "Settings",
+    icon: Settings,
+    collapsible: true,
+    items: [
+      {
+        href: "/admin/meta/settings",
+        label: "Meta Suite Settings",
+        icon: Settings,
       },
     ],
   },

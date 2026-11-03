@@ -10,9 +10,16 @@ import {
   addTenantDomain,
   deleteTenantDomain,
   getDomainAuditHistory,
+  getGroupedDomainAuditHistory,
+  setTenantPrimaryDomain,
+  getAemConfiguration,
   normalizeRootDomain,
   ensureTenantPrimaryDomain,
+  verifyHtmlMetaTag,
 } from "@/server/meta-domain";
+import { MetaDomain } from "@/models/MetaDomain";
+import { MetaDomainAuditLog } from "@/models/MetaDomainAuditLog";
+import { getPixelSettings, savePixelSettings } from "@/server/pixel-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -60,15 +67,36 @@ export async function GET(request: NextRequest) {
       liveHtmlResult = checkRes.htmlResult;
     }
 
-    // Retrieve recent append-only audit trail
-    const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
+    // Retrieve recent append-only audit trail and grouped representation
+    const [auditHistory, groupedAuditHistory] = await Promise.all([
+      getDomainAuditHistory(tenantId, targetDomain, 50),
+      getGroupedDomainAuditHistory(tenantId, targetDomain, 30),
+    ]);
+
+    const aemConfig = getAemConfiguration(tenantId);
+    const rawToken = activeDomainDoc.verificationToken || "";
+    const maskedToken = rawToken
+      ? `${rawToken.slice(0, 10)}${"•".repeat(Math.max(0, rawToken.length - 10))}`
+      : "c82us1ogm8••••••••••••••••••••";
+
+    const lastCheckTime = activeDomainDoc.lastCheckedAt
+      ? new Date(activeDomainDoc.lastCheckedAt).getTime()
+      : Date.now();
+    const nextScheduledCheck = new Date(lastCheckTime + 30 * 60 * 1000).toISOString();
 
     return NextResponse.json({
       ok: true,
       domain: activeDomainDoc.domain,
+      verified: Boolean(
+        activeDomainDoc.metaOwnershipVerified ||
+        activeDomainDoc.lifecycleState === "VERIFIED" ||
+        activeDomainDoc.metaOwnershipStatus === "VERIFIED"
+      ),
       isPrimary: activeDomainDoc.isPrimary,
       nameservers: CANONICAL_NAMESERVERS,
-      verificationToken: activeDomainDoc.verificationToken,
+      dnsProvider: "Namecheap",
+      verificationToken: rawToken,
+      maskedToken,
       verificationMethod: activeDomainDoc.verificationMethod,
       lifecycleState: activeDomainDoc.lifecycleState,
       dnsStatus: activeDomainDoc.dnsStatus,
@@ -76,11 +104,17 @@ export async function GET(request: NextRequest) {
       metaOwnershipStatus: activeDomainDoc.metaOwnershipStatus,
       metaOwnershipVerified: activeDomainDoc.metaOwnershipVerified,
       metaOwnershipVerifiedAt: activeDomainDoc.metaOwnershipVerifiedAt,
-      metaOwnershipSource: activeDomainDoc.metaOwnershipSource,
+      metaOwnershipSource: activeDomainDoc.metaOwnershipSource || "meta_business_manager",
       metaOwnershipConfirmedBy: activeDomainDoc.metaOwnershipConfirmedBy,
+      portfolio: {
+        name: "Plain Stitch",
+        id: "1068222718624963",
+        role: "Primary Meta Business Portfolio",
+      },
       lastCheckedAt: activeDomainDoc.lastCheckedAt,
       lastSuccessfulCheckAt: activeDomainDoc.lastSuccessfulCheckAt,
       lastFailedCheckAt: activeDomainDoc.lastFailedCheckAt,
+      nextScheduledCheck,
       lastExaminedRecords: activeDomainDoc.lastExaminedRecords || [],
       lastMatchedRecord: activeDomainDoc.lastMatchedRecord,
       lastDetails: activeDomainDoc.lastDetails,
@@ -103,7 +137,9 @@ export async function GET(request: NextRequest) {
             html: liveHtmlResult,
           }
         : null,
+      aem: aemConfig,
       auditHistory,
+      groupedAuditHistory,
       siteUrl: CANONICAL_SITE_URL,
       message: `Domain '${activeDomainDoc.domain}' status: ${activeDomainDoc.lifecycleState}.`,
     });
@@ -220,12 +256,102 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 5. Action: Get Audit History
+    // 5. Action: Set Primary Domain
+    if (action === "set_primary_domain") {
+      const updatedPrimary = await setTenantPrimaryDomain(tenantId, targetDomain, actor);
+      const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        domain: updatedPrimary.domain,
+        isPrimary: true,
+        auditHistory,
+        message: `Domain '${updatedPrimary.domain}' is now the primary domain.`,
+      });
+    }
+
+    // 6. Action: Recheck HTML Meta Tag
+    if (action === "recheck_html") {
+      const activeDoc = await MetaDomain.findOne({ tenantId, domain: targetDomain });
+      if (!activeDoc) {
+        return NextResponse.json({ ok: false, error: `Domain '${targetDomain}' not found.` }, { status: 404 });
+      }
+      const htmlResult = await verifyHtmlMetaTag(targetDomain, activeDoc.verificationToken);
+      activeDoc.htmlStatus = htmlResult.status;
+      activeDoc.lastCheckedAt = new Date();
+      await activeDoc.save();
+
+      const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        domain: activeDoc.domain,
+        htmlStatus: activeDoc.htmlStatus,
+        htmlResult,
+        auditHistory,
+        message: htmlResult.details,
+      });
+    }
+
+    // 7. Action: Update Domain Token
+    if (action === "update_token") {
+      const activeDoc = await MetaDomain.findOne({ tenantId, domain: targetDomain });
+      if (!activeDoc) {
+        return NextResponse.json({ ok: false, error: `Domain '${targetDomain}' not found.` }, { status: 404 });
+      }
+      const newToken = (customToken || "").trim();
+      if (!newToken || newToken.length < 10) {
+        return NextResponse.json({ ok: false, error: "Invalid token length. Must be at least 10 characters." }, { status: 400 });
+      }
+
+      const previousToken = activeDoc.verificationToken;
+      activeDoc.verificationToken = newToken;
+      if (verificationMethod) activeDoc.verificationMethod = verificationMethod;
+      await activeDoc.save();
+
+      if (activeDoc.isPrimary) {
+        const pixelSettings = await getPixelSettings(tenantId);
+        await savePixelSettings(
+          {
+            ...pixelSettings,
+            domainVerificationToken: newToken,
+            domainVerificationMethod: verificationMethod || activeDoc.verificationMethod,
+          },
+          tenantId
+        );
+      }
+
+      await MetaDomainAuditLog.create({
+        tenantId,
+        domainId: activeDoc._id as any,
+        domain: activeDoc.domain,
+        action: "token_updated",
+        previousState: activeDoc.lifecycleState,
+        newState: activeDoc.lifecycleState,
+        verificationMethod: activeDoc.verificationMethod,
+        actor,
+        details: `Verification token updated from '${previousToken.slice(0, 6)}...' to '${newToken.slice(0, 6)}...'.`,
+      });
+
+      const auditHistory = await getDomainAuditHistory(tenantId, targetDomain, 20);
+      return NextResponse.json({
+        ok: true,
+        success: true,
+        domain: activeDoc.domain,
+        token: newToken,
+        auditHistory,
+        message: `Verification token updated for '${activeDoc.domain}'.`,
+      });
+    }
+
+    // 8. Action: Get Audit History
     if (action === "get_audit_history") {
       const history = await getDomainAuditHistory(tenantId, targetDomain, Number(limit) || 50);
+      const groupedHistory = await getGroupedDomainAuditHistory(tenantId, targetDomain, Number(limit) || 30);
       return NextResponse.json({
         ok: true,
         history,
+        groupedHistory,
       });
     }
 

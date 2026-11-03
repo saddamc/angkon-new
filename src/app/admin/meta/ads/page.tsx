@@ -92,6 +92,9 @@ function getInitialDates() {
 export default function MetaAdsPage() {
   const [pixelSettings, setPixelSettings] = useState<PublicAdminPixelSettings | null>(null);
   const [marketingSettings, setMarketingSettings] = useState<PublicAdminMetaMarketingSettings | null>(null);
+  // True until the initial /ads/account request settles. Without it the status
+  // pill cannot tell "still loading" apart from "the request failed".
+  const [loadingSettings, setLoadingSettings] = useState(true);
   const [businessId, setBusinessId] = useState("1646756900434912");
   const [marketingApiVersion, setMarketingApiVersion] = useState("v22.0");
   const [permissionScope, setPermissionScope] = useState("ads_read, ads_management");
@@ -265,6 +268,8 @@ export default function MetaAdsPage() {
         }
       } catch {
         // ignore
+      } finally {
+        if (!ignore) setLoadingSettings(false);
       }
     }
     void init();
@@ -461,11 +466,19 @@ export default function MetaAdsPage() {
 
   // Connection Indicator Evaluation
   const renderConnectionStatus = () => {
-    if (loading || marketingSettings === null) {
+    if (loadingSettings) {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-500 border border-slate-200">
           <span className="h-1.5 w-1.5 rounded-full bg-slate-300 animate-pulse" />
           <span>Auditing credentials…</span>
+        </span>
+      );
+    }
+    if (marketingSettings === null) {
+      return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600 border border-slate-200">
+          <AlertCircle className="h-3.5 w-3.5 text-slate-500" />
+          <span>Settings Unavailable</span>
         </span>
       );
     }

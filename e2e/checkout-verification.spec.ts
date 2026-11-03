@@ -132,7 +132,9 @@ async function fillCheckout(page: Page, email: string, withEmail = true) {
   await page.locator('[name="name"]').fill("Test Customer");
   await page.locator('[name="streetAddress"]').fill("12 Test Road");
   await page.locator('[name="city"]').fill("Dhaka");
-  await page.locator('select[name="district"]').selectOption("Dhaka");
+  const districtSelect = page.locator('select[name="district"]');
+  await expect(districtSelect.locator('option[value="Dhaka"]')).toHaveCount(1, { timeout: 15_000 });
+  await districtSelect.selectOption("Dhaka");
   await page.locator('[name="phone"]').fill("01712345678");
   if (withEmail) await page.locator('[name="email"]').fill(email);
 }

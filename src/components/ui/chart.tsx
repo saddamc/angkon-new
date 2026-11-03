@@ -76,6 +76,12 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null;
   }
 
+  // This <style> block is built from `useId()` and developer-authored theme
+  // colours — never from user input. The colours are still filtered through a
+  // strict CSS-value allow-list so a malformed config cannot smuggle `}` or
+  // `</style>` into the rule.
+  const isSafeCssColor = (value: string) => /^[#a-zA-Z0-9(),.%\s-]+$/.test(value);
+
   return (
     <style
       dangerouslySetInnerHTML={{
@@ -88,7 +94,8 @@ ${colorConfig
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    const value = color ? String(color) : "";
+    return value && isSafeCssColor(value) ? `  --color-${key}: ${value};` : null;
   })
   .filter(Boolean)
   .join("\n")}

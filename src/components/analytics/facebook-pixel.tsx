@@ -109,7 +109,12 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
   }, []);
 
   const activePixelId = (config ? config.pixelId : (initialConfig?.pixelId || "")).trim();
-  const isEnabled = config ? Boolean(config.enabled && activePixelId) : Boolean(initialConfig?.enabled && activePixelId);
+  // The pixel ID is interpolated into an inline <script>, so it must be a plain
+  // numeric identifier. A value containing a quote or `</script>` would let the
+  // stored string break out of the script element and run as markup, so an
+  // invalid ID disables tracking rather than being injected.
+  const safePixelId = /^\d{5,20}$/.test(activePixelId) ? activePixelId : "";
+  const isEnabled = config ? Boolean(config.enabled && safePixelId) : Boolean(initialConfig?.enabled && safePixelId);
 
   const testEventCode = config?.testEventCode?.trim() || initialConfig?.testEventCode?.trim();
   const eventsConfig = useMemo(() => ({
@@ -154,7 +159,7 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
   }, [isEnabled, eventsConfig, testEventCode]);
 
   // If master tracking is paused or pixel ID is empty, completely suppress script
-  if (!isEnabled || !activePixelId) {
+  if (!isEnabled || !safePixelId) {
     return null;
   }
 
@@ -162,7 +167,7 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
     <>
       <Suspense fallback={null}>
         <FacebookPixelNavigationTracker
-          pixelId={activePixelId}
+          pixelId={safePixelId}
           testEventCode={testEventCode}
           eventsConfig={eventsConfig}
         />
@@ -184,8 +189,8 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
             'https://connect.facebook.net/en_US/fbevents.js');
             var initialPvId = 'pv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
             window.__angkon_initial_pv_id = initialPvId;
-            fbq('set', 'autoConfig', false, '${activePixelId}');
-            fbq('init', '${activePixelId}');
+            fbq('set', 'autoConfig', false, '${safePixelId}');
+            fbq('init', '${safePixelId}');
             ${
               eventsConfig.trackPageView
                 ? `if (!window.location.pathname.startsWith('/admin') && !window.location.pathname.startsWith('/api')) {
@@ -219,7 +224,7 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
             height="1"
             width="1"
             style={{ display: "none" }}
-            src={`https://www.facebook.com/tr?id=${activePixelId}&ev=PageView&noscript=1`}
+            src={`https://www.facebook.com/tr?id=${safePixelId}&ev=PageView&noscript=1`}
             alt=""
           />
         </noscript>

@@ -10,7 +10,7 @@ import {
 export type { MetaSyncType, MetaSyncStatus, IMetaSyncSnapshotData };
 import { getPixelSettings } from "./pixel-settings";
 import { getMetaMarketingSettings, normalizeAdAccountId } from "./meta-marketing-settings";
-import { fetchEventMatchQuality, resolveEmqTokens, EmqReport } from "./meta-emq";
+import { fetchEventMatchQuality, resolveEmqTokens } from "./meta-emq";
 import { callMetaMarketingGraphApi } from "./meta-marketing-api";
 import { MetaDomain } from "@/models/MetaDomain";
 import { Product } from "@/models/Product";
@@ -21,7 +21,7 @@ export const SYNC_INTERVALS_MS = {
   integrations: 20 * 60 * 1000, // 20 minutes
   assets: 45 * 60 * 1000, // 45 minutes
   emq_quality: 12 * 60 * 60 * 1000, // 12 hours
-  all: 10 * 60 * 1000, // master interval
+  all: 24 * 60 * 60 * 1000, // 24 hours (aligned with Vercel Hobby daily cron schedule)
 };
 
 export const STALE_THRESHOLDS_MS = {
@@ -29,7 +29,7 @@ export const STALE_THRESHOLDS_MS = {
   integrations: 60 * 60 * 1000, // 1 hour
   assets: 2 * 60 * 60 * 1000, // 2 hours
   emq_quality: 24 * 60 * 60 * 1000, // 24 hours
-  all: 30 * 60 * 1000,
+  all: 26 * 60 * 60 * 1000, // 26 hours (tolerant of Vercel Hobby ±59 min execution jitter)
 };
 
 const LOCK_TIMEOUT_MS = 60 * 1000; // 1 minute max lock duration

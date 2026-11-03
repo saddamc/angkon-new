@@ -22,7 +22,12 @@ async function handleCronSync(request: NextRequest) {
   let authorized = false;
   let tenantId = "primary_store";
 
+  const isVercelCron =
+    request.headers.get("x-vercel-cron") === "1" ||
+    Boolean(request.headers.get("user-agent")?.includes("vercel-cron"));
+
   if (
+    isVercelCron ||
     authHeader === `Bearer ${cronSecret}` ||
     querySecret === cronSecret
   ) {

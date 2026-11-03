@@ -34,6 +34,10 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       ".eslint-output.json",
+      // Generated artefacts — never hand-written, never worth linting.
+      "playwright-report/**",
+      "test-results/**",
+      "coverage/**",
       "scripts/**",
       "tests/**",
     ],

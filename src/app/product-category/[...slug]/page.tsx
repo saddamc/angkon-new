@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { serializeJsonLd } from "@/lib/seo/json-ld";
 import { getCategoryTree, findCategoryPath, findCategoryPathBySlugs } from "@/lib/woocommerce/categories";
 import { getProductsByCategorySlug } from "@/lib/woocommerce/products";
 import { CategoryBreadcrumb } from "@/components/categories/CategoryBreadcrumb";
@@ -175,7 +176,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
       {/* Category Breadcrumb Structured Data */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
       <div className="mx-auto max-w-[1440px] px-4 sm:px-5 lg:px-6 pt-4 sm:pt-6 pb-12">
         <div className="lg:grid lg:grid-cols-[250px_1fr] xl:grid-cols-[270px_1fr] lg:gap-8 xl:gap-10">

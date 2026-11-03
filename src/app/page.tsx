@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { serializeJsonLd } from "@/lib/seo/json-ld";
 import { getDbProducts, getAllDbProducts } from "@/lib/db/products";
 import { getDbCategories } from "@/lib/db/categories";
 import type { WooProduct, WooCategory } from "@/types/product";
@@ -110,7 +111,7 @@ export default async function HomePage() {
       {/* Search Engine Organization & WebSite JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }}
       />
 
       {/* Floating cart shortcut */}

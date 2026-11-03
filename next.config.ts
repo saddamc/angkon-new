@@ -44,6 +44,12 @@ const nextConfig: NextConfig = {
       { source: "/category/:slug", destination: "/product-category/:slug", permanent: true },
       { source: "/admin/meta/pixel", destination: "/admin/meta/events?tab=events-manager", permanent: false },
       { source: "/admin/meta/conversions-api", destination: "/admin/meta/events?tab=conversions-api", permanent: false },
+      // Short admin aliases → canonical Meta Suite routes. These paths have no
+      // page of their own, so without a redirect they 404. `/admin/settings`
+      // and `/admin/pixel` are deliberately excluded — real pages live there.
+      { source: "/admin/ads", destination: "/admin/meta/ads", permanent: false },
+      { source: "/admin/events", destination: "/admin/meta/events", permanent: false },
+      { source: "/admin/catalog", destination: "/admin/meta/catalog", permanent: false },
     ];
   },
   images: {

@@ -4,6 +4,8 @@ import { getProductBySlug, getRelatedProducts } from "@/services/products.servic
 import { ProductDetailsView } from "@/components/product/product-details-view";
 import { ProductSection } from "@/components/sections/product-section";
 import { decodeEntities } from "@/utils/html";
+import { serializeJsonLd } from "@/lib/seo/json-ld";
+import { sanitizeProductHtml } from "@/lib/security/sanitize-product-html";
 import { getProductSeo } from "@/config/product-seo";
 
 export const revalidate = 60;
@@ -185,13 +187,22 @@ export default async function ProductDetailsPage({ params }: ProductDetailsProps
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productSchema) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbSchema) }}
       />
-      <ProductDetailsView product={product} />
+      <ProductDetailsView
+        product={{
+          ...product,
+          // Product copy is stored HTML rendered with dangerouslySetInnerHTML
+          // inside the client view — sanitise it on the server so the browser
+          // never receives markup we have not vetted.
+          description: sanitizeProductHtml(product.description),
+          short_description: sanitizeProductHtml(product.short_description),
+        }}
+      />
       {relatedProducts.length > 0 && (
         <div className="container pb-16">
           <h2 className="mb-8 font-heading text-2xl font-black uppercase text-white sm:text-3xl">

@@ -7,14 +7,12 @@ export function PageHeader({
   eyebrow,
   title,
   description,
-  descriptionHtml,
   meta,
   pills,
 }: {
   eyebrow: string;
   title: string;
   description?: string;
-  descriptionHtml?: string;
   meta?: string;
   pills?: Pill[];
 }) {
@@ -32,12 +30,6 @@ export function PageHeader({
         </h1>
         {description && (
           <p className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/90">{description}</p>
-        )}
-        {descriptionHtml && (
-          <p
-            className="mt-3 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/90"
-            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-          />
         )}
         {meta && (
           <p className="mt-4 text-[11px] font-semibold uppercase tracking-wider text-white/70">{meta}</p>

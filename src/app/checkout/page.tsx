@@ -415,6 +415,7 @@ export default function CheckoutPage() {
         if (result.code === "EMAIL_VERIFICATION_REQUIRED") {
           pendingOrderValues.current = data;
           const sent = await requestEmailCode(data.email, data.name);
+          setPlacing(false);
           setVerifyDialog({
             email: data.email,
             name: data.name,

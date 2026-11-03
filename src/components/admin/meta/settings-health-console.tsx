@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   Clock3,
   Globe,
@@ -136,6 +137,43 @@ export function SettingsHealthConsole({
           })}
         </div>
       </div>
+
+      {/* ── Setup checklist — only when not fully configured ── */}
+      {!loading && percent < 100 && (
+        <div className="border-t border-amber-200/70 bg-amber-50/50 px-5 py-4">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <AlertTriangle className="h-3.5 w-3.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] font-semibold text-amber-900">
+                {total - readyCount > 0
+                  ? `${total - readyCount} subsystem${total - readyCount === 1 ? "" : "s"} need${total - readyCount === 1 ? "s" : ""} configuration`
+                  : "Some subsystems are partially configured"}
+              </p>
+              <ul className="mt-1.5 space-y-1">
+                {items
+                  .filter((item) => item.state !== "ready")
+                  .map((item) => (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenSection(item.id)}
+                        className="group inline-flex items-baseline gap-1.5 text-[11.5px] text-amber-800 transition hover:text-amber-950"
+                      >
+                        <span className="font-semibold">{item.label}:</span>
+                        <span className="text-amber-700 group-hover:text-amber-950">
+                          {item.detail}
+                        </span>
+                        <span className="text-amber-500 group-hover:text-amber-700">→</span>
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Sync provenance ── */}
       <div className="flex flex-col gap-2 border-t border-slate-100 bg-white px-5 py-2.5 text-[11px] text-slate-500 sm:flex-row sm:items-center sm:justify-between">

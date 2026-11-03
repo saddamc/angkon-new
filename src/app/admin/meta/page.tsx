@@ -689,7 +689,9 @@ export default function MetaSuiteOverviewPage() {
                       : "bg-slate-400"
                   }`}
                 />
-                {pixelStatus?.state === "connected"
+                {settings === null
+                  ? "CHECKING"
+                  : pixelStatus?.state === "connected"
                   ? "ACTIVE SDK"
                   : pixelStatus?.state === "test-required"
                   ? "TEST REQ"
@@ -770,7 +772,9 @@ export default function MetaSuiteOverviewPage() {
                       : "bg-slate-400"
                   }`}
                 />
-                {capiStatus?.state === "connected"
+                {settings === null
+                  ? "CHECKING"
+                  : capiStatus?.state === "connected"
                   ? "CONNECTED"
                   : capiStatus?.state === "test-required"
                   ? "TEST REQ"
@@ -786,7 +790,11 @@ export default function MetaSuiteOverviewPage() {
                 <span>Graph API Gateway</span>
               </div>
               <div className="text-[10.5px] font-mono text-slate-500 truncate mt-0.5">
-                {isCapiActive ? "AES-256-GCM Secure" : "Token Not Configured"}
+                {settings === null
+                  ? "Verifying gateway..."
+                  : isCapiActive
+                  ? "AES-256-GCM Secure"
+                  : "Token Not Configured"}
               </div>
             </div>
           </div>
@@ -847,7 +855,9 @@ export default function MetaSuiteOverviewPage() {
                       : "bg-slate-400"
                   }`}
                 />
-                {isMarketingConnected
+                {marketingSettings === null
+                  ? "CHECKING"
+                  : isMarketingConnected
                   ? "CONNECTED"
                   : marketingSettings?.status === "rate_limited"
                   ? "THROTTLED"
@@ -863,7 +873,9 @@ export default function MetaSuiteOverviewPage() {
                 <span>Ads &amp; Attribution</span>
               </div>
               <div className="text-[10.5px] font-mono text-slate-500 truncate mt-0.5" title={marketingSettings?.accountName || "Plain Stitch"}>
-                {marketingSettings?.accountName ? `${marketingSettings.accountName} (${marketingSettings.accountCurrency || "USD"})` : "Plain Stitch (USD)"}
+                {marketingSettings === null
+                  ? "Verifying marketing token..."
+                  : marketingSettings?.accountName ? `${marketingSettings.accountName} (${marketingSettings.accountCurrency || "USD"})` : "Plain Stitch (USD)"}
               </div>
             </div>
           </div>
@@ -977,7 +989,11 @@ export default function MetaSuiteOverviewPage() {
                     domainVerified === true ? "bg-emerald-500" : "bg-amber-400"
                   }`}
                 />
-                {domainVerified === true ? "VERIFIED" : "CHECK PENDING"}
+                {domainVerified === null
+                  ? "CHECKING"
+                  : domainVerified === true
+                  ? "VERIFIED"
+                  : "CHECK PENDING"}
               </span>
             </div>
 
@@ -987,7 +1003,9 @@ export default function MetaSuiteOverviewPage() {
                 <span>angkon.net</span>
               </div>
               <div className="text-[10.5px] font-mono text-slate-500 truncate mt-0.5">
-                {domainVerified === true
+                {domainVerified === null
+                  ? "Verifying domain ownership..."
+                  : domainVerified === true
                   ? "Meta DNS TXT Verified"
                   : "Meta tag in <head>"}
               </div>

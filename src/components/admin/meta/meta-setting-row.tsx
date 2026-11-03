@@ -34,6 +34,8 @@ export interface MetaSettingRowProps {
   readOnly?: boolean;
   /** Value is derived by the system, not entered by the operator. */
   auto?: boolean;
+  /** Indicates initial load is in progress — renders neutral skeleton placeholder */
+  loading?: boolean;
 }
 
 export function MetaSettingRow({
@@ -46,6 +48,7 @@ export function MetaSettingRow({
   onAction,
   readOnly = false,
   auto = false,
+  loading = false,
 }: MetaSettingRowProps) {
   const resolvedAction = actionLabel
     ? (!isSet && actionLabel === "Replace" ? (secret ? "Configure" : "Add") : actionLabel)
@@ -83,6 +86,8 @@ export function MetaSettingRow({
                 aria-label="Configured"
               />
             </>
+          ) : loading ? (
+            <span className="inline-block h-3.5 w-24 rounded bg-slate-100 animate-pulse" />
           ) : (
             <span className="truncate text-[12.5px] italic text-slate-400">Not configured</span>
           )}

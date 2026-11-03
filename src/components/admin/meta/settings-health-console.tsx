@@ -7,6 +7,7 @@ import {
   Clock3,
   Globe,
   Layers,
+  Loader2,
   RefreshCw,
   Server,
   ShieldCheck,
@@ -67,7 +68,7 @@ export function SettingsHealthConsole({
 }: SettingsHealthConsoleProps) {
   const items = buildSettingsHealth(data);
   const { ratio, percent, readyCount, total } = computeReadiness(items);
-  const tone = scoreTone(ratio, 1);
+  const tone = loading ? "neutral" : scoreTone(ratio, 1);
 
   return (
     <section className={`${META_CARD} overflow-hidden`} aria-label="Configuration health">
@@ -78,23 +79,46 @@ export function SettingsHealthConsole({
 
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-[32px] font-semibold leading-none tracking-[-0.03em] tabular-nums text-slate-900">
-              {loading ? "—" : percent}
+              {loading ? (
+                <span className="inline-block h-8 w-14 rounded-lg bg-slate-200/80 animate-pulse align-middle" />
+              ) : (
+                percent
+              )}
             </span>
-            <span className="text-sm font-medium text-slate-400">%</span>
+            <span className="text-sm font-medium text-slate-400">{loading ? "" : "%"}</span>
           </div>
 
           <div className="mt-2">
-            <MetaBadge tone={tone}>{loading ? "Loading" : scoreLabel(ratio, 1)}</MetaBadge>
+            <MetaBadge tone={loading ? "neutral" : tone}>
+              {loading ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                  <span>Checking status…</span>
+                </span>
+              ) : (
+                scoreLabel(ratio, 1)
+              )}
+            </MetaBadge>
           </div>
 
           <div className="mt-3.5">
-            <MetaMeter ratio={ratio} tone={tone} />
+            {loading ? (
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full w-2/5 bg-slate-300 rounded-full animate-pulse" />
+              </div>
+            ) : (
+              <MetaMeter ratio={ratio} tone={tone} />
+            )}
           </div>
 
           <p className="mt-3 text-[11.5px] leading-snug text-slate-500">
-            {loading
-              ? "Reading saved configuration…"
-              : `${readyCount} of ${total} subsystems fully configured.`}
+            {loading ? (
+              <span className="inline-flex items-center gap-1.5 text-slate-400">
+                Auditing active subsystems…
+              </span>
+            ) : (
+              `${readyCount} of ${total} subsystems fully configured.`
+            )}
           </p>
         </div>
 
@@ -106,12 +130,21 @@ export function SettingsHealthConsole({
               <button
                 key={item.id}
                 type="button"
+                disabled={loading}
                 onClick={() => onOpenSection(item.id)}
-                className="group flex flex-col gap-2 bg-white px-4 py-3.5 text-left transition hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1877F2]/40"
+                className={`group flex flex-col gap-2 bg-white px-4 py-3.5 text-left transition ${
+                  loading
+                    ? "cursor-default"
+                    : "hover:bg-slate-50/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1877F2]/40"
+                }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-[#1877F2]/10 group-hover:text-[#1877F2]">
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition ${
+                        loading ? "" : "group-hover:bg-[#1877F2]/10 group-hover:text-[#1877F2]"
+                      }`}
+                    >
                       <Icon className="h-3.5 w-3.5" />
                     </span>
                     <span className="truncate text-[12px] font-medium leading-snug text-slate-700">
@@ -120,16 +153,24 @@ export function SettingsHealthConsole({
                   </div>
                   <span
                     aria-hidden="true"
-                    className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${DOT_CLASS[item.state]}`}
+                    className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${
+                      loading ? "bg-slate-300 animate-pulse" : DOT_CLASS[item.state]
+                    }`}
                   />
                 </div>
 
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate font-mono text-[10.5px] text-slate-400">{item.detail}</span>
+                  {loading ? (
+                    <span className="h-2.5 w-20 rounded bg-slate-100 animate-pulse" />
+                  ) : (
+                    <span className="truncate font-mono text-[10.5px] text-slate-400">{item.detail}</span>
+                  )}
                   <span
-                    className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] ${STATE_TEXT_CLASS[item.state]}`}
+                    className={`shrink-0 text-[10px] font-semibold uppercase tracking-[0.06em] ${
+                      loading ? "text-slate-400" : STATE_TEXT_CLASS[item.state]
+                    }`}
                   >
-                    {HEALTH_STATE_LABEL[item.state]}
+                    {loading ? "Checking…" : HEALTH_STATE_LABEL[item.state]}
                   </span>
                 </div>
               </button>
@@ -197,7 +238,9 @@ export function SettingsHealthConsole({
           ) : null}
         </div>
 
-        {data?.sync?.lastError ? (
+        {loading ? (
+          <MetaBadge tone="neutral">Verifying sync state…</MetaBadge>
+        ) : data?.sync?.lastError ? (
           <MetaBadge tone="warning">Last sync reported an error</MetaBadge>
         ) : (
           <MetaBadge tone={data?.sync?.lastSuccessfulSync ? "success" : "neutral"}>

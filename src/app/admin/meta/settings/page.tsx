@@ -734,7 +734,9 @@ function CentralizedMetaSettingsContent() {
                       <span
                         aria-hidden="true"
                         className={`h-1.5 w-1.5 rounded-full ${
-                          healthById.get(sec.id as SettingsSectionId) === "ready"
+                          loading
+                            ? "bg-slate-300 animate-pulse"
+                            : healthById.get(sec.id as SettingsSectionId) === "ready"
                             ? "bg-emerald-500"
                             : healthById.get(sec.id as SettingsSectionId) === "partial"
                               ? "bg-amber-500"

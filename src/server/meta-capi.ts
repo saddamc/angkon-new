@@ -235,7 +235,7 @@ export async function queueMetaEventInLedger(
           attemptCount: 0,
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     return doc;
@@ -739,7 +739,7 @@ export async function drainMetaCapiQueue(
           },
           $inc: { attemptCount: 1 },
         },
-        { new: true }
+        { returnDocument: "after" }
       );
 
       if (!claimedDoc) continue; // Claimed by another worker

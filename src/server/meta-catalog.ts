@@ -241,7 +241,7 @@ export async function saveMetaCatalogSettings(
           value: dbPayload,
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true, strict: false }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true, strict: false }
     );
   } catch (dbErr) {
     console.warn(

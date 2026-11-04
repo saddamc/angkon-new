@@ -23,7 +23,7 @@ export async function rateLimit(
     const doc = await RateLimit.findOneAndUpdate(
       { key },
       { $inc: { count: 1 }, $setOnInsert: { resetAt } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     );
 
     const allowed = doc.count <= limit;

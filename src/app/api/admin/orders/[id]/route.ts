@@ -32,7 +32,7 @@ export async function PATCH(
     const updated = await Order.findOneAndUpdate(
       query,
       { $set: updateFields },
-      { new: true }
+      { returnDocument: "after" }
     ).lean();
 
     if (!updated) {

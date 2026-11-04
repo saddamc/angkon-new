@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
           orderId: sanitizedParams.order_id ? String(sanitizedParams.order_id) : undefined,
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     // If matching server event exists, update it to reflect deduplication pairing

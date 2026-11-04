@@ -254,7 +254,7 @@ export async function updateMetaMarketingSettings(
         updatedAt: new Date(),
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   return updated;
@@ -291,7 +291,7 @@ export async function disconnectMetaMarketingSettings(
         updatedAt: new Date(),
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: "after" }
   );
 
   return updated;

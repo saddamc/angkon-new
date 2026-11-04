@@ -16,9 +16,10 @@ export function RootShell({
   categoryTree: CategoryNode[];
 }) {
   const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith("/admin");
+  // Admin and auth screens render without the storefront chrome.
+  const isBareRoute = pathname.startsWith("/admin") || pathname === "/login";
 
-  if (isAdminRoute) {
+  if (isBareRoute) {
     return <>{children}</>;
   }
 

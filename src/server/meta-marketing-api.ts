@@ -705,7 +705,7 @@ async function executeJobSlices(
               source: "meta_marketing_api",
             },
           },
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: "after" }
         );
       }
 

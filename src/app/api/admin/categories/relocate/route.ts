@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const updated = await Category.findOneAndUpdate(
       { id: Number(id) },
       { $set: { parent: Number(parent), menu_order: Number(index || 0) } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!updated) {

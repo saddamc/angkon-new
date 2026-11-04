@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     await Settings.findOneAndUpdate(
       { key: SHIPPING_SETTINGS_KEY },
       { $set: { value: values } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     );
 
     invalidateShippingSettingsCache();

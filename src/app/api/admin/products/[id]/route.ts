@@ -210,7 +210,7 @@ export async function PUT(
     let updated = await Product.findOneAndUpdate(
       query,
       { $set: body },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     // If product wasn't in MongoDB yet (it was in static REAL_PRODUCTS), create it now!

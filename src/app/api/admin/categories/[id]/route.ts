@@ -73,7 +73,7 @@ export async function PATCH(
     const updated = await Category.findOneAndUpdate(
       query,
       { $set: input },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     // Synchronize to src/data/real-categories.json

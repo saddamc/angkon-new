@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     await Settings.findOneAndUpdate(
       { key: CHECKOUT_SETTINGS_KEY },
       { $set: { value: normalized } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     );
     invalidateCheckoutSettingsCache();
     return NextResponse.json({ success: true, settings: normalized });

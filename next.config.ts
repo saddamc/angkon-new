@@ -50,6 +50,8 @@ const nextConfig: NextConfig = {
       { source: "/admin/ads", destination: "/admin/meta/ads", permanent: false },
       { source: "/admin/events", destination: "/admin/meta/events", permanent: false },
       { source: "/admin/catalog", destination: "/admin/meta/catalog", permanent: false },
+      // The login screen moved out of /admin so that no admin path is public.
+      { source: "/admin/login", destination: "/login", permanent: false },
     ];
   },
   images: {

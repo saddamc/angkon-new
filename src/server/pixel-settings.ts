@@ -499,7 +499,7 @@ export async function savePixelSettings(
     await Settings.findOneAndUpdate(
       { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY },
       { $set: { tenantId: safeTenant, key: PIXEL_SETTINGS_KEY, value: dbPayload } },
-      { upsert: true, new: true, setDefaultsOnInsert: true, strict: false }
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true, strict: false }
     );
   } catch (dbErr) {
     console.warn("[PixelSettings] Mongoose findOneAndUpdate failed, falling back to direct collection update:", dbErr);

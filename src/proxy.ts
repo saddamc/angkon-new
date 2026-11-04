@@ -37,10 +37,10 @@ async function verifyToken(token: string): Promise<Record<string, unknown> | nul
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Guard every /admin page (including /admin itself, which is now a redirect
-  // stub) and every /api/admin route. The login screen and login endpoint are
-  // the only public members of the admin namespace.
-  const isAdminPage = pathname.startsWith("/admin") && pathname !== "/admin/login";
+  // Guard every /admin page (including /admin itself, which is a redirect
+  // stub) and every /api/admin route. The login screen lives at /login, which
+  // is outside this namespace, so no /admin path is ever public.
+  const isAdminPage = pathname.startsWith("/admin");
   const isAdminApi =
     (pathname.startsWith("/api/admin") && pathname !== "/api/admin/login") ||
     pathname === "/api/shipping/settings";
@@ -59,7 +59,7 @@ export async function proxy(request: NextRequest) {
     }
     // Admin pages → redirect to login
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/admin/login";
+    loginUrl.pathname = "/login";
     loginUrl.search = "";
     return NextResponse.redirect(loginUrl);
   }

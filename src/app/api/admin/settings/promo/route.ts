@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     await Settings.findOneAndUpdate(
       { key: "promo" },
       { $set: { value: promo } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     return NextResponse.json({ success: true, promo });

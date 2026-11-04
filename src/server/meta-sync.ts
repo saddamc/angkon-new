@@ -72,7 +72,7 @@ async function acquireSyncLock(tenantId: string, syncType: MetaSyncType): Promis
         status: "synchronizing",
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
   );
 
   return Boolean(result);
@@ -126,7 +126,7 @@ async function releaseSyncLock(
   const updated = await MetaSyncSnapshot.findOneAndUpdate(
     { tenantId, syncType },
     { $set: updateDoc },
-    { new: true, upsert: true }
+    { returnDocument: "after", upsert: true }
   );
 
   return updated;

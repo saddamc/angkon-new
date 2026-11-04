@@ -120,7 +120,7 @@ export async function consumeEmailCode(email: string, code: string): Promise<Cod
     const doc = await EmailCode.findOneAndUpdate(
       { email: normalized, expiresAt: { $gt: new Date() } },
       { $inc: { attempts: 1 } },
-      { new: true },
+      { returnDocument: "after" },
     );
     if (!doc) return { status: "expired" };
     if (doc.attempts > CODE_MAX_ATTEMPTS) return { status: "locked" };

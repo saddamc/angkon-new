@@ -79,7 +79,7 @@ test.describe("shipping rule (pure)", () => {
 
 test.describe("shipping API", () => {
   test("public settings endpoint returns valid numbers", async ({ request }) => {
-    const res = await request.get("/api/shipping/settings");
+    const res = await request.get("/api/shipping/rates");
     expect(res.ok()).toBeTruthy();
     const settings = await res.json();
     for (const key of ["insideDhaka", "outsideDhaka", "freeDeliveryThreshold"]) {
@@ -89,7 +89,7 @@ test.describe("shipping API", () => {
   });
 
   test("quote follows the saved settings for Dhaka and outside Dhaka", async ({ request }) => {
-    const settings = await (await request.get("/api/shipping/settings")).json();
+    const settings = await (await request.get("/api/shipping/rates")).json();
     const items = [{ productId: 0, price: 7990, quantity: 1 }];
     const free = settings.freeDeliveryThreshold > 0 && 7990 >= settings.freeDeliveryThreshold;
 

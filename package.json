@@ -37,7 +37,6 @@
     "sanitize-html": "^2.18.1",
     "server-only": "^0.0.1",
     "sharp": "^0.35.5",
-    "swiper": "^11.2.10",
     "tailwind-merge": "^3.6.0",
     "zustand": "^5.0.13"
   },

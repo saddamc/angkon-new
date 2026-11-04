@@ -173,7 +173,7 @@ export default function AdminLayout({
   }, [authFetch]);
 
   useEffect(() => {
-    if (pathname === "/admin") return;
+    if (pathname === "/admin" || pathname === "/admin/login") return;
     void fetchPendingCount();
     // Fast 12-second polling so new order sound fires promptly
     const timer = setInterval(() => void fetchPendingCount(), 12_000);
@@ -199,7 +199,7 @@ export default function AdminLayout({
 
   // Load authenticated admin details & role permissions
   useEffect(() => {
-    if (pathname === "/admin") return;
+    if (pathname === "/admin" || pathname === "/admin/login") return;
     let active = true;
     fetch("/api/admin/login", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
@@ -219,7 +219,7 @@ export default function AdminLayout({
   }, [pathname]);
 
   // Login page renders without sidebar
-  if (pathname === "/admin") return <>{children}</>;
+  if (pathname === "/admin" || pathname === "/admin/login") return <>{children}</>;
 
   // Filter navigation by role (Meta Events Manager is strictly Super Admin only)
   const isSuperAdmin = adminUser?.role === "superadmin";

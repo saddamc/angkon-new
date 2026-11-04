@@ -37,9 +37,13 @@ async function verifyToken(token: string): Promise<Record<string, unknown> | nul
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only guard admin pages and admin API routes (not the login page/endpoint itself)
-  const isAdminPage = pathname.startsWith("/admin") && pathname !== "/admin";
-  const isAdminApi  = pathname.startsWith("/api/admin") && pathname !== "/api/admin/login";
+  // Guard every /admin page (including /admin itself, which is now a redirect
+  // stub) and every /api/admin route. The login screen and login endpoint are
+  // the only public members of the admin namespace.
+  const isAdminPage = pathname.startsWith("/admin") && pathname !== "/admin/login";
+  const isAdminApi =
+    (pathname.startsWith("/api/admin") && pathname !== "/api/admin/login") ||
+    pathname === "/api/shipping/settings";
 
   if (!isAdminPage && !isAdminApi) {
     return NextResponse.next();
@@ -55,7 +59,7 @@ export async function proxy(request: NextRequest) {
     }
     // Admin pages → redirect to login
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/admin";
+    loginUrl.pathname = "/admin/login";
     loginUrl.search = "";
     return NextResponse.redirect(loginUrl);
   }
@@ -86,5 +90,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path+", "/api/admin/:path+"],
+  // Explicitly match `/admin` as well as any subpath, plus all admin APIs and protected settings.
+  matcher: ["/admin", "/admin/:path*", "/api/admin/:path*", "/api/shipping/settings"],
 };

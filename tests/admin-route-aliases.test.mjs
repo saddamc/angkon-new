@@ -39,7 +39,12 @@ function realRoutes() {
         // Route groups `(group)` and parallel slots are not URL segments.
         const isGroup = /^\(.*\)$/.test(entry.name);
         walk(path.join(dir, entry.name), isGroup ? segments : [...segments, entry.name]);
-      } else if (entry.name === "page.tsx" || entry.name === "page.ts") {
+      } else if (
+        entry.name === "page.tsx" ||
+        entry.name === "page.ts" ||
+        entry.name === "route.ts" ||
+        entry.name === "route.js"
+      ) {
         const file = path.join(dir, entry.name);
         const source = fs.readFileSync(file, "utf8");
 

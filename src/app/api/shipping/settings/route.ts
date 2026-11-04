@@ -1,13 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSession } from "@/server/admin-auth";
 import { getShippingSettings } from "@/server/shipping";
 
+export const dynamic = "force-dynamic";
+
 /**
- * Public, read-only delivery rates for the cart, checkout and info pages.
- * (Writing happens in /api/admin/settings/shipping, which requires admin login.)
+ * /api/shipping/settings is strictly protected for administrators.
+ * Public delivery rates for the storefront cart and checkout are served from /api/shipping/rates.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSession(request);
+  if (!auth.authorized) {
+    return (
+      auth.response ||
+      NextResponse.json(
+        { error: "Unauthorized. Admin authentication required." },
+        { status: 401 }
+      )
+    );
+  }
+
   const settings = await getShippingSettings();
-  return NextResponse.json(settings, {
-    headers: { "Cache-Control": "public, max-age=15, s-maxage=60, stale-while-revalidate=300" },
-  });
+  return NextResponse.json(settings);
 }

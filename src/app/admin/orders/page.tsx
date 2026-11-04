@@ -22,6 +22,8 @@ import {
   Loader2,
   AlertTriangle,
   CheckCircle,
+  ClipboardList,
+  Banknote,
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────────────────── */
@@ -31,6 +33,7 @@ interface WCLineItem {
   quantity: number;
   price?: string | number;
   total?: string | number;
+  size?: string;
   image?: { src: string };
   meta_data?: { key: string; value: string }[];
 }
@@ -81,24 +84,6 @@ const STATUS_OPTIONS = [
   { key: "refunded", label: "Refunded", icon: RotateCcw, color: "gray", desc: "Payment returned to customer" },
 ];
 
-const STATUS_MODAL_COLORS: Record<string, string> = {
-  amber: "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100",
-  blue: "border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100",
-  yellow: "border-yellow-300 bg-yellow-50 text-yellow-800 hover:bg-yellow-100",
-  emerald: "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
-  red: "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100",
-  gray: "border-stone-300 bg-stone-50 text-stone-800 hover:bg-stone-100",
-};
-
-const STATUS_ACTIVE_COLORS: Record<string, string> = {
-  amber: "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-300",
-  blue: "border-blue-500 bg-blue-100 text-blue-900 ring-2 ring-blue-300",
-  yellow: "border-yellow-500 bg-yellow-100 text-yellow-900 ring-2 ring-yellow-300",
-  emerald: "border-emerald-500 bg-emerald-100 text-emerald-900 ring-2 ring-emerald-300",
-  red: "border-rose-500 bg-rose-100 text-rose-900 ring-2 ring-rose-300",
-  gray: "border-stone-500 bg-stone-200 text-stone-900 ring-2 ring-stone-300",
-};
-
 const STATUS_BADGE: Record<string, string> = {
   pending: "bg-amber-50 text-amber-800 border-amber-200",
   processing: "bg-blue-50 text-blue-800 border-blue-200",
@@ -111,7 +96,9 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 /* Final statuses — once set, locked */
-const FINAL_STATUSES = ["completed", "cancelled", "refunded"];
+// Permanently locked statuses. `completed` is deliberately NOT here: a
+// delivery recorded by mistake must be correctable, so it can be reopened.
+const FINAL_STATUSES = ["cancelled", "refunded"];
 
 function formatBDT(amount: string | number) {
   return `৳ ${Number(amount || 0).toLocaleString("en-BD", {
@@ -142,11 +129,48 @@ export default function AdminOrdersPage() {
   const [statusModal, setStatusModal] = useState<WCOrder | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [warningModal, setWarningModal] = useState<{
+    kind: "permanent" | "revert-payment";
     orderId: string | number;
     status: string;
     orderNumber: string;
+    total?: string | number;
+  } | null>(null);
+  // Shown when the operator tries to deliver an order that is not paid.
+  const [paymentModal, setPaymentModal] = useState<{
+    orderId: string | number;
+    orderNumber: string;
+    total: string | number;
   } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Escape closes the top-most dialog and background scrolling is locked while
+  // either dialog is open.
+  useEffect(() => {
+    if (!statusModal && !warningModal && !paymentModal) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (paymentModal) {
+        setPaymentModal(null);
+        return;
+      }
+      if (warningModal) {
+        setWarningModal(null);
+        return;
+      }
+      setStatusModal(null);
+      setSelectedStatus(null);
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [statusModal, warningModal, paymentModal]);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
@@ -210,60 +234,58 @@ export default function AdminOrdersPage() {
     return map;
   }, [allOrders]);
 
-  const handleStatusChange = async (orderId: string | number, newStatus: string) => {
+  const handleStatusChange = async (
+    orderId: string | number,
+    newStatus: string,
+    options: { revertPayment?: boolean } = {}
+  ): Promise<boolean> => {
     setUpdating(orderId);
     try {
+      // Delivering records payment as collected; reverting a paid order to
+      // pending can undo the payment. Both are sent explicitly so the persisted
+      // state matches the optimistic update below.
+      const payload: Record<string, unknown> = { status: newStatus };
+      if (newStatus === "completed") payload.paymentStatus = "paid";
+      if (options.revertPayment) payload.paymentStatus = "pending";
+
       const res = await authFetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
-      if (res.ok) {
-        await res.json();
-        const isCompleted = newStatus === "completed";
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === orderId || o.number === String(orderId)
-              ? {
-                  ...o,
-                  status: newStatus,
-                  payment_status: isCompleted ? "paid" : o.payment_status,
-                  paymentStatus: isCompleted ? "paid" : o.paymentStatus,
-                }
-              : o
-          )
-        );
-        setAllOrders((prev) =>
-          prev.map((o) =>
-            o.id === orderId || o.number === String(orderId)
-              ? {
-                  ...o,
-                  status: newStatus,
-                  payment_status: isCompleted ? "paid" : o.payment_status,
-                  paymentStatus: isCompleted ? "paid" : o.paymentStatus,
-                }
-              : o
-          )
-        );
-        if (statusModal?.id === orderId) {
-          setStatusModal((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  status: newStatus,
-                  payment_status: isCompleted ? "paid" : prev.payment_status,
-                  paymentStatus: isCompleted ? "paid" : prev.paymentStatus,
-                }
-              : null
-          );
-        }
-        showToast(`Order #${orderId} status changed to ${newStatus.replace("-", " ")}`, "success");
-      } else {
+
+      if (!res.ok) {
         showToast(`Failed to update order #${orderId}`, "error");
+        return false;
       }
+
+      await res.json();
+
+      const nextPayment =
+        newStatus === "completed" ? "paid" : options.revertPayment ? "pending" : undefined;
+
+      const apply = (o: WCOrder): WCOrder =>
+        o.id === orderId || o.number === String(orderId)
+          ? {
+              ...o,
+              status: newStatus,
+              ...(nextPayment
+                ? { payment_status: nextPayment, paymentStatus: nextPayment }
+                : {}),
+            }
+          : o;
+
+      setOrders((prev) => prev.map(apply));
+      setAllOrders((prev) => prev.map(apply));
+      setStatusModal((prev) => (prev ? apply(prev) : null));
+
+      showToast(`Order #${orderId} marked ${newStatus.replace("-", " ")}`, "success");
+      return true;
     } catch {
       showToast("Network error — please try again", "error");
+      return false;
+    } finally {
+      setUpdating(null);
     }
-    setUpdating(null);
   };
 
   const handleTogglePayment = async (orderId: string | number, currentPaymentStatus?: string) => {
@@ -320,6 +342,8 @@ export default function AdminOrdersPage() {
       );
     });
   }, [orders, searchQuery]);
+
+  const warningIsRevert = warningModal?.kind === "revert-payment";
 
   return (
     <div className="space-y-6">
@@ -439,11 +463,27 @@ export default function AdminOrdersPage() {
                 (sum, li) => sum + (li.quantity || 1),
                 0
               );
+              // Distinct, non-empty sizes across every line item — so a
+              // multi-item order shows "M, L" rather than only the first size.
+              const productSizes = Array.from(
+                new Set(
+                  (order.line_items || [])
+                    .map((li) => (li.size || "").trim())
+                    .filter(Boolean)
+                )
+              );
               const thumb = firstItem?.image?.src;
-              const isPaid =
-                order.payment_status === "paid" ||
-                order.paymentStatus === "paid" ||
-                order.status === "completed";
+              // The badge reflects the stored payment status only. Order status
+              // is a fulfilment state, not a payment state: a delivered COD
+              // order can still be unpaid, and payment can be toggled back to
+              // pending after delivery. The API already defaults legacy orders
+              // with no paymentStatus to "paid" when they are completed.
+              const paymentStatus = (
+                order.payment_status ||
+                order.paymentStatus ||
+                ""
+              ).toLowerCase();
+              const isPaid = paymentStatus === "paid";
               const isCancelled =
                 order.status === "cancelled" || order.status === "failed";
 
@@ -565,6 +605,15 @@ export default function AdminOrdersPage() {
                         </p>
                         <p className="text-[10px] text-gray-400">
                           Qty: {productQty}
+                          {productSizes.length > 0 && (
+                            <>
+                              {" · "}
+                              <span className="font-semibold text-gray-600">
+                                {productSizes.length === 1 ? "Size" : "Sizes"}:{" "}
+                                {productSizes.join(", ")}
+                              </span>
+                            </>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -589,10 +638,10 @@ export default function AdminOrdersPage() {
                             void handleTogglePayment(order.id, "paid");
                           }}
                           disabled={updating === order.id}
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition shadow-xs cursor-pointer"
+                          className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[9px] font-bold text-emerald-700 ring-1 ring-inset ring-emerald-100 transition hover:bg-emerald-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 disabled:opacity-60"
                           title="Payment received. Click to switch to Unpaid."
                         >
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          <CheckCircle2 className="h-2.5 w-2.5" />
                           Paid
                         </button>
                       ) : (
@@ -603,10 +652,10 @@ export default function AdminOrdersPage() {
                             void handleTogglePayment(order.id, "pending");
                           }}
                           disabled={updating === order.id}
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition shadow-xs cursor-pointer"
+                          className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[9px] font-bold text-amber-700 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 disabled:opacity-60"
                           title="Pending collection / COD. Click to mark Paid."
                         >
-                          <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                          <Clock className="h-2.5 w-2.5" />
                           Unpaid
                         </button>
                       )}
@@ -670,56 +719,102 @@ export default function AdminOrdersPage() {
               setSelectedStatus(null);
             }}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-purple-100 w-full max-w-lg overflow-hidden">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="status-modal-title"
+            className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          >
             {/* Modal header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-purple-100 bg-purple-50/50">
-              <div>
-                <h3 className="text-[16px] font-bold text-gray-900">Update Order Status</h3>
-                <p className="text-[12px] text-gray-500">
-                  Order #{statusModal.number || statusModal.id} · {statusModal.billing?.first_name || "Guest"}
-                </p>
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                  <ClipboardList className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <h3
+                    id="status-modal-title"
+                    className="text-[15px] font-semibold leading-snug text-slate-900"
+                  >
+                    Update order status
+                  </h3>
+                  <p className="mt-0.5 truncate text-[12px] text-slate-500">
+                    #{statusModal.number || statusModal.id}
+                    <span className="mx-1.5 text-slate-300">·</span>
+                    {statusModal.billing?.first_name || "Guest"}
+                  </p>
+                </div>
               </div>
               <button
+                type="button"
+                aria-label="Close dialog"
                 onClick={() => {
                   setStatusModal(null);
                   setSelectedStatus(null);
                 }}
-                className="p-2 rounded-xl hover:bg-white text-gray-400 hover:text-gray-600 transition"
+                className="-mr-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Status options */}
-            <div className="p-6 space-y-2">
+            <div
+              role="radiogroup"
+              aria-label="Order status"
+              className="max-h-[60vh] space-y-1.5 overflow-y-auto px-6 py-5"
+            >
               {STATUS_OPTIONS.map((s) => {
                 const isCurrent = statusModal.status === s.key;
                 const isSelected = selectedStatus === s.key;
-                const colorClass = isCurrent || isSelected
-                  ? STATUS_ACTIVE_COLORS[s.color]
-                  : STATUS_MODAL_COLORS[s.color];
+
                 return (
                   <button
                     key={s.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={isCurrent || isSelected}
                     disabled={isCurrent}
                     onClick={() => setSelectedStatus(s.key)}
-                    className={`w-full flex items-center gap-4 rounded-xl border-2 px-4 py-3.5 text-left transition-all duration-200 disabled:opacity-50 ${colorClass}`}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 disabled:cursor-default ${
+                      isCurrent
+                        ? "border-slate-200 bg-slate-50"
+                        : isSelected
+                          ? "border-purple-400 bg-purple-50/60 ring-1 ring-purple-200"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
+                    }`}
                   >
-                    <div className="h-10 w-10 rounded-xl bg-white/70 flex items-center justify-center flex-shrink-0">
-                      <s.icon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-bold">{s.label}</p>
-                      <p className="text-[11px] opacity-75">{s.desc}</p>
-                    </div>
-                    {isCurrent && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-75">
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        isSelected && !isCurrent
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      <s.icon className="h-4 w-4" />
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-semibold text-slate-900">
+                        {s.label}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11.5px] text-slate-500">
+                        {s.desc}
+                      </span>
+                    </span>
+
+                    {isCurrent ? (
+                      <span className="shrink-0 rounded-full bg-slate-200/70 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-slate-500">
                         Current
                       </span>
-                    )}
-                    {isSelected && !isCurrent && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider">
-                        ✓ Selected
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                          isSelected ? "border-purple-600 bg-purple-600" : "border-slate-300"
+                        }`}
+                      >
+                        {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
                       </span>
                     )}
                   </button>
@@ -728,95 +823,277 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Modal footer with Confirm */}
-            <div className="px-6 py-4 border-t border-purple-100 bg-purple-50/30 flex items-center justify-between">
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/60 px-6 py-3.5">
               <button
                 onClick={() => {
                   setStatusModal(null);
                   setSelectedStatus(null);
                 }}
-                className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+                className="rounded-xl px-4 py-2.5 text-[13px] font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40"
               >
                 Cancel
               </button>
               <button
                 disabled={!selectedStatus || selectedStatus === statusModal.status || updating === statusModal.id}
-                onClick={() => {
+                onClick={async () => {
                   if (!selectedStatus) return;
+
+                  const paidNow =
+                    (statusModal.paymentStatus || statusModal.payment_status || "").toLowerCase() ===
+                    "paid";
+
+                  // Delivering an unpaid order: confirm payment collection first.
+                  if (selectedStatus === "completed" && !paidNow) {
+                    setPaymentModal({
+                      orderId: statusModal.id,
+                      orderNumber: String(statusModal.number || statusModal.id),
+                      total: statusModal.total,
+                    });
+                    return;
+                  }
+
+                  // Cancelled / refunded are permanent.
                   if (FINAL_STATUSES.includes(selectedStatus)) {
                     setWarningModal({
+                      kind: "permanent",
                       orderId: statusModal.id,
                       status: selectedStatus,
                       orderNumber: String(statusModal.number || statusModal.id),
                     });
-                  } else {
-                    void handleStatusChange(statusModal.id, selectedStatus);
+                    return;
+                  }
+
+                  // A paid order cannot silently return to pending — that would
+                  // leave the money recorded against a pending order.
+                  if (paidNow && selectedStatus === "pending") {
+                    setWarningModal({
+                      kind: "revert-payment",
+                      orderId: statusModal.id,
+                      status: selectedStatus,
+                      orderNumber: String(statusModal.number || statusModal.id),
+                      total: statusModal.total,
+                    });
+                    return;
+                  }
+
+                  const ok = await handleStatusChange(statusModal.id, selectedStatus);
+                  if (ok) {
+                    setStatusModal(null);
+                    setSelectedStatus(null);
                   }
                 }}
-                className="px-6 py-2.5 rounded-xl text-[13px] font-bold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-md shadow-purple-200 flex items-center gap-2"
+                className="flex items-center gap-2 rounded-xl bg-purple-600 px-6 py-2.5 text-[13px] font-bold text-white shadow-md shadow-purple-200 transition hover:bg-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {updating === statusModal.id && <Loader2 className="h-4 w-4 animate-spin" />}
-                Confirm Status Change
+                Update status
               </button>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── Payment Required Before Delivery ────────── */}
+      {paymentModal && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setPaymentModal(null)}
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="payment-modal-title"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-2xl"
+          >
+            <button
+              type="button"
+              aria-label="Close dialog"
+              onClick={() => setPaymentModal(null)}
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="p-6 pt-9">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+                <Banknote className="h-7 w-7 text-amber-600" />
+              </div>
+              <h3
+                id="payment-modal-title"
+                className="text-center text-[16px] font-semibold text-slate-900"
+              >
+                Payment required before delivery
+              </h3>
+              <p className="mx-auto mt-1.5 max-w-sm text-center text-[12.5px] leading-relaxed text-slate-500">
+                Order <strong className="text-slate-700">#{paymentModal.orderNumber}</strong> is not
+                marked as paid. Deliveries must be paid first — confirming records the payment and
+                marks the order delivered.
+              </p>
+
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  Amount due
+                </span>
+                <span className="text-[15px] font-bold tabular-nums text-slate-900">
+                  {formatBDT(paymentModal.total)}
+                </span>
+              </div>
+
+              <p className="mt-3 text-center text-[11px] text-slate-400">
+                The payment is recorded as collected for this order only.
+              </p>
+
+              <div className="mt-5 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentModal(null)}
+                  className="flex-1 rounded-xl bg-slate-100 px-4 py-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40"
+                >
+                  Go back
+                </button>
+                <button
+                  type="button"
+                  disabled={updating === paymentModal.orderId}
+                  onClick={async () => {
+                    await handleStatusChange(paymentModal.orderId, "completed");
+                    setPaymentModal(null);
+                    setStatusModal(null);
+                    setSelectedStatus(null);
+                  }}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-3 text-[13px] font-bold text-white shadow-md transition hover:bg-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 disabled:opacity-50"
+                >
+                  {updating === paymentModal.orderId && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Mark paid &amp; deliver
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Warning Modal for Final Statuses ────────── */}
+      {/* ── Confirmation dialog: permanent status / payment reversal ── */}
       {warningModal && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setWarningModal(null)}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-rose-200 w-full max-w-md overflow-hidden">
-            <div className="p-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                <AlertTriangle className="h-8 w-8 text-rose-600" />
-              </div>
-              <h3 className="text-[18px] font-bold text-gray-900 mb-2">
-                Permanent Status Warning
-              </h3>
-              <p className="text-[13px] text-gray-600 mb-1">
-                You are about to change Order <strong>#{warningModal.orderNumber}</strong> to:
-              </p>
-              <p
-                className="text-[16px] font-bold capitalize mb-4"
-                style={{
-                  color:
-                    warningModal.status === "completed"
-                      ? "#059669"
-                      : warningModal.status === "cancelled"
-                      ? "#dc2626"
-                      : "#4b5563",
-                }}
+
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="warning-modal-title"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          >
+            <button
+              type="button"
+              aria-label="Close dialog"
+              onClick={() => setWarningModal(null)}
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            <div className="px-6 pb-5 pt-9">
+              <div
+                className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
+                  warningIsRevert ? "bg-amber-100" : "bg-rose-100"
+                }`}
               >
-                {warningModal.status.replace("-", " ")}
-              </p>
-              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 mb-5">
-                <p className="text-[12px] text-rose-700 font-medium">
-                  🔒 This action is permanent. Once set to {warningModal.status.replace("-", " ")}, the status cannot be reverted.
-                </p>
+                {warningIsRevert ? (
+                  <Banknote className="h-7 w-7 text-amber-600" />
+                ) : (
+                  <AlertTriangle className="h-7 w-7 text-rose-600" />
+                )}
               </div>
-              <div className="flex gap-3">
+
+              <h3
+                id="warning-modal-title"
+                className="text-center text-[16px] font-semibold text-slate-900"
+              >
+                {warningIsRevert ? "Undo payment and reopen order?" : "Permanent status change"}
+              </h3>
+
+              <p className="mx-auto mt-1.5 max-w-sm text-center text-[12.5px] leading-relaxed text-slate-500">
+                {warningIsRevert ? (
+                  <>
+                    Order{" "}
+                    <strong className="text-slate-700">#{warningModal.orderNumber}</strong> is already
+                    paid. Moving it back to{" "}
+                    <strong className="capitalize text-slate-700">
+                      {warningModal.status.replace("-", " ")}
+                    </strong>{" "}
+                    will mark the payment as pending again.
+                  </>
+                ) : (
+                  <>
+                    Order{" "}
+                    <strong className="text-slate-700">#{warningModal.orderNumber}</strong> will be
+                    marked{" "}
+                    <strong className="capitalize text-slate-700">
+                      {warningModal.status.replace("-", " ")}
+                    </strong>
+                    .
+                  </>
+                )}
+              </p>
+
+              {warningIsRevert && (
+                <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                    Paid amount
+                  </span>
+                  <span className="text-[15px] font-bold tabular-nums text-slate-900">
+                    {formatBDT(warningModal.total || 0)}
+                  </span>
+                </div>
+              )}
+
+              <div
+                className={`mt-4 rounded-xl border px-3.5 py-2.5 text-[11.5px] leading-relaxed ${
+                  warningIsRevert
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-rose-200 bg-rose-50 text-rose-700"
+                }`}
+              >
+                {warningIsRevert
+                  ? "The order will show as Unpaid and the full amount will count as due until it is marked paid again."
+                  : "Cancelled and refunded orders are locked and cannot be changed afterwards."}
+              </div>
+
+              <div className="mt-5 flex gap-3">
                 <button
+                  type="button"
                   onClick={() => setWarningModal(null)}
-                  className="flex-1 px-4 py-3 rounded-xl text-[13px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition"
+                  className="flex-1 rounded-xl bg-slate-100 px-4 py-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50"
                 >
-                  Go Back
+                  Go back
                 </button>
                 <button
+                  type="button"
                   disabled={updating === warningModal.orderId}
                   onClick={async () => {
-                    await handleStatusChange(warningModal.orderId, warningModal.status);
+                    const ok =
+                      warningModal.kind === "revert-payment"
+                        ? await handleStatusChange(warningModal.orderId, warningModal.status, {
+                            revertPayment: true,
+                          })
+                        : await handleStatusChange(warningModal.orderId, warningModal.status);
                     setWarningModal(null);
-                    setStatusModal(null);
-                    setSelectedStatus(null);
+                    if (ok) {
+                      setStatusModal(null);
+                      setSelectedStatus(null);
+                    }
                   }}
-                  className="flex-1 px-4 py-3 rounded-xl text-[13px] font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition shadow-md flex items-center justify-center gap-2"
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-bold text-white shadow-md transition focus:outline-none focus-visible:ring-2 disabled:opacity-50 ${
+                    warningIsRevert
+                      ? "bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-500/50"
+                      : "bg-rose-600 hover:bg-rose-700 focus-visible:ring-rose-500/50"
+                  }`}
                 >
                   {updating === warningModal.orderId && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Yes, Confirm
+                  {warningIsRevert ? "Undo payment & reopen" : "Yes, confirm"}
                 </button>
               </div>
             </div>

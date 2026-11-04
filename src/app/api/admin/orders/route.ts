@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
         name: it.name,
         price: it.price,
         quantity: it.quantity,
+        size: it.size || "",
         image: it.image ? { src: it.image } : undefined,
         meta_data: it.size ? [{ key: "Size", value: it.size }] : [],
       })),

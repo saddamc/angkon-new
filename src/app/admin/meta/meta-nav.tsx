@@ -21,6 +21,7 @@ import {
   Plus,
   BookOpen,
   Settings,
+  DatabaseBackup,
 } from "lucide-react";
 import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
 import {
@@ -116,6 +117,19 @@ export const META_NAV_GROUPS: MetaNavGroup[] = [
         href: "/admin/meta/domain-verification",
         label: "Domain Verification",
         icon: Globe,
+      },
+    ],
+  },
+  {
+    id: "data-group",
+    label: "Data",
+    icon: DatabaseBackup,
+    collapsible: true,
+    items: [
+      {
+        href: "/admin/meta/backup",
+        label: "Backup & Restore",
+        icon: DatabaseBackup,
       },
     ],
   },

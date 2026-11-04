@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -156,7 +156,7 @@ export default function AdminLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
-                    placeholder="ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó"
+                    placeholder="••••••••"
                     className="w-full rounded-xl bg-stone-50 border border-stone-200 px-4 py-3 pr-11 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 transition"
                     required
                   />

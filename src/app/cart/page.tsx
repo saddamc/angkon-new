@@ -199,6 +199,8 @@ export default function CartPage() {
                     <QuantitySelector
                       value={item.quantity}
                       onChange={(quantity) => updateQuantity(item.productId, item.size, quantity, item.color)}
+                      size="sm"
+                      ariaLabel={`Quantity for ${item.name}`}
                     />
                     <p className="font-bold text-base text-white">{formatPrice(item.price * item.quantity)}</p>
                   </div>

@@ -10,6 +10,7 @@ import { useCartStore } from "@/store/cart-store";
 import { decodeEntities } from "@/utils/html";
 import { trackAddToCart, generateEventId } from "@/lib/fpixel";
 import { resolveColorStyle } from "@/utils/color-swatches";
+import { QuantitySelector } from "@/components/product/quantity-selector";
 
 interface QuickViewModalProps {
   product: WooProduct;
@@ -267,23 +268,13 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               <span className="text-[12px] font-bold uppercase tracking-wider text-white/80">
                 Qty:
               </span>
-              <div className="flex items-center rounded-lg border border-[#E1B76F]/30 bg-[#42070e]">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="px-3 py-1 text-sm font-bold text-white/80 hover:text-white"
-                >
-                  -
-                </button>
-                <span className="px-3 py-1 text-xs font-bold text-white">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="px-3 py-1 text-sm font-bold text-white/80 hover:text-white"
-                >
-                  +
-                </button>
-              </div>
+              <QuantitySelector
+                value={quantity}
+                onChange={setQuantity}
+                disabled={!inStock}
+                size="sm"
+                ariaLabel={`Quantity for ${product.name}`}
+              />
             </div>
           </div>
 

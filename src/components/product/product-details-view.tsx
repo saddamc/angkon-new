@@ -13,9 +13,11 @@ import {
   Minimize,
   Ruler,
   Search,
+  ShoppingBag,
   Truck,
   X,
 } from "lucide-react";
+import { QuantitySelector } from "@/components/product/quantity-selector";
 import {
   ReadyToWearSizeGuideModal,
   ReadyToWearSizeGuideContent,
@@ -828,22 +830,34 @@ export function ProductDetailsView({
             <div className="my-5 border-t border-[#E1B76F]/20" />
 
             {/* Quantity & Add to Cart */}
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min={1}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-3.5">
+              <QuantitySelector
                 value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                className="h-10 w-12 rounded border border-[#E1B76F]/40 bg-[#2d0302] text-center text-sm font-medium text-white outline-none focus:border-[#E1B76F] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                onChange={setQuantity}
+                min={1}
+                max={99}
+                disabled={product.stock_status !== "instock"}
+                size="default"
+                ariaLabel={`Quantity for ${product.name}`}
               />
 
               <button
                 type="button"
                 onClick={onAddToCart}
                 disabled={product.stock_status !== "instock"}
-                className="h-10 rounded-md bg-[#530911] border border-[#E1B76F]/40 px-7 text-sm font-bold tracking-wide uppercase text-white transition hover:bg-[#680c16] hover:border-[#E1B76F] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
+                className="h-11 flex-1 sm:flex-initial inline-flex items-center justify-center gap-2.5 rounded-lg bg-[#530911] border border-[#E1B76F]/40 px-8 text-sm font-bold tracking-wider uppercase text-white transition-all duration-200 hover:bg-[#680c16] hover:border-[#E1B76F] hover:shadow-[0_0_15px_rgba(225,183,111,0.2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
               >
-                {added ? "Added to cart" : "Add to cart"}
+                {added ? (
+                  <>
+                    <Check className="h-4 w-4 text-[#E1B76F]" />
+                    <span>Added to cart</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="h-4 w-4 text-[#E1B76F]" />
+                    <span>Add to cart</span>
+                  </>
+                )}
               </button>
             </div>
 

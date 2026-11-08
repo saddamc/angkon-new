@@ -19,12 +19,15 @@ export async function generateStaticParams() {
     const paths: { slug: string[] }[] = [];
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function collectPaths(nodes: any[], parentSlugs: string[] = []) {
+    function collectPaths(nodes: any[], parentSlugs: string[] = [], visited = new Set<number>()) {
       for (const node of nodes) {
+        if (node.id && visited.has(node.id)) continue;
         const current = [...parentSlugs, node.slug];
         paths.push({ slug: current });
         if (Array.isArray(node.children) && node.children.length > 0) {
-          collectPaths(node.children, current);
+          const nextVisited = new Set(visited);
+          if (node.id) nextVisited.add(node.id);
+          collectPaths(node.children, current, nextVisited);
         }
       }
     }

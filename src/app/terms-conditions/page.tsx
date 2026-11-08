@@ -1,1 +1,5 @@
-export { default } from "../terms/page";
+export { default, metadata } from "../terms/page";
+
+export const revalidate = 60;
+
+

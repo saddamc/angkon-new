@@ -108,11 +108,10 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#530911] text-white">
-      {/* Search Engine Organization & WebSite JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationSchema) }}
-      />
+      {/* Search Engine Organization & WebSite JSON-LD.
+          React 19 treats <script> as a raw-text element, so a plain child is
+          emitted verbatim — no dangerouslySetInnerHTML needed. */}
+      <script type="application/ld+json">{serializeJsonLd(organizationSchema)}</script>
 
       {/* Floating cart shortcut */}
       <FloatingCartButton />

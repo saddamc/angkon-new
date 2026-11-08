@@ -70,10 +70,13 @@ export const getCategoryTree = cache(async (): Promise<CategoryNode[]> => {
 });
 
 // DFS for the node matching `slug`, returning the full ancestor chain (root-first) down to it.
-export function findCategoryPath(tree: CategoryNode[], slug: string): CategoryNode[] | null {
+export function findCategoryPath(tree: CategoryNode[], slug: string, visited: Set<number> = new Set()): CategoryNode[] | null {
   for (const node of tree) {
-    if (node.slug === slug) return [node];
-    const childPath = findCategoryPath(node.children, slug);
+    if (visited.has(node.id)) continue;
+    if (node.slug.toLowerCase() === slug.toLowerCase()) return [node];
+    const nextVisited = new Set(visited);
+    nextVisited.add(node.id);
+    const childPath = findCategoryPath(node.children, slug, nextVisited);
     if (childPath) return [node, ...childPath];
   }
   return null;

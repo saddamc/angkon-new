@@ -13,7 +13,8 @@ import fs from "node:fs";
 
 const ALLOWED = new Map([
   // JSON-LD structured data — escaped by serializeJsonLd, never sanitised.
-  ["src/app/page.tsx", "application/ld+json"],
+  // /src/app/page.tsx no longer needs this: React 19 emits <script> children
+  // verbatim, so the organisation schema is now a plain child.
   ["src/app/products/[slug]/page.tsx", "application/ld+json"],
   ["src/app/product-category/[...slug]/page.tsx", "application/ld+json"],
   // Static Meta Pixel bootstrap; the interpolated id is validated as numeric.

@@ -46,7 +46,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/sanitize-html": "^2.16.2",
-    "autocannon": "^8.0.0",
+    "autocannon": "^9.0.0",
     "autoprefixer": "^10.5.0",
     "dotenv": "^17.4.2",
     "eslint": "^9.39.4",
@@ -54,5 +54,9 @@
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3"
+  },
+  "overrides": {
+    "minimatch": "^11.0.5",
+    "uuid": "^11.1.1"
   }
 }

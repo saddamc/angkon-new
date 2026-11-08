@@ -16,6 +16,7 @@ export interface WCLineItem {
   price?: string | number;
   total?: string | number;
   size?: string;
+  color?: string;
   image?: { src: string };
   meta_data?: { key: string; value: string }[];
 }

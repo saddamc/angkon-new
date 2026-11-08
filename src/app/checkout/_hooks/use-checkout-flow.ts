@@ -349,7 +349,8 @@ export function useCheckoutFlow() {
           items: items.map((item) => ({
             productId: item.productId,
             name: item.name,
-            size: item.size,
+            size: item.size || "",
+            color: item.color || "",
             quantity: item.quantity,
             price: item.price,
             image: item.image,

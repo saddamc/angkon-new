@@ -34,7 +34,7 @@ export function ProductImageManager({
   images,
   pendingUploads,
   uploading,
-  maxImages = 6,
+  maxImages = 12,
   onFilesSelected,
   onMoveImage,
   onRemoveImage,
@@ -143,30 +143,11 @@ export function ProductImageManager({
             Product Images &amp; Drag &amp; Drop Studio
           </h3>
         </div>
-        <span
-          className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-            isAtLimit
-              ? "bg-amber-50 text-amber-700 border-amber-200"
-              : "bg-purple-50 text-purple-700 border-purple-200/60"
-          }`}
-        >
-          {images.length}
-          {pendingUploads.some(
-            (u) => u.phase === "uploading" || u.phase === "processing"
-          )
-            ? ` +${
-                pendingUploads.filter(
-                  (u) => u.phase === "uploading" || u.phase === "processing"
-                ).length
-              }`
-            : ""}{" "}
-          / {maxImages}{" "}
-          {images.length >= maxImages
-            ? "(Max Limit Reached)"
-            : uploading
-            ? "Uploading…"
-            : "Photos"}
-        </span>
+        {uploading && (
+          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200/60 animate-pulse">
+            Uploading…
+          </span>
+        )}
       </div>
 
       {/* Active Drag-Over Banner */}

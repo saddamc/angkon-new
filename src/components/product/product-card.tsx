@@ -10,6 +10,7 @@ import { useCartStore } from "@/store/cart-store";
 import { QuickViewModal } from "@/components/product/quick-view-modal";
 import { decodeEntities } from "@/utils/html";
 import { trackAddToCart, generateEventId } from "@/lib/fpixel";
+import { resolveColorStyle } from "@/utils/color-swatches";
 
 interface ProductCardProps {
   product: WooProduct;
@@ -46,13 +47,15 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
   const insideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_inside")?.value || "60");
   const outsideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_outside")?.value || "100");
 
-  const hasMultipleSizes = product.sizes && product.sizes.length > 1;
+  const hasOptions =
+    (Boolean(product.sizes && product.sizes.length > 1)) ||
+    (Boolean(product.colors && product.colors.length > 0));
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!inStock) return;
     
-    if (hasMultipleSizes) {
+    if (hasOptions) {
       setQuickViewOpen(true);
       return;
     }
@@ -65,6 +68,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       image: primaryImage,
       price: pricing.current,
       size: product.sizes?.[0] || "",
+      color: product.colors?.[0] || "",
       quantity: 1,
       shippingClassId: product.shipping_class_id ?? 0,
       deliveryInside: insideFee,
@@ -164,6 +168,27 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           </div>
 
           <div className="mt-1">
+            {/* Color Swatches Preview on Collection Cards */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="flex items-center gap-1.5 mb-2" title={`Colors: ${product.colors.join(", ")}`}>
+                {product.colors.slice(0, 5).map((col) => {
+                  const style = resolveColorStyle(col);
+                  return (
+                    <span
+                      key={col}
+                      className={`h-2.5 w-2.5 rounded-full border shadow-2xs ${
+                        style.isLight ? "border-stone-400" : "border-white/30"
+                      }`}
+                      style={{ backgroundColor: style.bg }}
+                    />
+                  );
+                })}
+                {product.colors.length > 5 && (
+                  <span className="text-[10px] text-white/60">+{product.colors.length - 5}</span>
+                )}
+              </div>
+            )}
+
             {/* Price */}
             <div className="flex items-center gap-1.5 mb-2">
               <span className="text-[12.5px] sm:text-[13px] font-bold text-[#E1B76F]">
@@ -191,8 +216,10 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
                 <span className="flex items-center gap-1">
                   <Check className="w-3 h-3" /> Added
                 </span>
-              ) : (
+              ) : hasOptions ? (
                 "Select options"
+              ) : (
+                "Add to cart"
               )}
             </button>
           </div>

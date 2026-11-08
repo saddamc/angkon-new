@@ -78,7 +78,9 @@ export default function AdminCategoriesPage() {
               }}
               onEditChild={(c) => openEdit(c)}
               onAddChild={(parentId) => openAddUnder(parentId)}
-              onReload={() => void load(true)}
+              onReload={async () => {
+                await load(true);
+              }}
             />
           ) : (
             <div className="bg-white rounded-2xl border border-purple-100/60 shadow-sm p-8 text-center flex flex-col items-center justify-center min-h-[460px]">

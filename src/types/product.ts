@@ -50,6 +50,7 @@ export interface WooProduct {
   on_sale: boolean;
   stock_status: "instock" | "outofstock" | "onbackorder";
   sizes: string[];
+  colors?: string[];
   images: WooImage[];
   categories: WooCategory[];
   tags: { id: number; name: string; slug: string }[];
@@ -73,6 +74,7 @@ export interface CartItem {
   image: string;
   price: number;
   size: string;
+  color?: string;
   quantity: number;
   /** WC shipping_class_id stored at add-to-cart time — avoids WP calls at checkout */
   shippingClassId: number;

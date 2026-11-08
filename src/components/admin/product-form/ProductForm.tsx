@@ -54,7 +54,7 @@ import { ProductImageManager } from "./ProductImageManager";
 export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormProps) {
   const router = useRouter();
   const { authFetch } = useAuth();
-  const MAX_IMAGES = 6;
+  const MAX_IMAGES = 12;
 
   // Track images uploaded in this editing session for server cleanup if cancelled
   const sessionUploadedRef = useRef<{ id?: number; url: string }[]>([]);
@@ -626,6 +626,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
         parent: c.parent || 0,
       })),
       sizes,
+      colors,
       meta_data: [
         ...(buyPrice ? [{ key: "_buy_price", value: buyPrice }] : []),
         { ...(initialData?.deliveryInsideId ? { id: initialData.deliveryInsideId } : {}), key: "_delivery_inside", value: deliveryInside },

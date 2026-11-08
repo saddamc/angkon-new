@@ -46,11 +46,19 @@ export function OrderRow({ order, idx, state }: OrderRowProps) {
     (sum, li) => sum + (li.quantity || 1),
     0
   );
-  // Distinct, non-empty sizes across every line item
+  // Distinct, non-empty sizes across every line item (ignores "Standard" placeholder on products with no sizes)
   const productSizes = Array.from(
     new Set(
       (order.line_items || [])
         .map((li) => (li.size || "").trim())
+        .filter((s) => Boolean(s) && s.toLowerCase() !== "standard")
+    )
+  );
+  // Distinct, non-empty colors across every line item
+  const productColors = Array.from(
+    new Set(
+      (order.line_items || [])
+        .map((li) => (li.color || "").trim())
         .filter(Boolean)
     )
   );
@@ -85,11 +93,24 @@ export function OrderRow({ order, idx, state }: OrderRowProps) {
       fields: [
         { label: "Product", value: productName },
         { label: "Quantity", value: String(productQty) },
-        {
-          label: productSizes.length === 1 ? "Size" : "Sizes",
-          value: productSizes.length ? productSizes.join(", ") : "—",
-          mono: true,
-        },
+        ...(productSizes.length
+          ? [
+              {
+                label: productSizes.length === 1 ? "Size" : "Sizes",
+                value: productSizes.join(", "),
+                mono: true,
+              },
+            ]
+          : []),
+        ...(productColors.length
+          ? [
+              {
+                label: productColors.length === 1 ? "Color" : "Colors",
+                value: productColors.join(", "),
+                mono: true,
+              },
+            ]
+          : []),
       ],
     });
 
@@ -272,6 +293,15 @@ export function OrderRow({ order, idx, state }: OrderRowProps) {
                   <span className="font-semibold text-gray-900">
                     {productSizes.length === 1 ? "Size" : "Sizes"}:{" "}
                     {productSizes.join(", ")}
+                  </span>
+                </>
+              )}
+              {productColors.length > 0 && (
+                <>
+                  {" · "}
+                  <span className="font-semibold text-gray-900">
+                    {productColors.length === 1 ? "Color" : "Colors"}:{" "}
+                    {productColors.join(", ")}
                   </span>
                 </>
               )}

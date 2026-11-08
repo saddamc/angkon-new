@@ -163,7 +163,7 @@ export default function CartPage() {
           <div className="space-y-4">
             {items.map((item) => (
               <article
-                key={`${item.productId}-${item.size}`}
+                key={`${item.productId}-${item.size}-${item.color || ""}`}
                 className="grid gap-4 rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-4 sm:grid-cols-[110px_1fr] shadow-2xs"
               >
                 <div className="relative aspect-square overflow-hidden rounded-xl border border-[#E1B76F]/20 bg-[#2d0302]">
@@ -173,13 +173,22 @@ export default function CartPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <h2 className="font-semibold text-base text-white">{item.name}</h2>
-                      <span className="inline-block mt-1 rounded bg-[#2d0302] border border-[#E1B76F]/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
-                        Size: {item.size}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        {item.size && (
+                          <span className="inline-block rounded bg-[#2d0302] border border-[#E1B76F]/30 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
+                            Size: {item.size}
+                          </span>
+                        )}
+                        {item.color && (
+                          <span className="inline-block rounded bg-[#2d0302] border border-[#E1B76F]/30 px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#E1B76F]">
+                            Color: {item.color}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeItem(item.productId, item.size)}
+                      onClick={() => removeItem(item.productId, item.size, item.color)}
                       className="rounded-full p-1.5 text-white/60 transition hover:bg-[#530911] hover:text-red-400"
                       aria-label="Remove item"
                     >
@@ -189,7 +198,7 @@ export default function CartPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#E1B76F]/20">
                     <QuantitySelector
                       value={item.quantity}
-                      onChange={(quantity) => updateQuantity(item.productId, item.size, quantity)}
+                      onChange={(quantity) => updateQuantity(item.productId, item.size, quantity, item.color)}
                     />
                     <p className="font-bold text-base text-white">{formatPrice(item.price * item.quantity)}</p>
                   </div>

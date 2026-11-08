@@ -121,7 +121,7 @@ export default function ContactPage() {
                 </span>
                 <div className="flex items-center gap-2">
                   <a
-                    href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr"
+                    href="https://www.facebook.com/angkon.oficiall"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#530911] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"
@@ -129,7 +129,7 @@ export default function ContactPage() {
                     Facebook
                   </a>
                   <a
-                    href="https://www.instagram.com/angkon.officiall?stkn=MTBjcmt5NWhwYzVqYQ=="
+                    href="https://www.instagram.com/angkon.officialll"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#530911] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"

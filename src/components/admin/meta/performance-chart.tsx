@@ -36,6 +36,10 @@ interface PerformanceChartProps {
   spendCurrencySymbol?: string;
   primaryMetricKey?: string; // defaults to 'events' or first active metric
   height?: number;
+  period?: string;
+  onPeriodChange?: (p: any) => void;
+  loading?: boolean;
+  activeMetric?: string;
 }
 
 /**

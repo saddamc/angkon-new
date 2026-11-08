@@ -147,7 +147,7 @@ export function CartDrawer({ open, onClose }: Props) {
             ) : (
               <div className="flex-1 overflow-y-auto px-6 py-4 divide-y divide-[#E1B76F]/15">
                 {items.map((item) => (
-                  <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                  <div key={`${item.productId}-${item.size}-${item.color || ""}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     {/* Thumbnail */}
                     <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded bg-[#42070e] border border-[#E1B76F]/20">
                       {item.image && (
@@ -168,14 +168,21 @@ export function CartDrawer({ open, onClose }: Props) {
                           <p className="line-clamp-2 text-[13px] font-semibold text-white leading-snug">
                             {item.name}
                           </p>
-                          {item.size && (
-                            <p className="mt-1 text-[11px] font-medium text-white/70 uppercase">
-                              Size: <span className="font-bold text-white">{item.size}</span>
-                            </p>
-                          )}
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1">
+                            {item.size && (
+                              <p className="text-[11px] font-medium text-white/70 uppercase">
+                                Size: <span className="font-bold text-white">{item.size}</span>
+                              </p>
+                            )}
+                            {item.color && (
+                              <p className="text-[11px] font-medium text-white/70">
+                                Color: <span className="font-bold text-[#E1B76F]">{item.color}</span>
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <button
-                          onClick={() => removeItem(item.productId, item.size)}
+                          onClick={() => removeItem(item.productId, item.size, item.color)}
                           className="text-white/70 hover:text-[#f3cb87] transition p-1 cursor-pointer"
                           aria-label="Remove item"
                         >
@@ -187,7 +194,7 @@ export function CartDrawer({ open, onClose }: Props) {
                       <div className="mt-3 flex items-center justify-between">
                         <div className="flex items-center rounded-full border border-[#E1B76F]/30 bg-[#42070e] px-2 py-0.5">
                           <button
-                            onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1, item.color)}
                             disabled={item.quantity <= 1}
                             className="p-1 text-white hover:text-[#f3cb87] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             aria-label="Decrease quantity"
@@ -198,7 +205,7 @@ export function CartDrawer({ open, onClose }: Props) {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1, item.color)}
                             className="p-1 text-white hover:text-[#f3cb87] cursor-pointer"
                             aria-label="Increase quantity"
                           >

@@ -218,8 +218,8 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
                 H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212
               </p>
               <div style="font-size: 12px;">
-                <a href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">Facebook</a> •
-                <a href="https://www.instagram.com/angkon.officiall" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">Instagram</a> •
+                <a href="https://www.facebook.com/angkon.oficiall" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">Facebook</a> •
+                <a href="https://www.instagram.com/angkon.officialll" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">Instagram</a> •
                 <a href="https://www.tiktok.com/@angkon.official" target="_blank" style="color: #E1B76F; text-decoration: none; margin: 0 10px; font-weight: 600;">TikTok</a>
               </div>
             </td>

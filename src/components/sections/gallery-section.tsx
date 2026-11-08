@@ -56,7 +56,7 @@ export function GallerySection() {
           </div>
 
           <Link
-            href="https://instagram.com"
+            href="https://www.instagram.com/angkon.officialll"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex w-fit items-center gap-2.5 rounded-full bg-gradient-to-br from-[#f09433] via-[#e6683c] to-[#bc1888] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(188,24,136,0.3)] transition hover:opacity-90 hover:shadow-[0_12px_32px_rgba(188,24,136,0.4)]"

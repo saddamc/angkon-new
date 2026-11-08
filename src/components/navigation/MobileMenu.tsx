@@ -185,7 +185,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
               </span>
               <div className="flex items-center gap-2">
                 <a
-                  href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr"
+                  href="https://www.facebook.com/angkon.oficiall"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-md border border-[#E1B76F]/40 bg-[#230407] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#230407] transition"
@@ -193,7 +193,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
                   Facebook
                 </a>
                 <a
-                  href="https://www.instagram.com/angkon.officiall?stkn=MTBjcmt5NWhwYzVqYQ=="
+                  href="https://www.instagram.com/angkon.officialll"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-md border border-[#E1B76F]/40 bg-[#230407] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#230407] transition"

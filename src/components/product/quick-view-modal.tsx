@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { X, ShoppingBag, Check, ArrowRight } from "lucide-react";
@@ -9,6 +9,7 @@ import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { useCartStore } from "@/store/cart-store";
 import { decodeEntities } from "@/utils/html";
 import { trackAddToCart, generateEventId } from "@/lib/fpixel";
+import { resolveColorStyle } from "@/utils/color-swatches";
 
 interface QuickViewModalProps {
   product: WooProduct;
@@ -19,10 +20,28 @@ interface QuickViewModalProps {
 export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes?.[0] || "");
+  const [selectedColor, setSelectedColor] = useState<string>(product.colors?.[0] || "");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   const addItem = useCartStore((s) => s.addItem);
+
+  const availableColors = useMemo(() => {
+    if (product.colors && product.colors.length > 0) {
+      return product.colors;
+    }
+    const colorAttr = product.attributes?.find(
+      (a) =>
+        a.name.toLowerCase() === "color" ||
+        a.name.toLowerCase() === "colors" ||
+        a.name.toLowerCase() === "colour" ||
+        a.name.toLowerCase() === "colours"
+    );
+    if (colorAttr && colorAttr.options && colorAttr.options.length > 0) {
+      return colorAttr.options;
+    }
+    return [];
+  }, [product.colors, product.attributes]);
 
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const FALLBACK_IMAGE = "/placeholder.webp";
@@ -58,6 +77,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
       image: product.images[0]?.src || primaryImage,
       price: pricing.current,
       size: selectedSize || product.sizes?.[0] || "",
+      color: selectedColor || availableColors[0] || "",
       quantity,
       shippingClassId: product.shipping_class_id ?? 0,
       deliveryInside: insideFee,
@@ -125,7 +145,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
           {/* Thumbnail row */}
           {product.images.length > 1 && (
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {product.images.slice(0, 6).map((img, i) => (
+              {product.images.slice(0, 12).map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
@@ -179,6 +199,43 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                 <span className="text-red-400 font-semibold">● Sold Out</span>
               )}
             </div>
+
+            {/* Color selection */}
+            {availableColors.length > 0 && (
+              <div className="mt-5">
+                <span className="block text-[12px] font-bold uppercase tracking-wider text-white/80 mb-2">
+                  Select Color: <strong className="text-white">{selectedColor || availableColors[0]}</strong>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map((col) => {
+                    const isSelected = (selectedColor || availableColors[0]) === col;
+                    const style = resolveColorStyle(col);
+                    return (
+                      <button
+                        key={col}
+                        type="button"
+                        onClick={() => setSelectedColor(col)}
+                        className={`h-9 min-w-[36px] inline-flex items-center gap-2 rounded-lg px-3 text-xs font-bold uppercase transition ${
+                          isSelected
+                            ? "border border-[#E1B76F] bg-[#530911] text-white ring-1 ring-[#E1B76F] shadow-sm"
+                            : "border border-[#E1B76F]/30 bg-[#42070e] text-white/80 hover:border-[#E1B76F] hover:text-[#E1B76F]"
+                        }`}
+                      >
+                        <span
+                          className={`h-3 w-3 rounded-full shrink-0 border transition-transform ${
+                            isSelected ? "border-white scale-110 shadow-xs" : style.isLight ? "border-stone-400" : "border-white/40"
+                          }`}
+                          style={{
+                            backgroundColor: style.bg,
+                          }}
+                        />
+                        <span>{col}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Size selection */}
             {product.sizes && product.sizes.length > 0 && (

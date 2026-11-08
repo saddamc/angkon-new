@@ -87,8 +87,8 @@ export default async function HomePage() {
           "availableLanguage": ["en", "bn"],
         },
         "sameAs": [
-          "https://www.facebook.com/angkon",
-          "https://www.instagram.com/angkon",
+          "https://www.facebook.com/angkon.oficiall",
+          "https://www.instagram.com/angkon.officialll",
         ],
       },
       {

@@ -40,7 +40,7 @@ export function OrderSummarySidebar({
         <div className="divide-y divide-[#E1B76F]/15 max-h-[300px] overflow-y-auto pr-1">
           {items.map((item) => (
             <div
-              key={`${item.productId}-${item.size}`}
+              key={`${item.productId}-${item.size}-${item.color || ""}`}
               className="flex justify-between items-center py-3 gap-3"
             >
               <div className="flex gap-3 items-center min-w-0">
@@ -58,7 +58,7 @@ export function OrderSummarySidebar({
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-white truncate">{item.name}</p>
                   <p className="text-[11px] text-white/60">
-                    {item.size ? `Size: ${item.size} • ` : ""}Qty: {item.quantity}
+                    {item.size ? `Size: ${item.size} • ` : ""}{item.color ? `Color: ${item.color} • ` : ""}Qty: {item.quantity}
                   </p>
                 </div>
               </div>

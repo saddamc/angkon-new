@@ -27,7 +27,7 @@ interface EventsModalsProps {
   isDrawerOpen: boolean;
   onCloseDrawer: () => void;
   selectedDrawerEvent: DrawerEventData | null;
-  onSimulateEvent: (eventName: string) => void;
+  onSimulateEvent: (eventName: string) => Promise<void> | void;
   simulating: boolean;
 }
 
@@ -87,7 +87,9 @@ export function EventsModals({
         isOpen={isDrawerOpen}
         onClose={onCloseDrawer}
         event={selectedDrawerEvent}
-        onSimulate={onSimulateEvent}
+        onSimulate={async (name) => {
+          await onSimulateEvent(name);
+        }}
         simulating={simulating}
       />
     </>

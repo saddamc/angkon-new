@@ -35,7 +35,21 @@ function toWooProduct(doc: any): WooProduct {
   // doc.sizes is the explicit admin-managed field and must take precedence over legacy attributes
   const resolvedSizes: string[] = docSizes.length > 0 ? docSizes : attrSizes;
 
-  // Keep attributes synchronized with resolvedSizes so storefront variation selector matches exactly
+  const docColors: string[] = Array.isArray(doc.colors)
+    ? doc.colors.map(String).map((s: string) => s.trim()).filter(Boolean)
+    : [];
+  const colorAttrIdx = rawAttributes.findIndex((a: { name?: unknown }) => {
+    const n = String(a?.name || "").toLowerCase();
+    return n === "color" || n === "colors" || n === "colour" || n === "colours";
+  });
+  const colorAttr = colorAttrIdx >= 0 ? rawAttributes[colorAttrIdx] : undefined;
+  const attrColors: string[] =
+    colorAttr && Array.isArray(colorAttr.options)
+      ? colorAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean)
+      : [];
+  const resolvedColors: string[] = docColors.length > 0 ? docColors : attrColors;
+
+  // Keep attributes synchronized with resolvedSizes & resolvedColors
   const attributes = [...rawAttributes];
   if (resolvedSizes.length > 0) {
     if (sizeAttrIdx >= 0) {
@@ -60,6 +74,28 @@ function toWooProduct(doc: any): WooProduct {
     };
   }
 
+  if (resolvedColors.length > 0) {
+    if (colorAttrIdx >= 0) {
+      attributes[colorAttrIdx] = {
+        ...attributes[colorAttrIdx],
+        options: resolvedColors,
+        visible: true,
+      };
+    } else {
+      attributes.push({
+        id: 0,
+        name: "Color",
+        options: resolvedColors,
+        visible: true,
+      });
+    }
+  } else if (colorAttrIdx >= 0 && Array.isArray(doc.colors) && doc.colors.length === 0) {
+    attributes[colorAttrIdx] = {
+      ...attributes[colorAttrIdx],
+      options: [],
+    };
+  }
+
   return {
     id: doc.id,
     name: doc.name,
@@ -73,6 +109,7 @@ function toWooProduct(doc: any): WooProduct {
     on_sale: Boolean(doc.on_sale),
     stock_status: doc.stock_status || "instock",
     sizes: resolvedSizes,
+    colors: resolvedColors,
     images: Array.isArray(doc.images)
       ? doc.images.map((img: { id?: number; src: string; name?: string; alt?: string }) => ({
           id: img.id || 0,

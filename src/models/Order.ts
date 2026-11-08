@@ -7,6 +7,7 @@ export interface IOrderItem {
   price: number;
   quantity: number;
   size?: string;
+  color?: string;
   image?: string;
 }
 
@@ -56,6 +57,7 @@ const OrderItemSchema = new Schema<IOrderItem>(
     price: { type: Number, required: true },
     quantity: { type: Number, required: true, min: 1 },
     size: { type: String, default: "" },
+    color: { type: String, default: "" },
     image: { type: String, default: "" },
   },
   { _id: false }

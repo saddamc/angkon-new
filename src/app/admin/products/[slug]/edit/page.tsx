@@ -119,6 +119,15 @@ export default function EditProductBySlugPage() {
       ? docSizes
       : (sizeAttr?.options && sizeAttr.options.length > 0 ? sizeAttr.options : []);
 
+  const docColors: string[] = Array.isArray((product as { colors?: string[] }).colors)
+    ? (product as { colors?: string[] }).colors!.map(String).map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  const resolvedColors: string[] =
+    docColors.length > 0
+      ? docColors
+      : (colorAttr?.options && colorAttr.options.length > 0 ? colorAttr.options : []);
+
   const { chart: sizeChart, metaId: sizeChartMetaId } = getSizeChartFromMeta(
     product.meta_data,
   );
@@ -147,7 +156,7 @@ export default function EditProductBySlugPage() {
       parent: c.parent || 0,
     })),
     sizes: resolvedSizes,
-    colors: colorAttr?.options || [],
+    colors: resolvedColors,
     sizeChart: normalizeToMultiSectionChart(sizeChart, resolvedSizes),
     sizeChartMetaId,
     otherAttributes: (product.attributes || []).filter((a) => {

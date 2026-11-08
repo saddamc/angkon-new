@@ -27,6 +27,7 @@ import { getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
 import { saveRecentlyViewed } from "@/utils/recently-viewed";
 import { trackViewContent, trackAddToCart, generateEventId } from "@/lib/fpixel";
+import { resolveColorStyle } from "@/utils/color-swatches";
 
 /* ── ShareStrip ─────────────────────────────────────────────────────── */
 
@@ -150,7 +151,9 @@ export function ProductDetailsView({
 }) {
   const [activeImage, setActiveImage] = useState(0);
   const [size, setSize] = useState("");
+  const [color, setColor] = useState("");
   const [optionError, setOptionError] = useState(false);
+  const [colorError, setColorError] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("Description");
@@ -324,6 +327,24 @@ export function ProductDetailsView({
     });
   }, [images, resolveImageSrc]);
 
+  // Available colors (from product.colors or attributes[Color])
+  const availableColors = useMemo(() => {
+    if (product.colors && product.colors.length > 0) {
+      return product.colors;
+    }
+    const colorAttr = product.attributes?.find(
+      (a) =>
+        a.name.toLowerCase() === "color" ||
+        a.name.toLowerCase() === "colors" ||
+        a.name.toLowerCase() === "colour" ||
+        a.name.toLowerCase() === "colours"
+    );
+    if (colorAttr && colorAttr.options && colorAttr.options.length > 0) {
+      return colorAttr.options;
+    }
+    return [];
+  }, [product.colors, product.attributes]);
+
   // Genuine customer selectable variation attributes (e.g. Size)
   const variationAttrs = useMemo(() => {
     if (product.sizes && product.sizes.length > 0) {
@@ -338,7 +359,7 @@ export function ProductDetailsView({
     const nonSpecAttrs = (product.attributes || []).filter((a) => {
       const name = a.name.toLowerCase().trim();
       const staticSpecs = [
-        "brand", "collection", "outfit", "style", "occasion", "color",
+        "brand", "collection", "outfit", "style", "occasion", "color", "colors", "colour", "colours",
         "fabric", "material", "pattern", "type", "piece", "season", "kameez", "trouser", "dupatta"
       ];
       return !staticSpecs.includes(name) && a.options && a.options.length > 1;
@@ -371,18 +392,27 @@ export function ProductDetailsView({
 
   const addItem = useCartStore((state) => state.addItem);
   const onAddToCart = () => {
+    let hasError = false;
     if (variationAttrs.length > 0 && !size) {
       setOptionError(true);
-      return;
+      hasError = true;
     }
+    if (availableColors.length > 0 && !color) {
+      setColorError(true);
+      hasError = true;
+    }
+    if (hasError) return;
+
     const cartEventId = generateEventId("cart");
+    const resolvedProductSize = size || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : "");
     addItem({
       productId: product.id,
       slug: product.slug,
       name: product.name,
       image: activeImg,
       price: pricing.current,
-      size: size || product.sizes[0] || "Standard",
+      size: resolvedProductSize,
+      color: color || availableColors[0] || "",
       quantity,
       shippingClassId: product.shipping_class_id ?? 0,
       deliveryInside: insideFee,
@@ -609,6 +639,84 @@ export function ProductDetailsView({
                 <RichText html={product.description} />
               </div>
             ) : null}
+
+            {/* Color Selection (when product has colors) */}
+            {availableColors.length > 0 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[14px] font-bold text-white tracking-wide">
+                      Select Color:
+                    </label>
+                    {color ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#E1B76F] text-[#530911] font-black text-xs shadow-xs">
+                        <span
+                          className="h-2.5 w-2.5 rounded-full border border-black/30 shrink-0"
+                          style={{
+                            backgroundColor: resolveColorStyle(color).bg,
+                          }}
+                        />
+                        <Check className="h-3 w-3" /> {color}
+                      </span>
+                    ) : (
+                      <span className="text-white/50 text-xs font-normal">(Please choose)</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Instant Color Pill Buttons */}
+                <div className="flex flex-wrap gap-2.5 mb-2" role="radiogroup" aria-label="Choose color">
+                  {availableColors.map((col) => {
+                    const isSelected = color === col;
+                    const style = resolveColorStyle(col);
+                    return (
+                      <button
+                        key={col}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        aria-label={`Color ${col}`}
+                        data-nosnippet="true"
+                        data-meta-ignore="true"
+                        data-fb-ignore="true"
+                        onClick={() => {
+                          setColor(col);
+                          setColorError(false);
+                        }}
+                        className={`flex min-h-[44px] items-center gap-2.5 px-4 rounded-xl border text-[13px] font-bold tracking-wide transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#530911] ${
+                          isSelected
+                            ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#530911] font-black shadow-lg shadow-[#E1B76F]/20 scale-105"
+                            : "border-[#E1B76F]/30 bg-[#42070e] text-white/90 font-bold hover:border-[#E1B76F] hover:bg-[#530911] hover:text-[#E1B76F]"
+                        }`}
+                      >
+                        <span
+                          className={`h-4 w-4 rounded-full border shrink-0 transition-transform ${
+                            isSelected ? "border-[#530911]/40 scale-110 shadow-sm" : style.isLight ? "border-stone-400" : "border-white/40"
+                          }`}
+                          style={{
+                            backgroundColor: style.bg,
+                          }}
+                        />
+                        <span>{col}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {colorError && !color && (
+                  <p className="mt-1 text-xs text-red-400 font-medium">Please choose a color to continue</p>
+                )}
+                {color && (
+                  <button
+                    type="button"
+                    onClick={() => setColor("")}
+                    className="mt-1.5 block text-xs text-[#E1B76F]/70 hover:text-white underline underline-offset-2 transition cursor-pointer"
+                  >
+                    Clear color
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Variation Attribute Selection (Size & Selectable Options) */}
             {variationAttrs.length > 0 && (
@@ -840,6 +948,16 @@ export function ProductDetailsView({
                         </td>
                       </tr>
                     ) : null}
+                    {product.colors && product.colors.length > 0 && !product.attributes?.some(a => a.name.toLowerCase() === "color" || a.name.toLowerCase() === "colors") && (
+                      <tr className="border-b border-[#E1B76F]/20 last:border-b-0">
+                        <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#42070e]">
+                          Color
+                        </th>
+                        <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
+                          {product.colors.join(", ")}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -891,9 +1009,12 @@ export function ProductDetailsView({
               <button
                 type="button"
                 onClick={() => {
-                  if (variationAttrs.length > 0 && !size) {
+                  const needsSize = variationAttrs.length > 0 && !size;
+                  const needsColor = availableColors.length > 0 && !color;
+                  if (needsSize || needsColor) {
                     window.scrollTo({ top: 400, behavior: "smooth" });
-                    setOptionError(true);
+                    if (needsSize) setOptionError(true);
+                    if (needsColor) setColorError(true);
                     return;
                   }
                   onAddToCart();
@@ -907,7 +1028,7 @@ export function ProductDetailsView({
               >
                 {added
                   ? "Added to cart"
-                  : size || variationAttrs.length === 0
+                  : (variationAttrs.length === 0 || size) && (availableColors.length === 0 || color)
                   ? "Add to cart"
                   : "Select options"}
               </button>

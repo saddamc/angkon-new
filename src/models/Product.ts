@@ -47,6 +47,7 @@ export interface IProduct extends Document {
   on_sale: boolean;
   stock_status: "instock" | "outofstock" | "onbackorder";
   sizes: string[];
+  colors?: string[];
   images: IProductImage[];
   categories: IProductCategoryRef[];
   tags: IProductTagRef[];
@@ -129,6 +130,7 @@ const ProductSchema = new Schema<IProduct>(
     },
     manage_stock: { type: Boolean, default: false },
     sizes: { type: [String], default: [] },
+    colors: { type: [String], default: [] },
     images: { type: [ProductImageSchema], default: [] },
     categories: { type: [ProductCategoryRefSchema], default: [] },
     tags: { type: [ProductTagRefSchema], default: [] },

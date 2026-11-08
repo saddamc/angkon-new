@@ -168,6 +168,7 @@ export async function POST(request: NextRequest) {
       price: number;
       quantity: number;
       size: string;
+      color?: string;
       image: string;
     }
 
@@ -217,6 +218,7 @@ export async function POST(request: NextRequest) {
         price: unitPrice,
         quantity: qty,
         size: rawItem.size ? String(rawItem.size).trim() : "",
+        color: rawItem.color ? String(rawItem.color).trim() : "",
         image: resolvedImage,
       });
     }

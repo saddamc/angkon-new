@@ -150,6 +150,38 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Keep colors array and attributes[Color] completely synchronized
+    let productColors: string[] = [];
+    if (Array.isArray(body.colors)) {
+      productColors = body.colors.map(String).map((s: string) => s.trim()).filter(Boolean);
+    } else if (Array.isArray(body.attributes)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const colorAttr = body.attributes.find((a: any) => {
+        const n = String(a?.name || "").toLowerCase();
+        return n === "color" || n === "colors" || n === "colour" || n === "colours";
+      });
+      if (colorAttr && Array.isArray(colorAttr.options)) {
+        productColors = colorAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean);
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const colorAttrIdx = attributes.findIndex((a: any) => {
+      const n = String(a?.name || "").toLowerCase();
+      return n === "color" || n === "colors" || n === "colour" || n === "colours";
+    });
+    if (colorAttrIdx >= 0) {
+      attributes[colorAttrIdx].options = productColors;
+    } else if (productColors.length > 0) {
+      attributes.push({
+        id: 0,
+        name: "Color",
+        visible: true,
+        variation: false,
+        options: productColors,
+      });
+    }
+
     // Automatically ensure product images are organized into the matching category-wise Cloudinary folder
     let productImages = Array.isArray(body.images) ? body.images : [];
     if (productImages.length > 0) {
@@ -176,6 +208,7 @@ export async function POST(request: NextRequest) {
       manage_stock: manageStock,
       stock_quantity: stockQuantity,
       sizes: productSizes,
+      colors: productColors,
       attributes,
     });
 

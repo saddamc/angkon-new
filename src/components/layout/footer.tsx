@@ -55,13 +55,13 @@ function WhatsAppIcon({ className }: { className?: string }) {
 const SOCIAL_CHANNELS = [
   {
     name: "Facebook",
-    href: "https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr",
+    href: "https://www.facebook.com/angkon.oficiall",
     icon: FacebookIcon,
     label: "Follow ANGKON on Facebook",
   },
   {
     name: "Instagram",
-    href: "https://www.instagram.com/angkon.officiall?stkn=MTBjcmt5NWhwYzVqYQ==",
+    href: "https://www.instagram.com/angkon.officialll",
     icon: InstagramIcon,
     label: "Follow ANGKON on Instagram",
   },

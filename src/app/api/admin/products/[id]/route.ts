@@ -132,6 +132,38 @@ export async function PUT(
       }
     }
 
+    // Keep colors array and attributes[Color] completely synchronized
+    if (Array.isArray(body.colors)) {
+      body.colors = body.colors.map(String).map((s: string) => s.trim()).filter(Boolean);
+      if (Array.isArray(body.attributes)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const colorAttrIdx = body.attributes.findIndex((a: any) => {
+          const n = String(a?.name || "").toLowerCase();
+          return n === "color" || n === "colors" || n === "colour" || n === "colours";
+        });
+        if (colorAttrIdx >= 0) {
+          body.attributes[colorAttrIdx].options = body.colors;
+        } else if (body.colors.length > 0) {
+          body.attributes.push({
+            id: 0,
+            name: "Color",
+            visible: true,
+            variation: false,
+            options: body.colors,
+          });
+        }
+      }
+    } else if (Array.isArray(body.attributes)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const colorAttr = body.attributes.find((a: any) => {
+        const n = String(a?.name || "").toLowerCase();
+        return n === "color" || n === "colors" || n === "colour" || n === "colours";
+      });
+      if (colorAttr && Array.isArray(colorAttr.options)) {
+        body.colors = colorAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean);
+      }
+    }
+
     if (body.stock_quantity !== undefined) {
       if (body.stock_quantity === null || body.stock_quantity === "" || isNaN(Number(body.stock_quantity))) {
         body.stock_quantity = null;

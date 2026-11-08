@@ -28,6 +28,18 @@ export function mapWooProduct(raw: any): WooProduct {
       ? sizeAttr.options
       : (Array.isArray(raw.sizes) && raw.sizes.length > 0 ? raw.sizes : []);
 
+  const colorAttr = (raw.attributes ?? []).find(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (a: any) => {
+      const n = String(a?.name || "").toLowerCase();
+      return n === "color" || n === "colors" || n === "colour" || n === "colours";
+    }
+  );
+  const resolvedColors: string[] =
+    Array.isArray(colorAttr?.options) && colorAttr.options.length > 0
+      ? colorAttr.options
+      : (Array.isArray(raw.colors) && raw.colors.length > 0 ? raw.colors : []);
+
   const attributes = (raw.attributes ?? []).map((a: { id: number; name: string; options: string[]; visible: boolean }) => ({
     id: a.id,
     name: a.name,
@@ -39,6 +51,14 @@ export function mapWooProduct(raw: any): WooProduct {
       id: 0,
       name: "Size",
       options: resolvedSizes,
+      visible: true,
+    });
+  }
+  if (resolvedColors.length > 0 && !colorAttr) {
+    attributes.push({
+      id: 0,
+      name: "Color",
+      options: resolvedColors,
       visible: true,
     });
   }
@@ -56,6 +76,7 @@ export function mapWooProduct(raw: any): WooProduct {
     on_sale: raw.on_sale ?? false,
     stock_status: raw.stock_status ?? "instock",
     sizes: resolvedSizes,
+    colors: resolvedColors,
     images: raw.images ?? [],
     categories: raw.categories ?? [],
     tags: raw.tags ?? [],

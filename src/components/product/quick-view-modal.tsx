@@ -9,7 +9,7 @@ import { formatPrice, getDisplayPrice } from "@/utils/price";
 import { useCartStore } from "@/store/cart-store";
 import { decodeEntities } from "@/utils/html";
 import { trackAddToCart, generateEventId } from "@/lib/fpixel";
-import { resolveColorStyle } from "@/utils/color-swatches";
+import { resolveColorStyle, getColorDisplayName } from "@/utils/color-swatches";
 import { QuantitySelector } from "@/components/product/quantity-selector";
 
 interface QuickViewModalProps {
@@ -205,12 +205,13 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
             {availableColors.length > 0 && (
               <div className="mt-5">
                 <span className="block text-[12px] font-bold uppercase tracking-wider text-white/80 mb-2">
-                  Select Color: <strong className="text-white">{selectedColor || availableColors[0]}</strong>
+                  Select Color: <strong className="text-white">{getColorDisplayName(selectedColor || availableColors[0])}</strong>
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {availableColors.map((col) => {
                     const isSelected = (selectedColor || availableColors[0]) === col;
                     const style = resolveColorStyle(col);
+                    const displayName = getColorDisplayName(col);
                     return (
                       <button
                         key={col}
@@ -230,7 +231,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                             backgroundColor: style.bg,
                           }}
                         />
-                        <span>{col}</span>
+                        <span>{displayName}</span>
                       </button>
                     );
                   })}

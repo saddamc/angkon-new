@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Lock, Tag, AlertCircle, Loader2 } from "lucide-react";
 import { formatPrice } from "@/utils/price";
+import { getColorDisplayName } from "@/utils/color-swatches";
 import type { CartItem } from "@/types/product";
 import type { ShippingQuote } from "@/lib/shipping";
 
@@ -58,7 +59,7 @@ export function OrderSummarySidebar({
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-white truncate">{item.name}</p>
                   <p className="text-[11px] text-white/60">
-                    {item.size ? `Size: ${item.size} • ` : ""}{item.color ? `Color: ${item.color} • ` : ""}Qty: {item.quantity}
+                    {item.size ? `Size: ${item.size} • ` : ""}{item.color ? `Color: ${getColorDisplayName(item.color)} • ` : ""}Qty: {item.quantity}
                   </p>
                 </div>
               </div>

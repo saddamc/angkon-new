@@ -17,9 +17,9 @@ import {
   Ruler,
   Palette,
   Sparkles,
-  FolderTree,
-  Folder,
-  ImageIcon,
+  Search,
+  Check,
+  Plus,
 } from "lucide-react";
 import type { WooCategory } from "@/types/product";
 import { toWpDescription } from "@/utils/html";
@@ -42,12 +42,21 @@ import {
   type UploadFolderContext,
   STOCK_OPTIONS,
 } from "./types";
-import { resolveColorStyle } from "./color-swatches";
+import {
+  resolveColorStyle,
+  cleanColorName,
+  searchFashionColors,
+  hexToNearestColorName,
+  validateColorName,
+  validateHexColor,
+  registerCustomColor,
+  FASHION_COLOR_LIST,
+} from "./color-swatches";
 import { cropImageCanvas, type CropMode, type CropAlign } from "./crop-utils";
 import { uploadImageWithProgress } from "./upload-utils";
 import { ImageCropModal } from "./ImageCropModal";
 import { ImagePreviewModal } from "./ImagePreviewModal";
-import { ProductColorModal } from "./ProductColorModal";
+import { CustomColorModal } from "./CustomColorModal";
 import { ProductCategorySelector, type CategorySelectionItem } from "./ProductCategorySelector";
 import { ProductImageManager } from "./ProductImageManager";
 
@@ -91,6 +100,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
   );
   const [sizes, setSizes] = useState<string[]>(initialData?.sizes || []);
   const [colors, setColors] = useState<string[]>(initialData?.colors || []);
+  const [colorNameInput, setColorNameInput] = useState("");
   const [sizeChart, setSizeChart] = useState<MultiSectionSizeChart>(() =>
     normalizeToMultiSectionChart(initialData?.sizeChart, initialData?.sizes)
   );
@@ -116,8 +126,15 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
   const [previewModalIndex, setPreviewModalIndex] = useState<number | null>(null);
   const [cropModalIndex, setCropModalIndex] = useState<number | null>(null);
   const [processingCrop, setProcessingCrop] = useState(false);
-  const [colorModalOpen, setColorModalOpen] = useState(false);
+  const [colorSearchOpen, setColorSearchOpen] = useState(false);
+  const [customPickerColor, setCustomPickerColor] = useState("#8B1E3F");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const colorDropdownRef = useRef<HTMLDivElement>(null);
+  const colorInputRef = useRef<HTMLInputElement>(null);
   const [sizeModalOpen, setSizeModalOpen] = useState(false);
+  const [customColorModalOpen, setCustomColorModalOpen] = useState(false);
+  const [customColorInitialName, setCustomColorInitialName] = useState("");
+  const [colorFeedbackMessage, setColorFeedbackMessage] = useState("");
 
   const uploading = pendingUploads.some(
     (u) => u.phase === "uploading" || u.phase === "processing"
@@ -265,20 +282,159 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     setSizeChart((prev) => ({ ...prev, sizes: [] }));
   };
 
-  // Color handlers
+  // Color handlers (normalized to clean Color Names)
   const toggleColor = (c: string) => {
+    const clean = cleanColorName(c);
+    if (!clean) return;
     setColors((prev) =>
-      prev.some((x) => x.toLowerCase() === c.toLowerCase())
-        ? prev.filter((x) => x.toLowerCase() !== c.toLowerCase())
-        : [...prev, c]
+      prev.some((x) => x.toLowerCase() === clean.toLowerCase())
+        ? prev.filter((x) => x.toLowerCase() !== clean.toLowerCase())
+        : [...prev, clean]
     );
   };
 
-  const addCustomColor = (custom: string) => {
-    const clean = custom.trim();
+  const addCustomColor = (custom: string, hex?: string) => {
+    const validation = validateColorName(custom);
+    if (!validation.valid) return;
+    const clean = cleanColorName(custom);
     if (!clean) return;
+
+    if (hex && validateHexColor(hex)) {
+      registerCustomColor(clean, hex);
+    }
+
     if (!colors.some((x) => x.toLowerCase() === clean.toLowerCase())) {
       setColors((prev) => [...prev, clean]);
+    }
+  };
+
+  const handleOpenAddModal = (initialName?: string) => {
+    setCustomColorInitialName(initialName ? cleanColorName(initialName) : "");
+    setCustomColorModalOpen(true);
+    setColorSearchOpen(false);
+  };
+
+  const handleSaveCustomColor = (colorName: string, hexCode?: string) => {
+    addCustomColor(colorName, hexCode);
+    setColorNameInput("");
+    setColorSearchOpen(false);
+    setColorFeedbackMessage(`Color "${colorName}" added successfully.`);
+    setTimeout(() => {
+      setColorFeedbackMessage("");
+    }, 3500);
+  };
+
+  const handleSelectColor = (name: string) => {
+    addCustomColor(name);
+    setColorNameInput("");
+    setColorSearchOpen(false);
+    setHighlightedIndex(-1);
+    setColorFeedbackMessage(`Color "${name}" added.`);
+    setTimeout(() => {
+      setColorFeedbackMessage("");
+    }, 3500);
+  };
+
+  const handleCreateCustom = () => {
+    const trimmed = colorNameInput.trim();
+    handleOpenAddModal(trimmed);
+  };
+
+  const handleAddButtonClick = () => {
+    handleOpenAddModal(colorNameInput.trim());
+  };
+
+  const handleQuickAddColor = (name: string) => {
+    handleSelectColor(name);
+  };
+
+  // Close color search dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        colorDropdownRef.current &&
+        !colorDropdownRef.current.contains(event.target as Node)
+      ) {
+        setColorSearchOpen(false);
+        setHighlightedIndex(-1);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleColorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setColorSearchOpen(false);
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    const matches = searchFashionColors(colorNameInput, 5);
+    const trimmed = colorNameInput.trim();
+    const hasExactMatch = FASHION_COLOR_LIST.some(
+      (item) => item.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    const isAlreadySelected = colors.some(
+      (c) => c.toLowerCase() === trimmed.toLowerCase()
+    );
+    const showCustomOption = Boolean(
+      trimmed &&
+      !hasExactMatch &&
+      !isAlreadySelected &&
+      validateColorName(trimmed).valid
+    );
+
+    const totalItems = matches.length + (showCustomOption ? 1 : 0);
+
+    if (!colorSearchOpen) {
+      if (e.key === "ArrowDown" || e.key === "Enter") {
+        e.preventDefault();
+        setColorSearchOpen(true);
+        setHighlightedIndex(0);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (totalItems === 0) return;
+      setHighlightedIndex((prev) => (prev + 1 >= totalItems ? 0 : prev + 1));
+      return;
+    }
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (totalItems === 0) return;
+      setHighlightedIndex((prev) => (prev <= 0 ? totalItems - 1 : prev - 1));
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && highlightedIndex < matches.length) {
+        const item = matches[highlightedIndex];
+        const isSelected = colors.some(
+          (c) => c.toLowerCase() === item.name.toLowerCase()
+        );
+        if (!isSelected) {
+          handleSelectColor(item.name);
+        }
+      } else if (showCustomOption && highlightedIndex === matches.length) {
+        handleOpenAddModal(trimmed);
+      } else {
+        const exactMatch = matches.find(
+          (m) => m.name.toLowerCase() === trimmed.toLowerCase()
+        );
+        if (exactMatch) {
+          handleSelectColor(exactMatch.name);
+        } else if (trimmed) {
+          handleOpenAddModal(trimmed);
+        } else {
+          handleOpenAddModal();
+        }
+      }
     }
   };
 
@@ -673,20 +829,25 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
   const primaryCategory = selectedCategories[0];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-28">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6 pb-28">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Left Column — Main Content & Images ────────────────────── */}
         <div className="lg:col-span-2 space-y-5">
           {/* Basic Information */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="h-4 w-4 text-purple-600" />
-              <h3 className="text-[14px] font-bold text-gray-800">
-                Basic Information
-              </h3>
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
+                  <Package className="h-4 w-4" />
+                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+                  Basic Information
+                </h3>
+              </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-1.5">
                   Product Name *
@@ -757,14 +918,18 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           />
 
           {/* Descriptions */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <Layers className="h-4 w-4 text-purple-600" />
-              <h3 className="text-[14px] font-bold text-gray-800">
-                Descriptions
-              </h3>
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
+                  <Layers className="h-4 w-4" />
+                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+                  Descriptions
+                </h3>
+              </div>
             </div>
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
                   Short Description
@@ -820,25 +985,24 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
         {/* ── Right Column — Pricing, Delivery, Inventory, Sizes, Colors ── */}
         <div className="space-y-5">
           {/* Pricing */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
                   <DollarSign className="h-4 w-4" />
                 </div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-gray-800">Pricing &amp; Margins</h3>
-                  <p className="text-[11px] text-stone-400">Regular price, sale price &amp; inventory cost</p>
-                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+                  Pricing &amp; Margins
+                </h3>
               </div>
               {(salePrice || regularPrice) && (
-                <span className="text-[12px] font-extrabold text-purple-700 bg-purple-50 border border-purple-200/60 px-2.5 py-0.5 rounded-full">
+                <span className="text-[11px] font-bold text-purple-700 bg-purple-50 border border-purple-200/60 px-2.5 py-0.5 rounded-full shrink-0">
                   ৳{Number(salePrice || regularPrice).toLocaleString()}
                 </span>
               )}
             </div>
 
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-700 mb-1.5">
                   Regular Price (৳) *
@@ -929,20 +1093,22 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           </div>
 
           {/* Delivery Charges */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
                   <Truck className="h-4 w-4" />
                 </div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-gray-800">Delivery Charges</h3>
-                  <p className="text-[11px] text-stone-400">City-specific shipping or store default</p>
-                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+                  Delivery Charges
+                </h3>
               </div>
+              <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200/70 shrink-0">
+                {deliveryInside || deliveryOutside ? "Custom Rates" : "Store Default"}
+              </span>
             </div>
 
-            <div className="space-y-3.5">
+            <div className="p-5 space-y-3.5">
               <div className="text-[11.5px] text-stone-600 leading-relaxed bg-stone-50 p-3 rounded-xl border border-stone-200/70">
                 💡 <strong>Leave empty</strong> to use standard store delivery rates. Enter <strong>0</strong> to give <strong>Free Delivery</strong> for this product.
               </div>
@@ -982,26 +1148,21 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           </div>
 
           {/* Stock & Inventory Valuation */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
                   <Boxes className="h-4 w-4" />
                 </div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-gray-800">
-                    Inventory &amp; Stock
-                  </h3>
-                  <p className="text-[11px] text-stone-400">
-                    Quantity, fulfillment status &amp; valuation
-                  </p>
-                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+                  Inventory &amp; Stock
+                </h3>
               </div>
               {(() => {
                 const qty = parseInt(stockQuantity || "0", 10);
                 if (stockStatus === "outofstock" || (manageStock && stockQuantity !== "" && qty === 0)) {
                   return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
                       Out of Stock
                     </span>
@@ -1009,7 +1170,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
                 }
                 if (manageStock && stockQuantity !== "" && qty > 0 && qty <= 3) {
                   return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
                       <AlertTriangle className="h-3 w-3 text-amber-600" />
                       Low Stock ({qty})
                     </span>
@@ -1017,21 +1178,21 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
                 }
                 if (manageStock && stockQuantity !== "" && qty > 3) {
                   return (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       {qty} In Stock
                     </span>
                   );
                 }
                 return (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-stone-100 text-stone-600 border border-stone-200 shrink-0">
                     {stockStatus === "onbackorder" ? "Backorder" : "In Stock"}
                   </span>
                 );
               })()}
             </div>
 
-            <div className="space-y-4">
+            <div className="p-5 space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[11px] font-bold uppercase tracking-widest text-stone-600">
@@ -1216,29 +1377,24 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           </div>
 
           {/* Sizes & Measurements */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm space-y-3.5">
-            <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
                   <Ruler className="h-4 w-4" />
                 </div>
-                <div>
-                  <h3 className="text-[14px] font-bold text-gray-800">
-                    Sizes &amp; Measurements
-                  </h3>
-                  <p className="text-[11px] text-stone-400">
-                    Selectable sizes &amp; garment specs chart
-                  </p>
-                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+                  Sizes &amp; Measurements
+                </h3>
               </div>
               {sizes.length > 0 && (
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 shrink-0">
                   {sizes.length} {sizes.length === 1 ? "size" : "sizes"}
                 </span>
               )}
             </div>
 
-            <div className="space-y-3">
+            <div className="p-5 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -1324,65 +1480,247 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           </div>
 
           {/* Product Colors */}
-          <div className="bg-white rounded-2xl border border-purple-100/60 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Palette className="h-4 w-4 text-purple-600" />
-                <h3 className="text-[14px] font-bold text-gray-800">
+          <div className="bg-white rounded-2xl border border-stone-200/90 shadow-sm overflow-visible">
+            {/* Header with crisp bottom border */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
+                  <Palette className="h-4 w-4" />
+                </div>
+                <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
                   Product Colors
                 </h3>
               </div>
               {colors.length > 0 && (
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 shrink-0">
                   {colors.length} {colors.length === 1 ? "color" : "colors"}
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setColorModalOpen(true)}
-                className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-xs font-bold border border-purple-200 bg-white text-stone-800 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 transition cursor-pointer shadow-xs select-none"
-              >
-                <Palette className="h-3.5 w-3.5 text-purple-600" />
-                <span>{colors.length > 0 ? "+ Add More Colors" : "+ Select Colors"}</span>
-              </button>
-
-              {colors.map((c) => {
-                const style = resolveColorStyle(c);
-                return (
-                  <span
-                    key={c}
-                    className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1 rounded-xl text-xs font-bold border border-purple-100 bg-white text-stone-800 shadow-2xs group hover:border-purple-300 transition"
-                  >
-                    <span
-                      className={`h-3.5 w-3.5 rounded-full shrink-0 ${style.swatchBorder}`}
-                      style={{ backgroundColor: style.bg }}
-                      title={`Color swatch: ${c}`}
+            <div className="p-5 space-y-3.5">
+              {/* Direct Add & Combobox Search Bar */}
+              <div ref={colorDropdownRef} className="relative">
+                <div className="flex items-center gap-2">
+                  {/* Search Input with Search & Clear icons */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
+                    <input
+                      ref={colorInputRef}
+                      type="text"
+                      value={colorNameInput}
+                      onFocus={() => {
+                        setColorSearchOpen(true);
+                        setHighlightedIndex(-1);
+                      }}
+                      onChange={(e) => {
+                        setColorNameInput(e.target.value);
+                        setColorSearchOpen(true);
+                        setHighlightedIndex(-1);
+                      }}
+                      onKeyDown={handleColorKeyDown}
+                      placeholder="Search color name..."
+                      className="w-full h-10 rounded-xl border border-stone-200 bg-stone-50/70 pl-9 pr-9 text-xs text-stone-800 placeholder-stone-400 focus:bg-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
+                      aria-label="Search color name"
+                      aria-expanded={colorSearchOpen}
+                      role="combobox"
+                      aria-autocomplete="list"
                     />
-                    <span className="font-semibold">{c}</span>
+                    {colorNameInput.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setColorNameInput("");
+                          setColorSearchOpen(false);
+                          setHighlightedIndex(-1);
+                        }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 cursor-pointer transition rounded"
+                        aria-label="Clear search"
+                        title="Clear search"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Compact purple Add button */}
+                  <button
+                    type="button"
+                    onClick={handleAddButtonClick}
+                    className="h-10 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow-xs cursor-pointer inline-flex items-center gap-1.5 shrink-0"
+                    aria-label="Add custom color"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add</span>
+                  </button>
+                </div>
+
+                {/* 5-Color Search Autocomplete Dropdown */}
+                {colorSearchOpen && (() => {
+                  const matches = searchFashionColors(colorNameInput, 5);
+                  const trimmed = colorNameInput.trim();
+                  const hasExactCanonicalMatch = FASHION_COLOR_LIST.some(
+                    (item) => item.name.toLowerCase() === trimmed.toLowerCase()
+                  );
+                  const isAlreadySelected = colors.some(
+                    (c) => c.toLowerCase() === trimmed.toLowerCase()
+                  );
+                  const showCustomOption = Boolean(
+                    trimmed &&
+                    !hasExactCanonicalMatch &&
+                    !isAlreadySelected &&
+                    validateColorName(trimmed).valid
+                  );
+
+                  return (
+                    <div
+                      role="listbox"
+                      className="absolute left-0 right-0 top-full mt-1.5 z-30 rounded-xl border border-stone-200 bg-white shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100"
+                    >
+                      <div className="divide-y divide-stone-100 max-h-64 overflow-y-auto">
+                        {matches.map((item, idx) => {
+                          const isSelected = colors.some(
+                            (c) => c.toLowerCase() === item.name.toLowerCase()
+                          );
+                          const isHighlighted = idx === highlightedIndex;
+
+                          return (
+                            <div
+                              key={item.name}
+                              role="option"
+                              aria-selected={isSelected}
+                              onClick={() => {
+                                if (!isSelected) {
+                                  handleSelectColor(item.name);
+                                }
+                              }}
+                              className={`flex items-center justify-between px-3.5 py-2.5 text-xs transition select-none ${
+                                isSelected
+                                  ? "bg-stone-50/70 text-stone-400 cursor-default"
+                                  : isHighlighted
+                                  ? "bg-purple-50 text-purple-900 cursor-pointer"
+                                  : "hover:bg-stone-50 text-stone-800 cursor-pointer"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span
+                                  className="h-4 w-4 rounded-full border border-stone-300 shrink-0"
+                                  style={{ backgroundColor: item.hex }}
+                                />
+                                <span className="font-medium text-stone-900 truncate">
+                                  {item.name}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {isSelected ? (
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                    <span>Added</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-semibold text-purple-600">
+                                    + Add
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {/* Custom Color Option when input doesn't match existing color */}
+                        {showCustomOption && (
+                          <div
+                            role="option"
+                            aria-selected={highlightedIndex === matches.length}
+                            onClick={handleCreateCustom}
+                            className={`flex items-center justify-between px-3.5 py-2.5 text-xs transition cursor-pointer select-none ${
+                              highlightedIndex === matches.length
+                                ? "bg-purple-100 text-purple-950 font-semibold"
+                                : "bg-purple-50/40 hover:bg-purple-50 text-purple-900"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="h-4 w-4 rounded-full border border-purple-300 bg-purple-100 shrink-0 flex items-center justify-center text-[10px] text-purple-700 font-bold">
+                                +
+                              </span>
+                              <span className="font-semibold truncate">
+                                + Create &ldquo;{cleanColorName(trimmed)}&rdquo; as a custom color
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-purple-600 shrink-0">
+                              + Add
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Empty state when no matching colors and no custom option */}
+                        {matches.length === 0 && !showCustomOption && (
+                          <div className="px-4 py-3.5 text-xs text-stone-500 text-center">
+                            {trimmed
+                              ? isAlreadySelected
+                                ? `Color "${cleanColorName(trimmed)}" is already added`
+                                : `No matching colors found`
+                              : `No matching colors found`}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Success Feedback Banner */}
+              {colorFeedbackMessage && (
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200/80 text-xs font-semibold text-emerald-800 animate-in fade-in-0 duration-150">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                  <span className="truncate">{colorFeedbackMessage}</span>
+                </div>
+              )}
+
+              {/* Selected Colors Section */}
+              {colors.length > 0 && (
+                <div className="pt-2.5 border-t border-stone-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-stone-700">
+                      Selected Product Colors ({colors.length})
+                    </span>
                     <button
                       type="button"
-                      onClick={() => toggleColor(c)}
-                      className="h-4 w-4 rounded flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-stone-100 transition cursor-pointer"
-                      title={`Remove ${c}`}
-                      aria-label={`Remove ${c}`}
+                      onClick={() => setColors([])}
+                      className="text-xs font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer"
                     >
-                      <X className="h-3 w-3" />
+                      Clear All
                     </button>
-                  </span>
-                );
-              })}
+                  </div>
 
-              {colors.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setColors([])}
-                  className="text-[11px] font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer ml-1"
-                >
-                  Clear all
-                </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {colors.map((c) => {
+                      const style = resolveColorStyle(c);
+                      return (
+                        <span
+                          key={c}
+                          className="inline-flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-xl text-xs font-semibold border border-stone-200/90 bg-white text-stone-800 shadow-2xs group hover:border-purple-300 transition"
+                        >
+                          <span
+                            className="h-3.5 w-3.5 rounded-full shrink-0 border border-stone-300"
+                            style={{ backgroundColor: style.bg }}
+                          />
+                          <span className="font-semibold text-stone-800">{c}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleColor(c)}
+                            className="h-4 w-4 rounded flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                            title={`Remove ${c}`}
+                            aria-label={`Remove ${c}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -1425,64 +1763,25 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
                 </div>
               )}
 
-              <div className="min-w-0 flex-1 sm:flex-initial">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] sm:text-[14px] font-bold text-stone-900 truncate max-w-[200px] sm:max-w-sm md:max-w-md">
-                    {name.trim() || (initialData?.id ? "Edit Product" : "New Product")}
+              <div className="min-w-0 flex-1 sm:flex-initial flex items-center gap-2.5 flex-wrap">
+                <span className="text-[13.5px] sm:text-[14px] font-bold text-stone-900 truncate max-w-[200px] sm:max-w-sm md:max-w-md">
+                  {name.trim() || (initialData?.id ? "Edit Product" : "New Product")}
+                </span>
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 border ${
+                    initialData?.id
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-amber-50 text-amber-700 border-amber-200"
+                  }`}
+                >
+                  {initialData?.id ? "Editing" : "Draft"}
+                </span>
+                {uploading && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10.5px] font-semibold border border-amber-300 animate-pulse shrink-0">
+                    <Loader2 className="h-3 w-3 animate-spin text-amber-700 shrink-0" />
+                    <span>Uploading…</span>
                   </span>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 border ${
-                      initialData?.id
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border-amber-200"
-                    }`}
-                  >
-                    {initialData?.id ? "Editing" : "Draft"}
-                  </span>
-                </div>
-
-                {/* Subtitle / Category line & stats */}
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-stone-600 flex-wrap">
-                  {primaryCategory ? (
-                    <span
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 max-w-[240px] sm:max-w-xs md:max-w-sm truncate"
-                    >
-                      <FolderTree className="h-3 w-3 text-stone-500 shrink-0" />
-                      <span className="truncate">{primaryCategory.name}</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-stone-100 text-stone-500 text-[11px] font-medium border border-stone-200/80 shrink-0">
-                      <Folder className="h-3 w-3 text-stone-400 shrink-0" />
-                      <span>No category</span>
-                    </span>
-                  )}
-
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 shrink-0">
-                    <ImageIcon className="h-3 w-3 text-stone-500 shrink-0" />
-                    <span>{images.length} {images.length === 1 ? "image" : "images"}</span>
-                  </span>
-
-                  {sizes.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 shrink-0">
-                      <Ruler className="h-3 w-3 text-stone-500 shrink-0" />
-                      <span>{sizes.length} sizes</span>
-                    </span>
-                  )}
-
-                  {colors.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-stone-100 text-stone-700 text-[11px] font-medium border border-stone-200/80 shrink-0">
-                      <Palette className="h-3 w-3 text-stone-500 shrink-0" />
-                      <span>{colors.length} {colors.length === 1 ? "color" : "colors"}</span>
-                    </span>
-                  )}
-
-                  {uploading && (
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[11px] font-semibold border border-amber-300 animate-pulse shrink-0">
-                      <Loader2 className="h-3 w-3 animate-spin text-amber-700 shrink-0" />
-                      <span>Uploading…</span>
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
             </div>
 
@@ -1518,6 +1817,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           </div>
         </div>
       </div>
+    </form>
 
       {/* ── Preview Modal ── */}
       <ImagePreviewModal
@@ -1545,29 +1845,29 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
         onApply={handleApplyCrop}
       />
 
-      {/* ── Color Modal ── */}
-      <ProductColorModal
-        isOpen={colorModalOpen}
-        selectedColors={colors}
-        onToggleColor={toggleColor}
-        onAddCustomColor={addCustomColor}
-        onClearColors={() => setColors([])}
-        onClose={() => setColorModalOpen(false)}
+      {/* ── Custom Color Modal (shadcn/ui Dialog) ── */}
+      <CustomColorModal
+        isOpen={customColorModalOpen}
+        onClose={() => setCustomColorModalOpen(false)}
+        onSave={handleSaveCustomColor}
+        existingColors={colors}
+        initialColorName={customColorInitialName}
       />
+
 
       {/* ── Size & Measurement Builder Modal ── */}
       {sizeModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs"
         >
+          {/* Static backdrop — no onClick so modal can only close via Cancel or Save */}
           <div
             className="fixed inset-0"
-            onClick={() => setSizeModalOpen(false)}
             aria-hidden="true"
           />
-          <div className="relative z-10 w-full max-w-7xl max-h-[96vh] flex flex-col rounded-3xl bg-[#f0f0f8] shadow-2xl overflow-y-auto border border-purple-100/60">
+          <div className="relative z-10 w-full max-w-7xl max-h-[88vh] h-[88vh] flex flex-col rounded-3xl bg-[#f4f4fa] shadow-2xl overflow-hidden border border-purple-200/80">
             <SizeMeasurementBuilder
               initialChart={sizeChart}
               productName={name}
@@ -1584,6 +1884,6 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           </div>
         </div>
       )}
-    </form>
+    </>
   );
 }

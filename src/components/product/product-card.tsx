@@ -10,7 +10,7 @@ import { useCartStore } from "@/store/cart-store";
 import { QuickViewModal } from "@/components/product/quick-view-modal";
 import { decodeEntities } from "@/utils/html";
 import { trackAddToCart, generateEventId } from "@/lib/fpixel";
-import { resolveColorStyle } from "@/utils/color-swatches";
+import { resolveColorStyle, getColorDisplayName } from "@/utils/color-swatches";
 
 interface ProductCardProps {
   product: WooProduct;
@@ -170,7 +170,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
           <div className="mt-1">
             {/* Color Swatches Preview on Collection Cards */}
             {product.colors && product.colors.length > 0 && (
-              <div className="flex items-center gap-1.5 mb-2" title={`Colors: ${product.colors.join(", ")}`}>
+              <div className="flex items-center gap-1.5 mb-2" title={`Colors: ${product.colors.map(getColorDisplayName).join(", ")}`}>
                 {product.colors.slice(0, 5).map((col) => {
                   const style = resolveColorStyle(col);
                   return (

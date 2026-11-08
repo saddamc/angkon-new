@@ -130,25 +130,34 @@ export function ProductImageManager({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDropFiles}
-      className={`relative bg-white rounded-2xl border transition-all duration-200 p-5 shadow-sm ${
+      className={`relative bg-white rounded-2xl border transition-all duration-200 shadow-sm overflow-hidden ${
         isDragOverDropzone
           ? "border-purple-500 ring-4 ring-purple-100 bg-purple-50/20"
-          : "border-purple-100/60"
+          : "border-stone-200/90"
       }`}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <ImageIcon className="h-4 w-4 text-purple-600" />
-          <h3 className="text-[14px] font-bold text-gray-800">
-            Product Images &amp; Drag &amp; Drop Studio
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
+            <ImageIcon className="h-4 w-4" />
+          </div>
+          <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+            Product Images
           </h3>
         </div>
-        {uploading && (
-          <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200/60 animate-pulse">
-            Uploading…
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] font-semibold text-stone-600 bg-stone-100/90 border border-stone-200/80 px-2.5 py-0.5 rounded-full">
+            3:4 Portrait (1200 × 1600 px)
           </span>
-        )}
+          {uploading && (
+            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border bg-purple-50 text-purple-700 border-purple-200/60 animate-pulse shrink-0">
+              Uploading…
+            </span>
+          )}
+        </div>
       </div>
+
+      <div className="p-5">
 
       {/* Active Drag-Over Banner */}
       {isDragOverDropzone && (
@@ -157,23 +166,6 @@ export function ProductImageManager({
           <span>Drop images now to automatically convert to WebP &amp; upload!</span>
         </div>
       )}
-
-      {/* Guidelines Bar */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-50 border border-stone-200/80 px-3.5 py-2.5 text-xs text-stone-600">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1 font-bold text-stone-800">
-            <Sparkles className="h-3.5 w-3.5 text-purple-600" />
-            Photo #1 is Cover Photo
-          </span>
-          <span className="text-stone-300">•</span>
-          <span>3:4 Portrait (1200 × 1600 px)</span>
-          <span className="text-stone-300">•</span>
-          <span>Auto-converts to WebP</span>
-        </div>
-        <span className="text-[11px] font-semibold text-stone-400">
-          Drag photos to reorder
-        </span>
-      </div>
 
       {/* Empty State Dropzone */}
       {images.length === 0 && pendingUploads.length === 0 ? (
@@ -451,6 +443,7 @@ export function ProductImageManager({
           }
         }}
       />
+      </div>
     </div>
   );
 }

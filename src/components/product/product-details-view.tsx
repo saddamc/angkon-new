@@ -29,7 +29,7 @@ import { getDisplayPrice } from "@/utils/price";
 import { fixPlainTextTablesAndLists } from "@/utils/rich-text";
 import { saveRecentlyViewed } from "@/utils/recently-viewed";
 import { trackViewContent, trackAddToCart, generateEventId } from "@/lib/fpixel";
-import { resolveColorStyle } from "@/utils/color-swatches";
+import { resolveColorStyle, getColorDisplayName } from "@/utils/color-swatches";
 
 /* ── ShareStrip ─────────────────────────────────────────────────────── */
 
@@ -658,7 +658,7 @@ export function ProductDetailsView({
                             backgroundColor: resolveColorStyle(color).bg,
                           }}
                         />
-                        <Check className="h-3 w-3" /> {color}
+                        <Check className="h-3 w-3" /> {getColorDisplayName(color)}
                       </span>
                     ) : (
                       <span className="text-white/50 text-xs font-normal">(Please choose)</span>
@@ -671,13 +671,14 @@ export function ProductDetailsView({
                   {availableColors.map((col) => {
                     const isSelected = color === col;
                     const style = resolveColorStyle(col);
+                    const displayName = getColorDisplayName(col);
                     return (
                       <button
                         key={col}
                         type="button"
                         role="radio"
                         aria-checked={isSelected}
-                        aria-label={`Color ${col}`}
+                        aria-label={`Color ${displayName}`}
                         data-nosnippet="true"
                         data-meta-ignore="true"
                         data-fb-ignore="true"
@@ -699,7 +700,7 @@ export function ProductDetailsView({
                             backgroundColor: style.bg,
                           }}
                         />
-                        <span>{col}</span>
+                        <span>{displayName}</span>
                       </button>
                     );
                   })}

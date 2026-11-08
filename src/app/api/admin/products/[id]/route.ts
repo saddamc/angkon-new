@@ -14,6 +14,7 @@ import { publishCatalogChange } from "@/lib/catalog-sync";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 import { resolveProductCategories } from "@/server/category-sync";
+import { cleanColorName } from "@/utils/color-swatches";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const localCategory = (id: number) => (REAL_CATEGORIES as any[]).find((rc) => rc.id === id);
@@ -86,6 +87,35 @@ export async function PUT(
 
     const query = !isNaN(numericId) && /^\d+$/.test(decoded) ? { id: numericId } : { slug: decoded };
 
+    // Fetched once here: needed for the slug-conflict check below and for the
+    // image/category diffing further down.
+    const existing = await Product.findOne(query).lean();
+
+    // `slug` has a unique index. Reject a collision with an actionable message
+    // instead of letting Mongo's E11000 surface as a generic 500.
+    if (typeof body.slug === "string" && body.slug.trim()) {
+      const wantedSlug = body.slug.trim();
+      body.slug = wantedSlug;
+
+      const clash = await Product.findOne({
+        slug: wantedSlug,
+        ...(existing?._id ? { _id: { $ne: existing._id } } : {}),
+      })
+        .select("id name slug")
+        .lean();
+
+      if (clash) {
+        return NextResponse.json(
+          {
+            error: `The URL slug "${wantedSlug}" is already used by product #${clash.id} (${clash.name}). Choose a different slug, for example "${wantedSlug}-2".`,
+            code: "SLUG_TAKEN",
+            conflict: { id: clash.id, name: clash.name, slug: clash.slug },
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const regularPrice = body.regular_price ? String(body.regular_price) : "";
     const salePrice = body.sale_price ? String(body.sale_price) : "";
     body.regular_price = regularPrice;
@@ -132,9 +162,12 @@ export async function PUT(
       }
     }
 
-    // Keep colors array and attributes[Color] completely synchronized
+    // Keep colors array and attributes[Color] completely synchronized with clean Color Names
     if (Array.isArray(body.colors)) {
-      body.colors = body.colors.map(String).map((s: string) => s.trim()).filter(Boolean);
+      body.colors = body.colors
+        .map(String)
+        .map((s: string) => cleanColorName(s.trim()))
+        .filter(Boolean);
       if (Array.isArray(body.attributes)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const colorAttrIdx = body.attributes.findIndex((a: any) => {
@@ -160,7 +193,10 @@ export async function PUT(
         return n === "color" || n === "colors" || n === "colour" || n === "colours";
       });
       if (colorAttr && Array.isArray(colorAttr.options)) {
-        body.colors = colorAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean);
+        body.colors = colorAttr.options
+          .map(String)
+          .map((s: string) => cleanColorName(s.trim()))
+          .filter(Boolean);
       }
     }
 
@@ -187,8 +223,8 @@ export async function PUT(
       body.categories = await resolveProductCategories(body.categories, localCategory);
     }
 
-    // 1. Fetch existing product before update to detect category changes & removed images
-    const existing = await Product.findOne(query).lean();
+    // 1. Existing product already fetched above (used for the slug check).
+    //    Detect category changes & removed images from it here.
 
     // 2. Automatically ensure product images are organized in the matching category-wise Cloudinary folder
     if (Array.isArray(body.images) && body.images.length > 0) {
@@ -199,7 +235,11 @@ export async function PUT(
       });
     }
 
-    // 3. Track and cleanly delete any images removed from this product in Cloudinary
+    // 3. Work out which assets are no longer attached to this product.
+    //    Deletion is DEFERRED until after the database write succeeds — otherwise
+    //    a failed update (duplicate slug, validation error, crash) would destroy
+    //    images that the database still points at, leaving 404 thumbnails.
+    const removedImageSources: string[] = [];
     if (existing && Array.isArray(existing.images) && Array.isArray(body.images)) {
       const newImages = body.images;
       // Extract file basenames from new images so relocated images are recognized and preserved
@@ -218,22 +258,10 @@ export async function PUT(
           const oldPub = extractPublicIdFromUrl(oldSrc);
           const oldBasename = oldPub ? oldPub.split("/").pop() : "";
 
-          // Only delete if the asset was truly removed from the product (not just relocated)
+          // Only consider deleting if the asset was truly removed from the
+          // product (not merely relocated to another folder).
           if (oldBasename && !newBasenames.has(oldBasename)) {
-            try {
-              const isUsedElsewhere = await Product.exists({
-                _id: { $ne: existing._id },
-                "images.src": oldSrc,
-              });
-              if (!isUsedElsewhere) {
-                await deleteFromCloudinary(oldSrc);
-                console.log(`Deleted removed single product image from Cloudinary: ${oldSrc}`);
-              } else {
-                console.warn(`Preserving removed image "${oldSrc}" as another product references it.`);
-              }
-            } catch (delErr) {
-              console.warn(`Error deleting removed image "${oldSrc}":`, delErr);
-            }
+            removedImageSources.push(oldSrc);
           }
         }
       }
@@ -265,10 +293,43 @@ export async function PUT(
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
+    // 4. The row is safely saved — only now remove assets that are no longer
+    //    referenced by ANY product.
+    for (const oldSrc of removedImageSources) {
+      try {
+        const isUsedElsewhere = await Product.exists({ "images.src": oldSrc });
+        if (!isUsedElsewhere) {
+          await deleteFromCloudinary(oldSrc);
+          console.log(`Deleted removed product image from Cloudinary: ${oldSrc}`);
+        } else {
+          console.warn(`Preserving removed image "${oldSrc}" as another product references it.`);
+        }
+      } catch (delErr) {
+        console.warn(`Error deleting removed image "${oldSrc}":`, delErr);
+      }
+    }
+
     await publishCatalogChange();
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
     console.error("Update product failed:", error);
+
+    // Unique-index race: two requests claimed the same slug at once.
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      (error as { code?: number }).code === 11000
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "That URL slug is already used by another product. Choose a different slug.",
+          code: "SLUG_TAKEN",
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to update product" }, { status: 500 });
   }
 }

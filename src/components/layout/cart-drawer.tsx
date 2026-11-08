@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Minus, Plus, ShoppingBag, Trash2, X, ArrowRight, Truck } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
+import { getColorDisplayName } from "@/utils/color-swatches";
 import { useShippingQuote } from "@/hooks/use-shipping-quote";
 
 interface Props {
@@ -176,7 +177,7 @@ export function CartDrawer({ open, onClose }: Props) {
                             )}
                             {item.color && (
                               <p className="text-[11px] font-medium text-white/70">
-                                Color: <span className="font-bold text-[#E1B76F]">{item.color}</span>
+                                Color: <span className="font-bold text-[#E1B76F]">{getColorDisplayName(item.color)}</span>
                               </p>
                             )}
                           </div>

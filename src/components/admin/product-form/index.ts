@@ -5,6 +5,7 @@ export * from "./upload-utils";
 export * from "./ImageCropModal";
 export * from "./ImagePreviewModal";
 export * from "./ProductColorModal";
+export * from "./CustomColorModal";
 export * from "./ProductCategorySelector";
 export * from "./ProductImageManager";
 export * from "./ProductForm";

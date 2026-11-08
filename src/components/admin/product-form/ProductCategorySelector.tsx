@@ -10,10 +10,8 @@ import {
   X,
   Tag,
   CornerDownRight,
-  Link2,
 } from "lucide-react";
 import type { WooCategory } from "@/types/product";
-import { getProductPageUrl } from "@/utils/product-url";
 
 export interface CategorySelectionItem {
   id: number;
@@ -112,29 +110,28 @@ export function ProductCategorySelector({
   const primaryCategory = selectedCategories[0];
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between border-b pb-4 mb-5">
+    <div className="rounded-2xl border border-stone-200/90 bg-white shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700 shrink-0">
             <FolderTree className="h-4 w-4" />
           </div>
-          <div>
-            <h3 className="text-[14px] font-bold text-gray-800">Categories *</h3>
-            <p className="text-[11px] text-stone-500">
-              Choose every collection this product should appear in — it shows in all of them on the website.
-            </p>
-          </div>
+          <h3 className="text-[14px] font-bold text-gray-900 tracking-tight">
+            Categories
+          </h3>
         </div>
         {selectedCategories.length > 0 ? (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
             <Check className="h-3 w-3" /> {selectedCategories.length} selected
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
             Select at least one
           </span>
         )}
       </div>
+
+      <div className="p-5">
 
       {/* Selected categories */}
       {selectedCategories.length > 0 ? (
@@ -358,44 +355,6 @@ export function ProductCategorySelector({
           Tip: select the specific sub-category or main collection. The primary category line determines the breadcrumb trail and default collection routing.
         </p>
       </div>
-
-      {/* Storefront routing preview */}
-      <div className="mt-4 rounded-xl bg-purple-50/30 border border-purple-100/60 p-3.5">
-        <div className="flex items-center gap-2 mb-2">
-          <Link2 className="h-3.5 w-3.5 text-purple-600" />
-          <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600">
-            Storefront URLs &amp; Category Routing
-          </span>
-        </div>
-        <div className="space-y-1.5 text-[11.5px]">
-          <div className="flex items-start gap-2">
-            <span className="text-stone-400 font-medium shrink-0 w-24">Category Line:</span>
-            <span className="text-purple-700 font-semibold break-all">
-              {primaryCategory
-                ? (
-                    formattedCategories.find((c) => c.id === primaryCategory.id)
-                      ?.path || primaryCategory.name
-                  ).replace(/ → /g, " › ")
-                : "— No category selected —"}
-            </span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-stone-400 font-medium shrink-0 w-24">Product URL:</span>
-            <code className="text-purple-700 font-mono break-all font-semibold">
-              {getProductPageUrl(slugManual ? productSlug || productName : productName, {
-                fromName: true,
-              })}
-            </code>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="text-stone-400 font-medium shrink-0 w-24">Appears in:</span>
-            <span className="text-stone-700 break-all">
-              {selectedCategories.length
-                ? selectedCategories.map((c) => `/category/${c.slug}`).join("  ·  ")
-                : "— Select a category above —"}
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

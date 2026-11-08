@@ -13,6 +13,7 @@ import {
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 import { resolveProductCategories } from "@/server/category-sync";
+import { cleanColorName } from "@/utils/color-swatches";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const localCategory = (id: number) => (REAL_CATEGORIES as any[]).find((rc) => rc.id === id);
@@ -98,6 +99,20 @@ export async function POST(request: NextRequest) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
+    // `slug` has a unique index — return an actionable 409 instead of a raw
+    // E11000 bubbling up as a generic 500.
+    const slugClash = await Product.findOne({ slug }).select("id name slug").lean();
+    if (slugClash) {
+      return NextResponse.json(
+        {
+          error: `The URL slug "${slug}" is already used by product #${slugClash.id} (${slugClash.name}). Choose a different slug, for example "${slug}-2".`,
+          code: "SLUG_TAKEN",
+          conflict: { id: slugClash.id, name: slugClash.name, slug: slugClash.slug },
+        },
+        { status: 409 }
+      );
+    }
+
     // Categories are re-read from the categories collection (name / slug / parent always correct).
     const resolvedCategories = await resolveProductCategories(body.categories, localCategory);
 
@@ -150,10 +165,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Keep colors array and attributes[Color] completely synchronized
+    // Keep colors array and attributes[Color] completely synchronized with clean Color Names
     let productColors: string[] = [];
     if (Array.isArray(body.colors)) {
-      productColors = body.colors.map(String).map((s: string) => s.trim()).filter(Boolean);
+      productColors = body.colors
+        .map(String)
+        .map((s: string) => cleanColorName(s.trim()))
+        .filter(Boolean);
     } else if (Array.isArray(body.attributes)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const colorAttr = body.attributes.find((a: any) => {
@@ -161,7 +179,10 @@ export async function POST(request: NextRequest) {
         return n === "color" || n === "colors" || n === "colour" || n === "colours";
       });
       if (colorAttr && Array.isArray(colorAttr.options)) {
-        productColors = colorAttr.options.map(String).map((s: string) => s.trim()).filter(Boolean);
+        productColors = colorAttr.options
+          .map(String)
+          .map((s: string) => cleanColorName(s.trim()))
+          .filter(Boolean);
       }
     }
 
@@ -216,6 +237,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newProduct, { status: 201 });
   } catch (err) {
     console.error("Create product failed:", err);
+
+    // Unique-index race on slug.
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      (err as { code?: number }).code === 11000
+    ) {
+      return NextResponse.json(
+        {
+          error: "That URL slug is already used by another product. Choose a different slug.",
+          code: "SLUG_TAKEN",
+        },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 }

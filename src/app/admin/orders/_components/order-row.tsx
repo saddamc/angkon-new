@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import {
   Users,
@@ -41,6 +42,7 @@ export function OrderRow({ order, idx, state }: OrderRowProps) {
   const statusColor =
     STATUS_BADGE[order.status] ?? "bg-gray-50 text-gray-600 border-gray-200";
   const firstItem = order.line_items?.[0];
+  const [imgError, setImgError] = useState(false);
   const productName = firstItem?.name ?? "—";
   const productQty = (order.line_items || []).reduce(
     (sum, li) => sum + (li.quantity || 1),
@@ -258,7 +260,7 @@ export function OrderRow({ order, idx, state }: OrderRowProps) {
 
         {/* Product Info */}
         <div className="hidden lg:flex items-center gap-2.5 min-w-0">
-          {thumb ? (
+          {thumb && !imgError ? (
             <div className="h-10 w-10 rounded-lg overflow-hidden bg-purple-50/50 flex-shrink-0 border border-purple-100">
               <Image
                 src={thumb}
@@ -266,6 +268,7 @@ export function OrderRow({ order, idx, state }: OrderRowProps) {
                 width={40}
                 height={40}
                 className="object-cover w-full h-full"
+                onError={() => setImgError(true)}
               />
             </div>
           ) : (

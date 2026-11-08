@@ -7,6 +7,7 @@ import { Trash2, ShoppingBag, ArrowRight, Tag, Loader2, X } from "lucide-react";
 import { QuantitySelector } from "@/components/product/quantity-selector";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
+import { getColorDisplayName } from "@/utils/color-swatches";
 import { useShippingQuote } from "@/hooks/use-shipping-quote";
 
 interface AppliedPromo {
@@ -181,7 +182,7 @@ export default function CartPage() {
                         )}
                         {item.color && (
                           <span className="inline-block rounded bg-[#2d0302] border border-[#E1B76F]/30 px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#E1B76F]">
-                            Color: {item.color}
+                            Color: {getColorDisplayName(item.color)}
                           </span>
                         )}
                       </div>

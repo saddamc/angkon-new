@@ -1,8 +1,17 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { Palette, X, Search, Check } from "lucide-react";
-import { resolveColorStyle, COLOR_OPTIONS } from "./color-swatches";
+import { Palette, X, Search, Check, Plus } from "lucide-react";
+import {
+  resolveColorStyle,
+  cleanColorName,
+  hexToNearestColorName,
+  searchFashionColors,
+  validateColorName,
+  validateHexColor,
+  registerCustomColor,
+  FASHION_COLOR_LIST,
+} from "./color-swatches";
 
 interface ProductColorModalProps {
   isOpen: boolean;
@@ -22,6 +31,7 @@ export function ProductColorModal({
   onClose,
 }: ProductColorModalProps) {
   const [colorSearch, setColorSearch] = useState("");
+  const [customPickerColor, setCustomPickerColor] = useState("#530911");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -32,11 +42,45 @@ export function ProductColorModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  const filteredColors = useMemo(() => {
-    const q = colorSearch.trim().toLowerCase();
-    if (!q) return COLOR_OPTIONS;
-    return COLOR_OPTIONS.filter((c) => c.toLowerCase().includes(q));
+  const candidateColorName = useMemo(() => {
+    const raw = colorSearch.trim();
+    if (!raw) return "";
+    return cleanColorName(raw);
   }, [colorSearch]);
+
+  const hasExactCanonicalMatch = useMemo(() => {
+    if (!candidateColorName) return false;
+    return FASHION_COLOR_LIST.some(
+      (c) => c.name.toLowerCase() === candidateColorName.toLowerCase()
+    );
+  }, [candidateColorName]);
+
+  const candidateAlreadySelected = useMemo(() => {
+    if (!candidateColorName) return false;
+    return selectedColors.some(
+      (c) => c.toLowerCase() === candidateColorName.toLowerCase()
+    );
+  }, [candidateColorName, selectedColors]);
+
+  const matchingColors = useMemo(() => {
+    return searchFashionColors(colorSearch, 12);
+  }, [colorSearch]);
+
+  const handleAddCandidate = () => {
+    if (!candidateColorName || candidateAlreadySelected) return;
+    const validation = validateColorName(candidateColorName);
+    if (!validation.valid) return;
+    registerCustomColor(candidateColorName, customPickerColor);
+    onAddCustomColor(candidateColorName);
+    setColorSearch("");
+  };
+
+  const handleSpectrumPick = (hexValue: string) => {
+    if (!validateHexColor(hexValue)) return;
+    setCustomPickerColor(hexValue);
+    const nearest = hexToNearestColorName(hexValue);
+    onAddCustomColor(nearest.name);
+  };
 
   if (!isOpen) return null;
 
@@ -57,14 +101,14 @@ export function ProductColorModal({
       {/* Modal Container */}
       <div className="relative z-10 w-full max-w-lg rounded-2xl border border-stone-200 bg-white shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-purple-100 bg-purple-50/50">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-stone-200/80 bg-stone-50/50">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/60 flex items-center justify-center text-purple-600">
+            <div className="h-8 w-8 rounded-xl bg-purple-50 border border-purple-200/70 flex items-center justify-center text-purple-700">
               <Palette className="h-4 w-4" />
             </div>
             <div>
               <h3 id="color-modal-title" className="text-sm font-bold text-gray-900">
-                Select Colors
+                Select Colors by Name
               </h3>
               <p className="text-[11px] text-stone-500">
                 {selectedColors.length} {selectedColors.length === 1 ? "color" : "colors"} selected
@@ -82,68 +126,71 @@ export function ProductColorModal({
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-5 overflow-y-auto space-y-4">
+        <div className="p-5 overflow-y-auto space-y-3.5">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400 pointer-events-none" />
             <input
               type="text"
               value={colorSearch}
               onChange={(e) => setColorSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && colorSearch.trim()) {
+                if (e.key === "Enter") {
                   e.preventDefault();
-                  onAddCustomColor(colorSearch.trim());
-                  setColorSearch("");
+                  if (candidateColorName && !candidateAlreadySelected) {
+                    handleAddCandidate();
+                  }
                 }
               }}
-              placeholder="Search color or type custom name (e.g. Sage Green)..."
-              className="w-full rounded-xl border border-stone-200 bg-stone-50 pl-10 pr-4 py-2 text-xs text-stone-800 placeholder-stone-400 focus:bg-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
+              placeholder="Search or enter color name..."
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 pl-10 pr-9 py-2.5 text-xs text-stone-800 placeholder-stone-400 focus:bg-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition"
               autoFocus
             />
-          </div>
-
-          {/* Add Custom Color Banner */}
-          {colorSearch.trim() &&
-            !selectedColors.some(
-              (c) => c.toLowerCase() === colorSearch.trim().toLowerCase()
-            ) && (
+            {colorSearch.trim() && (
               <button
                 type="button"
-                onClick={() => {
-                  onAddCustomColor(colorSearch.trim());
-                  setColorSearch("");
-                }}
-                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100/70 border border-purple-200 text-xs font-bold text-purple-900 transition cursor-pointer"
+                onClick={() => setColorSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5 cursor-pointer"
+                aria-label="Clear search"
               >
-                <span className="flex items-center gap-2.5">
-                  <span
-                    className={`h-4 w-4 rounded-full ${
-                      resolveColorStyle(colorSearch.trim()).swatchBorder
-                    }`}
-                    style={{
-                      backgroundColor: resolveColorStyle(colorSearch.trim()).bg,
-                    }}
-                  />
-                  <span>Add custom &ldquo;{colorSearch.trim()}&rdquo;</span>
-                </span>
-                <span className="text-[10px] uppercase font-bold text-purple-700 bg-purple-200/60 px-2 py-0.5 rounded">
-                  + Add
-                </span>
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
+          </div>
+
+          {/* Add Custom Color Name Option */}
+          {candidateColorName && !hasExactCanonicalMatch && !candidateAlreadySelected && (
+            <div
+              role="button"
+              onClick={handleAddCandidate}
+              className="flex items-center justify-between p-3 rounded-xl bg-purple-50/50 hover:bg-purple-100/70 border border-purple-200 text-xs font-semibold text-purple-900 transition cursor-pointer select-none"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className="h-4 w-4 rounded-full border border-stone-300 shrink-0"
+                  style={{ backgroundColor: customPickerColor }}
+                />
+                <span className="truncate">
+                  + Create &ldquo;{candidateColorName}&rdquo; as a custom color
+                </span>
+              </div>
+              <span className="text-xs font-bold text-purple-600 shrink-0">
+                + Add
+              </span>
+            </div>
+          )}
 
           {/* Currently Selected Strip in Modal */}
           {selectedColors.length > 0 && (
-            <div className="p-3 rounded-xl bg-purple-50/40 border border-purple-100/80 space-y-2">
+            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-stone-500">
-                  Selected ({selectedColors.length})
+                <span className="text-[11px] font-bold text-stone-700">
+                  Selected Product Colors ({selectedColors.length})
                 </span>
                 <button
                   type="button"
                   onClick={onClearColors}
-                  className="text-[11px] font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer"
+                  className="text-xs font-semibold text-stone-400 hover:text-red-600 transition cursor-pointer"
                 >
                   Clear All
                 </button>
@@ -154,19 +201,21 @@ export function ProductColorModal({
                   return (
                     <span
                       key={c}
-                      className="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg text-[11px] font-bold border border-purple-100 bg-white text-stone-800 shadow-2xs"
+                      className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl text-xs font-semibold border border-stone-200/90 bg-white text-stone-800 shadow-2xs"
                     >
                       <span
-                        className={`h-3 w-3 rounded-full shrink-0 ${style.swatchBorder}`}
+                        className="h-3.5 w-3.5 rounded-full shrink-0 border border-stone-300"
                         style={{ backgroundColor: style.bg }}
                       />
                       <span>{c}</span>
                       <button
                         type="button"
                         onClick={() => onToggleColor(c)}
-                        className="h-3.5 w-3.5 rounded flex items-center justify-center text-stone-400 hover:text-red-600 transition cursor-pointer"
+                        className="h-4 w-4 rounded flex items-center justify-center text-stone-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                        title={`Remove ${c}`}
+                        aria-label={`Remove ${c}`}
                       >
-                        <X className="h-2.5 w-2.5" />
+                        <X className="h-3 w-3" />
                       </button>
                     </span>
                   );
@@ -175,81 +224,76 @@ export function ProductColorModal({
             </div>
           )}
 
-          {/* Preset Swatches Grid */}
-          <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-wider text-stone-500 mb-2">
-              {colorSearch.trim() ? "Matching Colors" : "Popular Fashion Swatches"}
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {filteredColors.map((c: string) => {
-                const isSelected = selectedColors.some(
-                  (x) => x.toLowerCase() === c.toLowerCase()
-                );
-                const style = resolveColorStyle(c);
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => onToggleColor(c)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold border text-left transition cursor-pointer select-none ${
-                      isSelected
-                        ? "bg-purple-600 text-white border-purple-600 shadow-xs"
-                        : "bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 truncate mr-1">
-                      <span
-                        className={`h-3.5 w-3.5 rounded-full shrink-0 ${
-                          isSelected && style.isLight
-                            ? "border-2 border-stone-200 shadow-2xs"
-                            : style.swatchBorder
-                        }`}
-                        style={{ backgroundColor: style.bg }}
-                      />
-                      <span className="truncate">{c}</span>
+          {/* Matching Colors Grid */}
+          <div className="space-y-1.5">
+            {matchingColors.map((item) => {
+              const isSelected = selectedColors.some(
+                (x) => x.toLowerCase() === item.name.toLowerCase()
+              );
+              return (
+                <div
+                  key={item.name}
+                  onClick={() => {
+                    if (!isSelected) {
+                      onToggleColor(item.name);
+                    }
+                  }}
+                  className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition select-none ${
+                    isSelected
+                      ? "bg-stone-50 text-stone-400 cursor-default"
+                      : "hover:bg-purple-50 text-stone-800 cursor-pointer border border-transparent hover:border-purple-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className="h-4 w-4 rounded-full border border-stone-300 shrink-0"
+                      style={{ backgroundColor: item.hex }}
+                    />
+                    <span className="font-medium text-stone-900 truncate">
+                      {item.name}
                     </span>
-                    {isSelected && (
-                      <Check className="h-3.5 w-3.5 text-white stroke-[3] shrink-0" />
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isSelected ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Added</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-purple-600">
+                        + Add
+                      </span>
                     )}
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {matchingColors.length === 0 && !candidateColorName && (
+              <div className="px-4 py-6 text-xs text-stone-400 text-center">
+                No matching colors found
+              </div>
+            )}
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-purple-100 bg-purple-50/40">
-          <label
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 bg-white hover:bg-purple-50 text-xs font-semibold text-purple-700 cursor-pointer transition shadow-2xs"
-            title="Pick exact custom hex color from spectrum"
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-stone-200/80 bg-stone-50/50">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 transition cursor-pointer"
           >
-            <Palette className="h-3.5 w-3.5 text-purple-600" />
-            <span>Custom Hex</span>
-            <input
-              type="color"
-              defaultValue="#ffffff"
-              onChange={(e) => onAddCustomColor(e.target.value)}
-              className="sr-only"
-            />
-          </label>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-semibold text-stone-700 transition cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow-md shadow-purple-200 cursor-pointer"
-            >
-              Done
-            </button>
-          </div>
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>

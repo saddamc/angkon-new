@@ -54,9 +54,9 @@ export default function RefundAndExchangePoliciesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── Breadcrumb & Top Bar ── */}
-      <div className="w-full border-b border-[#E1B76F]/20 bg-[#340402] py-6 sm:py-8 px-4">
+      <div className="w-full border-b border-[#E1B76F]/20 bg-[#42070e] py-6 sm:py-8 px-4">
         <div className="max-w-[1100px] mx-auto">
           <nav className="text-xs text-white/70 mb-2 flex items-center gap-2">
             <Link href="/" className="hover:text-[#E1B76F] transition">Home</Link>
@@ -76,7 +76,7 @@ export default function RefundAndExchangePoliciesPage() {
             </div>
             <Link
               href="/policies"
-              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-[#400604] border border-[#E1B76F]/40 rounded-full px-4 py-2 bg-[#400604] hover:bg-[#E1B76F] transition shadow-sm"
+              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-[#530911] border border-[#E1B76F]/40 rounded-full px-4 py-2 bg-[#530911] hover:bg-[#E1B76F] transition shadow-sm"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Policies
             </Link>
@@ -92,7 +92,7 @@ export default function RefundAndExchangePoliciesPage() {
             return (
               <div
                 key={card.title}
-                className="flex flex-col justify-between rounded-2xl border border-[#E1B76F]/30 bg-[#340402] p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-[#E1B76F]/70 hover:shadow-2xl hover:scale-[1.015]"
+                className="flex flex-col justify-between rounded-2xl border border-[#E1B76F]/30 bg-[#42070e] p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-[#E1B76F]/70 hover:shadow-2xl hover:scale-[1.015]"
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -124,7 +124,7 @@ export default function RefundAndExchangePoliciesPage() {
                 </div>
 
                 <div className="mt-6 pt-4 border-t border-[#E1B76F]/15">
-                  <div className="rounded-xl bg-[#2b0403] border border-[#E1B76F]/20 px-3.5 py-2 text-center text-xs font-bold text-[#E1B76F]">
+                  <div className="rounded-xl bg-[#3b050b] border border-[#E1B76F]/20 px-3.5 py-2 text-center text-xs font-bold text-[#E1B76F]">
                     ★ {card.highlight}
                   </div>
                 </div>
@@ -221,9 +221,9 @@ export default function RefundAndExchangePoliciesPage() {
           </section>
 
           {/* ── Contact Concierge Card ── */}
-          <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#340402] p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#42070e] p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#400604]">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#530911]">
                 <MessageCircle className="h-6 w-6" />
               </div>
               <div>
@@ -239,7 +239,7 @@ export default function RefundAndExchangePoliciesPage() {
               href="https://wa.me/8801338668899"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-full bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase text-[#400604] hover:bg-[#f3cb87] transition shrink-0"
+              className="inline-flex items-center justify-center rounded-full bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase text-[#530911] hover:bg-[#f3cb87] transition shrink-0"
             >
               WhatsApp Support
             </a>

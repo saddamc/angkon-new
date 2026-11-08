@@ -137,14 +137,14 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <section className="container mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 py-20 text-center">
-        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/20 text-white">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#42070e] border border-[#E1B76F]/20 text-white">
           <ShoppingBag className="h-8 w-8" />
         </div>
         <h1 className="font-heading text-3xl font-black uppercase text-white">Your Bag is Empty</h1>
         <p className="mt-2 text-sm text-white/90">Discover our collection and return to checkout when you are ready.</p>
         <Link
           href="/products"
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#400604] border border-[#E1B76F]/50 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-[#520805]"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#530911] border border-[#E1B76F]/50 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-[#680c16]"
         >
           Browse Collections <ArrowRight className="h-4 w-4" />
         </Link>
@@ -153,7 +153,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white py-10 md:py-14">
+    <div className="min-h-screen bg-[#530911] text-white py-10 md:py-14">
       <div className="container mx-auto max-w-[1300px] px-4">
         <h1 className="font-heading text-3xl sm:text-4xl font-black text-white uppercase">Shopping Bag</h1>
         <p className="mt-1 text-sm text-white/90">Review your selected items before proceeding to checkout.</p>
@@ -164,7 +164,7 @@ export default function CartPage() {
             {items.map((item) => (
               <article
                 key={`${item.productId}-${item.size}`}
-                className="grid gap-4 rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-4 sm:grid-cols-[110px_1fr] shadow-2xs"
+                className="grid gap-4 rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-4 sm:grid-cols-[110px_1fr] shadow-2xs"
               >
                 <div className="relative aspect-square overflow-hidden rounded-xl border border-[#E1B76F]/20 bg-[#2d0302]">
                   <Image src={item.image} alt={item.name} fill className="object-cover" sizes="120px" />
@@ -180,7 +180,7 @@ export default function CartPage() {
                     <button
                       type="button"
                       onClick={() => removeItem(item.productId, item.size)}
-                      className="rounded-full p-1.5 text-white/60 transition hover:bg-[#400604] hover:text-red-400"
+                      className="rounded-full p-1.5 text-white/60 transition hover:bg-[#530911] hover:text-red-400"
                       aria-label="Remove item"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -199,7 +199,7 @@ export default function CartPage() {
           </div>
 
           {/* Sidebar Summary */}
-          <aside className="h-fit rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 shadow-sm">
+          <aside className="h-fit rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 shadow-sm">
             <h3 className="text-lg font-bold text-white border-b border-[#E1B76F]/20 pb-3">Order Summary</h3>
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between text-white/70">
@@ -272,7 +272,7 @@ export default function CartPage() {
                       <button
                         type="submit"
                         disabled={promoLoading || !promoInput.trim()}
-                        className="rounded-xl border border-[#E1B76F]/50 bg-[#400604] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#520805] disabled:opacity-40"
+                        className="rounded-xl border border-[#E1B76F]/50 bg-[#530911] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#680c16] disabled:opacity-40"
                       >
                         {promoLoading ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin text-[#E1B76F]" />
@@ -298,7 +298,7 @@ export default function CartPage() {
 
             <Link
               href="/checkout"
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#400604] border border-[#E1B76F]/50 py-3.5 text-sm font-bold text-white transition hover:bg-[#520805] shadow-sm"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-[#530911] border border-[#E1B76F]/50 py-3.5 text-sm font-bold text-white transition hover:bg-[#680c16] shadow-sm"
             >
               Proceed to Checkout <ArrowRight className="h-4 w-4" />
             </Link>

@@ -127,7 +127,7 @@ export function EmailVerifyDialog({ email, name, phone, initialResendAfter = 60,
         aria-modal="true"
         aria-labelledby="verify-title"
         aria-describedby="verify-desc"
-        className="relative w-full max-w-md rounded-2xl border border-[#E1B76F]/30 bg-[#340402] p-6 text-white shadow-2xl sm:p-8"
+        className="relative w-full max-w-md rounded-2xl border border-[#E1B76F]/30 bg-[#42070e] p-6 text-white shadow-2xl sm:p-8"
       >
         <button
           type="button"
@@ -139,7 +139,7 @@ export function EmailVerifyDialog({ email, name, phone, initialResendAfter = 60,
           <X className="h-5 w-5" />
         </button>
 
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#2b0403]">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#3b050b]">
           <Mail className="h-6 w-6 text-[#E1B76F]" />
         </div>
 
@@ -166,7 +166,7 @@ export function EmailVerifyDialog({ email, name, phone, initialResendAfter = 60,
           placeholder="••••••"
           disabled={verifying}
           aria-invalid={Boolean(error)}
-          className="mt-5 h-14 w-full rounded-xl border border-[#E1B76F]/40 bg-[#2b0403] text-center font-mono text-3xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-white/25 focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F] disabled:opacity-60"
+          className="mt-5 h-14 w-full rounded-xl border border-[#E1B76F]/40 bg-[#3b050b] text-center font-mono text-3xl font-bold tracking-[0.5em] text-white outline-none transition placeholder:text-white/25 focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F] disabled:opacity-60"
         />
 
         <div className="mt-3 min-h-[1.25rem] text-center text-sm" aria-live="polite">
@@ -183,7 +183,7 @@ export function EmailVerifyDialog({ email, name, phone, initialResendAfter = 60,
           type="button"
           onClick={() => code.length === 6 && void verify(code)}
           disabled={verifying || code.length !== 6}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#E1B76F] py-3.5 text-sm font-bold uppercase tracking-wide text-[#400604] transition hover:bg-[#f3cb87] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#E1B76F] py-3.5 text-sm font-bold uppercase tracking-wide text-[#530911] transition hover:bg-[#f3cb87] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ShieldCheck className="h-4 w-4" />
           Verify &amp; place order

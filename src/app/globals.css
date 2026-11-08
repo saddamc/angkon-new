@@ -3,30 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --background: 2 96% 14%;
+  --background: 354 80% 18%;
   --foreground: 0 0% 100%;
-  --card: 2 86% 16%;
+  --card: 354 75% 21%;
   --card-foreground: 0 0% 100%;
-  --popover: 2 86% 16%;
+  --popover: 354 75% 21%;
   --popover-foreground: 0 0% 100%;
   --primary: 38 67% 66%;
-  --primary-foreground: 2 96% 14%;
-  --secondary: 2 70% 21%;
+  --primary-foreground: 354 80% 18%;
+  --secondary: 354 70% 25%;
   --secondary-foreground: 0 0% 100%;
-  --muted: 2 70% 21%;
+  --muted: 354 70% 25%;
   --muted-foreground: 0 0% 72%;
   --accent: 38 67% 66%;
-  --accent-foreground: 2 96% 14%;
-  --border: 2 74% 21%;
-  --input: 2 74% 21%;
+  --accent-foreground: 354 80% 18%;
+  --border: 354 72% 25%;
+  --input: 354 72% 25%;
   --ring: 38 67% 66%;
   --radius: 0.75rem;
 
   /* ANGKON Royal Heritage Tokens */
   --ast-global-color-primary: #E1B76F;
-  --ast-global-color-secondary: #400604;
-  --ast-global-color-bg: #400604;
-  --ast-border-color: #5c0f0d;
+  --ast-global-color-secondary: #530911;
+  --ast-global-color-bg: #530911;
+  --ast-border-color: #6e101c;
 }
 
 * {
@@ -40,7 +40,7 @@ body {
 }
 
 body {
-  @apply bg-[#400604] text-white font-sans antialiased;
+  @apply bg-[#530911] text-white font-sans antialiased;
   font-size: 16px;
   line-height: 1.8em;
 }
@@ -52,7 +52,7 @@ h1, h2, h3, h4, h5, h6 {
 
 ::selection {
   background-color: #E1B76F;
-  color: #400604;
+  color: #530911;
 }
 
 /* ── Product description HTML prose (white text, gold links) ───────── */
@@ -79,7 +79,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Admin Description Editor Prose (Dark, crisp, readable on white backgrounds) ── */
 .admin-prose {
   color: #1c1917 !important;
-  caret-color: #400604 !important;
+  caret-color: #530911 !important;
   font-size: 0.9375rem;
   line-height: 1.7;
 }
@@ -138,7 +138,7 @@ h1, h2, h3, h4, h5, h6 {
   color: inherit;
 }
 .admin-prose a {
-  color: #400604 !important;
+  color: #530911 !important;
   text-decoration: underline;
   text-underline-offset: 3px;
   font-weight: 600;
@@ -215,7 +215,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid rgba(225, 183, 111, 0.35);
   text-align: left;
-  background-color: #400604;
+  background-color: #530911;
 }
 .product-prose td {
   padding: 0.5rem 0.75rem;

@@ -2,14 +2,14 @@
 
 export default function CategoryError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="container mx-auto max-w-[1500px] px-4 py-24 text-center bg-[#400604]">
+    <div className="container mx-auto max-w-[1500px] px-4 py-24 text-center bg-[#530911]">
       <div className="mb-4 text-5xl">⚠️</div>
       <p className="text-base font-semibold text-white">Unable to load categories</p>
       <p className="mt-1.5 text-sm text-white/90">Please try again.</p>
       <button
         type="button"
         onClick={reset}
-        className="mt-5 rounded-full bg-[#E1B76F] px-6 py-2.5 text-sm font-bold text-[#400604] transition hover:bg-[#f3cb87]"
+        className="mt-5 rounded-full bg-[#E1B76F] px-6 py-2.5 text-sm font-bold text-[#530911] transition hover:bg-[#f3cb87]"
       >
         Retry
       </button>

@@ -843,7 +843,7 @@ export function SizeMeasurementBuilder({
         >
           <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-2xl border border-[#E1B76F]/40 bg-[#280302] shadow-2xl text-white overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E1B76F]/25 bg-[#400604]">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#E1B76F]/25 bg-[#530911]">
               <div className="flex items-center gap-2.5">
                 <Eye className="h-5 w-5 text-[#E1B76F]" />
                 <div>
@@ -859,7 +859,7 @@ export function SizeMeasurementBuilder({
               <button
                 type="button"
                 onClick={() => setShowPreviewModal(false)}
-                className="h-8 w-8 rounded-full bg-[#340402] border border-[#E1B76F]/40 flex items-center justify-center text-white hover:bg-[#E1B76F] hover:text-[#400604] transition cursor-pointer"
+                className="h-8 w-8 rounded-full bg-[#42070e] border border-[#E1B76F]/40 flex items-center justify-center text-white hover:bg-[#E1B76F] hover:text-[#530911] transition cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>

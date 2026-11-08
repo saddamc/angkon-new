@@ -36,7 +36,7 @@ export function WhatsAppButton() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 12 }}
             transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="w-72 overflow-hidden rounded-2xl bg-[#400604] border border-[#E1B76F]/30 shadow-2xl"
+            className="w-72 overflow-hidden rounded-2xl bg-[#530911] border border-[#E1B76F]/30 shadow-2xl"
           >
             {/* Header */}
             <div className="flex items-center gap-3 bg-[#25D366] px-4 py-3">
@@ -60,9 +60,9 @@ export function WhatsAppButton() {
             </div>
 
             {/* Body */}
-            <div className="px-4 py-4 bg-[#400604]">
+            <div className="px-4 py-4 bg-[#530911]">
               <div className="space-y-2">
-                <div className="rounded-2xl bg-[#340402] border border-[#E1B76F]/25 px-3.5 py-2.5 text-[13px] text-white leading-relaxed">
+                <div className="rounded-2xl bg-[#42070e] border border-[#E1B76F]/25 px-3.5 py-2.5 text-[13px] text-white leading-relaxed">
                   👋 Hi there! Need help finding the perfect apparel or placing an order?
                 </div>
                 <div className="flex justify-end pr-2">
@@ -72,7 +72,7 @@ export function WhatsAppButton() {
             </div>
 
             {/* CTA */}
-            <div className="border-t border-[#E1B76F]/20 bg-[#400604] px-4 pb-4 pt-2">
+            <div className="border-t border-[#E1B76F]/20 bg-[#530911] px-4 pb-4 pt-2">
               <a
                 href={WA_URL}
                 target="_blank"

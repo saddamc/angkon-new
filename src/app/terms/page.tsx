@@ -11,8 +11,8 @@ export const revalidate = 60;
 export default async function TermsPage() {
   const s = await getShippingSettings();
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-12 px-4 text-center">
+    <div className="min-h-screen bg-[#530911] text-white">
+      <div className="border-b border-[#6e101c] bg-[#3b050b] py-12 px-4 text-center">
         <div className="container mx-auto max-w-[800px]">
           <h1 className="font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">
             Terms & Conditions
@@ -24,28 +24,28 @@ export default async function TermsPage() {
       </div>
 
       <div className="container mx-auto max-w-[900px] px-4 py-12 lg:px-8 space-y-8 text-[14px] text-white/70 leading-relaxed">
-        <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
+        <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-white">1. Order Placement & Confirmation</h2>
           <p>
             By placing an order via our online store or official WhatsApp, you agree to provide complete and accurate delivery and contact credentials. All orders are subject to confirmation and inventory availability.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
+        <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-white">2. Pricing & Currency</h2>
           <p>
             All listed prices are denominated in Bangladeshi Taka (BDT / Tk) and include applicable statutory taxes. Delivery charges are calculated based on your destination: inside Dhaka (Tk{s.insideDhaka}), Gazipur / Narayanganj / Savar (Tk{s.nearDhaka}) or elsewhere in Bangladesh (Tk{s.outsideDhaka}){s.freeDeliveryThreshold > 0 ? `, with free shipping on orders of Tk${s.freeDeliveryThreshold.toLocaleString("en-US")} or more` : ""}.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
+        <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-white">3. Cash on Delivery (COD) Obligations</h2>
           <p>
             Customers electing Cash on Delivery are expected to honor their order upon arrival. Fraudulent ordering or refusing genuine shipments without valid grounds may lead to restriction of COD privileges on future orders.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-4">
+        <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-8 space-y-4">
           <h2 className="font-heading text-lg font-bold uppercase text-white">4. Showroom & Official Contact</h2>
           <p>
             <strong>ANGKON Flagship Showroom</strong><br />

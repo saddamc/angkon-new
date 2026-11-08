@@ -22,9 +22,9 @@ export default async function DeliveryTimePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── Breadcrumb & Top Bar ── */}
-      <div className="w-full border-b border-[#E1B76F]/20 bg-[#340402] py-6 sm:py-8 px-4">
+      <div className="w-full border-b border-[#E1B76F]/20 bg-[#42070e] py-6 sm:py-8 px-4">
         <div className="max-w-[1000px] mx-auto">
           <nav className="text-xs text-white/70 mb-2 flex items-center gap-2">
             <Link href="/" className="hover:text-white transition">Home</Link>
@@ -44,7 +44,7 @@ export default async function DeliveryTimePage() {
             </div>
             <Link
               href="/policies"
-              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-white border border-[#E1B76F]/30 rounded-full px-4 py-2 bg-[#2d0302] hover:bg-[#400604] transition shadow-sm"
+              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-white border border-[#E1B76F]/30 rounded-full px-4 py-2 bg-[#2d0302] hover:bg-[#530911] transition shadow-sm"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Policies
             </Link>
@@ -55,9 +55,9 @@ export default async function DeliveryTimePage() {
       <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* ── 2. Modern Structured Breakdown ── */}
         <div className="max-w-[850px] mx-auto">
-          <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 shadow-sm">
+          <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 sm:p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[#E1B76F]/20">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#400604] border border-[#E1B76F]/40 text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#530911] border border-[#E1B76F]/40 text-white">
                 <Truck className="h-5 w-5" />
               </div>
               <div>
@@ -114,7 +114,7 @@ export default async function DeliveryTimePage() {
           </div>
 
           {/* Key Guidelines */}
-          <div className="mt-8 rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 space-y-3 text-xs sm:text-sm text-white/90">
+          <div className="mt-8 rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 sm:p-8 space-y-3 text-xs sm:text-sm text-white/90">
             <h3 className="font-heading text-base font-bold uppercase text-white mb-2">
               Important Delivery Notes
             </h3>

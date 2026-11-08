@@ -94,7 +94,7 @@ export const READY_TO_WEAR_SIZE_DATA: SizeMeasurementRow[] = [
 /* ── Native Garment Silhouette Component (Angkon Heritage Gold on Burgundy) ── */
 function GarmentSilhouette() {
   return (
-    <div className="flex flex-col items-center justify-between h-full bg-[#340402] p-4 text-white rounded-xl border border-[#E1B76F]/20 shadow-inner">
+    <div className="flex flex-col items-center justify-between h-full bg-[#42070e] p-4 text-white rounded-xl border border-[#E1B76F]/20 shadow-inner">
       <div className="w-full flex flex-col items-center py-2">
         <svg
           viewBox="0 0 160 320"
@@ -108,8 +108,8 @@ function GarmentSilhouette() {
             fill="currentColor"
             fillOpacity="0.88"
           />
-          <line x1="38" y1="108" x2="122" y2="108" stroke="#400604" strokeWidth="2" strokeDasharray="3,2" />
-          <line x1="26" y1="209" x2="134" y2="209" stroke="#400604" strokeWidth="2.5" />
+          <line x1="38" y1="108" x2="122" y2="108" stroke="#530911" strokeWidth="2" strokeDasharray="3,2" />
+          <line x1="26" y1="209" x2="134" y2="209" stroke="#530911" strokeWidth="2.5" />
           {/* Trouser Pants Silhouette */}
           <path
             d="M 46 216 L 114 216 L 112 300 L 92 300 L 80 238 L 68 300 L 48 300 Z"
@@ -255,11 +255,11 @@ export function ReadyToWearSizeGuideContent({
   return (
     <div className="space-y-5 text-white">
       {/* ── Header Banner & Controls ── */}
-      <div className="rounded-xl border border-[#E1B76F]/30 bg-[#340402] p-4 sm:p-5 shadow-sm">
+      <div className="rounded-xl border border-[#E1B76F]/30 bg-[#42070e] p-4 sm:p-5 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#400604] px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white border border-[#E1B76F]/40">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#530911] px-2.5 py-0.5 text-[10px] font-bold tracking-widest uppercase text-white border border-[#E1B76F]/40">
                 <Sparkles className="h-3 w-3 text-[#E1B76F]" />
                 Angkon Heritage
               </span>
@@ -298,7 +298,7 @@ export function ReadyToWearSizeGuideContent({
                 onClick={() => setUnit("in")}
                 className={`rounded-md px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   unit === "in"
-                    ? "bg-[#E1B76F] text-[#400604] shadow font-extrabold"
+                    ? "bg-[#E1B76F] text-[#530911] shadow font-extrabold"
                     : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
@@ -311,7 +311,7 @@ export function ReadyToWearSizeGuideContent({
                 onClick={() => setUnit("cm")}
                 className={`rounded-md px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                   unit === "cm"
-                    ? "bg-[#E1B76F] text-[#400604] shadow font-extrabold"
+                    ? "bg-[#E1B76F] text-[#530911] shadow font-extrabold"
                     : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
@@ -326,7 +326,7 @@ export function ReadyToWearSizeGuideContent({
                 onClick={() => setActiveTab("table")}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   activeTab === "table"
-                    ? "bg-[#400604] text-white shadow-sm border border-[#E1B76F]/50 font-bold"
+                    ? "bg-[#530911] text-white shadow-sm border border-[#E1B76F]/50 font-bold"
                     : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
@@ -337,7 +337,7 @@ export function ReadyToWearSizeGuideContent({
                 onClick={() => setActiveTab("guide")}
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   activeTab === "guide"
-                    ? "bg-[#400604] text-white shadow-sm border border-[#E1B76F]/50 font-bold"
+                    ? "bg-[#530911] text-white shadow-sm border border-[#E1B76F]/50 font-bold"
                     : "text-white/70 hover:text-[#E1B76F]"
                 }`}
               >
@@ -362,9 +362,9 @@ export function ReadyToWearSizeGuideContent({
             </span>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-[#E1B76F]/30 shadow-md flex flex-col md:flex-row bg-[#2b0403]">
+          <div className="overflow-hidden rounded-xl border border-[#E1B76F]/30 shadow-md flex flex-col md:flex-row bg-[#3b050b]">
             {/* Left Column: Silhouette Graphic (Desktop & Tablet) */}
-            <div className="hidden lg:flex lg:w-44 shrink-0 p-3 bg-[#400604]/40 border-r border-[#E1B76F]/20">
+            <div className="hidden lg:flex lg:w-44 shrink-0 p-3 bg-[#530911]/40 border-r border-[#E1B76F]/20">
               <GarmentSilhouette />
             </div>
 
@@ -372,8 +372,8 @@ export function ReadyToWearSizeGuideContent({
             <div className="flex-1 overflow-x-auto scrollbar-thin">
               <table className="w-full text-left text-sm border-collapse min-w-[500px]">
                 <thead>
-                  <tr className="border-b border-[#E1B76F]/25 bg-[#400604] text-white">
-                    <th className="py-3.5 px-4 font-bold text-xs uppercase tracking-wider sticky left-0 z-10 bg-[#400604] shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
+                  <tr className="border-b border-[#E1B76F]/25 bg-[#530911] text-white">
+                    <th className="py-3.5 px-4 font-bold text-xs uppercase tracking-wider sticky left-0 z-10 bg-[#530911] shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
                       Measurement
                     </th>
                     {sizes.map((s) => {
@@ -401,8 +401,8 @@ export function ReadyToWearSizeGuideContent({
                               onClick={() => onSelectSize(s.key)}
                               className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold transition cursor-pointer ${
                                 isSelected
-                                  ? "bg-[#E1B76F] text-[#400604] shadow font-extrabold ring-1 ring-[#E1B76F]"
-                                  : "bg-white/10 text-white hover:bg-[#E1B76F] hover:text-[#400604]"
+                                  ? "bg-[#E1B76F] text-[#530911] shadow font-extrabold ring-1 ring-[#E1B76F]"
+                                  : "bg-white/10 text-white hover:bg-[#E1B76F] hover:text-[#530911]"
                               }`}
                               aria-pressed={isSelected}
                             >
@@ -433,7 +433,7 @@ export function ReadyToWearSizeGuideContent({
                         return (
                           <Fragment key={section.id || section.title}>
                             {/* Section Header Row */}
-                            <tr className="bg-[#400604] border-t-2 border-b border-[#E1B76F]/30">
+                            <tr className="bg-[#530911] border-t-2 border-b border-[#E1B76F]/30">
                               <td
                                 colSpan={sizes.length + 1}
                                 className="py-2.5 px-4 font-black text-xs sm:text-sm tracking-widest uppercase text-[#E1B76F] shadow-inner"
@@ -451,8 +451,8 @@ export function ReadyToWearSizeGuideContent({
                               .map((row, rowIdx) => (
                                 <tr
                                   key={`${section.title}-${row.number ?? row.area}`}
-                                  className={`transition-colors hover:bg-[#400604]/80 ${
-                                    rowIdx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
+                                  className={`transition-colors hover:bg-[#530911]/80 ${
+                                    rowIdx % 2 === 0 ? "bg-[#42070e]" : "bg-[#280302]"
                                   }`}
                                 >
                                   <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)] whitespace-nowrap">
@@ -469,7 +469,7 @@ export function ReadyToWearSizeGuideContent({
                                   {row.colSpanText ? (
                                     <td
                                       colSpan={sizes.length}
-                                      className="py-3 px-4 text-center text-xs sm:text-sm font-semibold tracking-wide italic text-[#E1B76F] bg-[#400604]/50 border-r border-[#E1B76F]/15"
+                                      className="py-3 px-4 text-center text-xs sm:text-sm font-semibold tracking-wide italic text-[#E1B76F] bg-[#530911]/50 border-r border-[#E1B76F]/15"
                                     >
                                       {row.colSpanText}
                                     </td>
@@ -505,8 +505,8 @@ export function ReadyToWearSizeGuideContent({
                     customData.columns.map((col, rowIdx) => (
                       <tr
                         key={col}
-                        className={`transition-colors hover:bg-[#400604]/80 ${
-                          rowIdx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
+                        className={`transition-colors hover:bg-[#530911]/80 ${
+                          rowIdx % 2 === 0 ? "bg-[#42070e]" : "bg-[#280302]"
                         }`}
                       >
                         <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)] whitespace-nowrap">
@@ -539,8 +539,8 @@ export function ReadyToWearSizeGuideContent({
                     DEFAULT_PANJABI_CHART.columns.map((col, rowIdx) => (
                       <tr
                         key={col}
-                        className={`transition-colors hover:bg-[#400604]/80 ${
-                          rowIdx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
+                        className={`transition-colors hover:bg-[#530911]/80 ${
+                          rowIdx % 2 === 0 ? "bg-[#42070e]" : "bg-[#280302]"
                         }`}
                       >
                         <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)] whitespace-nowrap">
@@ -571,8 +571,8 @@ export function ReadyToWearSizeGuideContent({
                     READY_TO_WEAR_SIZE_DATA.map((row, idx) => (
                       <tr
                         key={row.area}
-                        className={`transition-colors hover:bg-[#400604]/80 ${
-                          idx % 2 === 0 ? "bg-[#340402]" : "bg-[#280302]"
+                        className={`transition-colors hover:bg-[#530911]/80 ${
+                          idx % 2 === 0 ? "bg-[#42070e]" : "bg-[#280302]"
                         }`}
                       >
                         <td className="py-3 px-4 font-bold text-xs tracking-wider text-white border-r border-[#E1B76F]/15 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_rgba(0,0,0,0.3)]">
@@ -635,14 +635,14 @@ export function ReadyToWearSizeGuideContent({
                   .map((item) => (
                     <div
                       key={`${section.title}-${item.number ?? item.area}`}
-                      className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
+                      className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#42070e] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-[#E1B76F] border border-[#E1B76F]/40 shadow-xs">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#530911] text-xs font-extrabold text-[#E1B76F] border border-[#E1B76F]/40 shadow-xs">
                         {item.number ? item.number : item.area.slice(0, 2)}
                       </span>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#400604] text-[#E1B76F]/90 border border-[#E1B76F]/20">
+                          <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#530911] text-[#E1B76F]/90 border border-[#E1B76F]/20">
                             {section.title}
                           </span>
                           <h4 className="text-sm font-bold text-white tracking-wide">
@@ -660,9 +660,9 @@ export function ReadyToWearSizeGuideContent({
               READY_TO_WEAR_SIZE_DATA.map((item) => (
                 <div
                   key={item.area}
-                  className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
+                  className="flex items-start gap-3 rounded-xl border border-[#E1B76F]/25 bg-[#42070e] p-3.5 shadow-sm transition hover:border-[#E1B76F]/40"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#400604] text-xs font-extrabold text-white border border-[#E1B76F]/40 shadow-xs">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#530911] text-xs font-extrabold text-white border border-[#E1B76F]/40 shadow-xs">
                     {item.area.slice(0, 2)}
                   </span>
                   <div>
@@ -755,7 +755,7 @@ export function ReadyToWearSizeGuideModal({
       />
 
       {/* Modal Dialog (Desktop) / Full Drawer (Mobile) */}
-      <div className="relative z-10 w-full sm:max-w-3xl max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-[#E1B76F]/35 bg-[#400604] shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-white overflow-hidden">
+      <div className="relative z-10 w-full sm:max-w-3xl max-h-[92vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-[#E1B76F]/35 bg-[#530911] shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200 text-white overflow-hidden">
         {/* Mobile Drag Handle */}
         <div className="w-full flex justify-center pt-2 pb-1 sm:hidden">
           <div className="h-1.5 w-12 rounded-full bg-[#E1B76F]/30" />
@@ -773,7 +773,7 @@ export function ReadyToWearSizeGuideModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#340402] text-white border border-[#E1B76F]/40 hover:bg-[#E1B76F] hover:text-[#400604] transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
+            className="flex h-10 w-10 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#42070e] text-white border border-[#E1B76F]/40 hover:bg-[#E1B76F] hover:text-[#530911] transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F]"
             aria-label="Close size guide"
           >
             <X className="h-5 w-5" />
@@ -825,9 +825,9 @@ export function ReadyToWearSizeGuideMiniTable({
   }, [productSizes]);
 
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border border-[#E1B76F]/25 bg-[#340402] shadow-xs">
+    <div className="mb-4 overflow-hidden rounded-xl border border-[#E1B76F]/25 bg-[#42070e] shadow-xs">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#400604] border-b border-[#E1B76F]/30 text-white">
+      <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#530911] border-b border-[#E1B76F]/30 text-white">
         <div className="flex items-center gap-1.5">
           <Ruler className="h-4 w-4 text-white" />
           <span className="text-xs font-bold text-white uppercase tracking-wide">
@@ -849,7 +849,7 @@ export function ReadyToWearSizeGuideMiniTable({
       <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full text-xs text-center border-collapse min-w-[420px]">
           <thead>
-            <tr className="bg-[#400604]/90 text-white font-semibold border-b border-[#E1B76F]/20">
+            <tr className="bg-[#530911]/90 text-white font-semibold border-b border-[#E1B76F]/20">
               <th className="py-2.5 px-3 text-left font-bold text-white w-16">Size</th>
               <th className="py-2.5 px-2">Shoulder</th>
               <th className="py-2.5 px-2">Chest</th>
@@ -860,21 +860,21 @@ export function ReadyToWearSizeGuideMiniTable({
               <th className="py-2.5 px-2">Trouser</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-white/90 bg-[#340402]">
+          <tbody className="divide-y divide-[#E1B76F]/15 font-medium text-white/90 bg-[#42070e]">
             {visibleRows.map((row) => {
               const isSelected = selectedSize?.toUpperCase().trim() === row.size;
               return (
                 <tr
                   key={row.size}
                   onClick={() => onSelectSize && onSelectSize(row.size)}
-                  className={`transition-colors cursor-pointer hover:bg-[#400604] ${
+                  className={`transition-colors cursor-pointer hover:bg-[#530911] ${
                     isSelected ? "bg-[#E1B76F]/20 font-bold text-white" : ""
                   }`}
                   title={`Click to select size ${row.size}`}
                 >
                   <td
                     className={`py-2 px-3 text-left font-bold text-white border-r border-[#E1B76F]/15 ${
-                      isSelected ? "bg-[#E1B76F]/25 text-white" : "bg-[#2b0403]"
+                      isSelected ? "bg-[#E1B76F]/25 text-white" : "bg-[#3b050b]"
                     }`}
                   >
                     <div className="flex items-center gap-1.5">

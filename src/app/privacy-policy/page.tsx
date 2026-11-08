@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── Breadcrumb & Top Bar ── */}
-      <div className="w-full border-b border-[#E1B76F]/20 bg-[#340402] py-6 sm:py-8 px-4">
+      <div className="w-full border-b border-[#E1B76F]/20 bg-[#42070e] py-6 sm:py-8 px-4">
         <div className="max-w-[900px] mx-auto">
           <nav className="text-xs text-white/70 mb-2 flex items-center gap-2">
             <Link href="/" className="hover:text-[#E1B76F] transition">Home</Link>
@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
             </div>
             <Link
               href="/policies"
-              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-[#400604] border border-[#E1B76F]/40 rounded-full px-4 py-2 bg-[#400604] hover:bg-[#E1B76F] transition shadow-sm"
+              className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-white hover:text-[#530911] border border-[#E1B76F]/40 rounded-full px-4 py-2 bg-[#530911] hover:bg-[#E1B76F] transition shadow-sm"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back to Policies
             </Link>
@@ -128,7 +128,7 @@ export default function PrivacyPolicyPage() {
           <p className="text-white/90">
             If you have any questions, wish to review your stored information, or request removal of your account records, please contact our support desk:
           </p>
-          <div className="rounded-xl border border-[#E1B76F]/25 bg-[#340402] p-5 text-sm space-y-1.5 text-white/90">
+          <div className="rounded-xl border border-[#E1B76F]/25 bg-[#42070e] p-5 text-sm space-y-1.5 text-white/90">
             <p><strong className="text-white">Brand:</strong> ANGKON</p>
             <p><strong className="text-white">Showroom:</strong> H-93, (Ground floor), Road: 2, Block-A, Niketan, Gulshan, Dhaka-1212</p>
             <p><strong className="text-white">Phone / WhatsApp:</strong> +880 1338-668899</p>

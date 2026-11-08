@@ -1,6 +1,6 @@
 export function SeoSection() {
   return (
-    <section className="bg-[#2b0403] py-12 border-t border-[#5c0f0d]">
+    <section className="bg-[#3b050b] py-12 border-t border-[#6e101c]">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1500px]">
         <div className="max-w-none text-white/70 leading-relaxed text-[13px] space-y-4">
           <h2 className="font-heading text-xl font-black uppercase text-white mb-4">ANGKON - Premium Apparel in Bangladesh</h2>

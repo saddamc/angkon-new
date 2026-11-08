@@ -539,15 +539,15 @@ export default function CheckoutPage() {
   // ── 1. Hydration loading skeleton ──────────────────────────────────────────
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#400604] text-white">
+      <div className="min-h-screen bg-[#530911] text-white">
         <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-          <div className="h-6 w-48 rounded-lg bg-[#340402] animate-pulse mb-8" />
+          <div className="h-6 w-48 rounded-lg bg-[#42070e] animate-pulse mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-[1.18fr_0.82fr] gap-10">
             <div className="space-y-4">
-              <div className="h-32 rounded-2xl bg-[#340402] animate-pulse" />
-              <div className="h-96 rounded-2xl bg-[#340402] animate-pulse" />
+              <div className="h-32 rounded-2xl bg-[#42070e] animate-pulse" />
+              <div className="h-96 rounded-2xl bg-[#42070e] animate-pulse" />
             </div>
-            <div className="h-[480px] rounded-2xl bg-[#340402] animate-pulse" />
+            <div className="h-[480px] rounded-2xl bg-[#42070e] animate-pulse" />
           </div>
         </div>
       </div>
@@ -567,10 +567,10 @@ export default function CheckoutPage() {
     const guestEmail = accountInfo?.email || confirmedCustomer?.phone || "your email";
 
     return (
-      <div className="min-h-screen bg-[#400604] text-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#530911] text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-xl text-center">
           {/* Success Icon */}
-          <div className="mb-5 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#340402] border-2 border-[#E1B76F] text-[#E1B76F] shadow-xl">
+          <div className="mb-5 mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#42070e] border-2 border-[#E1B76F] text-[#E1B76F] shadow-xl">
             <CheckCircle className="h-10 w-10 text-[#E1B76F]" />
           </div>
 
@@ -588,7 +588,7 @@ export default function CheckoutPage() {
           )}
 
           {/* Confirmed Details Card */}
-          <div className="mt-6 rounded-2xl border border-[#E1B76F]/30 bg-[#2b0403] p-5 sm:p-7 text-left w-full space-y-3.5 text-sm text-white/90 shadow-2xl">
+          <div className="mt-6 rounded-2xl border border-[#E1B76F]/30 bg-[#3b050b] p-5 sm:p-7 text-left w-full space-y-3.5 text-sm text-white/90 shadow-2xl">
             <div className="flex justify-between items-center pb-3 border-b border-[#E1B76F]/20">
               <span className="text-white/60 text-xs font-bold uppercase tracking-wider">Payment method</span>
               <strong className="text-white font-bold text-xs sm:text-sm">
@@ -683,7 +683,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={savingPostAccount || !postOrderPassword}
-                    className="h-9 px-5 rounded-xl bg-[#E1B76F] text-[#400604] font-bold text-xs uppercase tracking-wider hover:bg-[#f3cb87] transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    className="h-9 px-5 rounded-xl bg-[#E1B76F] text-[#530911] font-bold text-xs uppercase tracking-wider hover:bg-[#f3cb87] transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {savingPostAccount ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save Password & Create Account"}
                   </button>
@@ -696,14 +696,14 @@ export default function CheckoutPage() {
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/products"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#E1B76F] px-8 py-3 text-sm font-bold text-[#400604] hover:bg-[#f3cb87] transition shadow-md"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#E1B76F] px-8 py-3 text-sm font-bold text-[#530911] hover:bg-[#f3cb87] transition shadow-md"
             >
               <ShoppingBag className="h-4 w-4" />
               Continue Shopping
             </Link>
             <Link
               href="/my-account"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E1B76F]/40 bg-[#340402] px-8 py-3 text-sm font-bold text-white hover:bg-[#520805] transition"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#E1B76F]/40 bg-[#42070e] px-8 py-3 text-sm font-bold text-white hover:bg-[#680c16] transition"
             >
               View My Account
             </Link>
@@ -716,8 +716,8 @@ export default function CheckoutPage() {
   // ── 3. Empty Bag Screen ────────────────────────────────────────────────────
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-[#400604] text-white">
-        <div className="border-b border-[#E1B76F]/20 bg-[#340402]">
+      <div className="min-h-screen bg-[#530911] text-white">
+        <div className="border-b border-[#E1B76F]/20 bg-[#42070e]">
           <div className="mx-auto max-w-[1240px] flex h-11 items-center gap-2 px-4 sm:px-6 lg:px-8 text-xs text-white/70">
             <Link href="/" className="transition hover:text-white">Home</Link>
             <ChevronRight className="h-3 w-3 opacity-60" />
@@ -731,9 +731,9 @@ export default function CheckoutPage() {
           <h1 className="font-serif text-3xl font-bold uppercase text-white tracking-wide mb-6">
             Checkout
           </h1>
-          <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#340402] p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
+          <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#42070e] p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-md">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#400604] border border-[#E1B76F]/40 text-white">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#530911] border border-[#E1B76F]/40 text-white">
                 <ShoppingBag className="h-7 w-7 text-[#E1B76F]" />
               </div>
               <div>
@@ -745,7 +745,7 @@ export default function CheckoutPage() {
             </div>
             <Link
               href="/products"
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#E1B76F] px-8 py-3 text-sm font-bold text-[#400604] hover:bg-[#f3cb87] transition shadow-md shrink-0"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#E1B76F] px-8 py-3 text-sm font-bold text-[#530911] hover:bg-[#f3cb87] transition shadow-md shrink-0"
             >
               Explore Collection <ArrowRight className="h-4 w-4" />
             </Link>
@@ -757,9 +757,9 @@ export default function CheckoutPage() {
 
   // ── 4. Main Checkout Flow ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* Top Breadcrumb */}
-      <div className="border-b border-[#E1B76F]/20 bg-[#340402]">
+      <div className="border-b border-[#E1B76F]/20 bg-[#42070e]">
         <div className="mx-auto max-w-[1240px] flex h-11 items-center gap-2 px-4 sm:px-6 lg:px-8 text-xs text-white/70">
           <Link href="/" className="transition hover:text-white">Home</Link>
           <ChevronRight className="h-3 w-3 opacity-60" />
@@ -790,7 +790,7 @@ export default function CheckoutPage() {
             <div className="space-y-6">
 
               {/* ── CARD: Your account (Optional) — Exact match to screenshot ── */}
-              <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#2b0403] p-5 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#3b050b] p-5 sm:p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-white">
                     Your account
@@ -804,7 +804,7 @@ export default function CheckoutPage() {
                   /* Signed In State */
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
                     <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 rounded-full bg-[#400604] border border-[#E1B76F]/40 flex items-center justify-center text-[#E1B76F]">
+                      <div className="h-8 w-8 rounded-full bg-[#530911] border border-[#E1B76F]/40 flex items-center justify-center text-[#E1B76F]">
                         <User className="h-4 w-4" />
                       </div>
                       <div>
@@ -842,7 +842,7 @@ export default function CheckoutPage() {
                           setAuthModalView("login");
                           setAuthModalOpen(true);
                         }}
-                        className="flex items-center justify-center gap-2 h-11 rounded-xl border border-[#E1B76F]/30 bg-[#340402] hover:border-[#E1B76F] hover:bg-[#400604] text-xs font-bold text-white transition cursor-pointer shadow-2xs group"
+                        className="flex items-center justify-center gap-2 h-11 rounded-xl border border-[#E1B76F]/30 bg-[#42070e] hover:border-[#E1B76F] hover:bg-[#530911] text-xs font-bold text-white transition cursor-pointer shadow-2xs group"
                       >
                         <LogIn className="h-3.5 w-3.5 text-[#E1B76F] group-hover:translate-x-0.5 transition" />
                         <span>Log in</span>
@@ -855,7 +855,7 @@ export default function CheckoutPage() {
                           setAuthModalView("register");
                           setAuthModalOpen(true);
                         }}
-                        className="flex items-center justify-center gap-2 h-11 rounded-xl border border-[#E1B76F]/30 bg-[#340402] hover:border-[#E1B76F] hover:bg-[#400604] text-xs font-bold text-white transition cursor-pointer shadow-2xs group"
+                        className="flex items-center justify-center gap-2 h-11 rounded-xl border border-[#E1B76F]/30 bg-[#42070e] hover:border-[#E1B76F] hover:bg-[#530911] text-xs font-bold text-white transition cursor-pointer shadow-2xs group"
                       >
                         <UserPlus className="h-3.5 w-3.5 text-[#E1B76F] group-hover:scale-110 transition" />
                         <span>Create account</span>
@@ -869,7 +869,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* ── CARD: 1. Delivery details ── */}
-              <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#2b0403] p-5 sm:p-6 shadow-sm space-y-4">
+              <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#3b050b] p-5 sm:p-6 shadow-sm space-y-4">
                 <div className="border-b border-[#E1B76F]/20 pb-2 mb-2">
                   <h2 className="text-base font-serif font-bold text-white">
                     1. Delivery details
@@ -884,7 +884,7 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       placeholder="Enter your name"
-                      className={`h-11 w-full rounded-xl border bg-[#340402] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
+                      className={`h-11 w-full rounded-xl border bg-[#42070e] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
                         errors.name ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"
                       }`}
                       {...register("name", { required: "Full name is required" })}
@@ -899,7 +899,7 @@ export default function CheckoutPage() {
                     <input
                       type="tel"
                       placeholder="01XXXXXXXXX"
-                      className={`h-11 w-full rounded-xl border bg-[#340402] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
+                      className={`h-11 w-full rounded-xl border bg-[#42070e] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
                         errors.phone ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"
                       }`}
                       {...register("phone", {
@@ -935,7 +935,7 @@ export default function CheckoutPage() {
                     placeholder="you@example.com"
                     autoComplete="email"
                     readOnly={isLoggedIn && isEmailVerified}
-                    className={`h-11 w-full rounded-xl border bg-[#340402] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
+                    className={`h-11 w-full rounded-xl border bg-[#42070e] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
                       isLoggedIn && isEmailVerified ? "opacity-80 cursor-not-allowed " : ""
                     }${errors.email ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"}`}
                     {...register("email", {
@@ -959,7 +959,7 @@ export default function CheckoutPage() {
                   </label>
                   <input
                     placeholder="House, road, area and landmark"
-                    className={`h-11 w-full rounded-xl border bg-[#340402] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
+                    className={`h-11 w-full rounded-xl border bg-[#42070e] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
                       errors.streetAddress ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"
                     }`}
                     {...register("streetAddress", { required: "Street address is required" })}
@@ -977,7 +977,7 @@ export default function CheckoutPage() {
                     </label>
                     <div className="relative">
                       <select
-                        className={`h-11 w-full appearance-none rounded-xl border bg-[#340402] px-3.5 pr-9 text-sm text-white outline-none transition focus:border-[#E1B76F] cursor-pointer ${
+                        className={`h-11 w-full appearance-none rounded-xl border bg-[#42070e] px-3.5 pr-9 text-sm text-white outline-none transition focus:border-[#E1B76F] cursor-pointer ${
                           errors.district ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"
                         }`}
                         defaultValue=""
@@ -990,7 +990,7 @@ export default function CheckoutPage() {
                           <optgroup
                             key={div.name}
                             label={`── ${div.name} Division`}
-                            className="font-bold text-white bg-[#340402]"
+                            className="font-bold text-white bg-[#42070e]"
                           >
                             {div.districts.map((d) => (
                               <option key={d} value={d} className="text-white bg-[#2d0302]">
@@ -1018,7 +1018,7 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       placeholder="Enter city or upazila"
-                      className={`h-11 w-full rounded-xl border bg-[#340402] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
+                      className={`h-11 w-full rounded-xl border bg-[#42070e] px-3.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F] ${
                         errors.city ? "border-rose-400 bg-rose-950/20" : "border-[#E1B76F]/30"
                       }`}
                       {...register("city", { required: "City / Upazila is required" })}
@@ -1035,7 +1035,7 @@ export default function CheckoutPage() {
                   <textarea
                     rows={2}
                     placeholder="Special instructions for delivery (e.g. call before arriving, landmark)"
-                    className="w-full resize-none rounded-xl border border-[#E1B76F]/30 bg-[#340402] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F]"
+                    className="w-full resize-none rounded-xl border border-[#E1B76F]/30 bg-[#42070e] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F]"
                     {...register("orderNotes")}
                   />
                 </div>
@@ -1043,7 +1043,7 @@ export default function CheckoutPage() {
 
               {/* ── CARD: 2. Promo code ── */}
               {checkoutConfig?.enablePromoCodes !== false && (
-                <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#2b0403] p-5 sm:p-6 shadow-sm">
+                <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#3b050b] p-5 sm:p-6 shadow-sm">
                   <div className="border-b border-[#E1B76F]/20 pb-2 mb-3">
                     <h2 className="text-base font-serif font-bold text-white flex items-center gap-2">
                       <Tag className="h-4 w-4 text-[#E1B76F]" />
@@ -1061,7 +1061,7 @@ export default function CheckoutPage() {
                       onChange={(e) => setCouponCode(e.target.value)}
                       placeholder="Enter promo code"
                       disabled={couponLoading || !!appliedPromo}
-                      className="h-11 flex-1 rounded-xl border border-[#E1B76F]/30 bg-[#340402] px-3.5 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#E1B76F] uppercase tracking-wider font-semibold disabled:opacity-60"
+                      className="h-11 flex-1 rounded-xl border border-[#E1B76F]/30 bg-[#42070e] px-3.5 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#E1B76F] uppercase tracking-wider font-semibold disabled:opacity-60"
                     />
                     {appliedPromo ? (
                       <button
@@ -1076,7 +1076,7 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={handleApplyCoupon}
                         disabled={couponLoading || !couponCode.trim()}
-                        className="h-11 rounded-xl bg-[#E1B76F] text-[#400604] px-6 text-xs font-bold uppercase tracking-wider hover:bg-[#f3cb87] transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        className="h-11 rounded-xl bg-[#E1B76F] text-[#530911] px-6 text-xs font-bold uppercase tracking-wider hover:bg-[#f3cb87] transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                       >
                         {couponLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Apply"}
                       </button>
@@ -1099,7 +1099,7 @@ export default function CheckoutPage() {
               )}
 
               {/* ── CARD: 3. Payment method ── */}
-              <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#2b0403] p-5 sm:p-6 shadow-sm space-y-3">
+              <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#3b050b] p-5 sm:p-6 shadow-sm space-y-3">
                 <div className="border-b border-[#E1B76F]/20 pb-2 mb-2">
                   <h2 className="text-base font-serif font-bold text-white">
                     3. Payment method
@@ -1112,7 +1112,7 @@ export default function CheckoutPage() {
                   className={`block cursor-pointer rounded-xl border p-4 transition ${
                     paymentMethod === "cod"
                       ? "border-[#E1B76F] bg-[#3a0604] ring-1 ring-[#E1B76F]/60"
-                      : "border-[#E1B76F]/20 bg-[#340402] hover:border-[#E1B76F]/40"
+                      : "border-[#E1B76F]/20 bg-[#42070e] hover:border-[#E1B76F]/40"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -1142,7 +1142,7 @@ export default function CheckoutPage() {
                   className={`block cursor-pointer rounded-xl border p-4 transition ${
                     paymentMethod === "sslcommerz"
                       ? "border-[#E1B76F] bg-[#3a0604] ring-1 ring-[#E1B76F]/60"
-                      : "border-[#E1B76F]/20 bg-[#340402] hover:border-[#E1B76F]/40"
+                      : "border-[#E1B76F]/20 bg-[#42070e] hover:border-[#E1B76F]/40"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -1183,7 +1183,7 @@ export default function CheckoutPage() {
 
             {/* ── RIGHT COLUMN: Sticky Order Summary ── */}
             <div className="lg:sticky lg:top-24">
-              <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#2b0403] p-6 sm:p-7 shadow-xl space-y-4">
+              <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#3b050b] p-6 sm:p-7 shadow-xl space-y-4">
                 <h3 className="font-serif text-xl font-bold text-white pb-3 border-b border-[#E1B76F]/20">
                   Order summary
                 </h3>
@@ -1197,7 +1197,7 @@ export default function CheckoutPage() {
                     >
                       <div className="flex gap-3 items-center min-w-0">
                         {item.image && (
-                          <div className="relative h-12 w-10 shrink-0 overflow-hidden rounded-lg border border-[#E1B76F]/30 bg-[#340402]">
+                          <div className="relative h-12 w-10 shrink-0 overflow-hidden rounded-lg border border-[#E1B76F]/30 bg-[#42070e]">
                             <Image
                               src={item.image}
                               alt={item.name}
@@ -1233,7 +1233,7 @@ export default function CheckoutPage() {
                   <div className="text-right">
                     {!shippingQuote ? (
                       shippingLoading ? (
-                        <span className="inline-block h-4 w-20 animate-pulse rounded bg-[#340402]" />
+                        <span className="inline-block h-4 w-20 animate-pulse rounded bg-[#42070e]" />
                       ) : (
                         <span className="text-white/50 text-xs">Calculated at order</span>
                       )
@@ -1282,11 +1282,11 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || placing}
-                  className="w-full h-12 rounded-xl bg-[#E1B76F] text-[#400604] font-bold text-sm uppercase tracking-wider hover:bg-[#f3cb87] active:scale-98 transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-12 rounded-xl bg-[#E1B76F] text-[#530911] font-bold text-sm uppercase tracking-wider hover:bg-[#f3cb87] active:scale-98 transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting || placing ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin text-[#400604]" />
+                      <Loader2 className="h-4 w-4 animate-spin text-[#530911]" />
                       <span>Placing Order…</span>
                     </>
                   ) : (

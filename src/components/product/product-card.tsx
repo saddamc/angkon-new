@@ -99,18 +99,18 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* ── 1. Image Container (Portrait 3:4 matching luxury fashion photography) ── */}
-        <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#340402] border border-[#E1B76F]/20 rounded-none shadow-sm">
+        <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#42070e] border border-[#E1B76F]/20 rounded-none shadow-sm">
           {/* Top Badges (Sale % or Sold Out) */}
           {discountPct > 0 && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#400604] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow">
+              <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#530911] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow">
                 Sale!
               </span>
             </div>
           )}
           {!inStock && (
             <div className="absolute left-2 top-2 z-10">
-              <span className="rounded bg-[#400604]/90 border border-[#E1B76F]/30 px-2 py-0.5 text-[9px] font-bold uppercase text-white shadow">
+              <span className="rounded bg-[#530911]/90 border border-[#E1B76F]/30 px-2 py-0.5 text-[9px] font-bold uppercase text-white shadow">
                 Sold Out
               </span>
             </div>
@@ -183,8 +183,8 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
               onClick={handleAddToCart}
               className={`inline-flex w-fit items-center justify-center rounded-full px-3.5 py-1 text-[11px] font-bold transition-colors duration-200 active:scale-95 ${
                 added
-                  ? "bg-[#E1B76F] text-[#400604]"
-                  : "bg-[#400604] border border-[#E1B76F]/40 text-white hover:bg-[#520805] hover:border-[#E1B76F]"
+                  ? "bg-[#E1B76F] text-[#530911]"
+                  : "bg-[#530911] border border-[#E1B76F]/40 text-white hover:bg-[#680c16] hover:border-[#E1B76F]"
               } disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {added ? (

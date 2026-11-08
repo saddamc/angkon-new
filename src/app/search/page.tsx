@@ -31,7 +31,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         {result.length ? (
           <ProductGrid products={result} />
         ) : (
-          <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-8 text-center text-white/90">No matching products found.</div>
+          <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-8 text-center text-white/90">No matching products found.</div>
         )}
       </div>
     </section>

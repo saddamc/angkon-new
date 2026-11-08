@@ -9,14 +9,14 @@ const CARD_COUNT = 15;
 
 function SpeciallyForYouSkeleton() {
   return (
-    <div className="bg-[#4a0705] border border-[#5c0f0d] rounded-[12px] p-4">
-      <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-[8px] bg-[#2b0403]">
+    <div className="bg-[#610c16] border border-[#6e101c] rounded-[12px] p-4">
+      <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-[8px] bg-[#3b050b]">
         <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[shimmer_1.6s_linear_infinite] bg-gradient-to-r from-transparent via-[#E1B76F]/20 to-transparent" />
       </div>
-      <div className="relative mb-2 h-4 overflow-hidden rounded-sm bg-[#2b0403]">
+      <div className="relative mb-2 h-4 overflow-hidden rounded-sm bg-[#3b050b]">
         <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[shimmer_1.6s_linear_infinite] bg-gradient-to-r from-transparent via-[#E1B76F]/20 to-transparent" />
       </div>
-      <div className="relative h-4 w-16 overflow-hidden rounded-sm bg-[#2b0403]">
+      <div className="relative h-4 w-16 overflow-hidden rounded-sm bg-[#3b050b]">
         <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[shimmer_1.6s_linear_infinite] bg-gradient-to-r from-transparent via-[#E1B76F]/20 to-transparent" />
       </div>
     </div>
@@ -34,10 +34,10 @@ export function SpeciallyForYouSection({
   const showSkeleton = isLoading || cards.length === 0;
 
   return (
-    <section className="bg-[#400604] py-12">
+    <section className="bg-[#530911] py-12">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1400px]">
         {/* Section Header */}
-        <div className="mb-8 flex items-end justify-between border-b border-[#5c0f0d] pb-4">
+        <div className="mb-8 flex items-end justify-between border-b border-[#6e101c] pb-4">
           <div>
             <span className="text-[11px] font-black uppercase tracking-widest text-white/70">
               CURATED COLLECTION <span className="text-white">●</span>
@@ -48,7 +48,7 @@ export function SpeciallyForYouSection({
           </div>
           <Link
             href="/products"
-            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-white transition hover:bg-[#E1B76F] hover:text-[#400604]"
+            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-white transition hover:bg-[#E1B76F] hover:text-[#530911]"
           >
             All Products <ArrowRight className="h-3.5 w-3.5 text-white" />
           </Link>

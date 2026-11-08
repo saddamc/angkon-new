@@ -59,7 +59,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" className={`${poppins.variable} ${lato.variable}`}>
-      <body className="font-sans antialiased text-white bg-[#400604]" suppressHydrationWarning>
+      <body className="font-sans antialiased text-white bg-[#530911]" suppressHydrationWarning>
         <FacebookPixel initialConfig={pixelSettings} />
         <RootShell categoryTree={categoryTree}>{children}</RootShell>
       </body>

@@ -67,7 +67,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex bg-black/70 backdrop-blur-sm">
-      <div className="animate-in slide-in-from-left flex h-full w-[85%] max-w-[380px] flex-col bg-[#1A0302] border-r border-[#E1B76F]/30 shadow-2xl duration-300">
+      <div className="animate-in slide-in-from-left flex h-full w-[85%] max-w-[380px] flex-col bg-[#230407] border-r border-[#E1B76F]/30 shadow-2xl duration-300">
         <div className="flex items-center justify-between border-b border-[#E1B76F]/20 bg-[#100101] p-4 text-white">
           <Link href="/" onClick={onClose} className="flex items-center gap-2.5">
             <Image
@@ -116,7 +116,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
             <li>
               <Link href="/sale" onClick={onClose} className="flex items-center justify-between border-b border-[#E1B76F]/15 px-6 py-3.5 bg-[#280504] text-white hover:bg-[#200302] transition">
                 <span>On Sale 🔥</span>
-                <span className="text-[10px] bg-[#E1B76F] text-[#1A0302] px-2 py-0.5 rounded-full font-black">SAVE BIG</span>
+                <span className="text-[10px] bg-[#E1B76F] text-[#230407] px-2 py-0.5 rounded-full font-black">SAVE BIG</span>
               </Link>
             </li>
             <li>
@@ -188,7 +188,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
                   href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-md border border-[#E1B76F]/40 bg-[#1A0302] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#1A0302] transition"
+                  className="rounded-md border border-[#E1B76F]/40 bg-[#230407] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#230407] transition"
                 >
                   Facebook
                 </a>
@@ -196,7 +196,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
                   href="https://www.instagram.com/angkon.officiall?stkn=MTBjcmt5NWhwYzVqYQ=="
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-md border border-[#E1B76F]/40 bg-[#1A0302] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#1A0302] transition"
+                  className="rounded-md border border-[#E1B76F]/40 bg-[#230407] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#230407] transition"
                 >
                   Instagram
                 </a>
@@ -204,7 +204,7 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
                   href="https://www.tiktok.com/@angkon.official"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-md border border-[#E1B76F]/40 bg-[#1A0302] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#1A0302] transition"
+                  className="rounded-md border border-[#E1B76F]/40 bg-[#230407] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#E1B76F] hover:text-[#230407] transition"
                 >
                   TikTok
                 </a>

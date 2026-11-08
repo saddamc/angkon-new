@@ -200,7 +200,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 className="h-10 sm:h-11 md:h-12 w-auto rounded-md shadow-xs border border-neutral-200 object-contain transition-transform duration-200 group-hover:scale-105"
                 priority
               />
-              <span className="font-serif tracking-[0.22em] text-[17px] sm:text-[19px] font-bold text-[#400604] uppercase leading-none group-hover:text-[#660a07] transition-colors">
+              <span className="font-serif tracking-[0.22em] text-[17px] sm:text-[19px] font-bold text-[#530911] uppercase leading-none group-hover:text-[#7a101d] transition-colors">
                 ANGKON
               </span>
             </Link>
@@ -220,8 +220,8 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                       href={link.href}
                       className={`py-2 transition ${
                         active
-                          ? "text-[#400604] border-b-2 border-[#400604] pb-1 font-extrabold tracking-wide"
-                          : "text-neutral-800 hover:text-[#400604]"
+                          ? "text-[#530911] border-b-2 border-[#530911] pb-1 font-extrabold tracking-wide"
+                          : "text-neutral-800 hover:text-[#530911]"
                       }`}
                     >
                       {link.label}
@@ -233,7 +233,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <button
                   type="button"
                   onClick={handleOpenSearch}
-                  className="py-2 text-neutral-700 hover:text-[#400604] transition flex items-center justify-center cursor-pointer"
+                  className="py-2 text-neutral-700 hover:text-[#530911] transition flex items-center justify-center cursor-pointer"
                   aria-label="Open search"
                   title="Search"
                 >
@@ -252,7 +252,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
               >
                 <form
                   onSubmit={handleSearchSubmit}
-                  className="relative flex items-center w-full h-[38px] sm:h-[40px] border border-neutral-300 bg-neutral-50 px-3.5 py-1.5 rounded-[2px] transition-all shadow-xs focus-within:border-[#400604] focus-within:bg-white"
+                  className="relative flex items-center w-full h-[38px] sm:h-[40px] border border-neutral-300 bg-neutral-50 px-3.5 py-1.5 rounded-[2px] transition-all shadow-xs focus-within:border-[#530911] focus-within:bg-white"
                 >
                   <input
                     ref={desktopInputRef}
@@ -273,7 +273,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                     aria-hidden={!searchLoading}
                   >
                     <svg
-                      className="animate-spin h-4 w-4 text-[#400604]"
+                      className="animate-spin h-4 w-4 text-[#530911]"
                       viewBox="0 0 24 24"
                       fill="none"
                     >
@@ -313,7 +313,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                     {searchLoading && searchResults.length === 0 ? (
                       <div className="py-6 text-center text-xs text-neutral-500 flex items-center justify-center gap-2">
                         <svg
-                          className="animate-spin h-3.5 w-3.5 text-[#400604]"
+                          className="animate-spin h-3.5 w-3.5 text-[#530911]"
                           viewBox="0 0 24 24"
                           fill="none"
                         >
@@ -363,14 +363,14 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#400604] transition">
+                              <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#530911] transition">
                                 {product.name}
                               </h4>
                               <p className="text-[10px] text-neutral-500">
                                 {product.category}
                               </p>
                             </div>
-                            <span className="text-xs font-bold text-[#400604] flex-shrink-0">
+                            <span className="text-xs font-bold text-[#530911] flex-shrink-0">
                               Tk{product.price.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </Link>
@@ -379,7 +379,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                           <button
                             type="button"
                             onClick={handleSearchSubmit}
-                            className="w-full text-center py-1.5 text-xs font-bold text-[#400604] hover:underline cursor-pointer"
+                            className="w-full text-center py-1.5 text-xs font-bold text-[#530911] hover:underline cursor-pointer"
                           >
                             View all results for &ldquo;{searchQuery}&rdquo; &rarr;
                           </button>
@@ -404,7 +404,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
             >
               <form
                 onSubmit={handleSearchSubmit}
-                className="relative flex items-center w-full h-[40px] border border-neutral-300 bg-neutral-50 px-3 rounded-[4px] focus-within:border-[#400604] focus-within:bg-white transition-all shadow-xs"
+                className="relative flex items-center w-full h-[40px] border border-neutral-300 bg-neutral-50 px-3 rounded-[4px] focus-within:border-[#530911] focus-within:bg-white transition-all shadow-xs"
               >
                 <Search className="h-4 w-4 text-neutral-400 flex-shrink-0 mr-2" />
                 <input
@@ -426,7 +426,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                   aria-hidden={!searchLoading}
                 >
                   <svg
-                    className="animate-spin h-3.5 w-3.5 text-[#400604]"
+                    className="animate-spin h-3.5 w-3.5 text-[#530911]"
                     viewBox="0 0 24 24"
                     fill="none"
                   >
@@ -465,7 +465,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                   {searchLoading && searchResults.length === 0 ? (
                     <div className="py-6 text-center text-xs text-neutral-500 flex items-center justify-center gap-2">
                       <svg
-                        className="animate-spin h-3.5 w-3.5 text-[#400604]"
+                        className="animate-spin h-3.5 w-3.5 text-[#530911]"
                         viewBox="0 0 24 24"
                         fill="none"
                       >
@@ -515,14 +515,14 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                             />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#400604] transition">
+                            <h4 className="line-clamp-1 text-xs font-semibold text-neutral-900 group-hover:text-[#530911] transition">
                               {product.name}
                             </h4>
                             <p className="text-[10px] text-neutral-500">
                               {product.category}
                             </p>
                           </div>
-                          <span className="text-xs font-bold text-[#400604] flex-shrink-0">
+                          <span className="text-xs font-bold text-[#530911] flex-shrink-0">
                             Tk{product.price.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </Link>
@@ -531,7 +531,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                         <button
                           type="button"
                           onClick={handleSearchSubmit}
-                          className="w-full text-center py-2 text-xs font-bold text-[#400604] hover:underline cursor-pointer"
+                          className="w-full text-center py-2 text-xs font-bold text-[#530911] hover:underline cursor-pointer"
                         >
                           View all results for &ldquo;{searchQuery}&rdquo; &rarr;
                         </button>
@@ -548,16 +548,16 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
             {/* Desktop-only: Cart (Plain Tk amount + Shopping Cart Icon) */}
             <button
               onClick={openCart}
-              className="hidden lg:flex group items-center gap-1.5 p-1 text-neutral-800 hover:text-[#400604] transition cursor-pointer"
+              className="hidden lg:flex group items-center gap-1.5 p-1 text-neutral-800 hover:text-[#530911] transition cursor-pointer"
               aria-label="View shopping cart"
             >
-              <span className="text-[13px] sm:text-[14px] font-bold text-neutral-900 transition group-hover:text-[#400604]">
+              <span className="text-[13px] sm:text-[14px] font-bold text-neutral-900 transition group-hover:text-[#530911]">
                 {mounted ? `Tk${subtotal.toLocaleString("en-BD", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Tk0.00"}
               </span>
               <div className="relative flex items-center justify-center">
-                <ShoppingCart className="h-5 w-5 text-neutral-800 group-hover:text-[#400604] transition" />
+                <ShoppingCart className="h-5 w-5 text-neutral-800 group-hover:text-[#530911] transition" />
                 {mounted && itemCount > 0 && (
-                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#400604] px-1 text-[9px] font-black text-white shadow-xs">
+                  <span className="absolute -top-2 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#530911] px-1 text-[9px] font-black text-white shadow-xs">
                     {itemCount}
                   </span>
                 )}
@@ -567,7 +567,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
             {/* My Account Icon (Solid User Silhouette - visible on mobile and desktop) */}
             <Link
               href="/my-account"
-              className="p-1 text-neutral-800 hover:text-[#400604] transition flex items-center justify-center"
+              className="p-1 text-neutral-800 hover:text-[#530911] transition flex items-center justify-center"
               title="My Account"
               aria-label="My Account"
             >
@@ -578,7 +578,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
             <button
               type="button"
               onClick={handleOpenSearch}
-              className="lg:hidden p-1 text-neutral-800 hover:text-[#400604] transition flex items-center justify-center cursor-pointer"
+              className="lg:hidden p-1 text-neutral-800 hover:text-[#530911] transition flex items-center justify-center cursor-pointer"
               aria-label="Open search"
               title="Search"
             >
@@ -592,7 +592,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 setOpenMobile(!openMobile);
                 if (searchOpen) handleCloseSearch();
               }}
-              className="lg:hidden flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center border border-neutral-300 rounded-[2px] text-neutral-800 hover:border-[#400604] hover:text-[#400604] transition cursor-pointer"
+              className="lg:hidden flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center border border-neutral-300 rounded-[2px] text-neutral-800 hover:border-[#530911] hover:text-[#530911] transition cursor-pointer"
               aria-label={openMobile ? "Close navigation menu" : "Open navigation menu"}
             >
               {openMobile ? (
@@ -612,7 +612,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   Home
                 </Link>
@@ -621,7 +621,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/women"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   Women
                 </Link>
@@ -630,7 +630,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/men"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   Men
                 </Link>
@@ -639,7 +639,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/products"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   Products
                 </Link>
@@ -648,7 +648,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/product-category/accessories"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   Accessories
                 </Link>
@@ -657,7 +657,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/policies"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   Policies
                 </Link>
@@ -666,7 +666,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/sale"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   On Sale
                 </Link>
@@ -675,7 +675,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
                 <Link
                   href="/about"
                   onClick={() => setOpenMobile(false)}
-                  className="block py-0.5 text-neutral-800 hover:text-[#400604] transition"
+                  className="block py-0.5 text-neutral-800 hover:text-[#530911] transition"
                 >
                   About Us
                 </Link>

@@ -24,6 +24,7 @@ import {
   CheckCircle,
   ClipboardList,
   Banknote,
+  Copy,
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────────────────── */
@@ -141,15 +142,25 @@ export default function AdminOrdersPage() {
     orderNumber: string;
     total: string | number;
   } | null>(null);
+  // Read-only detail sheet for a customer or a product line.
+  const [infoModal, setInfoModal] = useState<{
+    title: string;
+    subtitle?: string;
+    fields: { label: string; value: string; mono?: boolean }[];
+  } | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // Escape closes the top-most dialog and background scrolling is locked while
   // either dialog is open.
   useEffect(() => {
-    if (!statusModal && !warningModal && !paymentModal) return;
+    if (!statusModal && !warningModal && !paymentModal && !infoModal) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (infoModal) {
+        setInfoModal(null);
+        return;
+      }
       if (paymentModal) {
         setPaymentModal(null);
         return;
@@ -170,11 +181,21 @@ export default function AdminOrdersPage() {
       window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [statusModal, warningModal, paymentModal]);
+  }, [statusModal, warningModal, paymentModal, infoModal]);
 
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
+  };
+
+  /** Copies a value and confirms it, falling back to an error toast if blocked. */
+  const copyValue = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(`${label} copied`, "success");
+    } catch {
+      showToast("Clipboard access was blocked by the browser", "error");
+    }
   };
 
   const load = useCallback(
@@ -473,6 +494,45 @@ export default function AdminOrdersPage() {
                 )
               );
               const thumb = firstItem?.image?.src;
+              // Full address for the detail sheet — avoids repeating the city
+              // when the stored address already contains it.
+              const rawAddress = order.billing?.address_1 || "";
+              const city = order.billing?.city || "";
+              const fullAddress =
+                city && !rawAddress.toLowerCase().includes(city.toLowerCase())
+                  ? `${rawAddress}, ${city}`.replace(/^,\s*/, "")
+                  : rawAddress;
+
+              const openCustomerDetails = () =>
+                setInfoModal({
+                  title: "Customer details",
+                  subtitle: `Order #${order.number || order.id}`,
+                  fields: [
+                    { label: "Name", value: custName },
+                    ...(order.billing?.email
+                      ? [{ label: "Email", value: order.billing.email, mono: true }]
+                      : []),
+                    ...(order.billing?.phone
+                      ? [{ label: "Phone", value: order.billing.phone, mono: true }]
+                      : []),
+                    ...(fullAddress ? [{ label: "Address", value: fullAddress }] : []),
+                  ],
+                });
+
+              const openProductDetails = () =>
+                setInfoModal({
+                  title: "Product details",
+                  subtitle: `Order #${order.number || order.id}`,
+                  fields: [
+                    { label: "Product", value: productName },
+                    { label: "Quantity", value: String(productQty) },
+                    {
+                      label: productSizes.length === 1 ? "Size" : "Sizes",
+                      value: productSizes.length ? productSizes.join(", ") : "—",
+                      mono: true,
+                    },
+                  ],
+                });
               // The badge reflects the stored payment status only. Order status
               // is a fulfilment state, not a payment state: a delivered COD
               // order can still be unpaid, and payment can be toggled back to
@@ -500,10 +560,19 @@ export default function AdminOrdersPage() {
 
                     {/* Order No & Date */}
                     <div className="min-w-0">
-                      <p className="text-[12px] font-bold text-purple-600 whitespace-nowrap font-mono tracking-tight">
-                        #{order.number || order.id}
-                      </p>
-                      <p className="text-[10px] text-gray-400">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void copyValue(`#${order.number || order.id}`, "Order number");
+                        }}
+                        className="group/ord flex max-w-full items-center gap-1 rounded text-left font-mono text-[12px] font-bold tracking-tight text-purple-600 transition hover:text-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                        title="Click to copy the order number"
+                      >
+                        <span className="truncate">#{order.number || order.id}</span>
+                        <Copy className="h-3 w-3 shrink-0 opacity-0 transition group-hover/ord:opacity-100" />
+                      </button>
+                      <p className="text-[11px] text-gray-500">
                         {order.date_created
                           ? new Date(order.date_created).toLocaleDateString("en-GB", {
                               day: "2-digit",
@@ -512,42 +581,74 @@ export default function AdminOrdersPage() {
                             })
                           : "—"}
                       </p>
-                      <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200/50">
+                      <span className="mt-1 inline-block rounded border border-purple-200/60 bg-purple-50 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none tracking-wider text-purple-700">
                         Online
                       </span>
                     </div>
 
                     {/* Customer Info */}
                     <div className="min-w-0 space-y-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <Users className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                        <span className="text-[12px] font-semibold text-gray-800 truncate">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCustomerDetails();
+                        }}
+                        className="flex w-full min-w-0 items-center gap-1.5 rounded text-left transition hover:text-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                        title="View full customer details"
+                      >
+                        <Users className="h-3 w-3 flex-shrink-0 text-gray-400" />
+                        <span className="truncate text-[12px] font-semibold text-gray-800">
                           {custName}
                         </span>
-                      </div>
+                      </button>
                       {order.billing?.email && (
-                        <div className="flex items-center gap-1.5 min-w-0" title={order.billing.email}>
-                          <Mail className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-[11px] text-gray-500 truncate hover:text-purple-600 transition select-all">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCustomerDetails();
+                          }}
+                          className="flex w-full min-w-0 items-center gap-1.5 rounded text-left transition hover:text-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                          title={`${order.billing.email} — click for details`}
+                        >
+                          <Mail className="h-3 w-3 flex-shrink-0 text-gray-400" />
+                          <span className="truncate text-[11px] text-gray-500">
                             {order.billing.email}
                           </span>
-                        </div>
+                        </button>
                       )}
                       {order.billing?.phone && (
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-[11px] text-gray-500 font-mono">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCustomerDetails();
+                          }}
+                          className="flex w-full min-w-0 items-center gap-1.5 rounded text-left transition hover:text-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                          title={`${order.billing.phone} — click for details`}
+                        >
+                          <Phone className="h-3 w-3 flex-shrink-0 text-gray-400" />
+                          <span className="truncate font-mono text-[11px] text-gray-500">
                             {order.billing.phone}
                           </span>
-                        </div>
+                        </button>
                       )}
                       {order.billing?.address_1 && (
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-[10px] text-gray-400 truncate">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openCustomerDetails();
+                          }}
+                          className="flex w-full min-w-0 items-center gap-1.5 rounded text-left transition hover:text-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                          title={`${fullAddress} — click for details`}
+                        >
+                          <MapPin className="h-3 w-3 flex-shrink-0 text-gray-400" />
+                          <span className="truncate text-[11px] text-gray-500">
                             {order.billing.address_1}
                           </span>
-                        </div>
+                        </button>
                       )}
                       {/* Mobile Row Info */}
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap lg:hidden">
@@ -600,15 +701,23 @@ export default function AdminOrdersPage() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="text-[12px] font-medium text-gray-700 truncate" title={productName}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openProductDetails();
+                          }}
+                          className="block w-full truncate rounded text-left text-[12px] font-semibold text-gray-800 transition hover:text-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                          title={`${productName} — click for details`}
+                        >
                           {productName}
-                        </p>
-                        <p className="text-[10px] text-gray-400">
+                        </button>
+                        <p className="text-[11px] font-medium text-gray-700">
                           Qty: {productQty}
                           {productSizes.length > 0 && (
                             <>
                               {" · "}
-                              <span className="font-semibold text-gray-600">
+                              <span className="font-semibold text-gray-900">
                                 {productSizes.length === 1 ? "Size" : "Sizes"}:{" "}
                                 {productSizes.join(", ")}
                               </span>
@@ -662,7 +771,7 @@ export default function AdminOrdersPage() {
                     </div>
 
                     {/* Total Price */}
-                    <span className="hidden lg:block text-[13px] font-bold text-gray-900">
+                    <span className="hidden text-[13px] font-bold tabular-nums text-gray-900 lg:block">
                       {formatBDT(order.total)}
                     </span>
 
@@ -671,9 +780,11 @@ export default function AdminOrdersPage() {
                       {isCancelled ? (
                         <span className="text-[11px] font-medium text-gray-400">Void</span>
                       ) : isPaid ? (
-                        <span className="text-[12px] font-bold text-emerald-600">৳ 0</span>
+                        <span className="text-[12px] font-bold tabular-nums text-emerald-600">
+                          ৳ 0
+                        </span>
                       ) : (
-                        <span className="text-[13px] font-bold text-purple-700">
+                        <span className="text-[13px] font-bold tabular-nums text-purple-700">
                           {formatBDT(order.total)}
                         </span>
                       )}
@@ -1102,6 +1213,97 @@ export default function AdminOrdersPage() {
       )}
 
       {/* ── Toast Notification ────────────────────────── */}
+      {/* ── Detail sheet (customer / product) ────────── */}
+      {infoModal && (
+        <div className="fixed inset-0 z-[350] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setInfoModal(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="info-modal-title"
+            className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+              <div className="min-w-0">
+                <h3 id="info-modal-title" className="text-[15px] font-semibold text-slate-900">
+                  {infoModal.title}
+                </h3>
+                {infoModal.subtitle && (
+                  <p className="mt-0.5 truncate font-mono text-[11.5px] text-slate-500">
+                    {infoModal.subtitle}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                aria-label="Close dialog"
+                onClick={() => setInfoModal(null)}
+                className="-mr-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] space-y-2.5 overflow-y-auto px-5 py-4">
+              {infoModal.fields.map((field) => (
+                <div
+                  key={field.label}
+                  className="rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                    {field.label}
+                  </p>
+                  <div className="mt-1 flex items-start justify-between gap-3">
+                    <p
+                      className={`min-w-0 break-all text-[12.5px] leading-relaxed text-slate-800 ${
+                        field.mono ? "font-mono" : ""
+                      }`}
+                    >
+                      {field.value}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void copyValue(field.value, field.label)}
+                      aria-label={`Copy ${field.label}`}
+                      title={`Copy ${field.label.toLowerCase()}`}
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-purple-300 hover:text-purple-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/60 px-5 py-3">
+              <button
+                type="button"
+                onClick={() =>
+                  void copyValue(
+                    infoModal.fields.map((f) => `${f.label}: ${f.value}`).join("\n"),
+                    "Details"
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
+              >
+                <Copy className="h-3 w-3" />
+                Copy all
+              </button>
+              <button
+                type="button"
+                onClick={() => setInfoModal(null)}
+                className="rounded-lg bg-slate-900 px-4 py-1.5 text-[11.5px] font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-500/40"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div className="fixed bottom-6 right-6 z-[400]">
           <div

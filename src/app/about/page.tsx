@@ -35,9 +35,9 @@ const MAPS_EMBED_URL =
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── 1. Hero Header ── */}
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-14 sm:py-20 px-4 text-center">
+      <div className="border-b border-[#6e101c] bg-[#3b050b] py-14 sm:py-20 px-4 text-center">
         <div className="container mx-auto max-w-[950px]">
           <span className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#E1B76F]">
             Our Identity & Philosophy
@@ -69,7 +69,7 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="rounded-2xl border-2 border-[#E1B76F]/30 bg-[#340402] p-8 shadow-2xl space-y-6">
+          <div className="rounded-2xl border-2 border-[#E1B76F]/30 bg-[#42070e] p-8 shadow-2xl space-y-6">
             <h3 className="font-heading text-xl font-bold uppercase text-white tracking-wide">
               The Core Standards
             </h3>
@@ -117,11 +117,11 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             {/* Left Showroom Card (5 columns) */}
-            <div className="lg:col-span-5 rounded-2xl border-2 border-[#E1B76F]/40 bg-[#340402] p-6 sm:p-8 flex flex-col justify-between shadow-2xl">
+            <div className="lg:col-span-5 rounded-2xl border-2 border-[#E1B76F]/40 bg-[#42070e] p-6 sm:p-8 flex flex-col justify-between shadow-2xl">
               <div className="space-y-5">
                 {/* Header Badges */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-block rounded-full bg-[#E1B76F] px-3.5 py-1 text-[11px] font-black uppercase text-[#400604] tracking-wider shadow">
+                  <span className="inline-block rounded-full bg-[#E1B76F] px-3.5 py-1 text-[11px] font-black uppercase text-[#530911] tracking-wider shadow">
                     Flagship Experience Center
                   </span>
                   <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold bg-emerald-950/70 border border-emerald-500/30 px-3 py-0.5 rounded-full">
@@ -210,7 +210,7 @@ export default function AboutPage() {
                   href={MAPS_DIRECTIONS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#E1B76F] px-4 py-3 text-xs font-black uppercase text-[#400604] hover:bg-[#f3cc87] transition shadow-lg"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#E1B76F] px-4 py-3 text-xs font-black uppercase text-[#530911] hover:bg-[#f3cc87] transition shadow-lg"
                 >
                   <Navigation className="h-4 w-4" />
                   Get Directions
@@ -219,7 +219,7 @@ export default function AboutPage() {
                   href={MAPS_SHORT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#E1B76F] bg-[#400604] px-4 py-3 text-xs font-black uppercase text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604] transition shadow-md"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#E1B76F] bg-[#530911] px-4 py-3 text-xs font-black uppercase text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#530911] transition shadow-md"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open in Maps
@@ -237,9 +237,9 @@ export default function AboutPage() {
             </div>
 
             {/* Right Map Card with High-Precision Street-Level Zoom (7 columns) */}
-            <div className="lg:col-span-7 rounded-2xl border-2 border-[#E1B76F]/40 bg-[#340402] overflow-hidden shadow-2xl flex flex-col">
+            <div className="lg:col-span-7 rounded-2xl border-2 border-[#E1B76F]/40 bg-[#42070e] overflow-hidden shadow-2xl flex flex-col">
               {/* Map Top Bar */}
-              <div className="flex items-center justify-between px-5 py-3 bg-[#2b0403] border-b border-[#E1B76F]/25">
+              <div className="flex items-center justify-between px-5 py-3 bg-[#3b050b] border-b border-[#E1B76F]/25">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[#E1B76F] animate-ping" />
                   <span className="font-heading font-black text-xs sm:text-sm uppercase tracking-wider text-white">
@@ -266,7 +266,7 @@ export default function AboutPage() {
               </div>
 
               {/* Map Footer Bar */}
-              <div className="px-5 py-3.5 bg-[#2b0403] border-t border-[#E1B76F]/25 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="px-5 py-3.5 bg-[#3b050b] border-t border-[#E1B76F]/25 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <p className="text-xs text-white/80">
                   <strong className="text-white">ANGKON Flagship Experience Center</strong> — H-93, Road 2, Block-A, Niketan
                 </p>
@@ -287,13 +287,13 @@ export default function AboutPage() {
         <div className="pt-6 border-t border-[#E1B76F]/20 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/products"
-            className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-[#E1B76F] px-8 py-3.5 text-xs font-black uppercase text-[#400604] hover:bg-[#f3cc87] transition shadow-lg"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-[#E1B76F] px-8 py-3.5 text-xs font-black uppercase text-[#530911] hover:bg-[#f3cc87] transition shadow-lg"
           >
             Explore Current Drops
           </Link>
           <Link
             href="/contact"
-            className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-[#E1B76F]/60 bg-[#340402] px-8 py-3.5 text-xs font-black uppercase text-white hover:bg-[#400604] hover:border-[#E1B76F] transition shadow-md"
+            className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-[#E1B76F]/60 bg-[#42070e] px-8 py-3.5 text-xs font-black uppercase text-white hover:bg-[#530911] hover:border-[#E1B76F] transition shadow-md"
           >
             Get In Touch
           </Link>

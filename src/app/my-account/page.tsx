@@ -55,16 +55,16 @@ const PASSWORD_HINT = "At least 8 characters, with a letter and a number";
 /* ── Small shared pieces ─────────────────────────────────────────────── */
 
 const inputClass =
-  "w-full rounded-xl border border-[#400604] bg-[#1A0302] px-4 py-3 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
+  "w-full rounded-xl border border-[#530911] bg-[#230407] px-4 py-3 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
 const primaryButton =
-  "w-full rounded-xl bg-[#E1B76F] py-3.5 text-xs font-black uppercase tracking-wider text-[#400604] hover:bg-[#edd19b] transition shadow-md disabled:opacity-50";
+  "w-full rounded-xl bg-[#E1B76F] py-3.5 text-xs font-black uppercase tracking-wider text-[#530911] hover:bg-[#edd19b] transition shadow-md disabled:opacity-50";
 
 function NoticeBanner({ notice }: { notice: Notice }) {
   if (!notice) return null;
   const styles = {
     success: "border-green-500/50 bg-green-950/40 text-green-300",
     error: "border-red-500/50 bg-red-950/40 text-red-300",
-    info: "border-[#E1B76F]/40 bg-[#2b0403] text-white/90",
+    info: "border-[#E1B76F]/40 bg-[#3b050b] text-white/90",
   }[notice.type];
   return (
     <div role="status" className={`rounded-xl border p-4 text-center text-sm font-semibold ${styles}`}>
@@ -287,7 +287,7 @@ export default function MyAccountPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A0302] text-white flex items-center justify-center py-20">
+      <div className="min-h-screen bg-[#230407] text-white flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E1B76F] border-t-transparent" />
           <p className="text-xs uppercase tracking-widest text-white/80">Loading your account…</p>
@@ -300,13 +300,13 @@ export default function MyAccountPage() {
   if (user) {
     const needsPassword = !user.hasPassword;
     return (
-      <div className="min-h-screen bg-[#1A0302] text-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#230407] text-white py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1100px] space-y-6">
           <NoticeBanner notice={notice} />
 
           {/* Email verification */}
           {!user.emailVerified && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-2xl border border-[#E1B76F]/40 bg-[#3b050b] p-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex gap-3">
                 <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-white" />
                 <div>
@@ -322,7 +322,7 @@ export default function MyAccountPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={submitting}
-                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/40 bg-[#400604] px-5 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#400604] disabled:opacity-50"
+                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/40 bg-[#530911] px-5 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#530911] disabled:opacity-50"
               >
                 <MailCheck className="h-3.5 w-3.5" /> Resend link
               </button>
@@ -333,7 +333,7 @@ export default function MyAccountPage() {
           {needsPassword && user.emailVerified && (
             <form
               onSubmit={handleSetPassword}
-              className="rounded-2xl border border-[#E1B76F]/40 bg-[#2b0403] p-5 sm:p-6"
+              className="rounded-2xl border border-[#E1B76F]/40 bg-[#3b050b] p-5 sm:p-6"
             >
               <div className="flex items-start gap-3">
                 <KeyRound className="mt-0.5 h-5 w-5 flex-shrink-0 text-white" />
@@ -349,7 +349,7 @@ export default function MyAccountPage() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="rounded-xl bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#400604] transition hover:bg-[#edd19b] disabled:opacity-50"
+                      className="rounded-xl bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#530911] transition hover:bg-[#edd19b] disabled:opacity-50"
                     >
                       Save password
                     </button>
@@ -359,9 +359,9 @@ export default function MyAccountPage() {
             </form>
           )}
 
-          <div className="rounded-2xl border border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-2xl">
+          <div className="rounded-2xl border border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-2xl">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#400604] pb-6 gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#530911] pb-6 gap-4">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/80">My account</span>
                 <h1 className="font-heading text-2xl sm:text-4xl font-black uppercase text-white mt-1">
@@ -374,7 +374,7 @@ export default function MyAccountPage() {
                       <ShieldCheck className="h-3 w-3" /> Verified
                     </span>
                   ) : (
-                    <span className="rounded-full bg-[#400604] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    <span className="rounded-full bg-[#530911] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                       Not verified
                     </span>
                   )}
@@ -384,7 +384,7 @@ export default function MyAccountPage() {
               <button
                 onClick={handleLogout}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[#E1B76F]/30 bg-[#400604] px-5 py-2.5 text-xs font-bold uppercase text-white hover:bg-[#E1B76F] hover:text-[#400604] transition"
+                className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[#E1B76F]/30 bg-[#530911] px-5 py-2.5 text-xs font-bold uppercase text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"
               >
                 <LogOut className="h-3.5 w-3.5" /> Sign out
               </button>
@@ -392,12 +392,12 @@ export default function MyAccountPage() {
 
             {/* Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-5">
+              <div className="rounded-xl border border-[#530911] bg-[#230407] p-5">
                 <Package className="h-5 w-5 text-white" />
                 <p className="mt-3 text-2xl font-black text-white">{orders.length}</p>
                 <p className="text-xs uppercase tracking-wider text-white/80">{orders.length === 1 ? "Order" : "Orders"}</p>
               </div>
-              <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-5">
+              <div className="rounded-xl border border-[#530911] bg-[#230407] p-5">
                 <ShieldCheck className="h-5 w-5 text-white" />
                 <p className="mt-3 text-sm font-bold text-white">Delivery address</p>
                 <p className="mt-1 text-xs text-white/80">
@@ -406,7 +406,7 @@ export default function MyAccountPage() {
                     : "Saved with your first order."}
                 </p>
               </div>
-              <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-5">
+              <div className="rounded-xl border border-[#530911] bg-[#230407] p-5">
                 <KeyRound className="h-5 w-5 text-white" />
                 <p className="mt-3 text-sm font-bold text-white">Password</p>
                 {user.hasPassword ? (
@@ -426,13 +426,13 @@ export default function MyAccountPage() {
             </div>
 
             {showChangePassword && user.hasPassword && (
-              <form onSubmit={handleSetPassword} className="mt-4 grid gap-3 rounded-xl border border-[#400604] bg-[#1a0302] p-5 sm:grid-cols-[1fr_1fr_auto]">
+              <form onSubmit={handleSetPassword} className="mt-4 grid gap-3 rounded-xl border border-[#530911] bg-[#230407] p-5 sm:grid-cols-[1fr_1fr_auto]">
                 <PasswordInput value={currentPass} onChange={setCurrentPass} placeholder="Current password" autoComplete="current-password" />
                 <PasswordInput value={newPass} onChange={setNewPass} placeholder={PASSWORD_HINT} autoComplete="new-password" />
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-xl bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#400604] transition hover:bg-[#edd19b] disabled:opacity-50"
+                  className="rounded-xl bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#530911] transition hover:bg-[#edd19b] disabled:opacity-50"
                 >
                   Update
                 </button>
@@ -441,12 +441,12 @@ export default function MyAccountPage() {
 
             {/* Orders */}
             <div className="mt-10">
-              <h2 className="font-heading text-xl font-bold uppercase text-white mb-4 pb-2 border-b border-[#400604] flex items-center gap-2">
+              <h2 className="font-heading text-xl font-bold uppercase text-white mb-4 pb-2 border-b border-[#530911] flex items-center gap-2">
                 <Package className="h-5 w-5" /> Your orders
               </h2>
 
               {orders.length === 0 ? (
-                <div className="rounded-xl border border-[#400604] bg-[#1a0302] p-8 text-center">
+                <div className="rounded-xl border border-[#530911] bg-[#230407] p-8 text-center">
                   <Clock className="h-10 w-10 text-white/50 mx-auto mb-3" />
                   <p className="text-sm font-semibold text-white">No orders yet.</p>
                   <p className="text-xs text-white/80 mt-1 max-w-sm mx-auto">
@@ -456,7 +456,7 @@ export default function MyAccountPage() {
                   </p>
                   <Link
                     href="/products"
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#E1B76F] px-6 py-2.5 text-xs font-black uppercase text-[#400604] hover:bg-[#edd19b] transition"
+                    className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#E1B76F] px-6 py-2.5 text-xs font-black uppercase text-[#530911] hover:bg-[#edd19b] transition"
                   >
                     Start shopping <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
@@ -464,8 +464,8 @@ export default function MyAccountPage() {
               ) : (
                 <div className="space-y-4">
                   {orders.map((ord) => (
-                    <div key={ord.orderNumber} className="rounded-xl border border-[#400604] bg-[#1a0302] p-5 transition hover:border-[#E1B76F]/50">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#400604]/50 pb-3">
+                    <div key={ord.orderNumber} className="rounded-xl border border-[#530911] bg-[#230407] p-5 transition hover:border-[#E1B76F]/50">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#530911]/50 pb-3">
                         <div>
                           <span className="font-mono text-sm font-bold text-white">#{ord.orderNumber}</span>
                           <span className="text-xs text-white/80 ml-3 inline-flex items-center gap-1">
@@ -474,7 +474,7 @@ export default function MyAccountPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[#400604] px-3 py-0.5 text-xs font-semibold uppercase text-white">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#530911] px-3 py-0.5 text-xs font-semibold uppercase text-white">
                             <CheckCircle2 className="h-3 w-3" /> {ord.orderStatus}
                           </span>
                           <span className="text-sm font-black text-white">৳{Number(ord.total).toLocaleString("en-BD")}</span>
@@ -486,7 +486,7 @@ export default function MyAccountPage() {
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {ord.items.map((it, idx) => (
-                            <span key={idx} className="text-xs bg-[#240403] border border-[#400604] text-white px-2.5 py-1 rounded-md">
+                            <span key={idx} className="text-xs bg-[#240403] border border-[#530911] text-white px-2.5 py-1 rounded-md">
                               {it.name} {it.size ? `(${it.size})` : ""} × {it.quantity}
                             </span>
                           ))}
@@ -505,8 +505,8 @@ export default function MyAccountPage() {
 
   /* ── Signed out ────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#1A0302] text-white">
-      <div className="border-b border-[#400604] bg-[#240403] py-12 px-4 text-center">
+    <div className="min-h-screen bg-[#230407] text-white">
+      <div className="border-b border-[#530911] bg-[#240403] py-12 px-4 text-center">
         <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/80">ANGKON</span>
         <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">My Account</h1>
         <p className="mt-2 text-xs sm:text-sm text-white/80 max-w-md mx-auto">
@@ -520,8 +520,8 @@ export default function MyAccountPage() {
 
       <div className="container mx-auto max-w-[1100px] px-4 py-10 lg:px-8">
         {mode === "forgot" ? (
-          <form onSubmit={handleForgot} className="mx-auto max-w-md space-y-5 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl">
-            <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#400604]">Reset password</h2>
+          <form onSubmit={handleForgot} className="mx-auto max-w-md space-y-5 rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-xl">
+            <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#530911]">Reset password</h2>
             <p className="text-xs text-white/80">
               Enter your email and we&apos;ll send a link to set a new password. This also works if your account was created
               with an order and has no password yet.
@@ -550,7 +550,7 @@ export default function MyAccountPage() {
         ) : (
           <div className="mx-auto max-w-md">
             {/* Tab switcher: Toggle between Sign in & Create account */}
-            <div className="flex rounded-2xl bg-[#1A0302] p-1.5 border border-[#400604] mb-6 shadow-inner">
+            <div className="flex rounded-2xl bg-[#230407] p-1.5 border border-[#530911] mb-6 shadow-inner">
               <button
                 type="button"
                 onClick={() => {
@@ -559,7 +559,7 @@ export default function MyAccountPage() {
                 }}
                 className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition ${
                   authTab === "login"
-                    ? "bg-[#E1B76F] text-[#400604] shadow-md"
+                    ? "bg-[#E1B76F] text-[#530911] shadow-md"
                     : "text-white/70 hover:text-white"
                 }`}
               >
@@ -573,7 +573,7 @@ export default function MyAccountPage() {
                 }}
                 className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition ${
                   authTab === "register"
-                    ? "bg-[#E1B76F] text-[#400604] shadow-md"
+                    ? "bg-[#E1B76F] text-[#530911] shadow-md"
                     : "text-white/70 hover:text-white"
                 }`}
               >
@@ -583,8 +583,8 @@ export default function MyAccountPage() {
 
             {authTab === "login" ? (
               /* Sign in Form */
-              <form onSubmit={handleLogin} className="space-y-5 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
-                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Sign in</h2>
+              <form onSubmit={handleLogin} className="space-y-5 rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#530911]">Sign in</h2>
                 <div>
                   <Label required>Email address</Label>
                   <div className="relative">
@@ -612,7 +612,7 @@ export default function MyAccountPage() {
                 <button type="submit" disabled={submitting} className={primaryButton}>
                   {submitting ? "Signing in…" : "Sign in"}
                 </button>
-                <div className="pt-4 border-t border-[#400604] text-center text-xs text-white/70">
+                <div className="pt-4 border-t border-[#530911] text-center text-xs text-white/70">
                   Don&apos;t have an account yet?{" "}
                   <button
                     type="button"
@@ -628,8 +628,8 @@ export default function MyAccountPage() {
               </form>
             ) : (
               /* Register Form */
-              <form onSubmit={handleRegister} className="space-y-4 rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
-                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#400604]">Create account</h2>
+              <form onSubmit={handleRegister} className="space-y-4 rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
+                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#530911]">Create account</h2>
                 <div>
                   <Label required>Full name</Label>
                   <div className="relative">
@@ -662,7 +662,7 @@ export default function MyAccountPage() {
                 <button type="submit" disabled={submitting} className={primaryButton}>
                   {submitting ? "Creating account…" : "Create account"}
                 </button>
-                <div className="pt-4 border-t border-[#400604] text-center text-xs text-white/70">
+                <div className="pt-4 border-t border-[#530911] text-center text-xs text-white/70">
                   Already have an account?{" "}
                   <button
                     type="button"

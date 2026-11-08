@@ -48,7 +48,7 @@ export default async function SalePage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── 1. Authentic ON SALE Header Banner with Live Admin Threshold ── */}
       <section className="w-full">
         <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-6">

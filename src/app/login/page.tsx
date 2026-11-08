@@ -92,7 +92,7 @@ export default function AdminLoginPage() {
       <div className="relative z-10 w-full max-w-sm">
         {/* Logo / Brand */}
         <div className="mb-6 flex flex-col items-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#400604] border border-stone-200/90 shadow-lg p-1.5 mb-3">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#530911] border border-stone-200/90 shadow-lg p-1.5 mb-3">
             <Image
               src="/logo.jpeg"
               alt="ANGKON Logo"
@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
             />
           </div>
           <div className="text-center">
-            <h1 className="font-serif text-[24px] font-bold tracking-[0.22em] text-[#400604] uppercase">
+            <h1 className="font-serif text-[24px] font-bold tracking-[0.22em] text-[#530911] uppercase">
               ANGKON
             </h1>
           </div>

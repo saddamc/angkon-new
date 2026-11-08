@@ -162,7 +162,7 @@ export function getCategoryIcon(slug: string): string {
 export function getCategoryAccent(slug: string): string {
   const cat = getCategoryBySlug(slug);
   if (cat?.accentColor) return cat.accentColor;
-  return "#400604";
+  return "#530911";
 }
 
 export function getCategoryVisual(slug: string): { icon: string; accent: string; image: string } {

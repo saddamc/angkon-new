@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 
 export function FeatureSection() {
   return (
-    <section className="py-12 bg-[#400604] overflow-hidden">
+    <section className="py-12 bg-[#530911] overflow-hidden">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1200px]">
         {/* Centered 2x2 Grid, Height Reduced via 16:9 Aspect Ratio */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

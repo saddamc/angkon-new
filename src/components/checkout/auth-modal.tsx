@@ -288,7 +288,7 @@ export function AuthModal({
 
         {/* Modal Brand Header */}
         <div className="text-center mb-6">
-          <div className="mx-auto mb-2.5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#400604] border border-[#E1B76F]/40 text-[#E1B76F] shadow-inner">
+          <div className="mx-auto mb-2.5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#530911] border border-[#E1B76F]/40 text-[#E1B76F] shadow-inner">
             <ShieldCheck className="h-6 w-6 text-[#E1B76F]" />
           </div>
           <h2 className="font-serif text-2xl font-bold tracking-wide text-white">
@@ -315,7 +315,7 @@ export function AuthModal({
               }}
               className={`py-2 rounded-lg transition cursor-pointer ${
                 view === "login"
-                  ? "bg-[#400604] text-[#E1B76F] shadow-sm border border-[#E1B76F]/40"
+                  ? "bg-[#530911] text-[#E1B76F] shadow-sm border border-[#E1B76F]/40"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -330,7 +330,7 @@ export function AuthModal({
               }}
               className={`py-2 rounded-lg transition cursor-pointer ${
                 view === "register"
-                  ? "bg-[#400604] text-[#E1B76F] shadow-sm border border-[#E1B76F]/40"
+                  ? "bg-[#530911] text-[#E1B76F] shadow-sm border border-[#E1B76F]/40"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -405,7 +405,7 @@ export function AuthModal({
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
-                      className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                      className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                     />
                     <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
                   </div>
@@ -432,7 +432,7 @@ export function AuthModal({
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
                       autoComplete="current-password"
-                      className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-10 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                      className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-10 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                     />
                     <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
                     <button
@@ -448,7 +448,7 @@ export function AuthModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-2 h-11 rounded-xl bg-[#E1B76F] text-[#400604] font-bold text-sm tracking-wide uppercase hover:bg-[#f3cb87] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                  className="w-full mt-2 h-11 rounded-xl bg-[#E1B76F] text-[#530911] font-bold text-sm tracking-wide uppercase hover:bg-[#f3cb87] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
                 >
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign In & Return to Checkout"}
                 </button>
@@ -468,14 +468,14 @@ export function AuthModal({
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-24 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                      className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-24 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                     />
                     <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
                     <button
                       type="button"
                       onClick={handleSendOtp}
                       disabled={loading || countdown > 0}
-                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-[#E1B76F] text-[#400604] text-[11px] font-bold uppercase hover:bg-[#f3cb87] transition disabled:opacity-50 cursor-pointer flex items-center gap-1"
+                      className="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-lg bg-[#E1B76F] text-[#530911] text-[11px] font-bold uppercase hover:bg-[#f3cb87] transition disabled:opacity-50 cursor-pointer flex items-center gap-1"
                     >
                       {loading && !otpSent ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -515,7 +515,7 @@ export function AuthModal({
                         type="button"
                         onClick={() => handleVerifyOtp()}
                         disabled={loading || otpCode.length !== 6}
-                        className="px-5 rounded-xl bg-[#E1B76F] text-[#400604] text-xs font-bold uppercase hover:bg-[#f3cb87] transition disabled:opacity-50 cursor-pointer shrink-0 flex items-center gap-1.5"
+                        className="px-5 rounded-xl bg-[#E1B76F] text-[#530911] text-xs font-bold uppercase hover:bg-[#f3cb87] transition disabled:opacity-50 cursor-pointer shrink-0 flex items-center gap-1.5"
                       >
                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
                       </button>
@@ -541,7 +541,7 @@ export function AuthModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Asif Mahmud"
-                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                 />
                 <User className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
               </div>
@@ -557,7 +557,7 @@ export function AuthModal({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="01XXXXXXXXX"
-                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                 />
                 <Phone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
               </div>
@@ -575,7 +575,7 @@ export function AuthModal({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   autoComplete="email"
-                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                 />
                 <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
               </div>
@@ -593,7 +593,7 @@ export function AuthModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password (min. 6 characters)"
-                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-10 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-10 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                 />
                 <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
                 <button
@@ -609,7 +609,7 @@ export function AuthModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 h-11 rounded-xl bg-[#E1B76F] text-[#400604] font-bold text-sm tracking-wide uppercase hover:bg-[#f3cb87] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+              className="w-full mt-2 h-11 rounded-xl bg-[#E1B76F] text-[#530911] font-bold text-sm tracking-wide uppercase hover:bg-[#f3cb87] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account & Continue"}
             </button>
@@ -630,7 +630,7 @@ export function AuthModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
+                  className="h-11 w-full rounded-xl border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-3 text-sm text-white outline-none placeholder:text-[#E1B76F]/30 focus:border-[#E1B76F] transition"
                 />
                 <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#E1B76F]/60" />
               </div>
@@ -639,7 +639,7 @@ export function AuthModal({
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 rounded-xl bg-[#E1B76F] text-[#400604] font-bold text-sm tracking-wide uppercase hover:bg-[#f3cb87] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+              className="w-full h-11 rounded-xl bg-[#E1B76F] text-[#530911] font-bold text-sm tracking-wide uppercase hover:bg-[#f3cb87] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Password Reset Link"}
             </button>

@@ -75,11 +75,11 @@ export function PromoPopup() {
       />
 
       {/* Luxury Campaign Modal Card */}
-      <div className="relative z-10 w-full max-w-[420px] sm:max-w-[480px] max-h-[92vh] overflow-hidden rounded-2xl border-2 border-[#E1B76F]/70 ring-1 ring-[#E1B76F]/30 bg-[#400604] shadow-[0_0_60px_rgba(225,183,111,0.28),0_25px_50px_-12px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-250">
+      <div className="relative z-10 w-full max-w-[420px] sm:max-w-[480px] max-h-[92vh] overflow-hidden rounded-2xl border-2 border-[#E1B76F]/70 ring-1 ring-[#E1B76F]/30 bg-[#530911] shadow-[0_0_60px_rgba(225,183,111,0.28),0_25px_50px_-12px_rgba(0,0,0,0.9)] animate-in zoom-in-95 duration-250">
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute right-3 top-3 z-30 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#400604]/90 border border-[#E1B76F]/80 text-white hover:bg-[#E1B76F] hover:text-[#400604] transition-all duration-200 shadow-xl cursor-pointer hover:scale-105 active:scale-95"
+          className="absolute right-3 top-3 z-30 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#530911]/90 border border-[#E1B76F]/80 text-white hover:bg-[#E1B76F] hover:text-[#530911] transition-all duration-200 shadow-xl cursor-pointer hover:scale-105 active:scale-95"
           aria-label="Close promotion popup"
         >
           <X className="h-4 w-4 sm:h-5 sm:w-5 stroke-[2.5]" />
@@ -89,7 +89,7 @@ export function PromoPopup() {
         <Link
           href="/products"
           onClick={handleClose}
-          className="block relative w-full aspect-[3/4] bg-[#400604] group cursor-pointer"
+          className="block relative w-full aspect-[3/4] bg-[#530911] group cursor-pointer"
         >
           <Image
             src="/promo/popup-campaign.png"

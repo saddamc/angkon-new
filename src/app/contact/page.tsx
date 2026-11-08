@@ -27,9 +27,9 @@ const MAPS_EMBED_URL =
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── 1. Page Header ── */}
-      <div className="border-b border-[#E1B76F]/20 bg-[#340402] py-10 sm:py-14 px-4 text-center">
+      <div className="border-b border-[#E1B76F]/20 bg-[#42070e] py-10 sm:py-14 px-4 text-center">
         <div className="container mx-auto max-w-[1000px]">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-[#E1B76F]">
             <Sparkles className="h-3 w-3" /> Flagship Experience Center & Support
@@ -47,10 +47,10 @@ export default function ContactPage() {
         {/* ── 2. Flagship Showroom & Live Google Map Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Showroom Details (5 cols on large screens) */}
-          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border-2 border-[#E1B76F]/40 bg-[#340402] p-6 sm:p-8 shadow-2xl">
+          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border-2 border-[#E1B76F]/40 bg-[#42070e] p-6 sm:p-8 shadow-2xl">
             <div>
               <div className="flex items-center justify-between gap-2 mb-4">
-                <span className="inline-block rounded-full bg-[#E1B76F] px-3 py-1 text-[11px] font-black uppercase text-[#400604] tracking-wider shadow">
+                <span className="inline-block rounded-full bg-[#E1B76F] px-3 py-1 text-[11px] font-black uppercase text-[#530911] tracking-wider shadow">
                   Flagship Showroom
                 </span>
                 <span className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
@@ -124,7 +124,7 @@ export default function ContactPage() {
                     href="https://www.facebook.com/share/19LUKov4Ei/?mibextid=wwXIfr"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#400604] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#400604] transition"
+                    className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#530911] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"
                   >
                     Facebook
                   </a>
@@ -132,7 +132,7 @@ export default function ContactPage() {
                     href="https://www.instagram.com/angkon.officiall?stkn=MTBjcmt5NWhwYzVqYQ=="
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#400604] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#400604] transition"
+                    className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#530911] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"
                   >
                     Instagram
                   </a>
@@ -140,7 +140,7 @@ export default function ContactPage() {
                     href="https://www.tiktok.com/@angkon.official"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#400604] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#400604] transition"
+                    className="flex-1 text-center rounded-lg border border-[#E1B76F]/40 bg-[#530911] py-1.5 text-xs font-bold text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"
                   >
                     TikTok
                   </a>
@@ -163,7 +163,7 @@ export default function ContactPage() {
                 href={MAPS_SHORT_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#E1B76F] bg-[#400604] px-4 py-3 text-[13px] font-bold text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#400604] transition shadow-md"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#E1B76F] bg-[#530911] px-4 py-3 text-[13px] font-bold text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#530911] transition shadow-md"
               >
                 <ExternalLink className="h-4 w-4" />
                 Google Maps Pin
@@ -172,9 +172,9 @@ export default function ContactPage() {
           </div>
 
           {/* Interactive Google Map Embed Card (7 cols on large screens) */}
-          <div className="lg:col-span-7 flex flex-col rounded-2xl border-2 border-[#E1B76F]/40 bg-[#340402] overflow-hidden shadow-2xl">
+          <div className="lg:col-span-7 flex flex-col rounded-2xl border-2 border-[#E1B76F]/40 bg-[#42070e] overflow-hidden shadow-2xl">
             {/* Map Top Bar */}
-            <div className="flex items-center justify-between px-5 py-3.5 bg-[#2b0403] border-b border-[#E1B76F]/25">
+            <div className="flex items-center justify-between px-5 py-3.5 bg-[#3b050b] border-b border-[#E1B76F]/25">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-[#E1B76F]" />
                 <span className="font-heading font-black text-sm uppercase tracking-wider text-white">
@@ -201,7 +201,7 @@ export default function ContactPage() {
             </div>
 
             {/* Map Bottom Actions */}
-            <div className="p-4 sm:p-5 bg-[#2b0403] border-t border-[#E1B76F]/25 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="p-4 sm:p-5 bg-[#3b050b] border-t border-[#E1B76F]/25 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-left w-full sm:w-auto">
                 <p className="text-xs font-bold text-white">
                   Angkon — H-93 (Ground Floor), Road: 2, Block-A
@@ -216,7 +216,7 @@ export default function ContactPage() {
                   href={MAPS_DIRECTIONS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#E1B76F] px-4 py-2.5 text-xs font-black uppercase text-[#400604] hover:bg-[#f3cc87] transition shadow-md"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#E1B76F] px-4 py-2.5 text-xs font-black uppercase text-[#530911] hover:bg-[#f3cc87] transition shadow-md"
                 >
                   <Navigation className="h-3.5 w-3.5" />
                   Get Directions
@@ -225,7 +225,7 @@ export default function ContactPage() {
                   href={MAPS_SHORT_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#E1B76F]/50 bg-[#400604] px-4 py-2.5 text-xs font-black uppercase text-white hover:bg-[#520805] hover:border-[#E1B76F] transition shadow-md"
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#E1B76F]/50 bg-[#530911] px-4 py-2.5 text-xs font-black uppercase text-white hover:bg-[#680c16] hover:border-[#E1B76F] transition shadow-md"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Open in Maps
@@ -238,7 +238,7 @@ export default function ContactPage() {
         {/* ── 3. Quick Message Form & Service Guarantees ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Quick Message Form (7 cols) */}
-          <div className="lg:col-span-7 rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 shadow-xl">
+          <div className="lg:col-span-7 rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 sm:p-8 shadow-xl">
             <h3 className="font-heading text-xl sm:text-2xl font-bold uppercase text-white mb-1">
               Send Us a Message
             </h3>
@@ -298,7 +298,7 @@ export default function ContactPage() {
 
               <button
                 type="button"
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#400604] border border-[#E1B76F]/60 py-3.5 text-[14px] font-black uppercase text-white hover:bg-[#520805] hover:border-[#E1B76F] transition shadow-md"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#530911] border border-[#E1B76F]/60 py-3.5 text-[14px] font-black uppercase text-white hover:bg-[#680c16] hover:border-[#E1B76F] transition shadow-md"
               >
                 <Send className="h-4 w-4" />
                 Submit Message
@@ -308,7 +308,7 @@ export default function ContactPage() {
 
           {/* Service Highlights (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 shadow-xl space-y-4">
+            <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 shadow-xl space-y-4">
               <h4 className="font-heading text-lg font-black uppercase tracking-wider text-white flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-[#E1B76F]" /> Showroom Services
               </h4>
@@ -331,7 +331,7 @@ export default function ContactPage() {
               </ul>
             </div>
 
-            <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 shadow-xl space-y-3">
+            <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 shadow-xl space-y-3">
               <h4 className="font-heading text-lg font-black uppercase tracking-wider text-white flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-[#E1B76F]" /> Nationwide Delivery Support
               </h4>

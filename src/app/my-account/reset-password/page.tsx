@@ -69,12 +69,12 @@ export default function ResetPasswordPage() {
   };
 
   const inputClass =
-    "w-full rounded-xl border border-[#400604] bg-[#1A0302] px-4 py-3 pr-10 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
+    "w-full rounded-xl border border-[#530911] bg-[#230407] px-4 py-3 pr-10 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
 
   return (
-    <div className="min-h-screen bg-[#1A0302] px-4 py-16 text-white">
-      <div className="mx-auto max-w-md rounded-2xl border-2 border-[#400604] bg-[#240403] p-6 shadow-xl sm:p-8">
-        <div className="mb-6 flex items-center gap-3 border-b border-[#400604] pb-3">
+    <div className="min-h-screen bg-[#230407] px-4 py-16 text-white">
+      <div className="mx-auto max-w-md rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 shadow-xl sm:p-8">
+        <div className="mb-6 flex items-center gap-3 border-b border-[#530911] pb-3">
           <KeyRound className="h-6 w-6" />
           <h1 className="font-heading text-2xl font-black uppercase">Set a new password</h1>
         </div>
@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-xl bg-[#E1B76F] py-3.5 text-xs font-black uppercase tracking-wider text-[#400604] shadow-md transition hover:bg-[#edd19b] disabled:opacity-50"
+              className="w-full rounded-xl bg-[#E1B76F] py-3.5 text-xs font-black uppercase tracking-wider text-[#530911] shadow-md transition hover:bg-[#edd19b] disabled:opacity-50"
             >
               {submitting ? "Saving…" : "Save password & sign in"}
             </button>

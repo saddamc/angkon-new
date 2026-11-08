@@ -94,18 +94,18 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
       />
 
       {/* Modal Dialog */}
-      <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-[#E1B76F]/30 bg-[#400604] shadow-2xl text-white max-h-[90vh] flex flex-col md:flex-row">
+      <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-[#E1B76F]/30 bg-[#530911] shadow-2xl text-white max-h-[90vh] flex flex-col md:flex-row">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/30 text-white hover:bg-[#520805] hover:text-white transition"
+          className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#42070e] border border-[#E1B76F]/30 text-white hover:bg-[#680c16] hover:text-white transition"
           aria-label="Close Quick View"
         >
           <X className="h-4 w-4" />
         </button>
 
         {/* Left: Images */}
-        <div className="w-full md:w-1/2 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#E1B76F]/20 bg-[#340402]">
+        <div className="w-full md:w-1/2 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#E1B76F]/20 bg-[#42070e]">
           <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[#2d0302] border border-[#E1B76F]/30">
             <Image
               src={primaryImage}
@@ -116,7 +116,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               onError={() => markFailed(rawPrimary)}
             />
             {discountPct > 0 && (
-              <span className="absolute left-3 top-3 rounded-full bg-[#400604] border border-[#E1B76F]/50 px-2.5 py-1 text-[11px] font-black uppercase text-white">
+              <span className="absolute left-3 top-3 rounded-full bg-[#530911] border border-[#E1B76F]/50 px-2.5 py-1 text-[11px] font-black uppercase text-white">
                 -{discountPct}%
               </span>
             )}
@@ -148,7 +148,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
         </div>
 
         {/* Right: Info & Actions */}
-        <div className="w-full md:w-1/2 p-6 flex flex-col justify-between overflow-y-auto bg-[#400604]">
+        <div className="w-full md:w-1/2 p-6 flex flex-col justify-between overflow-y-auto bg-[#530911]">
           <div>
             {product.categories?.[0] && (
               <span className="text-[11px] font-bold uppercase tracking-widest text-white/70">
@@ -194,8 +194,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                       onClick={() => setSelectedSize(size)}
                       className={`h-9 min-w-[36px] rounded-lg px-3 text-xs font-bold uppercase transition ${
                         selectedSize === size
-                          ? "border border-[#E1B76F] bg-[#400604] text-white ring-1 ring-[#E1B76F] shadow-sm"
-                          : "border border-[#E1B76F]/30 bg-[#340402] text-white/80 hover:border-[#E1B76F] hover:text-[#E1B76F]"
+                          ? "border border-[#E1B76F] bg-[#530911] text-white ring-1 ring-[#E1B76F] shadow-sm"
+                          : "border border-[#E1B76F]/30 bg-[#42070e] text-white/80 hover:border-[#E1B76F] hover:text-[#E1B76F]"
                       }`}
                     >
                       {size}
@@ -210,7 +210,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               <span className="text-[12px] font-bold uppercase tracking-wider text-white/80">
                 Qty:
               </span>
-              <div className="flex items-center rounded-lg border border-[#E1B76F]/30 bg-[#340402]">
+              <div className="flex items-center rounded-lg border border-[#E1B76F]/30 bg-[#42070e]">
                 <button
                   type="button"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -238,8 +238,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               onClick={handleAddToCart}
               className={`w-full flex items-center justify-center gap-2 rounded-full py-3 text-sm font-bold uppercase tracking-wider transition-all shadow-sm ${
                 added
-                  ? "bg-[#520805] text-white border border-[#E1B76F]"
-                  : "bg-[#400604] text-white border border-[#E1B76F]/50 hover:bg-[#520805] hover:border-[#E1B76F]"
+                  ? "bg-[#680c16] text-white border border-[#E1B76F]"
+                  : "bg-[#530911] text-white border border-[#E1B76F]/50 hover:bg-[#680c16] hover:border-[#E1B76F]"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {added ? (

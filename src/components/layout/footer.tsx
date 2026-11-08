@@ -98,7 +98,7 @@ const CLIENT_CARE_LINKS = [
 
 export function Footer() {
   return (
-    <footer className="bg-[#1A0302] text-white border-t-2 border-[#E1B76F]/35 selection:bg-[#E1B76F] selection:text-[#1A0302]">
+    <footer className="bg-[#230407] text-white border-t-2 border-[#E1B76F]/35 selection:bg-[#E1B76F] selection:text-[#230407]">
 
       {/* ── 2. Main 4-Column Luxury Footer Grid ── */}
       <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-[1440px] py-12 md:py-16">
@@ -139,7 +139,7 @@ export function Footer() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={item.label}
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#280504] text-white hover:bg-[#E1B76F] hover:text-[#1A0302] hover:border-[#E1B76F] hover:scale-110 active:scale-95 transition-all duration-200 shadow-md cursor-pointer"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#280504] text-white hover:bg-[#E1B76F] hover:text-[#230407] hover:border-[#E1B76F] hover:scale-110 active:scale-95 transition-all duration-200 shadow-md cursor-pointer"
                     >
                       <Icon className="h-4 w-4" />
                     </a>
@@ -259,7 +259,7 @@ export function Footer() {
                   href="https://wa.me/8801338668899"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-[#280504] border border-[#E1B76F]/50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#E1B76F] hover:text-[#1A0302] hover:border-[#E1B76F] transition-all shadow-md group"
+                  className="inline-flex items-center justify-center gap-2 w-full rounded-xl bg-[#280504] border border-[#E1B76F]/50 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#E1B76F] hover:text-[#230407] hover:border-[#E1B76F] transition-all shadow-md group"
                 >
                   <WhatsAppIcon className="h-4 w-4" />
                   <span>Chat with Style Specialist</span>
@@ -281,19 +281,19 @@ export function Footer() {
 
           {/* Secure Payment & Delivery Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] uppercase font-bold tracking-wider text-white">
-            <span className="rounded-md border border-[#E1B76F]/30 bg-[#1A0302] px-2.5 py-1">
+            <span className="rounded-md border border-[#E1B76F]/30 bg-[#230407] px-2.5 py-1">
               Cash on Delivery
             </span>
-            <span className="rounded-md border border-[#E1B76F]/30 bg-[#1A0302] px-2.5 py-1">
+            <span className="rounded-md border border-[#E1B76F]/30 bg-[#230407] px-2.5 py-1">
               bKash
             </span>
-            <span className="rounded-md border border-[#E1B76F]/30 bg-[#1A0302] px-2.5 py-1">
+            <span className="rounded-md border border-[#E1B76F]/30 bg-[#230407] px-2.5 py-1">
               Nagad
             </span>
-            <span className="rounded-md border border-[#E1B76F]/30 bg-[#1A0302] px-2.5 py-1">
+            <span className="rounded-md border border-[#E1B76F]/30 bg-[#230407] px-2.5 py-1">
               Visa / MasterCard
             </span>
-            <span className="rounded-md border border-[#E1B76F] bg-[#E1B76F] text-[#1A0302] px-2.5 py-1 font-black">
+            <span className="rounded-md border border-[#E1B76F] bg-[#E1B76F] text-[#230407] px-2.5 py-1 font-black">
               SSLCommerz 100% Secured
             </span>
           </div>

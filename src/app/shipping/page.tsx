@@ -15,8 +15,8 @@ export default async function ShippingPage() {
   const settings = await getShippingSettings();
   const tk = (n: number) => (n === 0 ? "Free" : `Tk${n.toLocaleString("en-US")}`);
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-12 px-4 text-center">
+    <div className="min-h-screen bg-[#530911] text-white">
+      <div className="border-b border-[#6e101c] bg-[#3b050b] py-12 px-4 text-center">
         <div className="container mx-auto max-w-[900px]">
           <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/70">
             Nationwide Logistics
@@ -32,31 +32,31 @@ export default async function ShippingPage() {
 
       <div className="container mx-auto max-w-[1000px] px-4 py-12 lg:px-8 space-y-8">
         {/* Authentic Luxury Delivery Timing Poster Card */}
-        <div className="rounded-[16px] bg-[#340402] border-2 border-[#E1B76F]/40 text-white p-6 sm:p-10 shadow-2xl">
+        <div className="rounded-[16px] bg-[#42070e] border-2 border-[#E1B76F]/40 text-white p-6 sm:p-10 shadow-2xl">
           <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-black italic tracking-tight text-center uppercase mb-8 text-white">
             Delivery Timing for COD
           </h2>
           
-          <div className="max-w-2xl mx-auto border-2 border-[#E1B76F]/40 rounded-xl overflow-hidden bg-[#2b0403]">
-            <div className="grid grid-cols-2 border-b-2 border-[#E1B76F]/40 bg-[#400604] text-white p-3 sm:p-4 text-center">
+          <div className="max-w-2xl mx-auto border-2 border-[#E1B76F]/40 rounded-xl overflow-hidden bg-[#3b050b]">
+            <div className="grid grid-cols-2 border-b-2 border-[#E1B76F]/40 bg-[#530911] text-white p-3 sm:p-4 text-center">
               <span className="font-heading text-lg sm:text-2xl font-black italic uppercase">Area</span>
               <span className="font-heading text-lg sm:text-2xl font-black italic uppercase">Time Needed</span>
             </div>
             
             <div className="divide-y-2 divide-[#E1B76F]/20 text-center font-heading text-lg sm:text-2xl font-black italic text-white/90">
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#340402]">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#42070e]">
                 <span>Dhaka</span>
                 <span className="text-white">1-2 Days</span>
               </div>
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#2b0403]">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#3b050b]">
                 <span>Gazipur, Narayanganj, Savar</span>
                 <span className="text-white">1-2 Days</span>
               </div>
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#340402]">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#42070e]">
                 <span>Chittagong, Sylhet, Rajshahi</span>
                 <span className="text-white">3-4 Days</span>
               </div>
-              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#2b0403]">
+              <div className="grid grid-cols-2 p-3 sm:p-4 bg-[#3b050b]">
                 <span>Other Major Cities</span>
                 <span className="text-white">4-5 Days</span>
               </div>
@@ -70,9 +70,9 @@ export default async function ShippingPage() {
         </div>
         {/* Shipping Rates Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 shadow-lg">
+          <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#400604] text-white border border-[#5c0f0d]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#530911] text-white border border-[#6e101c]">
                 <Truck className="h-5 w-5" />
               </div>
               <div>
@@ -87,9 +87,9 @@ export default async function ShippingPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 shadow-lg">
+          <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#400604] text-white border border-[#5c0f0d]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#530911] text-white border border-[#6e101c]">
                 <Truck className="h-5 w-5" />
               </div>
               <div>
@@ -104,9 +104,9 @@ export default async function ShippingPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 shadow-lg">
+          <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#400604] text-white border border-[#5c0f0d]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#530911] text-white border border-[#6e101c]">
                 <Truck className="h-5 w-5" />
               </div>
               <div>
@@ -124,7 +124,7 @@ export default async function ShippingPage() {
 
         {/* Free Shipping Alert — only when a free-delivery threshold is set in the admin panel */}
         {settings.freeDeliveryThreshold > 0 && (
-        <div className="rounded-2xl border-2 border-[#E1B76F] bg-[#2b0403] p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl border-2 border-[#E1B76F] bg-[#3b050b] p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 text-white shrink-0" />
             <div>
@@ -138,7 +138,7 @@ export default async function ShippingPage() {
           </div>
           <Link
             href="/products"
-            className="inline-flex rounded-xl bg-[#E1B76F] px-5 py-2.5 text-xs font-black uppercase text-[#400604] hover:bg-[#f3cb87] transition shrink-0"
+            className="inline-flex rounded-xl bg-[#E1B76F] px-5 py-2.5 text-xs font-black uppercase text-[#530911] hover:bg-[#f3cb87] transition shrink-0"
           >
             Start Shopping
           </Link>
@@ -146,7 +146,7 @@ export default async function ShippingPage() {
         )}
 
         {/* Instructions */}
-        <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-8 space-y-6">
+        <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-8 space-y-6">
           <h3 className="font-heading text-xl font-bold uppercase text-white">
             Delivery Guidelines & Terms
           </h3>

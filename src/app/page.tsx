@@ -107,7 +107,7 @@ export default async function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* Search Engine Organization & WebSite JSON-LD */}
       <script
         type="application/ld+json"
@@ -124,7 +124,7 @@ export default async function HomePage() {
         </h1>
         <Link
           href="/products"
-          className="group block w-full overflow-hidden bg-[#340402]"
+          className="group block w-full overflow-hidden bg-[#42070e]"
         >
           <Image
             src="/banners/HERO1.webp"
@@ -155,7 +155,7 @@ export default async function HomePage() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="group relative block w-full aspect-[1700/700] overflow-hidden bg-[#340402] border border-[#E1B76F]/15 shadow-sm transition hover:opacity-95"
+                  className="group relative block w-full aspect-[1700/700] overflow-hidden bg-[#42070e] border border-[#E1B76F]/15 shadow-sm transition hover:opacity-95"
                 >
                   <Image
                     src={item.image}
@@ -181,7 +181,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── 3. Luxury Cash On Delivery Band (Full Width Edge to Edge) ── */}
-      <section className="w-full bg-[#300302] border-y border-[#E1B76F]/30 py-4 sm:py-6 text-center text-white my-2 sm:my-3 shadow-inner">
+      <section className="w-full bg-[#3d070c] border-y border-[#E1B76F]/30 py-4 sm:py-6 text-center text-white my-2 sm:my-3 shadow-inner">
         <div className="w-full px-4 text-center">
           <h2 className="font-heading italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight">
             Cash on Delivery in all 64 Districts
@@ -199,7 +199,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── 5. SSLCOMMERZ Payment Partner Strip ── */}
-      <section className="w-full bg-[#300302] border-t border-[#E1B76F]/20 py-6 sm:py-8 md:py-10">
+      <section className="w-full bg-[#3d070c] border-t border-[#E1B76F]/20 py-6 sm:py-8 md:py-10">
         <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6">
           <div className="p-3 sm:p-4 rounded-xl bg-white/5 border border-[#E1B76F]/15">
             <Image

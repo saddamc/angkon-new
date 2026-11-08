@@ -71,7 +71,7 @@ export function HeroSection() {
   });
 
   return (
-    <section className="bg-[#400604] py-8 relative group/hero">
+    <section className="bg-[#530911] py-8 relative group/hero">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1500px]">
         {/* Carousel Container */}
         <div className="relative">
@@ -83,7 +83,7 @@ export function HeroSection() {
               <Link
                 key={cat.slug}
                 href={`/${cat.slug}`}
-                className="group relative overflow-hidden rounded-2xl bg-[#2b0403] border border-[#5c0f0d] aspect-[4/5] w-[260px] lg:w-[280px] shrink-0 flex flex-col justify-end shadow-lg hover:shadow-2xl hover:border-[#E1B76F]/60 transition-all duration-500 snap-start"
+                className="group relative overflow-hidden rounded-2xl bg-[#3b050b] border border-[#6e101c] aspect-[4/5] w-[260px] lg:w-[280px] shrink-0 flex flex-col justify-end shadow-lg hover:shadow-2xl hover:border-[#E1B76F]/60 transition-all duration-500 snap-start"
               >
                 {/* Background Image */}
                 <Image
@@ -97,17 +97,17 @@ export function HeroSection() {
 
                 {/* Gradient overlay */}
                 <div
-                  className="absolute inset-0 bg-gradient-to-t from-[#2b0403]/95 via-[#400604]/40 to-transparent transition-opacity duration-300 group-hover:from-[#1e0302]/95"
+                  className="absolute inset-0 bg-gradient-to-t from-[#3b050b]/95 via-[#530911]/40 to-transparent transition-opacity duration-300 group-hover:from-[#250307]/95"
                 />
 
                 {/* Sale badge */}
                 {cat.slug === "sale" && (
-                  <span className="absolute top-4 left-4 z-10 bg-[#E1B76F] text-[#400604] text-[12px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
+                  <span className="absolute top-4 left-4 z-10 bg-[#E1B76F] text-[#530911] text-[12px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
                     SALE 🔥
                   </span>
                 )}
                 {cat.slug === "new-arrivals" && (
-                  <span className="absolute top-4 left-4 z-10 bg-[#2b0403] border border-[#5c0f0d] text-white text-[12px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
+                  <span className="absolute top-4 left-4 z-10 bg-[#3b050b] border border-[#6e101c] text-white text-[12px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow">
                     NEW DROP
                   </span>
                 )}
@@ -135,7 +135,7 @@ export function HeroSection() {
               type="button"
               aria-label="Scroll left"
               onClick={() => scrollByAmount("left")}
-              className="absolute -left-1 lg:left-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#2b0403] border border-[#5c0f0d] text-white shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#400604] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
+              className="absolute -left-1 lg:left-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#3b050b] border border-[#6e101c] text-white shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#530911] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -145,7 +145,7 @@ export function HeroSection() {
               type="button"
               aria-label="Scroll right"
               onClick={() => scrollByAmount("right")}
-              className="absolute -right-1 lg:right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#2b0403] border border-[#5c0f0d] text-white shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#400604] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
+              className="absolute -right-1 lg:right-1 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-[#3b050b] border border-[#6e101c] text-white shadow-lg flex items-center justify-center pointer-events-auto hover:bg-[#E1B76F] hover:text-[#530911] active:scale-95 transition-all duration-200 z-20 opacity-100 lg:opacity-0 lg:group-hover/hero:opacity-100"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

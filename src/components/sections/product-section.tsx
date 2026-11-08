@@ -57,9 +57,9 @@ export function ProductSection({
         {subtitle && (
           <div className="text-center mb-8">
             <h2 className="font-heading text-2xl font-bold uppercase text-white flex items-center justify-center gap-4">
-              <span className="h-[2px] w-12 bg-[#5c0f0d] hidden sm:block"></span>
+              <span className="h-[2px] w-12 bg-[#6e101c] hidden sm:block"></span>
               {title}
-              <span className="h-[2px] w-12 bg-[#5c0f0d] hidden sm:block"></span>
+              <span className="h-[2px] w-12 bg-[#6e101c] hidden sm:block"></span>
             </h2>
             <p className="text-[13px] text-white/70 mt-2">{subtitle}</p>
           </div>
@@ -90,8 +90,8 @@ export function ProductSection({
           >
             {showSkeleton
               ? Array.from({ length: 10 }).map((_, index) => (
-                  <div key={index} className="min-w-[220px] max-w-[220px] snap-start bg-[#4a0705] border border-[#5c0f0d] rounded-2xl p-4">
-                    <div className="relative mb-3 aspect-[3/4] overflow-hidden bg-[#2b0403] rounded-xl animate-pulse"></div>
+                  <div key={index} className="min-w-[220px] max-w-[220px] snap-start bg-[#610c16] border border-[#6e101c] rounded-2xl p-4">
+                    <div className="relative mb-3 aspect-[3/4] overflow-hidden bg-[#3b050b] rounded-xl animate-pulse"></div>
                   </div>
                 ))
               : products.map((product, index) => (
@@ -107,7 +107,7 @@ export function ProductSection({
               type="button"
               onClick={() => scrollByAmount("left")}
               disabled={!canScrollLeft}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#4a0705] hover:text-[#f3cb87] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#3b050b] text-white shadow-lg border border-[#6e101c] hover:bg-[#610c16] hover:text-[#f3cb87] transition disabled:opacity-0"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -117,7 +117,7 @@ export function ProductSection({
               type="button"
               onClick={() => scrollByAmount("right")}
               disabled={!canScrollRight}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#4a0705] hover:text-[#f3cb87] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#3b050b] text-white shadow-lg border border-[#6e101c] hover:bg-[#610c16] hover:text-[#f3cb87] transition disabled:opacity-0"
             >
               <ChevronRight className="h-5 w-5" />
             </button>

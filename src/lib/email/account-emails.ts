@@ -21,12 +21,12 @@ function layout({ heading, body, ctaLabel, ctaUrl, footnote }: {
   const safeUrl = ctaUrl ? escapeHtml(ctaUrl) : "";
   const cta = ctaLabel && ctaUrl
     ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0;">
-            <tr><td style="border-radius:8px;background-color:#400604;">
+            <tr><td style="border-radius:8px;background-color:#530911;">
               <a href="${safeUrl}" style="display:inline-block;padding:14px 28px;font-size:14px;font-weight:700;color:#E1B76F;text-decoration:none;letter-spacing:1px;text-transform:uppercase;">${escapeHtml(ctaLabel)}</a>
             </td></tr>
           </table>
           <p style="margin:0 0 6px;font-size:12px;color:#7a6f66;">If the button doesn't work, copy this link into your browser:</p>
-          <p style="margin:0;font-size:12px;word-break:break-all;"><a href="${safeUrl}" style="color:#400604;">${safeUrl}</a></p>`
+          <p style="margin:0;font-size:12px;word-break:break-all;"><a href="${safeUrl}" style="color:#530911;">${safeUrl}</a></p>`
     : "";
   return `<!DOCTYPE html>
 <html lang="en">
@@ -35,12 +35,12 @@ function layout({ heading, body, ctaLabel, ctaUrl, footnote }: {
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f7f3ee;padding:30px 10px;">
     <tr><td align="center">
       <table role="presentation" width="100%" style="max-width:560px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #ebe2d8;">
-        <tr><td style="background-color:#400604;padding:32px 24px;text-align:center;border-bottom:3px solid #E1B76F;">
+        <tr><td style="background-color:#530911;padding:32px 24px;text-align:center;border-bottom:3px solid #E1B76F;">
           <h1 style="margin:0;font-family:Georgia,serif;font-size:28px;letter-spacing:5px;color:#E1B76F;font-weight:700;text-transform:uppercase;">ANGKON</h1>
           <p style="margin:6px 0 0;font-size:10px;letter-spacing:3px;color:#cbb18a;text-transform:uppercase;">House of Modern Heritage</p>
         </td></tr>
         <tr><td style="padding:32px 28px;">
-          <h2 style="margin:0 0 14px;font-size:20px;color:#400604;">${escapeHtml(heading)}</h2>
+          <h2 style="margin:0 0 14px;font-size:20px;color:#530911;">${escapeHtml(heading)}</h2>
           ${body}
           ${cta}
           <p style="margin:22px 0 0;font-size:12px;color:#7a6f66;">${footnote}</p>
@@ -108,7 +108,7 @@ export async function sendVerificationCodeEmail(params: { to: string; name: stri
     html: layout({
       heading: "Confirm your email",
       body: `<p style="margin:0 0 18px;font-size:14px;line-height:1.6;">Hi ${escapeHtml(params.name || "there")}, enter this code at checkout to confirm your email and place your order:</p>
-          <p style="margin:0;padding:18px 0;text-align:center;font-family:'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:10px;color:#400604;background-color:#faf6f1;border:1px solid #ebe2d8;border-radius:10px;">${escapeHtml(params.code)}</p>`,
+          <p style="margin:0;padding:18px 0;text-align:center;font-family:'Courier New',monospace;font-size:34px;font-weight:700;letter-spacing:10px;color:#530911;background-color:#faf6f1;border:1px solid #ebe2d8;border-radius:10px;">${escapeHtml(params.code)}</p>`,
       footnote: "This code expires in 10 minutes and can be used once. If you didn't try to place an order on ANGKON, you can ignore this email.",
     }),
   });

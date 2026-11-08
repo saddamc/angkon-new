@@ -10,14 +10,14 @@ const CARD_COUNT = 10;
 
 function NewArrivalSkeletonCard() {
   return (
-    <div className="min-w-[240px] max-w-[240px] snap-start bg-[#4a0705] border border-[#5c0f0d] rounded-[12px] p-4">
-      <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-[8px] bg-[#2b0403]">
+    <div className="min-w-[240px] max-w-[240px] snap-start bg-[#610c16] border border-[#6e101c] rounded-[12px] p-4">
+      <div className="relative mb-3 aspect-[3/4] overflow-hidden rounded-[8px] bg-[#3b050b]">
         <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[shimmer_1.6s_linear_infinite] bg-gradient-to-r from-transparent via-[#E1B76F]/20 to-transparent" />
       </div>
-      <div className="relative mb-2 h-4 overflow-hidden rounded-sm bg-[#2b0403]">
+      <div className="relative mb-2 h-4 overflow-hidden rounded-sm bg-[#3b050b]">
         <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[shimmer_1.6s_linear_infinite] bg-gradient-to-r from-transparent via-[#E1B76F]/20 to-transparent" />
       </div>
-      <div className="relative h-4 w-16 overflow-hidden rounded-sm bg-[#2b0403]">
+      <div className="relative h-4 w-16 overflow-hidden rounded-sm bg-[#3b050b]">
         <div className="absolute inset-y-0 -left-1/2 w-1/2 animate-[shimmer_1.6s_linear_infinite] bg-gradient-to-r from-transparent via-[#E1B76F]/20 to-transparent" />
       </div>
     </div>
@@ -65,10 +65,10 @@ export function NewArrivalsSection({
   };
 
   return (
-    <section className="bg-[#400604] py-12">
+    <section className="bg-[#530911] py-12">
       <div className="container mx-auto px-4 lg:px-8 max-w-[1400px]">
         {/* Header (Section header style) */}
-        <div className="mb-8 flex items-end justify-between border-b border-[#5c0f0d] pb-4">
+        <div className="mb-8 flex items-end justify-between border-b border-[#6e101c] pb-4">
           <div>
             <span className="text-[11px] font-black uppercase tracking-widest text-white/70">
               FRESH RELEASE <span className="text-white">●</span>
@@ -79,7 +79,7 @@ export function NewArrivalsSection({
           </div>
           <Link
             href="/products"
-            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-white transition hover:bg-[#E1B76F] hover:text-[#400604]"
+            className="flex items-center gap-1.5 rounded-[12px] border border-[#E1B76F] px-4 py-2 text-[12px] font-bold uppercase tracking-wider text-white transition hover:bg-[#E1B76F] hover:text-[#530911]"
           >
             View All <ArrowRight className="h-3.5 w-3.5 text-white" />
           </Link>
@@ -108,7 +108,7 @@ export function NewArrivalsSection({
               type="button"
               onClick={() => scrollByAmount("left")}
               disabled={!canScrollLeft}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#E1B76F] hover:text-[#400604] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#3b050b] text-white shadow-lg border border-[#6e101c] hover:bg-[#E1B76F] hover:text-[#530911] transition disabled:opacity-0"
               aria-label="Scroll left"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -119,7 +119,7 @@ export function NewArrivalsSection({
               type="button"
               onClick={() => scrollByAmount("right")}
               disabled={!canScrollRight}
-              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#2b0403] text-white shadow-lg border border-[#5c0f0d] hover:bg-[#E1B76F] hover:text-[#400604] transition disabled:opacity-0"
+              className="h-10 w-10 flex items-center justify-center rounded-full bg-[#3b050b] text-white shadow-lg border border-[#6e101c] hover:bg-[#E1B76F] hover:text-[#530911] transition disabled:opacity-0"
               aria-label="Scroll right"
             >
               <ChevronRight className="h-5 w-5" />

@@ -114,12 +114,12 @@ function DualRangeSlider({
 
       {/* Visual thumb — min */}
       <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#400604] bg-[#E1B76F] shadow-sm"
+        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#530911] bg-[#E1B76F] shadow-sm"
         style={{ left: `${minPercent}%` }}
       />
       {/* Visual thumb — max */}
       <div
-        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#400604] bg-[#E1B76F] shadow-sm"
+        className="pointer-events-none absolute top-0 -translate-x-1/2 h-4 w-4 rounded-full border-2 border-[#530911] bg-[#E1B76F] shadow-sm"
         style={{ left: `${maxPercent}%` }}
       />
 
@@ -263,8 +263,8 @@ function Sidebar({
                   <div
                     className={`flex h-4.5 w-4.5 flex-shrink-0 items-center justify-center rounded border transition ${
                       checked
-                        ? "border-[#E1B76F] bg-[#E1B76F] text-[#400604]"
-                        : "border-[#E1B76F]/30 bg-[#340402] group-hover:border-[#E1B76F]"
+                        ? "border-[#E1B76F] bg-[#E1B76F] text-[#530911]"
+                        : "border-[#E1B76F]/30 bg-[#42070e] group-hover:border-[#E1B76F]"
                     }`}
                     style={{ width: 18, height: 18 }}
                   >
@@ -366,7 +366,7 @@ function Sidebar({
           >
             <div
               className={`absolute top-0.5 h-4 w-4 rounded-full shadow transition-transform ${
-                filters.inStockOnly ? "translate-x-4 bg-[#400604]" : "translate-x-0.5 bg-[#E1B76F]"
+                filters.inStockOnly ? "translate-x-4 bg-[#530911]" : "translate-x-0.5 bg-[#E1B76F]"
               }`}
             />
           </div>
@@ -415,7 +415,7 @@ function MobileDrawer({
       />
       {/* Drawer */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] lg:hidden overflow-y-auto rounded-t-3xl border-t border-[#E1B76F]/30 bg-[#400604] px-5 pb-8 pt-4 shadow-2xl transition-transform duration-300 text-white ${
+        className={`fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] lg:hidden overflow-y-auto rounded-t-3xl border-t border-[#E1B76F]/30 bg-[#530911] px-5 pb-8 pt-4 shadow-2xl transition-transform duration-300 text-white ${
           open ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -423,7 +423,7 @@ function MobileDrawer({
         <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#E1B76F]/30" />
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-bold uppercase tracking-wider text-white">Filters</h3>
-          <button type="button" onClick={onClose} className="rounded-full p-1 text-white/70 transition hover:bg-[#340402]">
+          <button type="button" onClick={onClose} className="rounded-full p-1 text-white/70 transition hover:bg-[#42070e]">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -438,7 +438,7 @@ function MobileDrawer({
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-full bg-[#400604] border border-[#E1B76F]/50 py-3.5 text-sm font-bold text-white transition hover:bg-[#520805]"
+          className="mt-6 w-full rounded-full bg-[#530911] border border-[#E1B76F]/50 py-3.5 text-sm font-bold text-white transition hover:bg-[#680c16]"
         >
           Show Results
         </button>
@@ -617,7 +617,7 @@ export function ProductsShell({
                 value={filters.search}
                 onChange={(e) => patchFilters({ search: e.target.value })}
                 placeholder="Search products…"
-                className="h-10 w-full rounded-full border border-[#E1B76F]/30 bg-[#340402] pl-10 pr-4 text-sm text-white shadow-none outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] focus:bg-[#2d0302]"
+                className="h-10 w-full rounded-full border border-[#E1B76F]/30 bg-[#42070e] pl-10 pr-4 text-sm text-white shadow-none outline-none transition placeholder:text-[#E1B76F]/40 focus:border-[#E1B76F] focus:bg-[#2d0302]"
               />
             </div>
 
@@ -631,10 +631,10 @@ export function ProductsShell({
               <select
                 value={filters.sort}
                 onChange={(e) => patchFilters({ sort: e.target.value })}
-                className="h-10 rounded-full border border-[#E1B76F]/30 bg-[#340402] px-4 pr-8 text-sm text-white shadow-none outline-none transition focus:border-[#E1B76F] appearance-none cursor-pointer"
+                className="h-10 rounded-full border border-[#E1B76F]/30 bg-[#42070e] px-4 pr-8 text-sm text-white shadow-none outline-none transition focus:border-[#E1B76F] appearance-none cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-[#340402] text-white">
+                  <option key={opt.value} value={opt.value} className="bg-[#42070e] text-white">
                     {opt.label}
                   </option>
                 ))}
@@ -644,12 +644,12 @@ export function ProductsShell({
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-[#E1B76F]/30 bg-[#340402] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#520805] lg:hidden"
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-[#E1B76F]/30 bg-[#42070e] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#680c16] lg:hidden"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeChips.length > 0 && (
-                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-bold text-[#400604]"
+                  <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#E1B76F] text-[10px] font-bold text-[#530911]"
                     style={{ width: 18, height: 18 }}>
                     {activeChips.length}
                   </span>
@@ -669,7 +669,7 @@ export function ProductsShell({
               {activeChips.map((chip) => (
                 <span
                   key={chip.label}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[#E1B76F]/30 bg-[#340402] px-3 py-1 text-[12px] font-semibold text-white shadow-none"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#E1B76F]/30 bg-[#42070e] px-3 py-1 text-[12px] font-semibold text-white shadow-none"
                 >
                   {chip.label}
                   <button
@@ -696,14 +696,14 @@ export function ProductsShell({
 
           {/* Product grid */}
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#E1B76F]/20 bg-[#340402] py-20 text-center">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-[#E1B76F]/20 bg-[#42070e] py-20 text-center">
               <div className="mb-4 text-5xl">🔍</div>
               <p className="font-heading text-lg font-bold uppercase text-white">No products match your filters</p>
               <p className="mt-1.5 text-sm text-white/70">Try adjusting or clearing your filters</p>
               <button
                 type="button"
                 onClick={clearFilters}
-                className="mt-5 rounded-full bg-[#400604] border border-[#E1B76F]/50 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#520805]"
+                className="mt-5 rounded-full bg-[#530911] border border-[#E1B76F]/50 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#680c16]"
               >
                 Clear Filters
               </button>
@@ -723,7 +723,7 @@ export function ProductsShell({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#340402] text-white shadow-sm transition hover:bg-[#520805] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#42070e] text-white shadow-sm transition hover:bg-[#680c16] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -737,7 +737,7 @@ export function ProductsShell({
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#340402] text-white shadow-sm transition hover:bg-[#520805] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#42070e] text-white shadow-sm transition hover:bg-[#680c16] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
                     aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />

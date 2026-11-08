@@ -92,7 +92,7 @@ function ShareStrip({ title }: { title: string }) {
           className={`${BTN_BASE} border transition ${
             copied
               ? "border-emerald-500 bg-emerald-500 text-white shadow-emerald-200"
-              : "border-[#E1B76F]/30 bg-[#340402] text-white/90 hover:border-[#E1B76F] hover:text-[#E1B76F]"
+              : "border-[#E1B76F]/30 bg-[#42070e] text-white/90 hover:border-[#E1B76F] hover:text-[#E1B76F]"
           }`}
           title={copied ? "Link Copied!" : "Copy Link"}
         >
@@ -408,7 +408,7 @@ export function ProductDetailsView({
   };
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* Main product grid */}
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 xl:gap-14 items-start">
@@ -417,7 +417,7 @@ export function ProductDetailsView({
           <div className="flex flex-col w-full lg:sticky lg:top-24 lg:self-start">
             {/* Main Image Container */}
             <div
-              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#340402] border border-[#E1B76F]/25 rounded-none cursor-default select-none shadow-md touch-pan-y"
+              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#42070e] border border-[#E1B76F]/25 rounded-none cursor-default select-none shadow-md touch-pan-y"
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={(e) => {
@@ -477,7 +477,7 @@ export function ProductDetailsView({
                       setIsZoomed(false);
                       setActiveImage((prev) => (prev > 0 ? prev - 1 : images.length - 1));
                     }}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#400604]/85 text-white/90 border border-[#E1B76F]/35 shadow-md opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[#400604] hover:text-white hover:scale-105 cursor-pointer backdrop-blur-xs"
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#530911]/85 text-white/90 border border-[#E1B76F]/35 shadow-md opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[#530911] hover:text-white hover:scale-105 cursor-pointer backdrop-blur-xs"
                     aria-label="Previous product image"
                   >
                     <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -489,7 +489,7 @@ export function ProductDetailsView({
                       setIsZoomed(false);
                       setActiveImage((prev) => (prev < images.length - 1 ? prev + 1 : 0));
                     }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#400604]/85 text-white/90 border border-[#E1B76F]/35 shadow-md opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[#400604] hover:text-white hover:scale-105 cursor-pointer backdrop-blur-xs"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#530911]/85 text-white/90 border border-[#E1B76F]/35 shadow-md opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-[#530911] hover:text-white hover:scale-105 cursor-pointer backdrop-blur-xs"
                     aria-label="Next product image"
                   >
                     <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -500,7 +500,7 @@ export function ProductDetailsView({
               {/* Sale badge */}
               {pricing.hasSale && (
                 <div className="absolute left-3 top-3 z-10 pointer-events-none">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#400604] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow-sm">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#530911] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow-sm">
                     Sale!
                   </span>
                 </div>
@@ -510,7 +510,7 @@ export function ProductDetailsView({
               <button
                 type="button"
                 onClick={() => openLightbox(activeImage)}
-                className="absolute right-3.5 top-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#400604] text-white border border-[#E1B76F]/40 shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:text-white hover:scale-105 transition cursor-pointer"
+                className="absolute right-3.5 top-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-[#530911] text-white border border-[#E1B76F]/40 shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:text-white hover:scale-105 transition cursor-pointer"
                 title="Click to enlarge"
                 aria-label="Enlarge image"
               >
@@ -531,7 +531,7 @@ export function ProductDetailsView({
                         setIsZoomed(false);
                         setActiveImage(i);
                       }}
-                      className={`relative aspect-[4/5] w-full overflow-hidden bg-[#340402] transition-all cursor-pointer ${
+                      className={`relative aspect-[4/5] w-full overflow-hidden bg-[#42070e] transition-all cursor-pointer ${
                         activeImage === i
                           ? "border-2 border-[#E1B76F] opacity-100 ring-2 ring-[#E1B76F]/30 shadow-xs"
                           : "border border-stone-800/60 opacity-70 hover:opacity-100 hover:border-[#E1B76F]/50"
@@ -584,7 +584,7 @@ export function ProductDetailsView({
                   <span className="text-[16px] text-white/60 font-normal line-through">
                     Tk{pricing.regular.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
-                  <span className="text-[12px] font-bold text-white bg-[#340402] px-2 py-0.5 rounded border border-[#E1B76F]/30">
+                  <span className="text-[12px] font-bold text-white bg-[#42070e] px-2 py-0.5 rounded border border-[#E1B76F]/30">
                     -{discountPct}%
                   </span>
                 </>
@@ -592,7 +592,7 @@ export function ProductDetailsView({
             </div>
 
             {/* Shipping Delivery Reassurance Pill */}
-            <div className="inline-flex items-center gap-2 rounded-lg bg-[#340402] px-3.5 py-1.5 text-xs text-white mb-4 border border-[#E1B76F]/25 max-w-fit shadow-xs">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-[#42070e] px-3.5 py-1.5 text-xs text-white mb-4 border border-[#E1B76F]/25 max-w-fit shadow-xs">
               <Truck className="h-4 w-4 text-white shrink-0" />
               <span>
                 Order now & get it in <strong className="text-white font-bold">1–3 Days</strong> inside BD • <strong className="text-white font-bold">5–7 Days</strong> Intl.
@@ -623,7 +623,7 @@ export function ProductDetailsView({
                             {isSize ? "Select Size:" : attr.name}
                           </label>
                           {isSize && size ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#E1B76F] text-[#400604] font-black text-xs shadow-xs">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#E1B76F] text-[#530911] font-black text-xs shadow-xs">
                               <Check className="h-3 w-3" /> {size}
                             </span>
                           ) : isSize ? (
@@ -662,10 +662,10 @@ export function ProductDetailsView({
                                   setSize(opt);
                                   setOptionError(false);
                                 }}
-                                className={`flex min-h-[44px] min-w-[50px] items-center justify-center px-4 rounded-xl border text-[13px] font-bold tracking-wide transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#400604] ${
+                                className={`flex min-h-[44px] min-w-[50px] items-center justify-center px-4 rounded-xl border text-[13px] font-bold tracking-wide transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E1B76F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#530911] ${
                                   isSelected
-                                    ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#400604] font-black shadow-lg shadow-[#E1B76F]/20 scale-105"
-                                    : "border-[#E1B76F]/30 bg-[#340402] text-white/90 font-bold hover:border-[#E1B76F] hover:bg-[#400604] hover:text-[#E1B76F]"
+                                    ? "border-2 border-[#E1B76F] bg-[#E1B76F] text-[#530911] font-black shadow-lg shadow-[#E1B76F]/20 scale-105"
+                                    : "border-[#E1B76F]/30 bg-[#42070e] text-white/90 font-bold hover:border-[#E1B76F] hover:bg-[#530911] hover:text-[#E1B76F]"
                                 }`}
                               >
                                 {opt}
@@ -733,7 +733,7 @@ export function ProductDetailsView({
                 type="button"
                 onClick={onAddToCart}
                 disabled={product.stock_status !== "instock"}
-                className="h-10 rounded-md bg-[#400604] border border-[#E1B76F]/40 px-7 text-sm font-bold tracking-wide uppercase text-white transition hover:bg-[#520805] hover:border-[#E1B76F] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
+                className="h-10 rounded-md bg-[#530911] border border-[#E1B76F]/40 px-7 text-sm font-bold tracking-wide uppercase text-white transition hover:bg-[#680c16] hover:border-[#E1B76F] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-sm"
               >
                 {added ? "Added to cart" : "Add to cart"}
               </button>
@@ -812,7 +812,7 @@ export function ProductDetailsView({
                 <table className="w-full border-collapse border border-[#E1B76F]/25 text-sm">
                   <tbody>
                     <tr className="border-b border-[#E1B76F]/20">
-                      <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#340402]">
+                      <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#42070e]">
                         Weight
                       </th>
                       <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
@@ -822,7 +822,7 @@ export function ProductDetailsView({
                     {product.attributes && product.attributes.length > 0 ? (
                       product.attributes.map((attr) => (
                         <tr key={attr.id || attr.name} className="border-b border-[#E1B76F]/20 last:border-b-0">
-                          <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#340402]">
+                          <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#42070e]">
                             {attr.name}
                           </th>
                           <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
@@ -832,7 +832,7 @@ export function ProductDetailsView({
                       ))
                     ) : product.sizes && product.sizes.length > 0 ? (
                       <tr className="border-b border-[#E1B76F]/20 last:border-b-0">
-                        <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#340402]">
+                        <th className="w-44 sm:w-56 p-3 sm:p-4 text-left font-normal sm:font-medium text-white border-r border-[#E1B76F]/20 bg-[#42070e]">
                           Size
                         </th>
                         <td className="p-3 sm:p-4 text-white/90 bg-[#2d0302]">
@@ -864,7 +864,7 @@ export function ProductDetailsView({
 
       {/* ── Sticky Bottom Action Bar ── */}
       {showStickyBar && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E1B76F]/30 bg-[#340402] text-white shadow-[0px_-2px_16px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#E1B76F]/30 bg-[#42070e] text-white shadow-[0px_-2px_16px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2 duration-300">
           <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 min-h-[58px] sm:min-h-[64px] py-2 flex items-center justify-between gap-3 sm:gap-4">
             {/* Left: Thumbnail + Product Title */}
             <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
@@ -901,8 +901,8 @@ export function ProductDetailsView({
                 disabled={product.stock_status !== "instock"}
                 className={`rounded-full px-5 sm:px-7 py-2 sm:py-2.5 text-xs sm:text-[14px] font-bold transition shadow-sm whitespace-nowrap ${
                   added
-                    ? "bg-[#E1B76F] text-[#400604]"
-                    : "bg-[#400604] border border-[#E1B76F]/40 text-white hover:bg-[#520805] hover:border-[#E1B76F]"
+                    ? "bg-[#E1B76F] text-[#530911]"
+                    : "bg-[#530911] border border-[#E1B76F]/40 text-white hover:bg-[#680c16] hover:border-[#E1B76F]"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {added

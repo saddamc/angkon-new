@@ -42,13 +42,13 @@ export function LivePreviewCard({
         </div>
 
         {onUnitChange ? (
-          <div className="inline-flex rounded-lg border border-[#E1B76F]/30 bg-[#340402] p-0.5">
+          <div className="inline-flex rounded-lg border border-[#E1B76F]/30 bg-[#42070e] p-0.5">
             <button
               type="button"
               onClick={() => onUnitChange("in")}
               className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                 unit === "in"
-                  ? "bg-[#E1B76F] text-[#400604] font-black"
+                  ? "bg-[#E1B76F] text-[#530911] font-black"
                   : "text-white/70"
               }`}
             >
@@ -59,7 +59,7 @@ export function LivePreviewCard({
               onClick={() => onUnitChange("cm")}
               className={`px-2 py-0.5 rounded text-[10px] font-bold transition cursor-pointer ${
                 unit === "cm"
-                  ? "bg-[#E1B76F] text-[#400604] font-black"
+                  ? "bg-[#E1B76F] text-[#530911] font-black"
                   : "text-white/70"
               }`}
             >
@@ -67,7 +67,7 @@ export function LivePreviewCard({
             </button>
           </div>
         ) : (
-          <span className="inline-block px-2.5 py-1 rounded-full border border-[#E1B76F]/40 bg-[#340402] text-[#E1B76F] text-[10px] font-bold tracking-widest uppercase">
+          <span className="inline-block px-2.5 py-1 rounded-full border border-[#E1B76F]/40 bg-[#42070e] text-[#E1B76F] text-[10px] font-bold tracking-widest uppercase">
             Unit: {unit === "in" ? "Inches" : "CM"}
           </span>
         )}
@@ -76,7 +76,7 @@ export function LivePreviewCard({
       {/* Main Content Layout (Silhouette Left + Measurement Table Right) */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch">
         {/* Silhouette Column */}
-        <div className="sm:w-28 shrink-0 flex flex-col items-center justify-center p-3 rounded-xl bg-[#340402] border border-[#E1B76F]/20 text-center">
+        <div className="sm:w-28 shrink-0 flex flex-col items-center justify-center p-3 rounded-xl bg-[#42070e] border border-[#E1B76F]/20 text-center">
           <svg
             viewBox="0 0 160 320"
             className="w-20 sm:w-22 h-auto max-h-[190px] text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
@@ -94,7 +94,7 @@ export function LivePreviewCard({
               y1="108"
               x2="122"
               y2="108"
-              stroke="#400604"
+              stroke="#530911"
               strokeWidth="2"
               strokeDasharray="3,2"
             />
@@ -103,7 +103,7 @@ export function LivePreviewCard({
               y1="209"
               x2="134"
               y2="209"
-              stroke="#400604"
+              stroke="#530911"
               strokeWidth="2.5"
             />
             {/* Trouser Pants Silhouette */}
@@ -147,8 +147,8 @@ export function LivePreviewCard({
                           onClick={() => onSelectSize(s)}
                           className={`mt-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold transition cursor-pointer ${
                             isSelected
-                              ? "bg-[#E1B76F] text-[#400604] font-black"
-                              : "bg-white/10 text-white/90 hover:bg-[#E1B76F] hover:text-[#400604]"
+                              ? "bg-[#E1B76F] text-[#530911] font-black"
+                              : "bg-white/10 text-white/90 hover:bg-[#E1B76F] hover:text-[#530911]"
                           }`}
                         >
                           {isSelected ? "✓ Selected" : "Choose size ▾"}
@@ -174,7 +174,7 @@ export function LivePreviewCard({
                   return (
                     <Fragment key={`section-group-${sec.id}`}>
                       {/* Section Title Header Row */}
-                      <tr className="bg-[#400604] border-t border-b border-[#E1B76F]/30">
+                      <tr className="bg-[#530911] border-t border-b border-[#E1B76F]/30">
                         <td
                           colSpan={chart.sizes.length + 1}
                           className="py-1.5 px-2.5 font-black text-[10px] tracking-widest uppercase text-[#E1B76F]"
@@ -192,7 +192,7 @@ export function LivePreviewCard({
                         .map((row, rIdx) => (
                           <tr
                             key={row.id}
-                            className={`hover:bg-[#400604]/50 transition ${
+                            className={`hover:bg-[#530911]/50 transition ${
                               rIdx % 2 === 0 ? "bg-[#2f0403]" : "bg-[#240201]"
                             }`}
                           >

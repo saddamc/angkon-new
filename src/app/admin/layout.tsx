@@ -284,7 +284,7 @@ export default function AdminLayout({
           <button
             type="button"
             onClick={toggleSidebarExpanded}
-            className={`hidden lg:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#400604] border border-stone-200/90 shadow-sm hover:scale-105 transition-all duration-200 ${
+            className={`hidden lg:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#530911] border border-stone-200/90 shadow-sm hover:scale-105 transition-all duration-200 ${
               isDesktopExpanded ? "" : "mx-auto"
             }`}
             title={isDesktopExpanded ? "Collapse sidebar" : "Expand sidebar"}
@@ -298,7 +298,7 @@ export default function AdminLayout({
               className="h-full w-full object-cover"
             />
           </button>
-          <div className="lg:hidden flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#400604] border border-stone-200/90 shadow-sm">
+          <div className="lg:hidden flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-[#530911] border border-stone-200/90 shadow-sm">
             <Image
               src="/logo.jpeg"
               alt="ANGKON"
@@ -309,7 +309,7 @@ export default function AdminLayout({
           </div>
           {isDesktopExpanded && (
             <div className="min-w-0 flex-1 overflow-hidden">
-              <p className="text-[14px] font-bold tracking-tight text-[#400604] whitespace-nowrap">
+              <p className="text-[14px] font-bold tracking-tight text-[#530911] whitespace-nowrap">
                 ANGKON
               </p>
               <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 whitespace-nowrap">

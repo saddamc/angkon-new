@@ -38,7 +38,7 @@ export function CategorySidebar({ isMobile = false }: CategorySidebarProps) {
       {/* Search Widget */}
       <div className="mb-6 sm:mb-8">
         <form onSubmit={handleSearch} className="w-full">
-          <div className="relative flex items-center border border-[#E1B76F]/30 rounded-lg bg-[#340402] overflow-hidden transition-colors focus-within:border-[#E1B76F]">
+          <div className="relative flex items-center border border-[#E1B76F]/30 rounded-lg bg-[#42070e] overflow-hidden transition-colors focus-within:border-[#E1B76F]">
             <input
               type="search"
               value={searchQuery}
@@ -49,7 +49,7 @@ export function CategorySidebar({ isMobile = false }: CategorySidebarProps) {
             <button
               type="submit"
               aria-label="Search"
-              className="bg-[#400604] hover:bg-[#520805] text-white px-4 py-2.5 transition flex items-center justify-center flex-shrink-0 cursor-pointer border-l border-[#E1B76F]/20"
+              className="bg-[#530911] hover:bg-[#680c16] text-white px-4 py-2.5 transition flex items-center justify-center flex-shrink-0 cursor-pointer border-l border-[#E1B76F]/20"
             >
               <Search className="w-4 h-4 stroke-[2.2]" />
             </button>
@@ -78,7 +78,7 @@ export function CategorySidebar({ isMobile = false }: CategorySidebarProps) {
                 {/* Thumbnail */}
                 <Link
                   href={item.permalink}
-                  className="relative w-14 h-14 sm:w-[60px] sm:h-[60px] flex-shrink-0 rounded-lg overflow-hidden bg-[#340402] border border-[#E1B76F]/25"
+                  className="relative w-14 h-14 sm:w-[60px] sm:h-[60px] flex-shrink-0 rounded-lg overflow-hidden bg-[#42070e] border border-[#E1B76F]/25"
                 >
                   <Image
                     src={item.image}

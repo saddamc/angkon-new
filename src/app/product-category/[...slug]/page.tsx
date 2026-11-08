@@ -172,7 +172,7 @@ export default async function ProductCategoryPage({ params, searchParams }: Prop
   };
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* Category Breadcrumb Structured Data */}
       <script
         type="application/ld+json"

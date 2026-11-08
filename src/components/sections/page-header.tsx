@@ -17,7 +17,7 @@ export function PageHeader({
   pills?: Pill[];
 }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-[#E1B76F]/25 bg-[#340402] p-6 sm:p-8 lg:p-10 text-white">
+    <section className="relative overflow-hidden rounded-2xl border border-[#E1B76F]/25 bg-[#42070e] p-6 sm:p-8 lg:p-10 text-white">
       <div className="relative">
         {eyebrow && (
           <p className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
@@ -40,7 +40,7 @@ export function PageHeader({
               <Link
                 key={p.href}
                 href={p.href}
-                className="rounded-full border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 py-1 text-xs font-semibold text-white transition hover:bg-[#400604] hover:text-white hover:border-[#E1B76F]"
+                className="rounded-full border border-[#E1B76F]/30 bg-[#2d0302] px-3.5 py-1 text-xs font-semibold text-white transition hover:bg-[#530911] hover:text-white hover:border-[#E1B76F]"
               >
                 {p.label}
               </Link>

@@ -76,7 +76,7 @@ export function CartDrawer({ open, onClose }: Props) {
           {/* Cart Drawer Panel — Right side */}
           <motion.aside
             aria-label="Shopping Cart Drawer"
-            className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col bg-[#1A0302] border-l border-[#E1B76F]/30 shadow-2xl text-white"
+            className="absolute right-0 top-0 flex h-full w-full max-w-[440px] flex-col bg-[#230407] border-l border-[#E1B76F]/30 shadow-2xl text-white"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -90,7 +90,7 @@ export function CartDrawer({ open, onClose }: Props) {
                   Shopping Cart
                 </h2>
                 {itemCount > 0 && (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#1A0302] px-1.5 text-[11px] font-black text-white border border-[#E1B76F]/30 shadow-xs">
+                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#230407] px-1.5 text-[11px] font-black text-white border border-[#E1B76F]/30 shadow-xs">
                     {itemCount}
                   </span>
                 )}
@@ -118,7 +118,7 @@ export function CartDrawer({ open, onClose }: Props) {
                     </span>
                   )}
                 </div>
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#400604]">
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#530911]">
                   <div
                     className="h-full bg-[#E1B76F] transition-all duration-300"
                     style={{ width: `${freeShippingProgress}%` }}
@@ -130,7 +130,7 @@ export function CartDrawer({ open, onClose }: Props) {
             {/* ── 3. Drawer Body (Items) ── */}
             {items.length === 0 ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/25">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#42070e] border border-[#E1B76F]/25">
                   <ShoppingBag className="h-10 w-10 text-white/60" />
                 </div>
                 <div>
@@ -139,7 +139,7 @@ export function CartDrawer({ open, onClose }: Props) {
                 </div>
                 <button
                   onClick={onClose}
-                  className="mt-3 inline-flex items-center justify-center rounded-full bg-[#340402] border border-[#E1B76F]/50 hover:bg-[#E1B76F] hover:text-[#400604] px-8 py-3 text-sm font-bold text-white transition shadow-sm uppercase tracking-wide cursor-pointer"
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-[#42070e] border border-[#E1B76F]/50 hover:bg-[#E1B76F] hover:text-[#530911] px-8 py-3 text-sm font-bold text-white transition shadow-sm uppercase tracking-wide cursor-pointer"
                 >
                   Continue Shopping
                 </button>
@@ -149,7 +149,7 @@ export function CartDrawer({ open, onClose }: Props) {
                 {items.map((item) => (
                   <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     {/* Thumbnail */}
-                    <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded bg-[#340402] border border-[#E1B76F]/20">
+                    <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded bg-[#42070e] border border-[#E1B76F]/20">
                       {item.image && (
                         <Image
                           src={item.image}
@@ -185,7 +185,7 @@ export function CartDrawer({ open, onClose }: Props) {
 
                       {/* Quantity Stepper & Price */}
                       <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center rounded-full border border-[#E1B76F]/30 bg-[#340402] px-2 py-0.5">
+                        <div className="flex items-center rounded-full border border-[#E1B76F]/30 bg-[#42070e] px-2 py-0.5">
                           <button
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
                             disabled={item.quantity <= 1}
@@ -238,16 +238,16 @@ export function CartDrawer({ open, onClose }: Props) {
                   <Link
                     href="/cart"
                     onClick={onClose}
-                    className="flex items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#1A0302] py-3 text-[13px] font-bold text-white transition hover:bg-[#240403] hover:text-[#f3cb87] hover:border-[#E1B76F]"
+                    className="flex items-center justify-center rounded-full border border-[#E1B76F]/40 bg-[#230407] py-3 text-[13px] font-bold text-white transition hover:bg-[#240403] hover:text-[#f3cb87] hover:border-[#E1B76F]"
                   >
                     View Cart
                   </Link>
                   <Link
                     href="/checkout"
                     onClick={onClose}
-                    className="flex items-center justify-center gap-2 rounded-full bg-[#E1B76F] border border-[#E1B76F] hover:bg-[#f3cb87] py-3 text-[13px] font-black text-[#1A0302] transition shadow-md uppercase tracking-wide"
+                    className="flex items-center justify-center gap-2 rounded-full bg-[#E1B76F] border border-[#E1B76F] hover:bg-[#f3cb87] py-3 text-[13px] font-black text-[#230407] transition shadow-md uppercase tracking-wide"
                   >
-                    Checkout <ArrowRight className="h-4 w-4 text-[#1A0302]" />
+                    Checkout <ArrowRight className="h-4 w-4 text-[#230407]" />
                   </Link>
                 </div>
               </div>

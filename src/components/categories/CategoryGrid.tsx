@@ -50,10 +50,10 @@ export function CategoryGrid({
           <select
             value={sort}
             onChange={(e) => router.push(hrefWith({ sort: e.target.value, page: "1" }))}
-            className="appearance-none bg-[#340402] border border-[#E1B76F]/30 hover:border-[#E1B76F] focus:border-[#E1B76F] text-[14px] text-white py-1.5 sm:py-2 pl-3 pr-8 rounded-lg outline-none cursor-pointer transition-colors"
+            className="appearance-none bg-[#42070e] border border-[#E1B76F]/30 hover:border-[#E1B76F] focus:border-[#E1B76F] text-[14px] text-white py-1.5 sm:py-2 pl-3 pr-8 rounded-lg outline-none cursor-pointer transition-colors"
           >
             {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} className="bg-[#340402] text-white">
+              <option key={opt.value} value={opt.value} className="bg-[#42070e] text-white">
                 {opt.label}
               </option>
             ))}
@@ -63,7 +63,7 @@ export function CategoryGrid({
       </div>
 
       {products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-[#E1B76F]/20 bg-[#340402] py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-[#E1B76F]/20 bg-[#42070e] py-20 text-center">
           <div className="mb-4 text-5xl">🔍</div>
           <p className="font-heading text-lg font-bold uppercase text-white">No products in this category yet</p>
           <p className="mt-1.5 text-sm text-white/90">Check back soon.</p>
@@ -77,7 +77,7 @@ export function CategoryGrid({
               <Link
                 href={hrefWith({ page: String(Math.max(1, page - 1)) })}
                 aria-disabled={page === 1}
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#340402] text-white shadow-sm transition hover:bg-[#520805] hover:text-white ${
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#42070e] text-white shadow-sm transition hover:bg-[#680c16] hover:text-white ${
                   page === 1 ? "pointer-events-none opacity-35" : ""
                 }`}
                 aria-label="Previous page"
@@ -92,7 +92,7 @@ export function CategoryGrid({
               <Link
                 href={hrefWith({ page: String(Math.min(totalPages, page + 1)) })}
                 aria-disabled={page === totalPages}
-                className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#340402] text-white shadow-sm transition hover:bg-[#520805] hover:text-white ${
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#E1B76F]/30 bg-[#42070e] text-white shadow-sm transition hover:bg-[#680c16] hover:text-white ${
                   page === totalPages ? "pointer-events-none opacity-35" : ""
                 }`}
                 aria-label="Next page"

@@ -34,7 +34,7 @@ export function resolveColorStyle(name: string): {
     brown: { bg: "#78350f" },
     purple: { bg: "#9333ea" },
     orange: { bg: "#ea580c" },
-    maroon: { bg: "#400604" },
+    maroon: { bg: "#530911" },
     olive: { bg: "#65a30d" },
     "sky blue": { bg: "#38bdf8", isLight: true },
     gold: { bg: "#E1B76F", isLight: true },

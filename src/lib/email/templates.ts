@@ -50,23 +50,23 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
         ${
           item.image
             ? `<img src="${item.image}" alt="${item.name}" width="54" height="72" style="width: 54px; height: 72px; max-width: 54px; max-height: 72px; border-radius: 4px; object-fit: cover; object-position: top; display: block; border: 1px solid #e8dfd6;" />`
-            : `<div style="width: 54px; height: 72px; background: #400604; border-radius: 4px; display: inline-block; border: 1px solid #e8dfd6;"></div>`
+            : `<div style="width: 54px; height: 72px; background: #530911; border-radius: 4px; display: inline-block; border: 1px solid #e8dfd6;"></div>`
         }
       </td>
       <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle;">
-        <div style="font-weight: 600; font-size: 14px; color: #1a0302; margin-bottom: 3px;">
+        <div style="font-weight: 600; font-size: 14px; color: #230407; margin-bottom: 3px;">
           ${item.name}
         </div>
         ${
           item.size
-            ? `<span style="display: inline-block; font-size: 11px; background: #f7ede2; color: #400604; font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #e6ccb2;">Size: ${item.size}</span>`
+            ? `<span style="display: inline-block; font-size: 11px; background: #f7ede2; color: #530911; font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #e6ccb2;">Size: ${item.size}</span>`
             : ""
         }
       </td>
       <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle; text-align: center; font-size: 14px; color: #555;">
         ${item.quantity}
       </td>
-      <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle; text-align: right; font-weight: 600; font-size: 14px; color: #400604;">
+      <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle; text-align: right; font-weight: 600; font-size: 14px; color: #530911;">
         ${formatPrice(item.price * item.quantity)}
       </td>
     </tr>
@@ -91,7 +91,7 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
           
           <!-- Header Banner -->
           <tr>
-            <td style="background-color: #400604; padding: 36px 24px; text-align: center; border-bottom: 3px solid #E1B76F;">
+            <td style="background-color: #530911; padding: 36px 24px; text-align: center; border-bottom: 3px solid #E1B76F;">
               <h1 style="margin: 0; font-family: Georgia, serif; font-size: 32px; letter-spacing: 5px; color: #E1B76F; font-weight: 700; text-transform: uppercase;">
                 ANGKON
               </h1>
@@ -105,11 +105,11 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
           <tr>
             <td style="padding: 32px 28px 20px; text-align: center;">
               <div style="display: inline-block; background-color: #fcf6eb; border: 1px solid #E1B76F; border-radius: 20px; padding: 6px 18px; margin-bottom: 16px;">
-                <span style="color: #400604; font-size: 13px; font-weight: 600; letter-spacing: 1px;">
+                <span style="color: #530911; font-size: 13px; font-weight: 600; letter-spacing: 1px;">
                   ORDER CONFIRMED
                 </span>
               </div>
-              <h2 style="margin: 0 0 10px; font-family: Georgia, serif; font-size: 24px; color: #1a0302; font-weight: 600;">
+              <h2 style="margin: 0 0 10px; font-family: Georgia, serif; font-size: 24px; color: #230407; font-weight: 600;">
                 Thank You, ${order.customer.fullName}!
               </h2>
               <p style="margin: 0 auto; max-width: 480px; font-size: 14px; line-height: 1.6; color: #5a544d;">
@@ -124,15 +124,15 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #fbf9f6; border-radius: 8px; border: 1px solid #ede4db; padding: 16px 20px;">
                 <tr>
                   <td style="padding: 6px 0; font-size: 13px; color: #736b63;">Order Reference:</td>
-                  <td style="padding: 6px 0; font-size: 13px; font-weight: 700; color: #400604; text-align: right;">${order.orderNumber}</td>
+                  <td style="padding: 6px 0; font-size: 13px; font-weight: 700; color: #530911; text-align: right;">${order.orderNumber}</td>
                 </tr>
                 <tr>
                   <td style="padding: 6px 0; font-size: 13px; color: #736b63;">Payment Mode:</td>
-                  <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #1a0302; text-align: right;">${paymentTitle}</td>
+                  <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #230407; text-align: right;">${paymentTitle}</td>
                 </tr>
                 <tr>
                   <td style="padding: 6px 0; font-size: 13px; color: #736b63;">Estimated Delivery:</td>
-                  <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #1a0302; text-align: right;">${deliveryTime}</td>
+                  <td style="padding: 6px 0; font-size: 13px; font-weight: 600; color: #230407; text-align: right;">${deliveryTime}</td>
                 </tr>
               </table>
             </td>
@@ -141,7 +141,7 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
           <!-- Items Table -->
           <tr>
             <td style="padding: 0 28px 24px;">
-              <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700; color: #1a0302; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #400604; padding-bottom: 6px;">
+              <h3 style="margin: 0 0 12px; font-size: 15px; font-weight: 700; color: #230407; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #530911; padding-bottom: 6px;">
                 Order Items (${order.items.length})
               </h3>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
@@ -165,15 +165,15 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top: 1px solid #ede4db; padding-top: 14px;">
                 <tr>
                   <td style="padding: 4px 0; font-size: 14px; color: #666;">Subtotal:</td>
-                  <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #1a0302; text-align: right;">${formatPrice(order.subtotal)}</td>
+                  <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #230407; text-align: right;">${formatPrice(order.subtotal)}</td>
                 </tr>
                 <tr>
                   <td style="padding: 4px 0; font-size: 14px; color: #666;">Delivery Fee (${order.customer.district}):</td>
-                  <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #1a0302; text-align: right;">${order.shippingFee === 0 ? "Free" : formatPrice(order.shippingFee)}</td>
+                  <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #230407; text-align: right;">${order.shippingFee === 0 ? "Free" : formatPrice(order.shippingFee)}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 12px 0 0; font-size: 16px; font-weight: 700; color: #400604;">Total Amount:</td>
-                  <td style="padding: 12px 0 0; font-size: 18px; font-weight: 800; color: #400604; text-align: right;">${formatPrice(order.total)}</td>
+                  <td style="padding: 12px 0 0; font-size: 16px; font-weight: 700; color: #530911;">Total Amount:</td>
+                  <td style="padding: 12px 0 0; font-size: 18px; font-weight: 800; color: #530911; text-align: right;">${formatPrice(order.total)}</td>
                 </tr>
               </table>
             </td>
@@ -182,10 +182,10 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
           <!-- Shipping Details Section -->
           <tr>
             <td style="background-color: #fbf9f6; padding: 24px 28px; border-top: 1px solid #ebe2d8;">
-              <h4 style="margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #400604; font-weight: 700;">
+              <h4 style="margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #530911; font-weight: 700;">
                 Delivery Destination
               </h4>
-              <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #1a0302;">${order.customer.fullName}</p>
+              <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #230407;">${order.customer.fullName}</p>
               <p style="margin: 0 0 4px; font-size: 13px; color: #5a544d;">Phone: <strong>${order.customer.phone}</strong></p>
               <p style="margin: 0 0 4px; font-size: 13px; color: #5a544d;">Address: ${order.customer.address}, ${order.customer.district} ${order.customer.postalCode ? `(${order.customer.postalCode})` : ""}</p>
               ${
@@ -202,7 +202,7 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
               <p style="margin: 0 0 10px; font-size: 13px; color: #666;">
                 Need help or have questions regarding your order?
               </p>
-              <a href="https://wa.me/8801338668899" target="_blank" style="display: inline-block; background-color: #400604; color: #E1B76F; text-decoration: none; font-size: 13px; font-weight: 600; padding: 11px 24px; border-radius: 6px; letter-spacing: 0.5px; border: 1px solid #E1B76F;">
+              <a href="https://wa.me/8801338668899" target="_blank" style="display: inline-block; background-color: #530911; color: #E1B76F; text-decoration: none; font-size: 13px; font-weight: 600; padding: 11px 24px; border-radius: 6px; letter-spacing: 0.5px; border: 1px solid #E1B76F;">
                 💬 Contact WhatsApp Support (+880 1338-668899)
               </a>
             </td>
@@ -210,7 +210,7 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
 
           <!-- Footer -->
           <tr>
-            <td style="background-color: #400604; border-top: 2px solid #E1B76F; padding: 26px 20px; text-align: center; color: #f5eedb;">
+            <td style="background-color: #530911; border-top: 2px solid #E1B76F; padding: 26px 20px; text-align: center; color: #f5eedb;">
               <p style="margin: 0 0 8px; font-family: Georgia, serif; font-size: 16px; letter-spacing: 3px; text-transform: uppercase; color: #E1B76F; font-weight: 700;">
                 ANGKON
               </p>
@@ -271,7 +271,7 @@ export function getAdminOrderEmailHtml(order: EmailOrderData): string {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f8; padding: 24px; color: #222;">
   <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; border: 1px solid #e1e4e8; overflow: hidden;">
     
-    <div style="background: #400604; color: #E1B76F; padding: 20px 24px;">
+    <div style="background: #530911; color: #E1B76F; padding: 20px 24px;">
       <h2 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: 1px;">🚨 NEW ORDER RECEIVED: #${order.orderNumber}</h2>
       <p style="margin: 4px 0 0; font-size: 13px; color: #fff; opacity: 0.9;">Total: ${formatPrice(order.total)} | Mode: ${order.paymentMethod.toUpperCase()}</p>
     </div>
@@ -280,9 +280,9 @@ export function getAdminOrderEmailHtml(order: EmailOrderData): string {
       
       <!-- Customer Card -->
       <div style="background: #fbfbfc; border: 1px solid #e8ebef; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
-        <h4 style="margin: 0 0 10px; color: #400604; font-size: 14px; text-transform: uppercase;">Customer Details</h4>
+        <h4 style="margin: 0 0 10px; color: #530911; font-size: 14px; text-transform: uppercase;">Customer Details</h4>
         <p style="margin: 0 0 4px; font-size: 14px;"><strong>Name:</strong> ${order.customer.fullName}</p>
-        <p style="margin: 0 0 4px; font-size: 14px;"><strong>Phone:</strong> <a href="tel:${order.customer.phone}" style="color: #400604; font-weight: 700;">${order.customer.phone}</a></p>
+        <p style="margin: 0 0 4px; font-size: 14px;"><strong>Phone:</strong> <a href="tel:${order.customer.phone}" style="color: #530911; font-weight: 700;">${order.customer.phone}</a></p>
         <p style="margin: 0 0 4px; font-size: 14px;"><strong>Email:</strong> ${order.customer.email || "Not provided"}</p>
         <p style="margin: 0 0 4px; font-size: 14px;"><strong>District:</strong> ${order.customer.district}</p>
         <p style="margin: 0; font-size: 14px;"><strong>Address:</strong> ${order.customer.address} ${order.customer.postalCode ? `(${order.customer.postalCode})` : ""}</p>
@@ -319,7 +319,7 @@ export function getAdminOrderEmailHtml(order: EmailOrderData): string {
           <span>Shipping Fee:</span>
           <strong>${order.shippingFee === 0 ? "Free" : formatPrice(order.shippingFee)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 16px; color: #400604; font-weight: 800; border-top: 1px solid #ddd; padding-top: 6px;">
+        <div style="display: flex; justify-content: space-between; font-size: 16px; color: #530911; font-weight: 800; border-top: 1px solid #ddd; padding-top: 6px;">
           <span>Total To Collect:</span>
           <span>${formatPrice(order.total)}</span>
         </div>

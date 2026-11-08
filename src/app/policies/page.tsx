@@ -38,9 +38,9 @@ export default function PoliciesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       {/* ── Breadcrumb & Page Header ── */}
-      <div className="w-full border-b border-[#E1B76F]/20 bg-[#340402] py-6 sm:py-8 px-4">
+      <div className="w-full border-b border-[#E1B76F]/20 bg-[#42070e] py-6 sm:py-8 px-4">
         <div className="max-w-[1100px] mx-auto">
           <nav className="text-xs text-white/70 mb-2">
             <Link href="/" className="hover:text-[#E1B76F] transition">Home</Link>
@@ -64,10 +64,10 @@ export default function PoliciesPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-2xl border border-[#E1B76F]/25 bg-gradient-to-r from-[#340402] via-[#3a0604] to-[#2b0403] p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-[#E1B76F]/70 hover:shadow-2xl hover:scale-[1.01]"
+              className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden rounded-2xl border border-[#E1B76F]/25 bg-gradient-to-r from-[#42070e] via-[#3a0604] to-[#3b050b] p-6 sm:p-7 shadow-lg transition-all duration-300 hover:border-[#E1B76F]/70 hover:shadow-2xl hover:scale-[1.01]"
             >
               <div className="flex items-center gap-4 sm:gap-5">
-                <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E1B76F]/10 border border-[#E1B76F]/30 text-[#E1B76F] group-hover:bg-[#E1B76F] group-hover:text-[#400604] transition-colors duration-300">
+                <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-[#E1B76F]/10 border border-[#E1B76F]/30 text-[#E1B76F] group-hover:bg-[#E1B76F] group-hover:text-[#530911] transition-colors duration-300">
                   <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
                 </div>
                 <div>
@@ -95,8 +95,8 @@ export default function PoliciesPage() {
 
         {/* ── Helpful Support Strip ── */}
         <div className="mt-12 pt-8 border-t border-[#E1B76F]/20 grid grid-cols-1 md:grid-cols-3 gap-4 text-center sm:text-left">
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#340402] border border-[#E1B76F]/20">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#400604]">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#42070e] border border-[#E1B76F]/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#530911]">
               <Truck className="h-5 w-5" />
             </div>
             <div>
@@ -105,8 +105,8 @@ export default function PoliciesPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#340402] border border-[#E1B76F]/20">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#400604]">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#42070e] border border-[#E1B76F]/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#530911]">
               <MessageCircle className="h-5 w-5" />
             </div>
             <div>
@@ -115,8 +115,8 @@ export default function PoliciesPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#340402] border border-[#E1B76F]/20">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#400604]">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-[#42070e] border border-[#E1B76F]/20">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E1B76F] text-[#530911]">
               <MapPin className="h-5 w-5" />
             </div>
             <div>

@@ -22,7 +22,7 @@ export function CategoryCard({
       className="group relative block w-full bg-transparent text-center"
     >
       {/* 1. Category Image */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#340402] border border-[#E1B76F]/20">
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-[#42070e] border border-[#E1B76F]/20">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -33,13 +33,13 @@ export function CategoryCard({
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#340402]">
+          <div className="flex h-full w-full items-center justify-center bg-[#42070e]">
             <span className="text-4xl">{DEFAULT_CATEGORY_EMOJI}</span>
           </div>
         )}
 
         {/* 2. Brand Overlay Banner */}
-        <div className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-4 sm:bottom-5 rounded-lg bg-[#400604]/90 group-hover:bg-[#400604] border border-[#E1B76F]/30 backdrop-blur-sm text-center py-2 px-2 transition-colors duration-200 pointer-events-none shadow-md">
+        <div className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-4 sm:bottom-5 rounded-lg bg-[#530911]/90 group-hover:bg-[#530911] border border-[#E1B76F]/30 backdrop-blur-sm text-center py-2 px-2 transition-colors duration-200 pointer-events-none shadow-md">
           <h2 className="text-[12px] sm:text-[13px] font-bold uppercase tracking-wider text-white leading-snug line-clamp-1">
             {name}
           </h2>

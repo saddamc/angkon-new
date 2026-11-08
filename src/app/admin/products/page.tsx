@@ -54,7 +54,7 @@ function ProductTableThumb({ src, name }: { src?: string; name: string }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-stone-100 text-[#400604] text-xs font-bold">
+      <div className="flex h-full w-full items-center justify-center bg-stone-100 text-[#530911] text-xs font-bold">
         {name.charAt(0)}
       </div>
     );

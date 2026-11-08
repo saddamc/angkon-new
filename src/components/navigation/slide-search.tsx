@@ -122,7 +122,7 @@ export function SlideSearch() {
         <div className="relative flex items-center animate-in fade-in slide-in-from-right-3 duration-200">
           <form
             onSubmit={handleSubmit}
-            className="flex items-center border border-[#E1B76F]/40 bg-[#340402] px-2.5 py-1 rounded-[4px] transition-all shadow-sm focus-within:border-[#E1B76F]"
+            className="flex items-center border border-[#E1B76F]/40 bg-[#42070e] px-2.5 py-1 rounded-[4px] transition-all shadow-sm focus-within:border-[#E1B76F]"
           >
             <input
               ref={inputRef}
@@ -155,7 +155,7 @@ export function SlideSearch() {
 
           {/* Instant Dropdown Results (Professional & Seamless) */}
           {query.trim().length > 0 && (
-            <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-[350px] bg-[#340402] border border-[#E1B76F]/30 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="absolute right-0 top-full mt-2 w-[300px] sm:w-[350px] bg-[#42070e] border border-[#E1B76F]/30 shadow-2xl rounded-lg p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               {loading && results.length === 0 ? (
                 <div className="py-6 text-center text-xs text-white/70 flex items-center justify-center gap-2">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
@@ -175,9 +175,9 @@ export function SlideSearch() {
                       key={product.id}
                       href={`/products/${product.slug}`}
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-[#400604] transition group"
+                      className="flex items-center gap-2.5 p-1.5 rounded-md hover:bg-[#530911] transition group"
                     >
-                      <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-[#2b0403] border border-[#E1B76F]/20">
+                      <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-[#3b050b] border border-[#E1B76F]/20">
                         <Image
                           src={product.image}
                           alt={product.name}

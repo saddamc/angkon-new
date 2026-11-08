@@ -242,9 +242,9 @@ export default function AdminSettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-xl p-4 border border-purple-100/60 bg-white text-center shadow-xs">
-                  <div className="h-9 w-9 rounded-full bg-[#400604] border-2 border-[#E1B76F] mx-auto mb-2 shadow-sm" />
+                  <div className="h-9 w-9 rounded-full bg-[#530911] border-2 border-[#E1B76F] mx-auto mb-2 shadow-sm" />
                   <p className="text-[13px] font-bold text-gray-900">Royal Wine Maroon</p>
-                  <p className="text-[11px] text-gray-500">#400604 / Primary Brand</p>
+                  <p className="text-[11px] text-gray-500">#530911 / Primary Brand</p>
                 </div>
                 <div className="rounded-xl p-4 border border-purple-100/60 bg-white text-center shadow-xs">
                   <div className="h-9 w-9 rounded-full bg-[#E1B76F] border border-amber-300 mx-auto mb-2 shadow-sm" />
@@ -252,9 +252,9 @@ export default function AdminSettingsPage() {
                   <p className="text-[11px] text-gray-500">#E1B76F / Accents</p>
                 </div>
                 <div className="rounded-xl p-4 border border-purple-100/60 bg-white text-center shadow-xs">
-                  <div className="h-9 w-9 rounded-full bg-[#1A0302] border border-stone-400 mx-auto mb-2 shadow-sm" />
+                  <div className="h-9 w-9 rounded-full bg-[#230407] border border-stone-400 mx-auto mb-2 shadow-sm" />
                   <p className="text-[13px] font-bold text-gray-900">Deep Obsidian</p>
-                  <p className="text-[11px] text-gray-500">#1A0302 / Luxury Footer</p>
+                  <p className="text-[11px] text-gray-500">#230407 / Luxury Footer</p>
                 </div>
               </div>
 

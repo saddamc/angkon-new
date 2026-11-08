@@ -19,14 +19,14 @@ const DELIVERY_TIMES = [
 
 export default function ThankYouPage() {
   return (
-    <div className="min-h-screen bg-[#400604] text-white">
+    <div className="min-h-screen bg-[#530911] text-white">
       <Suspense fallback={null}>
         <ThankYouOrderTracker />
       </Suspense>
       {/* Header */}
-      <div className="border-b border-[#5c0f0d] bg-[#2b0403] py-14 px-4 text-center">
+      <div className="border-b border-[#6e101c] bg-[#3b050b] py-14 px-4 text-center">
         <div className="container mx-auto max-w-[800px]">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#E1B76F] text-[#400604] mb-4 shadow-xl">
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#E1B76F] text-[#530911] mb-4 shadow-xl">
             <CheckCircle2 className="h-10 w-10 stroke-[2.5]" />
           </div>
           <span className="text-xs font-bold uppercase tracking-[0.25em] text-white/70 block">
@@ -43,8 +43,8 @@ export default function ThankYouPage() {
 
       <div className="container mx-auto max-w-[1000px] px-4 py-12 lg:px-8 space-y-12">
         {/* Delivery Timings Section */}
-        <div className="rounded-2xl border-2 border-[#5c0f0d] bg-[#2b0403] p-6 sm:p-8 shadow-xl">
-          <div className="flex items-center gap-3 border-b border-[#5c0f0d] pb-4 mb-6">
+        <div className="rounded-2xl border-2 border-[#6e101c] bg-[#3b050b] p-6 sm:p-8 shadow-xl">
+          <div className="flex items-center gap-3 border-b border-[#6e101c] pb-4 mb-6">
             <Clock className="h-6 w-6 text-white" />
             <h2 className="font-heading text-2xl font-black uppercase text-white">
               When Will I Get My Product?
@@ -55,27 +55,27 @@ export default function ThankYouPage() {
             {DELIVERY_TIMES.map((item) => (
               <div
                 key={item.area}
-                className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 gap-2"
+                className="flex flex-col sm:flex-row sm:items-center justify-between rounded-xl border border-[#6e101c] bg-[#530911] p-4 gap-2"
               >
                 <div>
                   <h3 className="font-bold text-sm text-white">{item.area}</h3>
                   <p className="text-xs text-white/70">{item.note}</p>
                 </div>
-                <div className="rounded-lg bg-[#E1B76F] px-3.5 py-1 text-xs font-black uppercase text-[#400604] self-start sm:self-auto">
+                <div className="rounded-lg bg-[#E1B76F] px-3.5 py-1 text-xs font-black uppercase text-[#530911] self-start sm:self-auto">
                   {item.time}
                 </div>
               </div>
             ))}
           </div>
 
-          <p className="mt-6 text-xs text-white/70 border-t border-[#5c0f0d] pt-4 leading-relaxed">
+          <p className="mt-6 text-xs text-white/70 border-t border-[#6e101c] pt-4 leading-relaxed">
             * Please note: Orders placed after 4:00 PM are processed on the subsequent working day. Public holidays and extreme transit circumstances may incur slight variations.
           </p>
         </div>
 
         {/* Our Policies Quick Links */}
-        <div className="rounded-2xl border border-[#5c0f0d] bg-[#2b0403] p-6 sm:p-8 shadow-xl">
-          <div className="flex items-center gap-3 border-b border-[#5c0f0d] pb-4 mb-6">
+        <div className="rounded-2xl border border-[#6e101c] bg-[#3b050b] p-6 sm:p-8 shadow-xl">
+          <div className="flex items-center gap-3 border-b border-[#6e101c] pb-4 mb-6">
             <ShieldCheck className="h-6 w-6 text-white" />
             <h2 className="font-heading text-2xl font-black uppercase text-white">
               Our Policies
@@ -85,7 +85,7 @@ export default function ThankYouPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Link
               href="/returns"
-              className="rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 hover:border-[#E1B76F] transition group"
+              className="rounded-xl border border-[#6e101c] bg-[#530911] p-4 hover:border-[#E1B76F] transition group"
             >
               <h3 className="font-bold text-sm text-white group-hover:text-white transition">
                 Exchange Policy &rarr;
@@ -97,7 +97,7 @@ export default function ThankYouPage() {
 
             <Link
               href="/returns"
-              className="rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 hover:border-[#E1B76F] transition group"
+              className="rounded-xl border border-[#6e101c] bg-[#530911] p-4 hover:border-[#E1B76F] transition group"
             >
               <h3 className="font-bold text-sm text-white group-hover:text-white transition">
                 Trial at Doorstep &rarr;
@@ -109,7 +109,7 @@ export default function ThankYouPage() {
 
             <Link
               href="/refund-and-exchange-policies"
-              className="rounded-xl border border-[#5c0f0d] bg-[#400604] p-4 hover:border-[#E1B76F] transition group"
+              className="rounded-xl border border-[#6e101c] bg-[#530911] p-4 hover:border-[#E1B76F] transition group"
             >
               <h3 className="font-bold text-sm text-white group-hover:text-white transition">
                 Refund Guidelines &rarr;
@@ -122,7 +122,7 @@ export default function ThankYouPage() {
         </div>
 
         {/* Showroom & Helpline */}
-        <div className="rounded-2xl border-2 border-[#E1B76F]/40 bg-[#2b0403] p-6 sm:p-8 text-center space-y-4">
+        <div className="rounded-2xl border-2 border-[#E1B76F]/40 bg-[#3b050b] p-6 sm:p-8 text-center space-y-4">
           <span className="text-xs font-bold uppercase tracking-widest text-white/70 block">
             Questions Regarding Your Order?
           </span>
@@ -140,7 +140,7 @@ export default function ThankYouPage() {
           <div className="pt-4">
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#E1B76F] px-8 py-3 text-xs font-black uppercase text-[#400604] hover:bg-[#f3cb87] transition shadow-md"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#E1B76F] px-8 py-3 text-xs font-black uppercase text-[#530911] hover:bg-[#f3cb87] transition shadow-md"
             >
               Continue Shopping <ArrowRight className="h-4 w-4" />
             </Link>

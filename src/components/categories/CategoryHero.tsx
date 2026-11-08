@@ -18,7 +18,7 @@ export function CategoryHero({
   const hasBakedText = typeof heroImage === "string" && heroImage.startsWith("/banners/");
 
   return (
-    <div className="relative w-full rounded-sm overflow-hidden bg-[#340402] border border-[#E1B76F]/25 shadow-lg aspect-[16/9] sm:aspect-[21/9] md:aspect-[28/8] min-h-[175px] sm:min-h-[220px] md:min-h-[260px] max-h-[380px] flex items-end">
+    <div className="relative w-full rounded-sm overflow-hidden bg-[#42070e] border border-[#E1B76F]/25 shadow-lg aspect-[16/9] sm:aspect-[21/9] md:aspect-[28/8] min-h-[175px] sm:min-h-[220px] md:min-h-[260px] max-h-[380px] flex items-end">
       {/* Background Hero Banner Image - completely unblurred edge-to-edge */}
       <Image
         src={heroImage}

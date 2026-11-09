@@ -38,10 +38,7 @@ test("settings: every previously-inline row now opens a modal", () => {
     ["Business Name", "setIsBusinessModalOpen"],
     ["Business Portfolio ID", "setIsBusinessModalOpen"],
     ["Meta App ID", "setIsAppIdModalOpen"],
-    ["Dataset / Pixel ID", "setIsDatasetIdModalOpen"],
     ["Test Event Code", "setIsTestCodeModalOpen"],
-    ["Ad Account ID", "setIsAdAccountModalOpen"],
-    ["Conversions API Dataset Token", "setIsCapiTokenModalOpen"],
     ["Tracking signals", "setIsTrackingSignalsModalOpen"],
   ];
 
@@ -53,6 +50,20 @@ test("settings: every previously-inline row now opens a modal", () => {
       rowText.includes(trigger),
       `row "${label}" must open its modal via ${trigger}`
     );
+  }
+});
+
+test("settings: .env-locked rows are read-only, not editable", () => {
+  // These identifiers are driven by environment variables, so they are
+  // deliberately locked instead of opening an edit modal.
+  for (const label of ["Dataset / Pixel ID", "Ad Account ID", "Conversions API Dataset Token"]) {
+    const at = page.indexOf(`label: "${label}"`);
+    assert.ok(at >= 0, `the ${label} row must exist`);
+
+    const rowText = page.slice(at, at + 420);
+    assert.ok(rowText.includes("locked: true"), `${label} must be flagged locked`);
+    assert.ok(rowText.includes("lockReason:"), `${label} must explain why it is locked`);
+    assert.ok(!rowText.includes("onAction:"), `${label} must not open an edit modal`);
   }
 });
 

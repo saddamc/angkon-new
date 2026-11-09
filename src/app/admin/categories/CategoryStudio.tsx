@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   ChevronLeft, FolderOpen, Loader2, Check, AlertCircle, UploadCloud,
   Sparkles, X, Search, Layers, Plus, ExternalLink, ImageIcon,
-  Tag, RefreshCw
+  Tag, RefreshCw, Lock, Unlock
 } from "lucide-react";
 import type { WCCategory, FormData } from "./types";
 import { ICON_CATEGORIES } from "./types";
@@ -19,7 +19,8 @@ import {
   ancestorIdsOf,
 } from "./category-tree-utils";
 import {
-  LUXURY_PRESETS,
+  MAIN_CATEGORY_PRESETS,
+  SUB_CATEGORY_PRESETS,
   CURATED_ICONS,
   isIconUrl,
   convertImageToWebP,
@@ -53,6 +54,14 @@ export function CategoryStudio({
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // The studio sits below the page header, so bring it to the top of the
+  // scroll area on open. Combined with the sticky panel + bounded height this
+  // keeps the pinned footer visible without the user hunting for it.
+  useEffect(() => {
+    panelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [mode]);
   const [activeTab, setActiveTab] = useState<"details" | "media" | "subcategories" | "crosslisting">("details");
   const [iconTab, setIconTab] = useState<"library" | "custom">("library");
   const [iconSearch, setIconSearch] = useState("");
@@ -60,6 +69,7 @@ export function CategoryStudio({
 
   const [linkingChildId, setLinkingChildId] = useState<number | "">("");
   const [linkingActionLoading, setLinkingActionLoading] = useState(false);
+  const [autoSlug, setAutoSlug] = useState(mode === "add");
 
   const hasUnsavedChanges = useMemo(() => {
     if (mode === "add") {
@@ -87,6 +97,7 @@ export function CategoryStudio({
     setForm({ ...initial, linkedParents: initial.linkedParents || [] });
     setError("");
     setActiveTab("details");
+    setAutoSlug(mode === "add" || !initial.slug);
     isSavedRef.current = false;
     sessionUploadedRef.current = [];
   }, [initial, mode]);
@@ -185,7 +196,7 @@ export function CategoryStudio({
     setForm((prev) => ({
       ...prev,
       name,
-      slug: mode === "add" || !prev.slug ? slugify(name) : prev.slug,
+      slug: autoSlug || mode === "add" || !prev.slug ? slugify(name) : prev.slug,
     }));
   };
 
@@ -345,7 +356,10 @@ export function CategoryStudio({
   const parentName = form.parent ? catName(flat.find((c) => c.id === form.parent) || { name: "" }) : "";
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200/90 shadow-md sticky top-4 lg:top-6 flex flex-col max-h-[calc(100vh-2.5rem)] overflow-hidden">
+    <div
+      ref={panelRef}
+      className="bg-white rounded-2xl border border-gray-200/90 shadow-md sticky top-2 flex flex-col overflow-hidden max-h-[calc(100dvh-7rem)] scroll-mt-2"
+    >
       {/* Studio Header (Sticky) */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-gray-100 bg-white/95 backdrop-blur shrink-0 z-20">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -369,11 +383,6 @@ export function CategoryStudio({
                     : "Create Category"
                   : catName(form)}
               </h2>
-              {mode === "edit" && initial.id ? (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 font-mono shrink-0">
-                  #{initial.id}
-                </span>
-              ) : null}
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0 ${
                 form.parent === 0
                   ? "bg-amber-100/70 text-amber-950 border border-amber-200"
@@ -394,25 +403,7 @@ export function CategoryStudio({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="px-3 py-1.5 text-[12px] font-bold text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubmit()}
-            disabled={saving}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-[13px] font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-md shadow-purple-200 transition disabled:opacity-60"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            <span className="hidden sm:inline">{mode === "add" ? "Create" : "Save Changes"}</span>
-            <span className="sm:hidden">{mode === "add" ? "Create" : "Save"}</span>
-          </button>
-        </div>
+        {/* Actions live in the pinned footer only — no duplicate header buttons. */}
       </div>
 
       {/* Navigation Sub-Tabs (Sticky) */}
@@ -478,38 +469,73 @@ export function CategoryStudio({
         {/* ─── TAB 1: DETAILS ─────────────────────────────────────────── */}
         {activeTab === "details" && (
           <div className="space-y-5">
-            {/* Category Name */}
-            <div>
-              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                Category Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                placeholder="e.g. Men, Shirts, Half Sleeves"
-                className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-[14px] text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 font-semibold"
-                required
-              />
-            </div>
-
-            {/* Slug */}
-            <div>
-              <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                URL Slug <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
+            {/* Category Name & URL Slug (Side-by-side per user design) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Category Name */}
+              <div>
+                <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Category Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={form.slug}
-                  onChange={(e) => set("slug", slugify(e.target.value))}
-                  placeholder="e.g. half-sleeves"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-[13px] font-mono text-gray-700 bg-gray-50 outline-none focus:border-purple-400 focus:bg-white transition"
+                  value={form.name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Men, Shirts, Half Sleeves"
+                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-[14px] text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 font-semibold shadow-2xs"
+                  required
                 />
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Storefront URL: <span className="font-mono text-gray-600">/product-category/{form.slug || "slug"}</span>
-              </p>
+
+              {/* URL Slug on Right Side */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[12px] font-bold text-gray-700 uppercase tracking-wider">
+                    URL Slug <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!autoSlug) {
+                        set("slug", slugify(form.name));
+                        setAutoSlug(true);
+                      } else {
+                        setAutoSlug(false);
+                      }
+                    }}
+                    className={`text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                      autoSlug ? "text-purple-600 hover:text-purple-700" : "text-gray-400 hover:text-gray-600"
+                    }`}
+                    title={autoSlug ? "URL is auto-syncing with Category Name. Click to customize." : "Click to auto-sync URL with Category Name."}
+                  >
+                    {autoSlug ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                    <span>{autoSlug ? "Auto-synced" : "Custom"}</span>
+                  </button>
+                </div>
+                <div className="flex items-center rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-[13px] font-mono focus-within:border-purple-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-purple-100 transition shadow-2xs">
+                  <span className="text-gray-400 text-xs shrink-0 select-none mr-0.5">/product-category/</span>
+                  <input
+                    type="text"
+                    value={form.slug}
+                    onChange={(e) => {
+                      set("slug", slugify(e.target.value));
+                      setAutoSlug(false);
+                    }}
+                    placeholder="slug"
+                    className="w-full bg-transparent text-[13px] font-mono font-bold text-gray-900 outline-none"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1 truncate">
+                  Storefront URL:{" "}
+                  <a
+                    href={`/product-category/${form.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-purple-600 hover:underline font-semibold"
+                  >
+                    /product-category/{form.slug || "slug"} ↗
+                  </a>
+                </p>
+              </div>
             </div>
 
             {/* Parent Category & Hierarchy Placement */}
@@ -518,7 +544,7 @@ export function CategoryStudio({
                 <label className="block text-[12px] font-bold text-gray-800 uppercase tracking-wider mb-1.5">
                   Hierarchy Placement
                 </label>
-                <div className="flex bg-gray-200/70 p-1 rounded-xl">
+                <div className="flex items-center rounded-xl border border-gray-200 bg-gray-100/80 p-1 shadow-2xs">
                   <button
                     type="button"
                     onClick={() => {
@@ -526,19 +552,27 @@ export function CategoryStudio({
                       set("parent", 0);
                       set("sortOrder", siblingsOf(flat, 0, initial.id).length);
                     }}
-                    className={`flex-1 py-2 text-[13px] font-bold rounded-lg transition ${
-                      form.type === "main" ? "bg-white shadow-xs text-purple-600" : "text-gray-600 hover:text-gray-900"
+                    className={`flex-1 py-2 px-3 text-[13px] font-bold rounded-lg transition-all text-center cursor-pointer ${
+                      form.type === "main"
+                        ? "bg-white text-purple-700 shadow-xs border border-gray-200/80"
+                        : "text-gray-600 hover:text-gray-900 border border-transparent"
                     }`}
                   >
                     Main Category (Root)
                   </button>
+
+                  {/* Middle divider border */}
+                  <div className="h-5 w-[1px] bg-gray-300 mx-1 shrink-0" aria-hidden="true" />
+
                   <button
                     type="button"
                     onClick={() => {
                       set("type", "sub");
                     }}
-                    className={`flex-1 py-2 text-[13px] font-bold rounded-lg transition ${
-                      form.type === "sub" ? "bg-white shadow-xs text-purple-600" : "text-gray-600 hover:text-gray-900"
+                    className={`flex-1 py-2 px-3 text-[13px] font-bold rounded-lg transition-all text-center cursor-pointer ${
+                      form.type === "sub"
+                        ? "bg-white text-purple-700 shadow-xs border border-gray-200/80"
+                        : "text-gray-600 hover:text-gray-900 border border-transparent"
                     }`}
                   >
                     Subcategory (Nested)
@@ -726,10 +760,12 @@ export function CategoryStudio({
               {/* Curated Luxury Presets */}
               <div className="mt-3">
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
-                  Or Pick Curated Collection Banner Preset:
+                  {form.type === "main"
+                    ? "Or Pick Main Category Banner Preset:"
+                    : "Or Pick Subcategory Banner Preset:"}
                 </p>
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {LUXURY_PRESETS.map((preset) => (
+                  {(form.type === "main" ? MAIN_CATEGORY_PRESETS : SUB_CATEGORY_PRESETS).map((preset) => (
                     <button
                       key={preset.name}
                       type="button"
@@ -1063,196 +1099,253 @@ export function CategoryStudio({
 
         {/* ─── TAB 4: CROSS-LISTING ───────────────────────────────────── */}
         {activeTab === "crosslisting" && (
-          <div className="space-y-6">
-            {/* Informational Explainer Callout */}
-            <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/60 via-white to-purple-50/30 p-4 space-y-2 shadow-2xs">
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-purple-100 text-purple-700 shrink-0 mt-0.5">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div>
-                  <h4 className="text-[13px] font-black text-gray-900">
-                    Understanding Cross-Listing vs. Primary Parent
-                  </h4>
-                  <p className="text-[12px] text-gray-600 leading-relaxed mt-1">
-                    A category&apos;s <b>Parent Category</b> defines its primary structural home and canonical URL breadcrumb.
-                    <b> Cross-Listing</b> allows you to mirror this category under additional parent departments so customers can discover it across multiple sections without duplicating records or breaking URLs.
-                  </p>
-                </div>
-              </div>
+          <div className="space-y-5">
+            {/* Context-aware concise tip */}
+            <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-3 flex items-center gap-2.5 text-[12px] text-purple-900 shadow-2xs">
+              <Sparkles className="h-4 w-4 text-purple-600 shrink-0" />
+              <span>
+                <b>Multi-Department Placement:</b> Display categories across multiple departments simultaneously without duplicating products or breaking canonical SEO URLs.
+              </span>
             </div>
 
-            {/* Section A: Mirror THIS Category Under Other Parents */}
-            <div className="space-y-3">
-              <div className="pb-1 border-b border-gray-100">
-                <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-purple-600" />
-                  Mirror &ldquo;{catName(form)}&rdquo; Under Other Departments
-                </h4>
-                <p className="text-[11px] text-gray-500">
-                  Select other main departments where this category should also appear in menus
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {mainCategoryOptions.filter((m) => m.id !== form.parent).map((mainCat) => {
-                  const isChecked = (form.linkedParents || []).includes(mainCat.id);
-                  return (
-                    <label
-                      key={mainCat.id}
-                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
-                        isChecked
-                          ? "bg-purple-50 border-purple-300 text-purple-900 font-bold shadow-xs"
-                          : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => {
-                          const current = form.linkedParents || [];
-                          const next = e.target.checked
-                            ? [...current, mainCat.id]
-                            : current.filter((id) => id !== mainCat.id);
-                          set("linkedParents", next);
-                        }}
-                        className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                      />
-                      <span className="truncate">{catName(mainCat)}</span>
-                      {mainCat.image?.src && (
-                        <Image
-                          src={mainCat.image.src}
-                          alt=""
-                          width={20}
-                          height={20}
-                          className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
-                        />
-                      )}
-                    </label>
-                  );
-                })}
-              </div>
-              {mainCategoryOptions.filter((m) => m.id !== form.parent).length === 0 && (
-                <p className="text-[12px] text-gray-400 italic">No other main categories available to link under.</p>
-              )}
-            </div>
-
-            {/* Section B: Collections Cross-Listed Under THIS Category */}
-            {mode === "edit" && initial.id && (
-              <div className="space-y-3 pt-3 border-t border-gray-100">
-                <div className="pb-1 border-b border-gray-100">
-                  <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
-                    <Layers className="h-4 w-4 text-purple-600" />
-                    Collections Cross-Listed Under &ldquo;{catName(form)}&rdquo; ({crossListedChildCats.length})
-                  </h4>
-                  <p className="text-[11px] text-gray-500">
-                    Categories mirrored inside {catName(form)} while retaining their own primary parents
-                  </p>
-                </div>
-
-                {crossListedChildCats.length === 0 ? (
-                  <div className="p-4 text-center rounded-xl border border-dashed border-purple-200 bg-purple-50/20">
-                    <p className="text-[12px] font-semibold text-gray-700">No cross-listed categories linked under this category yet</p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      Use the picker below to mirror another category under {catName(form)}.
+            {/* CASE 1: MAIN / ROOT CATEGORY */}
+            {form.type === "main" ? (
+              <div className="space-y-6">
+                {/* 1. Collections Featured Inside This Main Category (e.g., Ethnic Wear inside Women) */}
+                <div className="space-y-3">
+                  <div className="pb-1 border-b border-gray-100">
+                    <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                      <Layers className="h-4 w-4 text-purple-600" />
+                      Collections Featured in &ldquo;{catName(form)}&rdquo; ({crossListedChildCats.length})
+                    </h4>
+                    <p className="text-[11px] text-gray-500">
+                      Collections from other departments that also appear in {catName(form)}&apos;s storefront navigation menu.
                     </p>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {crossListedChildCats.map((sub) => (
-                      <div
-                        key={sub.id}
-                        className="flex items-center justify-between gap-3 p-3 rounded-xl border border-purple-100 bg-purple-50/40 hover:bg-purple-50/70 transition shadow-2xs"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {sub.image?.src ? (
-                            <Image
-                              src={sub.image.src}
-                              alt=""
-                              width={32}
-                              height={32}
-                              className="h-8 w-8 rounded-lg object-cover border border-purple-200 shrink-0"
-                            />
-                          ) : (
-                            <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0 text-purple-700">
-                              <Sparkles className="h-4 w-4" />
+
+                  {crossListedChildCats.length === 0 ? (
+                    <div className="p-4 text-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50">
+                      <p className="text-[12px] font-semibold text-gray-600">No external collections featured in {catName(form)} yet</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Use the selector below to feature another collection inside {catName(form)}.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {crossListedChildCats.map((sub) => (
+                        <div
+                          key={sub.id}
+                          className="flex items-center justify-between gap-3 p-3 rounded-xl border border-purple-100 bg-purple-50/40 hover:bg-purple-50/70 transition shadow-2xs"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {sub.image?.src ? (
+                              <Image
+                                src={sub.image.src}
+                                alt=""
+                                width={36}
+                                height={36}
+                                className="h-9 w-9 rounded-lg object-cover border border-purple-200 shrink-0"
+                              />
+                            ) : (
+                              <div className="h-9 w-9 rounded-lg bg-purple-100 flex items-center justify-center shrink-0 text-purple-700">
+                                <Sparkles className="h-4 w-4" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                  ✨ Featured Collection
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-gray-500 font-mono truncate">
+                                /{sub.slug} · {sub.count} products
+                              </p>
                             </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-[13px] font-bold text-gray-900 truncate">{catName(sub)}</p>
-                              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 border border-purple-200">
-                                ✨ Cross-listed
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-gray-500 font-mono truncate">
-                              /{sub.slug} · {sub.count} items
-                            </p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {onEditChild && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {onEditChild && (
+                              <button
+                                type="button"
+                                onClick={() => onEditChild(sub)}
+                                className="text-[11px] font-bold text-purple-700 hover:bg-purple-100 px-2.5 py-1 rounded-lg transition cursor-pointer"
+                              >
+                                Edit
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => onEditChild(sub)}
-                              className="text-[11px] font-bold text-purple-600 hover:bg-purple-50 px-2.5 py-1 rounded-lg transition"
+                              disabled={linkingActionLoading}
+                              onClick={() => handleUnlinkChild(sub)}
+                              className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg transition disabled:opacity-50 cursor-pointer"
+                              title={`Remove from ${catName(form)}`}
                             >
-                              Edit
+                              Remove
                             </button>
-                          )}
-                          <button
-                            type="button"
-                            disabled={linkingActionLoading}
-                            onClick={() => handleUnlinkChild(sub)}
-                            className="text-[11px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition disabled:opacity-50"
-                            title={`Remove from ${catName(form)}`}
-                          >
-                            Unlink
-                          </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Inline Link Existing Category Control */}
-                {linkableCandidates.length > 0 && (
-                  <div className="mt-3 p-3 rounded-xl border border-amber-200/80 bg-gradient-to-r from-amber-50/40 to-white flex flex-col sm:flex-row sm:items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-amber-950 mb-1">
-                        + Cross-Link Another Category Under {catName(form)}
-                      </label>
-                      <select
-                        value={linkingChildId}
-                        onChange={(e) => setLinkingChildId(e.target.value ? Number(e.target.value) : "")}
-                        className="w-full rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200"
-                      >
-                        <option value="">Select category to cross-list...</option>
-                        {linkableCandidates.map((cand) => (
-                          <option key={cand.id} value={cand.id}>
-                            {catName(cand)} (/{cand.slug}) — {cand.count} items
-                          </option>
-                        ))}
-                      </select>
+                      ))}
                     </div>
-                    <button
-                      type="button"
-                      disabled={!linkingChildId || linkingActionLoading}
-                      onClick={() => {
-                        if (typeof linkingChildId === "number") {
-                          void handleLinkExistingChild(linkingChildId);
-                        }
-                      }}
-                      className="sm:self-end px-3.5 py-1.5 rounded-lg bg-purple-600 text-white text-[12px] font-bold hover:bg-purple-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm shadow-purple-200"
-                    >
-                      {linkingActionLoading ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5" />
-                      )}
-                      <span>Link Under This</span>
-                    </button>
+                  )}
+
+                  {/* Add Collection to This Department */}
+                  {linkableCandidates.length > 0 && (
+                    <div className="p-3 rounded-xl border border-purple-100 bg-gradient-to-r from-purple-50/40 to-white flex flex-col sm:flex-row sm:items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <label className="block text-[11px] font-bold uppercase tracking-wider text-purple-950 mb-1">
+                          + Feature Another Collection in {catName(form)}
+                        </label>
+                        <select
+                          value={linkingChildId}
+                          onChange={(e) => setLinkingChildId(e.target.value ? Number(e.target.value) : "")}
+                          className="w-full rounded-lg border border-purple-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200"
+                        >
+                          <option value="">Choose a collection to feature in {catName(form)}...</option>
+                          {linkableCandidates.map((cand) => (
+                            <option key={cand.id} value={cand.id}>
+                              {catName(cand)} (/{cand.slug}) — {cand.count} items
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!linkingChildId || linkingActionLoading}
+                        onClick={() => {
+                          if (typeof linkingChildId === "number") {
+                            void handleLinkExistingChild(linkingChildId);
+                          }
+                        }}
+                        className="sm:self-end px-3.5 py-1.5 rounded-lg bg-purple-600 text-white text-[12px] font-bold hover:bg-purple-700 transition disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm shadow-purple-200 cursor-pointer"
+                      >
+                        {linkingActionLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="h-3.5 w-3.5" />
+                        )}
+                        <span>Add to {catName(form)}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Secondary Placement (Visible if this collection is also featured in another department, e.g. Ethnic Wear inside Women) */}
+                {(form.linkedParents && form.linkedParents.length > 0) || initial.id === 914 ? (
+                  <div className="space-y-3 pt-4 border-t border-gray-100">
+                    <div className="pb-1 border-b border-gray-100">
+                      <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                        <Sparkles className="h-4 w-4 text-purple-600" />
+                        Also Feature &ldquo;{catName(form)}&rdquo; in Other Departments
+                      </h4>
+                      <p className="text-[11px] text-gray-500">
+                        {catName(form)} is an independent Main Category on the storefront, and can also be featured inside other department menus.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {mainCategoryOptions.filter((m) => m.id !== initial.id).map((mainCat) => {
+                        const isChecked = (form.linkedParents || []).includes(mainCat.id);
+                        return (
+                          <label
+                            key={mainCat.id}
+                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
+                              isChecked
+                                ? "bg-purple-50 border-purple-300 text-purple-900 font-bold shadow-xs ring-1 ring-purple-300"
+                                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const current = form.linkedParents || [];
+                                const next = e.target.checked
+                                  ? [...current, mainCat.id]
+                                  : current.filter((id) => id !== mainCat.id);
+                                set("linkedParents", next);
+                              }}
+                              className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="truncate">{catName(mainCat)}</span>
+                            {isChecked && (
+                              <span className="text-[10px] font-bold text-purple-700 ml-auto bg-purple-100 px-2 py-0.5 rounded-full">
+                                Featured
+                              </span>
+                            )}
+                            {mainCat.image?.src && !isChecked && (
+                              <Image
+                                src={mainCat.image.src}
+                                alt=""
+                                width={20}
+                                height={20}
+                                className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
+                              />
+                            )}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </div>
+                ) : null}
+              </div>
+            ) : (
+              /* CASE 2: SUBCATEGORY (Only show "Also Display in Other Departments") */
+              <div className="space-y-4">
+                <div className="pb-1 border-b border-gray-100">
+                  <h4 className="text-[13px] font-bold text-gray-900 flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-purple-600" />
+                    Also Display &ldquo;{catName(form)}&rdquo; in Other Departments
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    Primary Home: <b className="text-gray-700">{catName(flat.find((c) => c.id === form.parent) || { name: "Root" })}</b>. Select additional departments where this subcategory should also appear in menus.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {mainCategoryOptions.filter((m) => m.id !== form.parent).map((mainCat) => {
+                    const isChecked = (form.linkedParents || []).includes(mainCat.id);
+                    return (
+                      <label
+                        key={mainCat.id}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-[13px] font-semibold cursor-pointer transition select-none ${
+                          isChecked
+                            ? "bg-purple-50 border-purple-300 text-purple-900 font-bold shadow-xs ring-1 ring-purple-300"
+                            : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const current = form.linkedParents || [];
+                            const next = e.target.checked
+                              ? [...current, mainCat.id]
+                              : current.filter((id) => id !== mainCat.id);
+                            set("linkedParents", next);
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                        />
+                        <span className="truncate">{catName(mainCat)}</span>
+                        {isChecked && (
+                          <span className="text-[10px] font-bold text-purple-700 ml-auto bg-purple-100 px-2 py-0.5 rounded-full">
+                            Active
+                          </span>
+                        )}
+                        {mainCat.image?.src && !isChecked && (
+                          <Image
+                            src={mainCat.image.src}
+                            alt=""
+                            width={20}
+                            height={20}
+                            className="h-5 w-5 rounded-full ml-auto object-cover border border-gray-200"
+                          />
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+                {mainCategoryOptions.filter((m) => m.id !== form.parent).length === 0 && (
+                  <p className="text-[12px] text-gray-400 italic">No other main departments available to link under.</p>
                 )}
               </div>
             )}
@@ -1260,25 +1353,26 @@ export function CategoryStudio({
         )}
       </div>
 
-      {/* Studio Footer (Sticky) */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-t border-gray-100 bg-gray-50/95 backdrop-blur shrink-0 z-20">
-        <div>
+      {/* Pinned footer — the only place the Save/Cancel actions live */}
+      <div className="sticky bottom-0 z-20 flex shrink-0 items-center justify-between gap-3 border-t border-gray-200 bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] backdrop-blur sm:px-6">
+        <div className="min-w-0">
           {mode === "edit" && form.slug ? (
             <a
               href={`/product-category/${form.slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-purple-600 transition"
+              className="inline-flex items-center gap-1 truncate text-[11px] font-bold text-gray-500 transition hover:text-purple-600"
             >
-              View on Storefront <ExternalLink className="h-3 w-3" />
+              View on Storefront <ExternalLink className="h-3 w-3 shrink-0" />
             </a>
           ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 text-[12px] font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition"
+            disabled={saving}
+            className="rounded-xl px-4 py-2 text-[12px] font-bold text-gray-600 transition hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/40 disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
@@ -1286,10 +1380,19 @@ export function CategoryStudio({
             type="button"
             onClick={() => handleSubmit()}
             disabled={saving}
-            className="flex items-center gap-1.5 px-5 py-2 text-[13px] font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-md shadow-purple-200 transition disabled:opacity-60"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-purple-600 px-5 py-2 text-[13px] font-bold text-white shadow-md shadow-purple-200 transition hover:bg-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
           >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            {mode === "add" ? "Create Category" : "Save Changes"}
+            {saving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{mode === "add" ? "Creating…" : "Saving…"}</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                <span>{mode === "add" ? "Create Category" : "Save Changes"}</span>
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -40,6 +40,9 @@ function MetaMobileBottomBar() {
     t.exact ? pathname === t.href : pathname.startsWith(t.href)
   );
 
+  // If the full mobile drawer is open, hide the bottom bar so it never causes a double layer
+  if (isMobileOpen) return null;
+
   return (
     <nav
       aria-label="Meta Marketing mobile navigation"
@@ -109,6 +112,18 @@ function MetaSuiteLayoutInner({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isMobileOpen, closeMobile]);
 
+  // Lock body scroll when mobile drawer is open to prevent double scroll/layer effect
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileOpen]);
+
   return (
     <div
       className="relative flex flex-col lg:flex-row h-full w-full text-slate-900 font-sans antialiased overflow-hidden"
@@ -127,17 +142,17 @@ function MetaSuiteLayoutInner({ children }: { children: ReactNode }) {
           role="dialog"
           aria-modal="true"
           aria-label="Meta Marketing Suite Navigation Menu"
-          className="fixed inset-0 z-50 lg:hidden flex"
+          className="fixed inset-0 z-50 lg:hidden"
         >
           {/* Full-screen backdrop — tapping it closes the drawer */}
           <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity animate-in fade-in-0 duration-200"
+            className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity animate-in fade-in-0 duration-200"
             onClick={closeMobile}
             aria-hidden="true"
           />
 
           {/* Slide-out drawer: single clean surface, fills 280px with no outer padding or duplicate background */}
-          <div className="relative z-50 flex h-full w-[280px] max-w-[85vw] animate-in slide-in-from-left duration-200">
+          <div className="relative z-10 flex h-full w-[280px] max-w-[85vw] shadow-2xl animate-in slide-in-from-left duration-200">
             <MetaSuiteSidebar isDrawer onClose={closeMobile} />
           </div>
         </div>

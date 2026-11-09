@@ -7,6 +7,7 @@ import { deleteFromCloudinary } from "@/lib/cloudinary";
 import { publishCatalogChange } from "@/lib/catalog-sync";
 import { syncProductCategoryRefs } from "@/server/category-sync";
 import { cleanCategoryInput } from "@/server/category-input";
+import { invalidateCategoriesCache } from "@/lib/db/categories";
 
 export async function PATCH(
   request: NextRequest,
@@ -102,6 +103,7 @@ export async function PATCH(
       ...(input.linked_parents || []),
     ]));
     await syncProductCategoryRefs(refIds);
+    invalidateCategoriesCache();
     await publishCatalogChange();
 
     return NextResponse.json(updated, { status: 200 });

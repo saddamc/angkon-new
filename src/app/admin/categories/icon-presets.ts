@@ -1,17 +1,25 @@
 import type { CuratedIcon } from "./types";
 
 /* ─── Luxury Category Banner Presets ─────────────────────────────────── */
-export const LUXURY_PRESETS = [
-  { name: "Half Sleeves", src: "/banners/half-sleeves.webp" },
-  { name: "Full Sleeves", src: "/banners/full-sleeves.webp" },
-  { name: "Tees", src: "/banners/tees.webp" },
-  { name: "Polo", src: "/banners/polos.webp" },
-  { name: "Pants", src: "/banners/pants.webp" },
-  { name: "Tops", src: "/banners/tops.webp" },
+export const MAIN_CATEGORY_PRESETS = [
   { name: "Men Banner", src: "/banners/men-banner.webp" },
   { name: "Women Banner", src: "/banners/women-banner.webp" },
-  { name: "Accessories", src: "/banners/accessories.webp" },
   { name: "Ethnic Wear", src: "/banners/ethnic-wear.webp" },
+  { name: "Accessories", src: "/banners/accessories.webp" },
+];
+
+export const SUB_CATEGORY_PRESETS = [
+  { name: "Polo", src: "/banners/polos.webp" },
+  { name: "Tees", src: "/banners/tees.webp" },
+  { name: "Half Sleeves", src: "/banners/half-sleeves.webp" },
+  { name: "Full Sleeves", src: "/banners/full-sleeves.webp" },
+  { name: "Pants", src: "/banners/pants.webp" },
+  { name: "Tops", src: "/banners/tops.webp" },
+];
+
+export const LUXURY_PRESETS = [
+  ...MAIN_CATEGORY_PRESETS,
+  ...SUB_CATEGORY_PRESETS,
 ];
 
 /* ─── Curated Category Icons ─────────────────────────────────────────── */

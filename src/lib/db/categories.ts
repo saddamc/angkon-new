@@ -59,9 +59,8 @@ export async function getAllDbCategoriesIncludingInactive(): Promise<WooCategory
     console.warn("MongoDB categories query failed, falling back to cached catalog:", error);
   }
 
-  cacheObj.data = REAL_CATEGORIES as unknown as WooCategory[];
-  cacheObj.lastFetch = now;
-  return cacheObj.data;
+  // Do not lock the fallback for 10 minutes on error; return static data transiently so next call retries MongoDB
+  return REAL_CATEGORIES as unknown as WooCategory[];
 }
 
 /**

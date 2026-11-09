@@ -1,1318 +1,40 @@
 [
   {
-    "id": 341,
-    "name": "Accessories",
-    "slug": "accessories",
-    "parent": 0,
-    "description": "Caps, Jewelry, Wallets & Accessories",
-    "count": 0,
-    "image": {
-      "id": 341001,
-      "src": "/banners/accessories.webp",
-      "alt": "Accessories"
-    },
-    "menu_order": 9
-  },
-  {
-    "id": 285,
-    "name": "Band Collar",
-    "slug": "band-collar-shirt-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 89349,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Band Collar"
-    }
-  },
-  {
-    "id": 284,
-    "name": "Band Collar",
-    "slug": "band-collar",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 107300,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Band Collar"
-    }
-  },
-  {
-    "id": 613,
-    "name": "Baseball Cap",
-    "slug": "baseball-cap",
-    "parent": 603,
-    "description": "Shop Baseball Cap by ANGKON. Your perfect headshade for the summer heat.Denim, Military, woolen, bucket, and acid wash Shipping locally and Worldwide at lightning speed! Grab yours now before stock runs out!",
-    "count": 0,
-    "image": {
-      "id": 117150,
-      "src": "/banners/accessories.webp",
-      "alt": "Baseball Cap"
-    }
-  },
-  {
-    "id": 292,
-    "name": "Basic",
-    "slug": "basic",
-    "parent": 165,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 107309,
-      "src": "/banners/tees.webp",
-      "alt": "Basic"
-    }
-  },
-  {
-    "id": 302,
-    "name": "Basic",
-    "slug": "basic-t-shirt",
-    "parent": 183,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 191038,
-      "src": "/banners/tees.webp",
-      "alt": "Basic"
-    }
-  },
-  {
-    "id": 305,
-    "name": "Basic Tees",
-    "slug": "basic-tees",
-    "parent": 164,
-    "description": "<div class=\"kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q\">\r\n<div dir=\"auto\">You’ve had basic black and white tees. Ones that turned into ghor mochar kapor pretty quickly. But not this time.</div>\r\n</div>\r\n<div class=\"o9v6fnle cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q\">\r\n<div dir=\"auto\">Introducing the Basic AF tees from ANGKON!  Relax, the AF stands for amazing fit and not what you initially thought. Geez.</div>\r\n</div>\r\n<div dir=\"auto\"></div>\r\n<div dir=\"auto\">These Lycra cotton short-sleeved unisex T-shirts ensure long-lasting comfort. Made with stretchy fabric that makes them durable for a really long time!</div>\r\n<div class=\"o9v6fnle cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q\">\r\n<div dir=\"auto\"></div>\r\n<div dir=\"auto\">You can never go wrong with owning a casual essential piece like a basic black or white T-shirt. They are perfect for every occasion.</div>\r\n<div dir=\"auto\">Dress up or down relying on our Basic AF tees to always make you feel as confident as you look. The highly breathable material with moisture absorbant properties will keep you cool and comfortable in any situation.</div>\r\n<div dir=\"auto\"></div>\r\n</div>",
-    "count": 0,
-    "image": {
-      "id": 191052,
-      "src": "/banners/tees.webp",
-      "alt": "Basic Tees"
-    }
-  },
-  {
-    "id": 317,
-    "name": "Bombers",
-    "slug": "bombers",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 201133,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Bombers"
-    }
-  },
-  {
-    "id": 318,
-    "name": "Bombers",
-    "slug": "bombers-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 201129,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Bombers"
-    }
-  },
-  {
-    "id": 506,
-    "name": "Boxy Jacket",
-    "slug": "boxy-jacket",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 198422,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Boxy Jacket"
-    }
-  },
-  {
-    "id": 507,
-    "name": "Boxy Jacket",
-    "slug": "boxy-jacket-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 190356,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Boxy Jacket"
-    }
-  },
-  {
-    "id": 676,
-    "name": "Bracelet",
-    "slug": "bracelet",
-    "parent": 669,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 116153,
-      "src": "/banners/accessories.webp",
-      "alt": "Bracelet"
-    }
-  },
-  {
-    "id": 700,
-    "name": "Bracelets",
-    "slug": "bracelets",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 117457,
-      "src": "/banners/accessories.webp",
-      "alt": "Bracelets"
-    }
-  },
-  {
-    "id": 678,
-    "name": "Bucket Hat",
-    "slug": "bucket-hat",
-    "parent": 603,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 115981,
-      "src": "/banners/accessories.webp",
-      "alt": "Bucket Hat"
-    }
-  },
-  {
-    "id": 286,
-    "name": "Button-down",
-    "slug": "button-down",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 171027,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Button-down"
-    }
-  },
-  {
-    "id": 287,
-    "name": "Button-down",
-    "slug": "button-down-shirt-men",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 171019,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Button-down"
-    }
-  },
-  {
-    "id": 603,
-    "name": "Caps",
-    "slug": "caps",
-    "parent": 341,
-    "description": "Baseball Caps by ANGKON- Accessorize with sleek caps, designed for both performance and comfort. Whether you&#8217;re hanging out or working, there are plenty of options to choose from. Available in several styles- Distressed Denim, Woolen, Acid Wash, Cord, and many more!",
-    "count": 0,
-    "image": {
-      "id": 60612,
-      "src": "/banners/accessories.webp",
-      "alt": "Caps"
-    }
-  },
-  {
-    "id": 602,
-    "name": "Chokers",
-    "slug": "chokers",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 60530,
-      "src": "/banners/accessories.webp",
-      "alt": "Chokers"
-    }
-  },
-  {
-    "id": 376,
-    "name": "Chore",
-    "slug": "chore",
-    "parent": 172,
-    "description": "It can be difficult tackling workwear fashion that is both formal and stylish. Formals can be stiff with their boxy silhouette. Sometimes. you want to feel comfortable but fool other’s into thinking you’re not. That’s where Chore Jackets by ANGKON come into play.\r\n\r\nLooking to add variation in your wardrobe in a not so subtle way? Look no further, Chore Jackets are here to the rescue.\r\n\r\nVersatile, functional and stylish- The Chore jackets can complement any aesthetic-from smart casual office wear to date night look or rugged streetwear.\r\n\r\nMade from durable twill fabric, Chores can withstand harsh weather, and are perfect for layering over everything from jeans and a T-shirt to some button-downs and tailored trousers.\r\n\r\nThree exterior patch pockets and one secret pocket inside means you don’t have to lug a bag around. Fit all your gadgets, a notepad and even sneak in some snacks just in case you get the munchies!",
-    "count": 0,
-    "image": {
-      "id": 201516,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Chore"
-    }
-  },
-  {
-    "id": 377,
-    "name": "Chore",
-    "slug": "chore-jacket-women",
-    "parent": 178,
-    "description": "It can be difficult tackling workwear fashion that is both formal and stylish. Formals can be stiff with their boxy silhouette. Sometimes. you want to feel comfortable but fool other’s into thinking you’re not. That’s where Chore Jackets by ANGKON come into play.\r\n\r\nLooking to add variation in your wardrobe in a not so subtle way? Look no further, Chore Jackets are here to the rescue.\r\n\r\nVersatile, functional and stylish- The Chore jackets can complement any aesthetic-from smart casual office wear to date night look or rugged streetwear.\r\n\r\nMade from durable twill fabric, Chores can withstand harsh weather, and are perfect for layering over everything from jeans and a T-shirt to some button-downs and tailored trousers.\r\n\r\nThree exterior patch pockets and one secret pocket inside means you don’t have to lug a bag around. Fit all your gadgets, a notepad and even sneak in some snacks just in case you get the munchies!",
-    "count": 0,
-    "image": {
-      "id": 201539,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Chore"
-    }
-  },
-  {
-    "id": 514,
-    "name": "Cord Shirts",
-    "slug": "cord-shirts-womens-shirt",
-    "parent": 167,
-    "description": "<strong>&#8220;Cord Shirts&#8221; by ANGKON</strong>&#8211; Introducing the latest fashion trend that&#8217;s sure to leave you feeling all wrapped up in style! These trendy shirts are not your ordinary run-of-the-mill shirts. Made with the finest cords, these shirts are as soft and comfy as a hug from your grandma.\r\n\r\nBut don&#8217;t be fooled by their cozy feel &#8211; these shirts are perfect for any occasion. Going for a stroll in the park? Cord Shirt. Heading to the office? Cord Shirt. Meeting your future in-laws? Definitely a Cord Shirt.\r\n\r\nAnd with a variety of colors to choose from, you&#8217;ll never run out of options. Feeling blue? Wear a blue Cord Shirt. Feeling adventurous? Go for a bold red Cord Shirt. Feeling like blending in with the crowd? We&#8217;ve got a grey Cord Shirt just for you.\r\n\r\nSo what are you waiting for? Join the Cord Shirt revolution and experience the ultimate in style and comfort. Order yours today and start wrapping yourself up in the latest trend!",
-    "count": 0,
-    "image": {
-      "id": 107236,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Cord Shirts"
-    }
-  },
-  {
-    "id": 314,
-    "name": "Cords",
-    "slug": "cords",
-    "parent": 178,
-    "description": "In the time of oversized, baggy and layered fashion trends, the struggle of being a smol petite woman is real. No regular clothes fit you and scouting the kid’s section to find your size can be mortifying. Lucky for you, we have just the perfect thing. Cropped Cords by ANGKON!\r\n\r\nFit is key if you want to look chic and put together. This retro rendition is cropped in style. So, it will compliment your petite frame and give an illusion of having longer legs. Pair it with high rise jeans and bam! You instantly gain height.\r\n\r\nCheck out the available colors and spice up your winter wardrobe with one of ANGKON's best sellers, Cords!",
-    "count": 0,
-    "image": {
-      "id": 150675,
-      "src": "/banners/pants.webp",
-      "alt": "Cords"
-    }
-  },
-  {
-    "id": 315,
-    "name": "Cords",
-    "slug": "cords-jacket",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 150687,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Cords"
-    }
-  },
-  {
-    "id": 885,
-    "name": "Crochet &amp; Embroidered Shirts",
-    "slug": "crochet-embroidered-shirts",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 210542,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Crochet &amp; Embroidered Shirts"
-    }
-  },
-  {
-    "id": 886,
-    "name": "Crochet &amp; Embroidered Shirts",
-    "slug": "crochet-embroidered-shirts-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 210545,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Crochet &amp; Embroidered Shirts"
-    }
-  },
-  {
-    "id": 825,
-    "name": "Crop Shirts",
-    "slug": "crop-shirts-men",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205573,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Crop Shirts"
-    }
-  },
-  {
-    "id": 826,
-    "name": "Crop Shirts",
-    "slug": "crop-shirts-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 191960,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Crop Shirts"
-    }
-  },
-  {
-    "id": 326,
-    "name": "Cubans",
-    "slug": "cubans-shirts",
-    "parent": 325,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 11457,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Cubans"
-    }
-  },
-  {
-    "id": 289,
-    "name": "Cubans",
-    "slug": "cuban-shirts-women",
-    "parent": 167,
-    "description": "Cubans by ANGKON\r\n\r\nImagine swinging on a hammock, sipping cocktails and listening to the waves hit the sandy shores.\r\nWe know it’s been too long since you had a relaxing vacation. Fret not, with our range of revere collared Cuban shirts you’ll feel transported to the nearest tropical island in no time!\r\n\r\nThe short sleeves and super soft viscose and cotton fabric are sure to uplift your mood. The floral patterns add a fun touch to these Hawaiian style shirts.\r\n\r\nHence, Cubans by ANGKON are a perfect addition to your “as soon as borders open, I’m taking a trip” suitcase.",
-    "count": 0,
-    "image": {
-      "id": 190998,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Cubans"
-    }
-  },
-  {
-    "id": 679,
-    "name": "Docker Cap",
-    "slug": "docker-cap",
-    "parent": 603,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 115966,
-      "src": "/banners/accessories.webp",
-      "alt": "Docker Cap"
-    }
-  },
-  {
-    "id": 303,
-    "name": "Drop-Tees",
-    "slug": "drop-tees-t-shirt",
-    "parent": 183,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 23902,
-      "src": "/banners/tees.webp",
-      "alt": "Drop-Tees"
-    }
-  },
-  {
-    "id": 304,
-    "name": "Drop-Tees",
-    "slug": "drop-tees-tshirt",
-    "parent": 164,
-    "description": "A staple of any edgy, coming of age wardrobe is a baggy or oversized T-shirt. It&#8217;s a modern take on 80&#8217;s nostalgia and retro street style.\r\n\r\nAt ANGKON, we&#8217;re a sucker for anything retro. So, we too jumped on the bandwagon. Our range of oversized drop shoulder tees come in an array of bold pops and pastel hues and retro fonts, channelling that 70&#8217;s and 80&#8217;s aesthetic.\r\n\r\nRethink the classic T-shirt without having to look ordinary because these are no ordinary T-shirts. Keeping in line with pop culture, these statement drop-tees come with a mind of their own and a whole lotta attitude.\r\n\r\nThe unisex tees offer endless options for everyday smart-casual styling. And the oversized nature of the drop tees allows you to be stylish and comfy at the same time.\r\n\r\nTo get a bit more reformed silhouette, you can always tuck it in your pants or tie a knot in the bottom. The half-tuck look would give a more playful effortless vibe.",
-    "count": 0,
-    "image": {
-      "id": 119774,
-      "src": "/banners/tees.webp",
-      "alt": "Drop-Tees"
-    }
-  },
-  {
-    "id": 293,
-    "name": "Drop-Tees",
-    "slug": "drop-tees",
-    "parent": 165,
-    "description": "<span style=\"font-size: 16px;font-style: normal;font-weight: 400\">A stap</span><span style=\"font-size: 16px;font-style: normal;font-weight: 400\">le </span>of any edgy, coming of age wardrobe is an oversized or baggy T-shirt. It&#8217;s a modern take on 80&#8217;s nostalgia and retro street style.\r\n\r\nAt ANGKON, we&#8217;re a sucker for anything retro. So, we too jumped on the oversized hype. Our range of drop shoulder tees come in an array of bold pops and pastel hues and retro fonts, channelling that 70&#8217;s and 80&#8217;s aesthetic.\r\n\r\nRethink the classic T-shirt without having to look ordinary because these are no ordinary T-shirts. Keeping in line with pop culture, these statement drop-tees come with a mind of their own and a whole lotta attitude.\r\n\r\nThe unisex tees offer endless options for everyday smart-casual styling. And the oversized nature of the drop tees allows you to be stylish and comfy at the same time.",
-    "count": 0,
-    "image": {
-      "id": 119739,
-      "src": "/banners/tees.webp",
-      "alt": "Drop-Tees"
-    }
-  },
-  {
-    "id": 695,
-    "name": "Ear Cuffs",
-    "slug": "ear-cuffs",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 116130,
-      "src": "/banners/accessories.webp",
-      "alt": "Ear Cuffs"
-    }
-  },
-  {
-    "id": 601,
-    "name": "Earrings",
-    "slug": "earrings",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 60543,
-      "src": "/banners/accessories.webp",
-      "alt": "Earrings"
-    }
-  },
-  {
-    "id": 709,
-    "name": "Finger Rings",
-    "slug": "finger-rings",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 116119,
-      "src": "/banners/accessories.webp",
-      "alt": "Finger Rings"
-    }
-  },
-  {
-    "id": 491,
-    "name": "Flannel Jacket",
-    "slug": "flannels-jacket",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 198527,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Flannel Jacket"
-    }
-  },
-  {
-    "id": 492,
-    "name": "Flannel Jacket",
-    "slug": "flannels-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 198521,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Flannel Jacket"
-    }
-  },
-  {
-    "id": 290,
-    "name": "Flannels",
-    "slug": "flannels",
-    "parent": 167,
-    "description": "How do our weather forecasters predict the weather in Bangladesh nowadays? It was supposed to get warmer, but wait, it’s chilly again. Mother Nature showed signs of heavy rainfall, but the skin piercing Sun decided otherwise. Hence, to honor these confused professionals, ANGKON presents its collection of Flannel shirts!\r\n\r\nIdeal for a cool Fall day and some Spring warmth, we have Winter Flannels. While the Summer Flannels are made with super breathable and light fabric that is totally not too warm and perfect to cope with Global Warming.\r\n\r\nCheck out our entire range of plaid flannel shirts, packed with features, versatility and comfort. They come in a variety of colors to suit your unique taste and last you for days. Wear them on their own or layer over a T-shirt for a casual street style.\r\n\r\nA special feature of the Flannel is its linting effect. This basically means that the material is brushed on both sides to give the fabric its soft texture. Thus, the fabric also requires special care. Avoid washing too often or rinsing and wriggling too much. Also, wash in room-temperature water without harsh chemicals.\r\n\r\nTo know more about flannels, read our blog, &#8216;<a href=\"#\">Overdue Answers to Your Frequently Asked Questions Regarding Flannels</a>&#8216;.",
-    "count": 0,
-    "image": {
-      "id": 107238,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Flannels"
-    }
-  },
-  {
-    "id": 291,
-    "name": "Flannels",
-    "slug": "flannels-shirt",
-    "parent": 166,
-    "description": "How do our weather forecasters predict the weather in Bangladesh nowadays? It was supposed to get warmer, but wait, it’s chilly again. Mother Nature showed signs of heavy rainfall, but the skin piercing Sun decided otherwise. Hence, to honor these confused professionals, ANGKON presents its collection of Flannel shirts!\r\n\r\nIdeal for a cool Fall day and some Spring warmth, we have Winter Flannels. While the Summer Flannels are made with super breathable and light fabric that is totally not too warm and perfect to cope with Global Warming.\r\n\r\nCheck out our entire range of plaid flannel shirts, packed with features, versatility and comfort. They come in a variety of colors to suit your unique taste and last you for days. Wear them on their own or layer over a T-shirt for a casual street style.\r\n\r\nA special feature of the Flannel is its linting effect. This basically means that the material is brushed on both sides to give the fabric its soft texture. Thus, the fabric also requires special care. Avoid washing too often or rinsing and wriggling too much. Also, wash in room-temperature water without harsh chemicals.\r\n\r\nTo know more about flannels, read our blog, &#8216;<a href=\"#\">Overdue Answers to Your Frequently Asked Questions Regarding Flannels</a>&#8216;.",
-    "count": 0,
-    "image": {
-      "id": 115483,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Flannels"
-    }
-  },
-  {
-    "id": 785,
-    "name": "Flow Shirts",
-    "slug": "flow-shirts-men",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205093,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Flow Shirts"
-    }
-  },
-  {
-    "id": 786,
-    "name": "Flow Shirts",
-    "slug": "flow-shirts-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 170496,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Flow Shirts"
-    }
-  },
-  {
-    "id": 516,
-    "name": "Flowy Top",
-    "slug": "flowy-top",
-    "parent": 173,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 106936,
-      "src": "/banners/tops.webp",
-      "alt": "Flowy Top"
-    }
-  },
-  {
-    "id": 653,
-    "name": "Street Edition",
-    "slug": "street-edition",
-    "parent": 183,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 94040,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Street Edition"
-    }
-  },
-  {
-    "id": 774,
-    "name": "Waffle Up Tees",
-    "slug": "waffle-up-tees",
-    "parent": 183,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 161112,
-      "src": "/banners/tees.webp",
-      "alt": "Waffle Up Tees"
-    }
-  },
-  {
-    "id": 907,
-    "name": "Henley",
-    "slug": "henley-tshirt",
-    "parent": 164,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205972,
-      "src": "/banners/tees.webp",
-      "alt": "Henley"
-    }
-  },
-  {
-    "id": 906,
-    "name": "Henley",
-    "slug": "henley",
-    "parent": 165,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205948,
-      "src": "/banners/tees.webp",
-      "alt": "Henley"
-    }
-  },
-  {
-    "id": 177,
-    "name": "Hoodie",
-    "slug": "hoodie-men",
-    "parent": 162,
-    "description": "Introducing Men&#8217;s Hoodie by ANGKON, the ultimate cozy companion that will make you feel like you&#8217;re wrapped in a warm hug from a giant, fluffy unicorn!\r\n\r\nNot only does our hoodie offer the perfect blend of style and comfort, but it also features a kangaroo pocket to stash your snacks, phone, and maybe even your secret stash of chocolate (shh, we won&#8217;t tell anyone!).\r\n\r\nOur hoodies come in a variety of colors and sizes, so you can choose the perfect one to match your personality.\r\n\r\nSo why settle for ordinary when you can have one that&#8217;s both cozy and hilarious? Order now and be the envy of all your friends with our Men&#8217;s Hoodie!",
-    "count": 0,
-    "image": {
-      "id": 160182,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Hoodie"
-    }
-  },
-  {
-    "id": 171,
-    "name": "Hoodie",
-    "slug": "hoodie-women",
-    "parent": 163,
-    "description": "Introducing Women&#8217;s Hoodie by ANGKON, the ultimate cozy companion that will make you feel like you&#8217;re wrapped in a warm hug from a giant, fluffy unicorn!\r\n\r\nNot only does our hoodie offer the perfect blend of style and comfort, but it also features a kangaroo pocket to stash your snacks, phone, and maybe even your secret stash of chocolate (shh, we won&#8217;t tell anyone!).\r\n\r\nOur hoodies come in a variety of colors and sizes, so you can choose the perfect one to match your personality.\r\n\r\nSo why settle for ordinary when you can have one that&#8217;s both cozy and hilarious? Order now and be the envy of all your friends with our Women&#8217;s Hoodie!",
-    "count": 0,
-    "image": {
-      "id": 160182,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Hoodie"
-    }
-  },
-  {
-    "id": 361,
-    "name": "Hoodie Blanket",
-    "slug": "hoodie-blanket",
-    "parent": 163,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 96076,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Hoodie Blanket"
-    }
-  },
-  {
-    "id": 362,
-    "name": "Hoodie Blanket",
-    "slug": "blanket-hoodies",
-    "parent": 162,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 96120,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Hoodie Blanket"
-    }
-  },
-  {
-    "id": 204,
-    "name": "Hoodies",
-    "slug": "hoodies-kids",
-    "parent": 203,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 5247,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Hoodies"
-    }
-  },
-  {
-    "id": 178,
-    "name": "Jacket",
-    "slug": "jacket-women",
-    "parent": 163,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 96084,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Jacket"
-    }
-  },
-  {
-    "id": 172,
-    "name": "Jacket",
-    "slug": "jacket-men",
-    "parent": 162,
-    "description": "Introducing Jacket for Men by ANGKON! Especially for men who want to look stylish and feel comfortable this winter season! Our Men&#8217;s Jacket is designed to keep you warm and cozy during the colder months, while still providing a lightweight and breathable fit for those transitional seasons.\r\n\r\nCrafted with high-quality materials, these jackets are built to last and withstand even the toughest weather conditions.\r\n\r\nFeaturing a classic and timeless design, these jackets are versatile enough to be dressed up or down, making them perfect for any occasion. With multiple pockets and a sleek, modern look, it&#8217;s the perfect addition to any wardrobe.\r\n\r\nSo why settle for anything less than the best? Upgrade your outerwear game with our Men&#8217;s Jacket and stay comfortable, stylish, and protected in any weather condition!",
-    "count": 0,
-    "image": {
-      "id": 156318,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Jacket"
-    }
-  },
-  {
-    "id": 205,
-    "name": "Jackets",
-    "slug": "jackets",
-    "parent": 203,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 5287,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Jackets"
-    }
-  },
-  {
-    "id": 203,
-    "name": "Kids",
-    "slug": "kids",
-    "parent": 162,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 5248,
-      "src": "/banners/tees.webp",
-      "alt": "Kids"
-    },
-    "menu_order": 11
-  },
-  {
-    "id": 174,
-    "name": "Kimono",
-    "slug": "kimonos",
-    "parent": 163,
-    "description": "<a href=\"#\">Kimonos by ANGKON,</a> are an oldie but a goody. A foolproof way of elevating your style without lifting a finger or using a brain cell is throwing on a kimono/shrug over an outfit. It immediately adds an extra layer of elegance. You&#8217;ll make a lasting impression anywhere you go.\r\n\r\nWhen you&#8217;re not in the mood to dress up but have to, just throw on a kimono as an accent piece and call it a day!  The floral patterns and fringe details add visual interest to your otherwise simple attire, making you look effortlessly chic in a matter of seconds.\r\n\r\nPlus, they only come in free sizes. So you don&#8217;t have to worry about the fit.",
-    "count": 0,
-    "image": {
-      "id": 96065,
-      "src": "/banners/tops.webp",
-      "alt": "Kimono"
-    }
-  },
-  {
-    "id": 584,
-    "name": "Leather Jackets",
-    "slug": "leather-jackets",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 167900,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Leather Jackets"
-    }
-  },
-  {
-    "id": 585,
-    "name": "Leather Jackets",
-    "slug": "leather-jackets-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 167916,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Leather Jackets"
-    }
-  },
-  {
     "id": 162,
     "name": "Men",
     "slug": "men",
     "parent": 0,
+    "linked_parents": [],
+    "menu_order": 0,
     "description": "Men Collection — Casual & Formal Apparel",
     "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/men-banner.webp"
+      },
+      {
+        "key": "angkon_category_image",
+        "value": "/banners/men-banner.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
     "image": {
       "id": 162001,
       "src": "/banners/men-banner.webp",
       "alt": "Men Collection"
-    },
-    "menu_order": 0
-  },
-  {
-    "id": 669,
-    "name": "Men&#8217;s Accessories",
-    "slug": "mens-jewelry",
-    "parent": 341,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 114323,
-      "src": "/banners/accessories.webp",
-      "alt": "Men&#8217;s Accessories"
-    }
-  },
-  {
-    "id": 680,
-    "name": "Military Cap",
-    "slug": "military-cap",
-    "parent": 603,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 116043,
-      "src": "/banners/accessories.webp",
-      "alt": "Military Cap"
-    }
-  },
-  {
-    "id": 713,
-    "name": "Necklace",
-    "slug": "necklace",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 117501,
-      "src": "/banners/accessories.webp",
-      "alt": "Necklace"
-    }
-  },
-  {
-    "id": 604,
-    "name": "News Boy Hat",
-    "slug": "news-boy-hat",
-    "parent": 603,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 60499,
-      "src": "/banners/accessories.webp",
-      "alt": "News Boy Hat"
-    }
-  },
-  {
-    "id": 383,
-    "name": "Overcoat",
-    "slug": "overcoat",
-    "parent": 162,
-    "description": "From the trenches of World War to the runways of Paris, the trench coat has stood the test of time.\r\n\r\nA timeless classic, always regarded as an emblem of quintessential British smart wear, trench coats are an embodiment of sophistication. Popularized in Hollywood movies, and mostly worn by detectives, mobsters and femme Fatales gives the trench its bad-boy rep.\r\n\r\nYou too can look like you’ve stepped off a movie set by styling the trench coats right.\r\n<ol>\r\n \t<li>Keep it simple and masculine by pairing your trench coat with a suit and tie. Minimal, refined and sleek, this classic combination is sure to turn heads.</li>\r\n \t<li>Wrap up the wool blend trench with a turtleneck underneath and a boldly patterned scarf. The layers will add dimensionally and exude chic vibes. You’ll be snug and comfy without sacrificing the style element.</li>\r\n \t<li>Want to look like Sherlock Holmes? Tying the belt and flipping the collar up with a monochromatic aesthetic will fit the inconspicuous guise.</li>\r\n \t<li>Pro tip- It’s always best to choose a loose-fitting coat so it fits over other thick pieces of clothing and is spacious enough for ease of movement. Choosing a well-proportioned trench will add to the streamlined fit. Don’t be afraid to opt for a long trench coat if you are short. The length will elongate your body and flatter your petite frame. Just make sure it’s not too long that you drown, just below the knee is the perfect length.</li>\r\n</ol>",
-    "count": 0,
-    "image": {
-      "id": 96122,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Overcoat"
-    }
-  },
-  {
-    "id": 384,
-    "name": "Overcoat",
-    "slug": "overcoat-women",
-    "parent": 163,
-    "description": "From the trenches of World War to the runways of Paris, the trench coat has stood the test of time.\r\n\r\nA timeless classic, always regarded as an emblem of quintessential British smart wear, trench coats are an embodiment of sophistication. Popularized in Hollywood movies, and mostly worn by detectives, mobsters and femme Fatales gives the trench its bad-boy rep.\r\n\r\nYou too can look like you’ve stepped off a movie set by styling the trench coats right.\r\n<ol>\r\n \t<li>Keep it simple and masculine by pairing your trench coat with a suit and tie. Minimal, refined and sleek, this classic combination is sure to turn heads.</li>\r\n \t<li>Wrap up the wool blend trench with a turtleneck underneath and a boldly patterned scarf. The layers will add dimensionally and exude chic vibes. You’ll be snug and comfy without sacrificing the style element.</li>\r\n \t<li>Want to look like Sherlock Holmes? Tying the belt and flipping the collar up with a monochromatic aesthetic will fit the inconspicuous guise.</li>\r\n \t<li>Pro tip- It’s always best to choose a loose-fitting coat so it fits over other thick pieces of clothing and is spacious enough for ease of movement. Choosing a well-proportioned trench will add to the streamlined fit. Don’t be afraid to opt for a long trench coat if you are short. The length will elongate your body and flatter your petite frame. Just make sure it’s not too long that you drown, just below the knee is the perfect length.</li>\r\n</ol>",
-    "count": 0,
-    "image": {
-      "id": 96085,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Overcoat"
-    }
-  },
-  {
-    "id": 892,
-    "name": "Party Shirts",
-    "slug": "party-shirts-men",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205539,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Party Shirts"
-    }
-  },
-  {
-    "id": 893,
-    "name": "Party Shirts",
-    "slug": "party-shirts-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205548,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Party Shirts"
-    }
-  },
-  {
-    "id": 345,
-    "name": "Plaantik Apparel",
-    "slug": "plaantik-apparel-tshirt",
-    "parent": 164,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 15562,
-      "src": "/banners/tees.webp",
-      "alt": "Plaantik Apparel"
-    }
-  },
-  {
-    "id": 346,
-    "name": "Plaantik Apparel",
-    "slug": "plaantik-apparel",
-    "parent": 183,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 15562,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Plaantik Apparel"
-    }
-  },
-  {
-    "id": 344,
-    "name": "Plaantik Apparel",
-    "slug": "plaantik-apparel-t-shirts-men",
-    "parent": 165,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 15562,
-      "src": "/banners/tees.webp",
-      "alt": "Plaantik Apparel"
-    }
-  },
-  {
-    "id": 449,
-    "name": "Premium",
-    "slug": "premium-tshirt",
-    "parent": 164,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205900,
-      "src": "/banners/tees.webp",
-      "alt": "Premium"
-    }
-  },
-  {
-    "id": 448,
-    "name": "Premium",
-    "slug": "premium",
-    "parent": 165,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205918,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Premium"
-    }
-  },
-  {
-    "id": 862,
-    "name": "Puffer Jacket",
-    "slug": "puffer-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 197422,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Puffer Jacket"
-    }
-  },
-  {
-    "id": 861,
-    "name": "Puffer Jacket",
-    "slug": "puffer-jacket-men",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 197401,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Puffer Jacket"
-    }
-  },
-  {
-    "id": 721,
-    "name": "Rayon Linen Blend Shirts",
-    "slug": "rayon-linen-blend-shirts-men",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 118701,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Rayon Linen Blend Shirts"
-    }
-  },
-  {
-    "id": 722,
-    "name": "Rayon Linen Blend Shirts",
-    "slug": "rayon-linen-blend-shirts-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 118681,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Rayon Linen Blend Shirts"
-    }
-  },
-  {
-    "id": 859,
-    "name": "Retro Sports Jacket",
-    "slug": "retro-sports-jacket-men",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 197327,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Retro Sports Jacket"
-    }
-  },
-  {
-    "id": 860,
-    "name": "Retro Sports Jacket",
-    "slug": "retro-sports-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 197338,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Retro Sports Jacket"
-    }
-  },
-  {
-    "id": 729,
-    "name": "Ring",
-    "slug": "ring-men",
-    "parent": 669,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 119186,
-      "src": "/banners/accessories.webp",
-      "alt": "Ring"
-    }
-  },
-  {
-    "id": 811,
-    "name": "Ruffle Top",
-    "slug": "ruffle-top",
-    "parent": 173,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 191523,
-      "src": "/banners/tops.webp",
-      "alt": "Ruffle Top"
-    }
-  },
-  {
-    "id": 920,
-    "name": "Safari Shirts",
-    "slug": "safari-shirts",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 210504,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Safari Shirts"
-    }
-  },
-  {
-    "id": 311,
-    "name": "Shackets",
-    "slug": "shackets",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 152807,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Shackets"
-    }
-  },
-  {
-    "id": 312,
-    "name": "Shackets",
-    "slug": "shackets-jacket-women",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 152892,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Shackets"
-    }
-  },
-  {
-    "id": 166,
-    "name": "Shirt",
-    "slug": "mens-shirt",
-    "parent": 162,
-    "description": "It can be tedious having to scroll past so many online stores just to find the perfect shirt to suit your taste. Well, look no further! ANGKON has your work cut out for you. Our wide assortment of shirts will revive your wardrobe and take your ensemble game to a whole new league.\r\n\r\nOur collection of men’s shirts is super versatile and can be styled to dress up or dress down any outfit. Ranging from casual <a href=\"/product-category/men/mens-shirt/band-collar/\">band-collars</a> and semi-formal <a href=\"/product-category/men/mens-shirt/button-down-shirt-men/\">button-downs</a> to relaxed <a href=\"/product-category/men/mens-shirt/cubans/\">Cubans</a>, we have a shirt suitable for any occasion.\r\n\r\nThey are made with the finest and most comfortable fabric to be able to wear all year round. Be it short sleeves,<a href=\"/products/mens-long-sleeve-plain-shirt-in-peach/\"> long sleeves, solid colors,</a> plaid or <a href=\"/products/orange-stripe-button-down-shirt-2/\">stripes,</a> <a href=\"/products/mens-full-sleeve-button-down-shirt/\">Oxford Cotton</a>, <a href=\"/products/mens-red-cuban-shirt-havana-nana-2/\">Slub</a> Cotton or even <a href=\"/product-category/men/mens-shirt/flannels-shirt/\">Flannels,</a> we have them all.\r\n\r\nWhether you&#8217;re at work, partying on the weekends, or going on a date, a crisp shirt can elevate your look instantly. You will exude confidence and turn heads in every room you walk into with ANGKON's coveted range of shirts for men.",
-    "count": 0,
-    "image": {
-      "id": 210510,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Shirt"
-    }
-  },
-  {
-    "id": 167,
-    "name": "Shirt",
-    "slug": "womens-shirt",
-    "parent": 163,
-    "description": "It can be tedious having to scroll past so many online stores just to find the perfect shirt to suit your taste. Well, look no further! ANGKON has your work cut out for you. Our wide assortment of shirts will revive your wardrobe and take your ensemble game to a whole new league.\r\n\r\nOur collection of women’s shirts is super versatile and can be styled to dress up or dress down any outfit. Ranging from casual <a href=\"/product-category/men/mens-shirt/band-collar/\">band-collars</a> and semi-formal <a href=\"/product-category/men/mens-shirt/button-down-shirt-men/\">button-downs</a> to relaxed <a href=\"/product-category/men/mens-shirt/cubans/\">Cubans</a>, we have a shirt suitable for any occasion.\r\n\r\nThey are made with the finest and most comfortable fabric to be able to wear all year round. Be it short sleeves,<a href=\"/products/mens-long-sleeve-plain-shirt-in-peach/\"> long sleeves, solid colors,</a> plaid or <a href=\"/products/orange-stripe-button-down-shirt-2/\">stripes,</a> <a href=\"/products/mens-full-sleeve-button-down-shirt/\">Oxford Cotton</a>, <a href=\"/products/mens-red-cuban-shirt-havana-nana-2/\">Slub</a> Cotton, or even <a href=\"/product-category/men/mens-shirt/flannels-shirt/\">Flannels,</a> we have them all.\r\n\r\nWhether you&#8217;re at work, partying on the weekends, or going on a date, a crisp shirt can elevate your look instantly. You will exude confidence and turn heads in every room you walk into with ANGKON's coveted range of shirts for women.",
-    "count": 0,
-    "image": {
-      "id": 205548,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Shirt"
-    }
-  },
-  {
-    "id": 325,
-    "name": "Shirts",
-    "slug": "shirts",
-    "parent": 203,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 11458,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Shirts"
-    }
-  },
-  {
-    "id": 310,
-    "name": "Silk Tops",
-    "slug": "silk-blouses-and-tops",
-    "parent": 173,
-    "description": "<div class=\"kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q\">\r\n<div dir=\"auto\">Elegance. Class. Strength. Grace- <span style=\"font-size: 16px\">Queens embody all that. They are timeless and so is their style. </span></div>\r\n<div dir=\"auto\"><span style=\"font-size: 16px\">Take a dip into history with the ANGKON's Regal Silk Blouses.</span></div>\r\n</div>\r\n<div class=\"cxmmr5t8 oygrvhab hcukyx3x c1et5uql o9v6fnle ii04i59q\">\r\n<div dir=\"auto\"></div>\r\n<div dir=\"auto\">An effortlessly elegant and gorgeous blouse made for formal occasions. The ruffle neck detail, ruched cuffs and balloon sleeves pays homage to the Victorian Era. Made with premium silk fabric, these blouses are exude royalty.</div>\r\n</div>",
-    "count": 0,
-    "image": {
-      "id": 191652,
-      "src": "/banners/tops.webp",
-      "alt": "Silk Tops"
-    }
-  },
-  {
-    "id": 691,
-    "name": "Skirts",
-    "slug": "skirts",
-    "parent": 163,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 116422,
-      "src": "/banners/pants.webp",
-      "alt": "Skirts"
-    }
-  },
-  {
-    "id": 745,
-    "name": "Sling Bags",
-    "slug": "sling-bags",
-    "parent": 341,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 156170,
-      "src": "/banners/accessories.webp",
-      "alt": "Sling Bags"
-    }
-  },
-  {
-    "id": 732,
-    "name": "Socks",
-    "slug": "socks",
-    "parent": 341,
-    "description": "Need funky socks? ANGKON has got you covered! Our collection of socks is all about vibrant colors and bold patterns that stand out. Whether you&#8217;re looking to brighten up your day or add a quirky touch to your outfit, these funky socks are the perfect choice. Designed to be playful and unique, they let you express your personality with every step. From eye-catching stripes to crazy prints, there&#8217;s a pair for every mood.\r\n\r\n&nbsp;\r\n\r\nBut it&#8217;s not just about looks—our socks are crafted with high-quality materials for all-day comfort and durability. Whether you&#8217;re lounging at home, heading to work, or out with friends, these colorful socks ensure that your feet stay cozy and stylish. Add some fun to your wardrobe and elevate your sock game with ANGKON!",
-    "count": 0,
-    "image": {
-      "id": 121616,
-      "src": "/banners/accessories.webp",
-      "alt": "Socks"
-    }
-  },
-  {
-    "id": 697,
-    "name": "Stud Earrings",
-    "slug": "stud-earrings",
-    "parent": 600,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 117263,
-      "src": "/banners/accessories.webp",
-      "alt": "Stud Earrings"
-    }
-  },
-  {
-    "id": 164,
-    "name": "T-shirts",
-    "slug": "tshirt",
-    "parent": 163,
-    "description": "A T-shirt is perhaps one of the staple pieces in one’s wardrobe.  It’s super versatile with endless utility. You can wear a tee on its own or layer it under a shirt or jacket. Either way, it does wonders in elevating any basic look by acting as an accent piece.\r\n\r\nThis is why ANGKON has decided to reimagine an everyday essential and introduce its unique line of unisex T-shirts.\r\n\r\nOur locally designed unisex T-shirts are made with ultra-soft premium Lycra cotton, making them extremely comfortable and durable.\r\n\r\nThe tees being unisex allows anybody to incorporate them into their wardrobe with ease. Plus, the rounded crewneck collar with ribbed detail adds something extra to an otherwise simple t-shirt.\r\n\r\nWe have solid colored half-sleeved T-shirts with amazing fit as well as oversized drop-shoulder statement tees. Perfect for loungewear,  going to the gym or running errands<strong>.</strong>",
-    "count": 0,
-    "image": {
-      "id": 205888,
-      "src": "/banners/tees.webp",
-      "alt": "T-shirts"
-    }
-  },
-  {
-    "id": 331,
-    "name": "Tank Top",
-    "slug": "tank-top",
-    "parent": 163,
-    "description": "<strong>Support Tank Tops </strong>\r\n\r\nRaise your hands if you hate underwires compressing your chest and sucking the life out of you. And how many times have you gotten the stink eye from an aunty because your straps were showing? It&#8217;s a major fashion no no, plus it&#8217;s socially frowned upon. Well, let&#8217;s eliminate those bra straps altogether!\r\n\r\nIntroducing, Support Tank Tops for women by ANGKON. These sleek tank tops with a built-in Shelf Bra and adjustable straps will be there for you when others won&#8217;t. Made with premium Lycra cotton fabric, these camisoles are super light and breathable. The stretchable fabric hugs your body offering great ease of movement and flattering any body type.\r\n\r\nHaving to layer your undergarments with multiple straps can be uncomfortable and look a bit tacky. The shelf bra is basically an added piece of fabric attached under the tank top with an elastic rim to provide an extra layer of comfort and support. So, you can wave those boob cages goodbye!\r\n\r\nWith ANGKON&#8217;s Support tank tops, you can get a smooth seamless effect as well as coverage. They can be worn alone as casual loungewear or sleepwear. Slip into one of these tank tops for a relaxing yoga session or get a solid workout done. For a chic summery look, wear it under a <a href=\"/product-category/women/kimonos/\">kimono</a> or a <a href=\"/product-category/women/shirt-women/cuban-shirts-women/\">Cuban</a> shirt.",
-    "count": 0,
-    "image": {
-      "id": 96087,
-      "src": "/banners/tops.webp",
-      "alt": "Tank Top"
-    }
-  },
-  {
-    "id": 512,
-    "name": "Tank Tops",
-    "slug": "tank-tops",
-    "parent": 162,
-    "description": "Get ready to flex those biceps and show off your guns with our Men&#8217;s Tanktops by ANGKON! Made from the finest cotton and polyester blend, these tank tops will keep you cool and stylish no matter what the occasion.\r\n\r\nWhether you&#8217;re hitting the gym or hitting the club, our Men&#8217;s Tanktops are a perfect choice. And with a variety of colors and designs to choose from, you&#8217;ll never run out of options. Feeling bold? Go for a bright tank top. Feeling classic? We&#8217;ve got a plain tank top just for you.\r\n\r\nBut be warned &#8211; wearing one of our Men&#8217;s Tanktops may cause an increase in attention from the opposite sex. So if you&#8217;re ready to turn heads and show off those muscles, order yours today!",
-    "count": 0,
-    "image": {
-      "id": 96111,
-      "src": "/banners/tops.webp",
-      "alt": "Tank Tops"
-    }
-  },
-  {
-    "id": 615,
-    "name": "Textured Jacket",
-    "slug": "textured-jacket",
-    "parent": 178,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 197373,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Textured Jacket"
-    }
-  },
-  {
-    "id": 597,
-    "name": "Textured Jackets",
-    "slug": "textured-jackets",
-    "parent": 172,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 197362,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Textured Jackets"
-    }
-  },
-  {
-    "id": 169,
-    "name": "Turtleneck",
-    "slug": "turtleneck",
-    "parent": 163,
-    "description": "With sweater weather arriving, turtlenecks are a total must-have for Fall. Especially because they are easy pieces to layer with for added dimension and warmth. You can also wear a turtleneck sweater on its own and still feel like getting a snug hug.",
-    "count": 0,
-    "image": {
-      "id": 96073,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Turtleneck"
-    }
-  },
-  {
-    "id": 170,
-    "name": "Turtleneck",
-    "slug": "turtleneck-men",
-    "parent": 162,
-    "description": "With sweater weather arriving, turtlenecks are a total must-have for Fall. Especially because they are easy pieces to layer with for added dimension and warmth. You can also wear a turtleneck sweater on its own and still feel like getting a snug hug.\r\n\r\nCheck out our pullover turtlenecks available in both high and low GSMs that also come in an array of colors.",
-    "count": 0,
-    "image": {
-      "id": 96125,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Turtleneck"
-    }
-  },
-  {
-    "id": 773,
-    "name": "Waffle Up Collection",
-    "slug": "waffle-up-collection",
-    "parent": 203,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 160411,
-      "src": "/banners/tees.webp",
-      "alt": "Waffle Up Collection"
-    }
-  },
-  {
-    "id": 654,
-    "name": "Wallets",
-    "slug": "wallets",
-    "parent": 341,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 94098,
-      "src": "/banners/accessories.webp",
-      "alt": "Wallets"
     }
   },
   {
@@ -1320,20 +42,11 @@
     "name": "Women",
     "slug": "women",
     "parent": 0,
-    "description": "Women Collection — Contemporary & Luxury Fashion",
-    "count": 7,
-    "image": {
-      "id": 163001,
-      "src": "/banners/women-banner.webp",
-      "alt": "Women Collection"
-    },
-    "menu_order": 1,
     "linked_parents": [],
-    "imageUrl": "/banners/women-banner.webp",
-    "imageId": 163001,
-    "imageAlt": "Women Collection",
-    "icon": "",
-    "bgTheme": "blue",
+    "menu_order": 1,
+    "description": "Women Collection — Contemporary & Luxury Fashion",
+    "count": 0,
+    "is_active": true,
     "meta_data": [
       {
         "key": "_is_active",
@@ -1351,19 +64,11 @@
         "key": "_angkon_bgTheme",
         "value": "blue"
       }
-    ]
-  },
-  {
-    "id": 600,
-    "name": "Women&#8217;s Jewelry",
-    "slug": "womens-jewelry",
-    "parent": 341,
-    "description": "",
-    "count": 0,
+    ],
     "image": {
-      "id": 60540,
-      "src": "/banners/accessories.webp",
-      "alt": "Women&#8217;s Jewelry"
+      "id": 163001,
+      "src": "/banners/women-banner.webp",
+      "alt": "Women Collection"
     }
   },
   {
@@ -1371,22 +76,13 @@
     "name": "Ethnic Wear",
     "slug": "ethnic-wear",
     "parent": 0,
-    "menu_order": 2,
-    "description": "Luxury Ethnic Wear Collection — 3-Piece Pakistani & Designer Suits",
-    "count": 7,
-    "image": {
-      "id": 914001,
-      "src": "/banners/ethnic-wear.webp",
-      "alt": "Ethnic Wear — Luxury Collection"
-    },
     "linked_parents": [
       163
     ],
-    "imageUrl": "/banners/ethnic-wear.webp",
-    "imageId": 914001,
-    "imageAlt": "Ethnic Wear — Luxury Collection",
-    "icon": "",
-    "bgTheme": "blue",
+    "menu_order": 2,
+    "description": "Luxury Ethnic Wear Collection — 3-Piece Pakistani & Designer Suits",
+    "count": 7,
+    "is_active": true,
     "meta_data": [
       {
         "key": "_is_active",
@@ -1404,26 +100,235 @@
         "key": "_angkon_bgTheme",
         "value": "blue"
       }
-    ]
+    ],
+    "image": {
+      "id": 914001,
+      "src": "/banners/ethnic-wear.webp",
+      "alt": "Ethnic Wear — Luxury Collection"
+    }
+  },
+  {
+    "id": 341,
+    "name": "Accessories",
+    "slug": "accessories",
+    "parent": 0,
+    "linked_parents": [],
+    "menu_order": 9,
+    "description": "Caps, Jewelry, Wallets & Accessories",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [],
+    "image": {
+      "id": 341001,
+      "src": "/banners/accessories.webp",
+      "alt": "Accessories"
+    }
+  },
+  {
+    "id": 994,
+    "name": "Cuban Shirt",
+    "slug": "cuban-shirt",
+    "parent": 162,
+    "linked_parents": [],
+    "menu_order": 0,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/men-banner.webp"
+      },
+      {
+        "key": "angkon_category_image",
+        "value": "/banners/men-banner.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": {
+      "id": 1793572533671,
+      "src": "/banners/men-banner.webp",
+      "alt": "Men Banner"
+    }
+  },
+  {
+    "id": 998,
+    "name": "Comfy Trousers",
+    "slug": "comfy-trousers",
+    "parent": 162,
+    "linked_parents": [],
+    "menu_order": 4,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/men-banner.webp"
+      },
+      {
+        "key": "angkon_category_image",
+        "value": "/banners/men-banner.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": {
+      "id": 1793572664271,
+      "src": "/banners/men-banner.webp",
+      "alt": "Men Banner"
+    }
+  },
+  {
+    "id": 999,
+    "name": "Baggy jeans",
+    "slug": "baggy-jeans",
+    "parent": 162,
+    "linked_parents": [],
+    "menu_order": 4,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": ""
+      },
+      {
+        "key": "angkon_category_image",
+        "value": ""
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": null
+  },
+  {
+    "id": 1000,
+    "name": "V Neck T-shirt",
+    "slug": "v-neck-t-shirt",
+    "parent": 163,
+    "linked_parents": [],
+    "menu_order": 0,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/women-banner.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": {
+      "id": 100001,
+      "src": "/banners/women-banner.webp",
+      "alt": "V Neck T-shirt"
+    }
+  },
+  {
+    "id": 1002,
+    "name": "Co Ord set",
+    "slug": "co-ord-set",
+    "parent": 163,
+    "linked_parents": [],
+    "menu_order": 1,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "/banners/women-banner.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": {
+      "id": 100201,
+      "src": "/banners/women-banner.webp",
+      "alt": "Co Ord set"
+    }
   },
   {
     "id": 990,
     "name": "Tawakkal Wada",
     "slug": "tawakkal-wada",
     "parent": 914,
-    "menu_order": 11,
+    "linked_parents": [],
+    "menu_order": 0,
     "description": "Tawakkal Fabrics Luxury Collection",
     "count": 7,
+    "is_active": true,
+    "meta_data": [],
     "image": {
       "id": 990001,
       "src": "/banners/ethnic-wear.webp",
       "alt": "Tawakkal"
-    },
-    "imageUrl": "/banners/ethnic-wear.webp",
-    "imageId": 990001,
-    "imageAlt": "Tawakkal",
-    "icon": "",
-    "bgTheme": "blue",
+    }
+  },
+  {
+    "id": 991,
+    "name": "Guzel",
+    "slug": "guzel",
+    "parent": 914,
+    "linked_parents": [],
+    "menu_order": 1,
+    "description": "",
+    "count": 0,
+    "is_active": true,
     "meta_data": [
       {
         "key": "_is_active",
@@ -1431,7 +336,7 @@
       },
       {
         "key": "ps_category_image",
-        "value": "/banners/ethnic-wear.webp"
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792418908/ANGKON/CATEGORIES/ETHNIC_WEAR/DASTAAN/file_nz1gxu.webp"
       },
       {
         "key": "_angkon_icon",
@@ -1441,6 +346,98 @@
         "key": "_angkon_bgTheme",
         "value": "blue"
       }
-    ]
+    ],
+    "image": {
+      "id": 1792418906432,
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792418908/ANGKON/CATEGORIES/ETHNIC_WEAR/DASTAAN/file_nz1gxu.webp",
+      "alt": "Guzel"
+    }
+  },
+  {
+    "id": 992,
+    "name": "Aiman Aisha",
+    "slug": "aiman-aisha",
+    "parent": 914,
+    "linked_parents": [],
+    "menu_order": 2,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420466/ANGKON/CATEGORIES/ethnic-wear/aiman-aisha/file_dyukly.webp"
+      },
+      {
+        "key": "angkon_category_image",
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420466/ANGKON/CATEGORIES/ethnic-wear/aiman-aisha/file_dyukly.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": {
+      "id": 1792420467044,
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420466/ANGKON/CATEGORIES/ethnic-wear/aiman-aisha/file_dyukly.webp",
+      "alt": "Aiman Aisha"
+    }
+  },
+  {
+    "id": 993,
+    "name": "Safa Marwa",
+    "slug": "safa-marwa",
+    "parent": 914,
+    "linked_parents": [],
+    "menu_order": 3,
+    "description": "",
+    "count": 0,
+    "is_active": true,
+    "meta_data": [
+      {
+        "key": "_is_active",
+        "value": "true"
+      },
+      {
+        "key": "ps_category_image",
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420693/ANGKON/CATEGORIES/ethnic-wear/safa-marwa/file_iwgpo5.webp"
+      },
+      {
+        "key": "angkon_category_image",
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420693/ANGKON/CATEGORIES/ethnic-wear/safa-marwa/file_iwgpo5.webp"
+      },
+      {
+        "key": "_angkon_icon",
+        "value": ""
+      },
+      {
+        "key": "_angkon_bgTheme",
+        "value": "blue"
+      }
+    ],
+    "image": {
+      "id": 1792420693642,
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420693/ANGKON/CATEGORIES/ethnic-wear/safa-marwa/file_iwgpo5.webp",
+      "alt": "Safa Marwa"
+    }
+  },
+  {
+    "id": 1003,
+    "name": "test",
+    "slug": "test",
+    "parent": 163,
+    "linked_parents": [],
+    "menu_order": 2,
+    "description": "",
+    "count": 0,
+    "image": null
   }
 ]

@@ -16,12 +16,16 @@ import {
   X,
   Bell,
   ChevronRight,
+  ChevronDown,
   BarChart3,
   FolderOpen,
   PanelLeft,
   Volume2,
   VolumeX,
   Activity,
+  Layers,
+  Globe,
+  DatabaseBackup,
 } from "lucide-react";
 import {
   isSoundEnabled,
@@ -32,6 +36,16 @@ import {
 } from "@/lib/sound-alert";
 
 const isMetaEnabled = process.env.NEXT_PUBLIC_DISABLE_META_ROUTES !== "true";
+
+const META_SUB_ROUTES = [
+  { href: "/admin/meta", label: "Overview", icon: Layers, exact: true },
+  { href: "/admin/meta/events", label: "Events Manager", icon: Activity, exact: false },
+  { href: "/admin/meta/ads", label: "Ads & Attribution", icon: BarChart3, exact: false },
+  { href: "/admin/meta/catalog", label: "Catalog Feed", icon: Package, exact: false },
+  { href: "/admin/meta/domain-verification", label: "Domain Verification", icon: Globe, exact: false },
+  { href: "/admin/meta/backup", label: "Backup & Restore", icon: DatabaseBackup, exact: false },
+  { href: "/admin/meta/settings", label: "Meta Suite Settings", icon: Settings, exact: false },
+];
 
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -61,6 +75,13 @@ export default function AdminLayout({
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   // Hover flyout state (Meta Business Suite style: expand on hover, hide on leave)
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [metaSubmenuOpen, setMetaSubmenuOpen] = useState(isMetaRoute);
+
+  useEffect(() => {
+    if (isMetaRoute) {
+      setMetaSubmenuOpen(true);
+    }
+  }, [isMetaRoute]);
   const [pendingCount, setPendingCount] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<{
@@ -278,6 +299,7 @@ export default function AdminLayout({
   // When hovered on Meta routes, it expands over the top to 220px to show our full sidebar labels!
   // On regular admin routes, sidebar follows the user's manual toggle (sidebarExpanded).
   const isDesktopExpanded = isMetaRoute ? sidebarHovered : sidebarExpanded;
+  const showSidebarContent = isDesktopExpanded || sidebarOpen;
 
   return (
     <div
@@ -286,7 +308,7 @@ export default function AdminLayout({
       }}
       className="flex h-screen overflow-hidden bg-[#f0f0f8] font-sans antialiased text-gray-800"
     >
-      {/* ── Main Sidebar (Untouched original, hover-expand on Meta routes) ── */}
+      {/* ── Main Sidebar (Responsive: full drawer on mobile, collapsible icon-rail on desktop) ── */}
       <aside
         onMouseEnter={() => {
           if (isMetaRoute) setSidebarHovered(true);
@@ -295,8 +317,13 @@ export default function AdminLayout({
           if (isMetaRoute) setSidebarHovered(false);
         }}
         className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-purple-100 shadow-[2px_0_20px_rgba(123,97,255,0.06)] transition-all duration-300 ease-in-out
-          ${isDesktopExpanded ? "w-[220px] shadow-2xl" : "w-[78px]"}
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
+          ${
+            sidebarOpen
+              ? "w-[260px] translate-x-0 shadow-2xl"
+              : isDesktopExpanded
+              ? "w-[220px] shadow-2xl -translate-x-full lg:translate-x-0"
+              : "w-[78px] -translate-x-full lg:translate-x-0"
+          }`}
       >
         {/* Brand header */}
         <div className="flex items-center gap-3 h-[68px] px-3.5 border-b border-purple-50 flex-shrink-0">
@@ -326,7 +353,7 @@ export default function AdminLayout({
               className="h-full w-full object-cover"
             />
           </div>
-          {isDesktopExpanded && (
+          {showSidebarContent && (
             <div className="min-w-0 flex-1 overflow-hidden">
               <p className="text-[14px] font-bold tracking-tight text-[#530911] whitespace-nowrap">
                 ANGKON
@@ -336,14 +363,89 @@ export default function AdminLayout({
               </p>
             </div>
           )}
+          {sidebarOpen && (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer ml-auto"
+              aria-label="Close navigation"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto">
           {filteredNav.map(({ href, label, icon: Icon }) => {
+            const isMeta = href === "/admin/meta";
             const active =
               pathname.startsWith(href) ||
               (href === "/admin/meta" && pathname.startsWith("/admin/pixel"));
+
+            if (isMeta && showSidebarContent) {
+              return (
+                <div key={href} className="space-y-1">
+                  <div
+                    onClick={() => setMetaSubmenuOpen((prev) => !prev)}
+                    className={`group relative flex items-center justify-between rounded-xl py-2.5 px-3 text-[13px] font-medium transition-all duration-200 cursor-pointer ${
+                      active
+                        ? "bg-purple-600 text-white shadow-md shadow-purple-200"
+                        : "text-gray-500 hover:bg-purple-50 hover:text-purple-600"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Icon
+                        className={`h-[19px] w-[19px] flex-shrink-0 transition-colors ${
+                          active
+                            ? "text-white"
+                            : "text-gray-400 group-hover:text-purple-500"
+                        }`}
+                      />
+                      <span className="whitespace-nowrap overflow-hidden font-bold">
+                        {label}
+                      </span>
+                    </div>
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${
+                        active ? "text-white" : "text-gray-400"
+                      } ${metaSubmenuOpen ? "rotate-180" : "rotate-0"}`}
+                    />
+                  </div>
+
+                  {metaSubmenuOpen && (
+                    <div className="pl-4 pr-1 py-1 space-y-0.5 animate-in fade-in-0 duration-150">
+                      {META_SUB_ROUTES.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = sub.exact
+                          ? pathname === sub.href
+                          : pathname === sub.href || pathname.startsWith(`${sub.href}/`);
+                        return (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            onClick={() => setSidebarOpen(false)}
+                            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] transition-all ${
+                              isSubActive
+                                ? "bg-purple-100 text-purple-800 font-bold shadow-2xs"
+                                : "text-gray-600 hover:bg-purple-50/70 hover:text-purple-700 font-medium"
+                            }`}
+                          >
+                            <SubIcon
+                              className={`h-3.5 w-3.5 shrink-0 ${
+                                isSubActive ? "text-purple-700" : "text-gray-400"
+                              }`}
+                            />
+                            <span className="truncate">{sub.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={href}
@@ -365,7 +467,7 @@ export default function AdminLayout({
                 />
                 <span
                   className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${
-                    isDesktopExpanded
+                    showSidebarContent
                       ? "w-auto opacity-100"
                       : "w-0 opacity-0"
                   }`}
@@ -373,7 +475,7 @@ export default function AdminLayout({
                   {label}
                 </span>
                 {/* Tooltip when collapsed on desktop */}
-                {!isDesktopExpanded && (
+                {!showSidebarContent && (
                   <div className="absolute left-full ml-3 hidden group-hover:flex items-center z-[100] pointer-events-none">
                     <div className="rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-medium text-white shadow-lg whitespace-nowrap">
                       {label}

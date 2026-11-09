@@ -58,6 +58,7 @@ export function CategoryRow({ cat, depth = 0, state }: CategoryRowProps) {
   const linkedParentNames =
     Array.isArray(cat.linked_parents) && cat.linked_parents.length > 0
       ? cat.linked_parents
+          .filter((pid) => pid !== cat.parent)
           .map((pid) => catName(flat.find((p) => p.id === pid) || { name: `#${pid}` }))
           .filter(Boolean)
       : [];
@@ -146,15 +147,21 @@ export function CategoryRow({ cat, depth = 0, state }: CategoryRowProps) {
         {/* Thumbnail / Category Icon */}
         <div className="relative shrink-0 flex items-center justify-center">
           {cat.image?.src ? (
-            <Image
-              src={cat.image.src}
-              alt={catName(cat)}
-              width={44}
-              height={44}
-              className={`rounded-xl object-cover border border-gray-200 shadow-2xs bg-white ${
+            <div
+              className={`relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xs ${
                 depth === 0 ? "h-10 w-10 sm:h-11 sm:w-11" : "h-8 w-8 sm:h-9 sm:w-9"
               }`}
-            />
+            >
+              {/* CSS-sized thumbnail: `fill` avoids width/height props fighting
+                  the responsive classes (Next warns when only one axis changes). */}
+              <Image
+                src={cat.image.src}
+                alt={catName(cat)}
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div
               className={`rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200/60 ${

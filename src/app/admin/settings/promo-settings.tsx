@@ -105,7 +105,13 @@ export function PromoSettings() {
         </label>
         {image ? (
           <div className="relative inline-block border border-stone-200 rounded-xl overflow-hidden group shadow-sm">
-            <Image src={image} alt="Promo Banner" width={280} height={280} className="object-cover max-h-[300px]" />
+            <Image
+              src={image}
+              alt="Promo Banner"
+              width={280}
+              height={280}
+              className="h-auto w-auto max-h-[300px] max-w-full object-cover"
+            />
             <button
               type="button"
               onClick={() => setImage("")}

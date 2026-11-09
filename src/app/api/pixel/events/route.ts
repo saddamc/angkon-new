@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         ? request.nextUrl.origin
         : "https://www.angkon.net";
 
-    let fbp =
+    const fbp =
       request.cookies.get("_fbp")?.value ||
       (typeof (body as Record<string, unknown>).fbp === "string"
         ? ((body as Record<string, unknown>).fbp as string).trim()

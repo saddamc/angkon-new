@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import {
-  X, Plus, FolderOpen, Layers, Check, Loader2, AlertCircle,
-  UploadCloud, Search, ChevronDown, Lock, Unlock, Sparkles,
+  X, FolderOpen, Layers, Check, Loader2, AlertCircle,
+  UploadCloud, Search, ChevronDown, Sparkles,
   EyeOff, Hash, CornerDownRight, CheckCircle2
 } from "lucide-react";
 import { decodeHtmlCharCodes } from "@/utils/category-display";
+import { MAIN_CATEGORY_PRESETS, SUB_CATEGORY_PRESETS } from "./icon-presets";
 
 export interface WCCategory {
   id: number;
@@ -113,18 +114,7 @@ async function convertImageToWebP(file: File, maxDimension = 1600, quality = 0.9
 }
 
 
-const LUXURY_PRESETS = [
-  { name: "Half Sleeves", src: "/banners/half-sleeves.webp" },
-  { name: "Full Sleeves", src: "/banners/full-sleeves.webp" },
-  { name: "Tees", src: "/banners/tees.webp" },
-  { name: "Polo", src: "/banners/polos.webp" },
-  { name: "Pants", src: "/banners/pants.webp" },
-  { name: "Tops", src: "/banners/tops.webp" },
-  { name: "Men Banner", src: "/banners/men-banner.webp" },
-  { name: "Women Banner", src: "/banners/women-banner.webp" },
-  { name: "Accessories", src: "/banners/accessories.webp" },
-  { name: "Ethnic Wear", src: "/banners/ethnic-wear.webp" },
-];
+
 
 export function CreateCategoryModal({
   isOpen,
@@ -140,6 +130,7 @@ export function CreateCategoryModal({
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [autoSlug, setAutoSlug] = useState(true);
+  const [nameError, setNameError] = useState("");
   const [parent, setParent] = useState<number>(initialParentId);
   const [linkedParents, setLinkedParents] = useState<number[]>([]);
   const [description, setDescription] = useState("");
@@ -193,6 +184,7 @@ export function CreateCategoryModal({
       setName("");
       setSlug("");
       setAutoSlug(true);
+      setNameError("");
       setLinkedParents([]);
       setDescription("");
       setImageUrl("");
@@ -210,24 +202,16 @@ export function CreateCategoryModal({
     }
   }, [isOpen, initialType, initialParentId, flat]);
 
-  // Update slug automatically when name changes
+  // Update slug automatically when name changes unless custom slug entered
   const handleNameChange = (val: string) => {
     setName(val);
+    if (nameError) setNameError("");
     if (autoSlug) {
       setSlug(slugify(val));
     }
     if (!imageAlt || imageAlt === name) {
       setImageAlt(val);
     }
-  };
-
-  // Recalculate sort order when parent or type changes
-  const handleTypeChange = (newType: "main" | "sub") => {
-    setType(newType);
-    const newParent = newType === "main" ? 0 : (parent || flat.find((c) => c.parent === 0)?.id || 0);
-    setParent(newParent);
-    const count = flat.filter((c) => c.parent === newParent).length;
-    setSortOrder(count);
   };
 
   const handleParentChange = (newParentId: number) => {
@@ -248,7 +232,7 @@ export function CreateCategoryModal({
         throw new Error("Image exceeds 8MB. Please choose a smaller photo.");
       }
 
-      const catSlugClean = (slug || slugify(name) || "category")
+      const catSlugClean = (slugify(name) || "category")
         .toUpperCase()
         .replace(/[^A-Z0-9_\s-]/g, "")
         .replace(/[\s-]+/g, "_");
@@ -299,9 +283,27 @@ export function CreateCategoryModal({
 
   // Form Submission
   const handleSubmit = async (addAnother: boolean = false) => {
+    if (saving) return;
+
     const trimmedName = name.trim();
     if (!trimmedName) {
-      setError("Category name is required.");
+      setNameError("Category name is required.");
+      setError("");
+      nameInputRef.current?.focus();
+      return;
+    }
+
+    // Prevent duplicate names among siblings of the same parent. Different
+    // parents may legitimately reuse a name (e.g. "Sale" under two branches).
+    const finalParentForCheck = type === "main" ? 0 : Number(parent);
+    const duplicate = flat.some(
+      (c) =>
+        (c.parent ?? 0) === finalParentForCheck &&
+        catName(c).trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+    if (duplicate) {
+      setNameError(`A category named "${trimmedName}" already exists here.`);
+      setError("");
       nameInputRef.current?.focus();
       return;
     }
@@ -311,20 +313,20 @@ export function CreateCategoryModal({
       return;
     }
 
+    setNameError("");
     setSaving(true);
     setError("");
 
     try {
       const finalParent = type === "main" ? 0 : Number(parent);
-      const finalSlug = slug.trim() || slugify(trimmedName);
 
       const payload = {
         name: trimmedName,
-        slug: finalSlug,
+        slug: slug.trim() ? slugify(slug) : undefined,
         description: description.trim(),
         parent: finalParent,
         linked_parents: linkedParents,
-        menu_order: sortOrder,
+        menu_order: Math.max(0, Math.floor(Number(sortOrder) || 0)),
         imageUrl: imageUrl.trim(),
         imageId: imageId && Number.isFinite(Number(imageId)) ? Number(imageId) : null,
         imageAlt: imageAlt.trim() || trimmedName,
@@ -383,8 +385,7 @@ export function CreateCategoryModal({
         // Reset form but keep parent selected for rapid sequential entry
         isSavedRef.current = false;
         setName("");
-        setSlug("");
-        setAutoSlug(true);
+        setNameError("");
         setImageUrl("");
         setImageAlt("");
         setImageId(null);
@@ -452,30 +453,40 @@ export function CreateCategoryModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-category-title"
+        className="flex w-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in zoom-in-95 duration-200"
+        style={{
+          maxWidth: "min(620px, calc(100vw - 32px))",
+          maxHeight: "min(680px, calc(100dvh - 32px))",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4.5 border-b border-purple-100 bg-gradient-to-r from-purple-50/50 via-white to-purple-50/20 shrink-0">
-          <div className="flex items-center gap-3.5">
-            <div className="h-11 w-11 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0 shadow-2xs">
-              {type === "sub" ? <Layers className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />}
+        <div className="flex shrink-0 items-center justify-between border-b border-purple-100 bg-gradient-to-r from-purple-50/50 via-white to-purple-50/20 px-5 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-purple-100 bg-purple-50 text-purple-600 shadow-2xs">
+              {type === "sub" ? <Layers className="h-4.5 w-4.5" /> : <FolderOpen className="h-4.5 w-4.5" />}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200/60 shadow-2xs">
+              <div className="flex items-center gap-1.5">
+                <span className="rounded-md border border-purple-200/60 bg-purple-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-purple-700 shadow-2xs">
                   {type === "sub" ? "Subcategory" : "Main Category"}
                 </span>
                 {type === "sub" && selectedParentCategory && (
-                  <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <CornerDownRight className="h-3 w-3 text-gray-400" />
+                  <span className="flex max-w-[180px] items-center gap-1 truncate rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                    <CornerDownRight className="h-3 w-3 shrink-0 text-gray-400" />
                     under {catName(selectedParentCategory)}
                   </span>
                 )}
               </div>
-              <h2 className="text-[18px] sm:text-[20px] font-black text-gray-900 tracking-tight mt-0.5">
+              <h2
+                id="create-category-title"
+                className="mt-0.5 text-[16px] font-black tracking-tight text-gray-900 sm:text-[17px]"
+              >
                 {type === "sub" ? "Create New Subcategory" : "Create New Main Category"}
               </h2>
             </div>
@@ -484,331 +495,48 @@ export function CreateCategoryModal({
           <button
             type="button"
             onClick={() => void handleClose()}
-            className="h-9 w-9 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center transition shadow-2xs"
+            aria-label="Close dialog"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 shadow-2xs transition hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40 cursor-pointer"
             title="Close (Esc)"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4.5 w-4.5" />
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-gray-900">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 text-gray-900">
           {error && (
-            <div className="flex items-center gap-2.5 rounded-2xl bg-red-50 border border-red-200/80 px-4 py-3 text-[13px] font-semibold text-red-700 shadow-2xs animate-in slide-in-from-top-1">
-              <AlertCircle className="h-4.5 w-4.5 shrink-0 text-red-500" />
+            <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200/80 px-3.5 py-2.5 text-[12px] font-semibold text-red-700 shadow-2xs animate-in slide-in-from-top-1">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* 1. Category Type Selector */}
-          <div>
-            <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-2">
-              Category Classification *
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handleTypeChange("main")}
-                className={`p-3.5 rounded-2xl border-2 text-left flex items-start gap-3 transition cursor-pointer ${
-                  type === "main"
-                    ? "border-purple-600 bg-purple-50/50 ring-2 ring-purple-100 shadow-xs"
-                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
-                }`}
-              >
-                <div
-                  className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    type === "main" ? "bg-purple-600 text-white shadow-xs" : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  <FolderOpen className="h-4.5 w-4.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className={`text-[13px] font-black ${type === "main" ? "text-gray-900" : "text-gray-700"}`}>
-                      Main Category
-                    </p>
-                    {type === "main" && <Check className="h-4 w-4 text-purple-600" />}
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                    Root storefront collection (e.g., Men, Women, Accessories).
-                  </p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleTypeChange("sub")}
-                className={`p-3.5 rounded-2xl border-2 text-left flex items-start gap-3 transition cursor-pointer ${
-                  type === "sub"
-                    ? "border-purple-600 bg-purple-50/50 ring-2 ring-purple-100 shadow-xs"
-                    : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50"
-                }`}
-              >
-                <div
-                  className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    type === "sub" ? "bg-purple-600 text-white shadow-xs" : "bg-gray-100 text-gray-500"
-                  }`}
-                >
-                  <Layers className="h-4.5 w-4.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className={`text-[13px] font-black ${type === "sub" ? "text-gray-900" : "text-gray-700"}`}>
-                      Subcategory
-                    </p>
-                    {type === "sub" && <Check className="h-4 w-4 text-purple-600" />}
-                  </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                    Nested child collection (e.g., Half Sleeves, Tees, Pants).
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* 2. Parent Category Picker (Visible when Subcategory) */}
-          {type === "sub" && (
-            <div className="p-4 rounded-2xl bg-purple-50/40 border border-purple-100 space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="block text-[11px] font-black text-gray-700 uppercase tracking-widest">
-                  Parent Category *
-                </label>
-                <span className="text-[11px] font-bold text-gray-500">
-                  Subcategory will live under this collection
-                </span>
-              </div>
-
-              <div className="relative" ref={parentDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setParentDropdownOpen((prev) => !prev)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition shadow-2xs text-left"
-                >
-                  {selectedParentCategory ? (
-                    <>
-                      {selectedParentCategory.image?.src ? (
-                        <Image
-                          src={selectedParentCategory.image.src}
-                          alt=""
-                          width={32}
-                          height={32}
-                          className="h-8 w-8 rounded-lg object-cover border border-gray-200 shrink-0"
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 font-bold text-xs">
-                          <FolderOpen className="h-4 w-4" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-black text-gray-900 truncate">
-                          {catName(selectedParentCategory)}
-                        </p>
-                        <p className="text-[11px] text-gray-400 font-mono truncate">
-                          /{selectedParentCategory.slug} · {selectedParentCategory.count} products
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <span className="flex-1 text-[13px] font-semibold text-gray-400">
-                      — Select Parent Category —
-                    </span>
-                  )}
-                  <ChevronDown
-                    className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${
-                      parentDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {parentDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-30 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-150">
-                    <div className="p-2.5 border-b border-gray-100 bg-gray-50">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                        <input
-                          type="text"
-                          autoFocus
-                          placeholder="Search parent categories..."
-                          value={parentSearch}
-                          onChange={(e) => setParentSearch(e.target.value)}
-                          className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-[12px] bg-white outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
-                        />
-                      </div>
-                    </div>
-                    <div className="max-h-52 overflow-y-auto divide-y divide-gray-50 p-1">
-                      {filteredParentOptions.length === 0 ? (
-                        <p className="p-4 text-center text-xs text-gray-400">No matching categories found</p>
-                      ) : (
-                        filteredParentOptions.map((cat) => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => handleParentChange(cat.id)}
-                            className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition ${
-                              parent === cat.id ? "bg-purple-50 text-purple-700" : "hover:bg-gray-50 text-gray-800"
-                            }`}
-                          >
-                            {cat.image?.src ? (
-                              <Image src={cat.image.src} alt="" width={24} height={24} className="h-6 w-6 rounded-md object-cover shrink-0" />
-                            ) : (
-                              <FolderOpen className="h-4 w-4 text-gray-400 shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[12px] font-bold truncate">{catName(cat)}</p>
-                              <p className="text-[10px] text-gray-400 font-mono truncate">/{cat.slug}</p>
-                            </div>
-                            {parent === cat.id && <Check className="h-3.5 w-3.5 text-purple-600 shrink-0" />}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Multi-Parent Cross-Listing Option */}
-              <div className="pt-2 border-t border-purple-100">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1.5">
-                    <Sparkles className="h-3 w-3 text-purple-600" />
-                    Also display under additional categories (Cross-listing)
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCrossDropdownOpen((prev) => !prev)}
-                    className="text-[11px] font-bold text-purple-600 hover:underline"
-                  >
-                    + Add Cross-Parent
-                  </button>
-                </div>
-
-                {linkedParents.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {linkedParents.map((pid) => {
-                      const pCat = flat.find((c) => c.id === pid);
-                      return (
-                        <span
-                          key={pid}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-purple-200 text-[11px] font-bold text-purple-800 shadow-2xs"
-                        >
-                          {pCat ? catName(pCat) : `#${pid}`}
-                          <button
-                            type="button"
-                            onClick={() => setLinkedParents((prev) => prev.filter((id) => id !== pid))}
-                            className="hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-gray-500">
-                    No extra parent categories linked. Products will only appear under {selectedParentCategory ? catName(selectedParentCategory) : "primary parent"}.
-                  </p>
-                )}
-
-                {crossDropdownOpen && (
-                  <div
-                    ref={crossDropdownRef}
-                    className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg p-2 max-h-40 overflow-y-auto space-y-1"
-                  >
-                    {crossListOptions
-                      .filter((c) => !linkedParents.includes(c.id))
-                      .map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setLinkedParents((prev) => [...prev, c.id]);
-                            setCrossDropdownOpen(false);
-                          }}
-                          className="w-full text-left px-2.5 py-1.5 rounded-lg text-[12px] font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span>{catName(c)}</span>
-                          <span className="text-[10px] text-gray-400 font-mono">/{c.slug}</span>
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 3. Name & Slug */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1.5">
-                Category Name *
-              </label>
-              <input
-                ref={nameInputRef}
-                type="text"
-                placeholder={type === "sub" ? "e.g. Half Sleeves, Polos, Denim Pants" : "e.g. Men, Women, Accessories"}
-                value={name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-[14px] font-bold text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition shadow-2xs"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest">
-                  URL Slug
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setAutoSlug((prev) => !prev)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-gray-500 hover:text-purple-600 transition"
-                  title={autoSlug ? "Unlock to customize slug manually" : "Lock to auto-generate from category name"}
-                >
-                  {autoSlug ? <Lock className="h-3 w-3 text-emerald-600" /> : <Unlock className="h-3 w-3 text-amber-600" />}
-                  <span>{autoSlug ? "Auto-synced with name" : "Custom slug mode"}</span>
-                </button>
-              </div>
-
-              <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50/50 overflow-hidden focus-within:border-purple-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-purple-100 transition shadow-2xs">
-                <span className="px-3.5 py-2.5 text-[12px] font-mono font-medium text-gray-400 bg-gray-100/70 border-r border-gray-200 shrink-0">
-                  {type === "sub" && selectedParentCategory ? `/${selectedParentCategory.slug}/` : "/"}
-                </span>
-                <input
-                  type="text"
-                  placeholder="category-slug"
-                  value={slug}
-                  disabled={autoSlug}
-                  onChange={(e) => setSlug(slugify(e.target.value))}
-                  className="flex-1 px-3 py-2.5 text-[13px] font-mono text-gray-800 bg-transparent outline-none disabled:text-gray-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Visual Cover Banner / Image */}
-          <div className="space-y-3">
+          {/* 1. Category Cover Banner / Image (TOP) */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest">
                 Category Cover Banner
               </label>
-              <span className="text-[11px] font-bold text-gray-400">
-                1700 × 700 px recommended for luxury display
+              <span className="text-[10px] font-bold text-gray-400">
+                1700 × 700 px recommended
               </span>
             </div>
 
             {imageUrl ? (
-              <div className="relative rounded-2xl border border-gray-200 overflow-hidden bg-gray-50 shadow-xs group">
+              <div className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-xs group">
                 <Image
                   src={imageUrl}
                   alt={imageAlt || name}
                   width={600}
-                  height={144}
-                  className="w-full h-36 object-cover object-center"
+                  height={112}
+                  className="h-24 w-full object-cover object-center"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg bg-white text-gray-900 text-xs font-bold shadow-md hover:bg-gray-100 transition"
+                    className="px-2.5 py-1 rounded-lg bg-white text-gray-900 text-[11px] font-bold shadow-md hover:bg-gray-100 transition cursor-pointer"
                   >
                     Change Image
                   </button>
@@ -829,7 +557,7 @@ export function CreateCategoryModal({
                         }).catch(() => {});
                       }
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold shadow-md hover:bg-red-700 transition"
+                    className="px-2.5 py-1 rounded-lg bg-red-600 text-white text-[11px] font-bold shadow-md hover:bg-red-700 transition cursor-pointer"
                   >
                     Remove
                   </button>
@@ -848,17 +576,17 @@ export function CreateCategoryModal({
                   const f = e.dataTransfer.files?.[0];
                   if (f) void uploadFile(f);
                 }}
-                className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition flex flex-col items-center justify-center ${
+                className={`border-2 border-dashed rounded-xl p-3.5 text-center cursor-pointer transition flex flex-col items-center justify-center ${
                   dragActive ? "border-purple-600 bg-purple-50/40" : "border-gray-200 hover:border-purple-400 bg-gray-50/50 hover:bg-purple-50/20"
                 }`}
               >
-                <div className="h-10 w-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 mb-2">
-                  {uploading ? <Loader2 className="h-5 w-5 animate-spin text-purple-600" /> : <UploadCloud className="h-5 w-5" />}
+                <div className="h-8 w-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 mb-1">
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin text-purple-600" /> : <UploadCloud className="h-4 w-4" />}
                 </div>
-                <p className="text-[13px] font-bold text-gray-800">
+                <p className="text-[12px] font-bold text-gray-800">
                   {uploading ? "Uploading banner (WebP)..." : "Click to upload banner or drag & drop"}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
+                <p className="text-[10px] text-gray-400 mt-0.5">
                   Any image format · Auto-converted to optimized WebP
                 </p>
               </div>
@@ -873,125 +601,390 @@ export function CreateCategoryModal({
 
             {/* Quick Luxury Presets Selector */}
             <div>
-              <p className="text-[11px] font-bold text-gray-400 mb-1.5">Or choose a pre-made luxury banner:</p>
+              <p className="text-[10px] font-bold text-gray-400 mb-1">
+                {type === "main" ? "Or choose a Main Category banner preset:" : "Or choose a Subcategory banner preset:"}
+              </p>
               <div className="flex flex-wrap gap-1.5">
-                {LUXURY_PRESETS.map((preset) => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => {
-                      setImageUrl(preset.src);
-                      setImageAlt(preset.name);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition shadow-2xs ${
-                      imageUrl === preset.src
-                        ? "bg-purple-600 text-white border-purple-600"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:bg-purple-50/30"
-                    }`}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
+                {(type === "main" ? MAIN_CATEGORY_PRESETS : SUB_CATEGORY_PRESETS).map((preset) => {
+                  const selected = imageUrl === preset.src;
+                  return (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setImageUrl(preset.src);
+                        setImageAlt(preset.name);
+                      }}
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10.5px] font-bold shadow-2xs transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40 ${
+                        selected
+                          ? "border-purple-600 bg-purple-600 text-white ring-2 ring-purple-200"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-purple-300 hover:bg-purple-50/30"
+                      }`}
+                    >
+                      {selected && <Check className="h-3 w-3" />}
+                      {preset.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          {/* 5. Storefront Visibility & Ordering */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-gray-50/70 border border-gray-100">
-            <div>
-              <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1.5">
-                Storefront Status
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsActive((prev) => !prev)}
-                className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition ${
-                  isActive
-                    ? "bg-white border-emerald-300 shadow-2xs"
-                    : "bg-gray-100 border-gray-200 text-gray-500"
-                }`}
+          {/* 2. Category Name + URL Slug (Side-by-side per user design) */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="min-w-0">
+              <label
+                htmlFor="category-name"
+                className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-700"
               >
-                <div className="flex items-center gap-2">
-                  {isActive ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  ) : (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  )}
-                  <span className="text-[12px] font-bold text-gray-900">
-                    {isActive ? "Active (Visible)" : "Draft (Hidden)"}
-                  </span>
-                </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                    isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-200 text-gray-600"
-                  }`}
+                Category Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="category-name"
+                ref={nameInputRef}
+                type="text"
+                required
+                aria-required="true"
+                aria-invalid={Boolean(nameError)}
+                aria-describedby={nameError ? "category-name-error" : undefined}
+                placeholder={type === "sub" ? "e.g. Polos, Denim Pants" : "e.g. Men, Women, Accessories"}
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className={`h-11 w-full rounded-xl border px-3.5 text-[13px] font-bold text-gray-900 shadow-2xs outline-none transition focus:ring-2 ${
+                  nameError
+                    ? "border-red-300 focus:border-red-400 focus:ring-red-100"
+                    : "border-gray-200 focus:border-purple-400 focus:ring-purple-100"
+                }`}
+              />
+              {nameError ? (
+                <p
+                  id="category-name-error"
+                  role="alert"
+                  className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-red-600"
                 >
-                  {isActive ? "Live in Store" : "Hidden"}
-                </span>
-              </button>
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  {nameError}
+                </p>
+              ) : (
+                <p className="mt-1 text-[10.5px] text-gray-400">Shown in storefront navigation.</p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-[11px] font-black text-gray-500 uppercase tracking-widest mb-1.5">
-                Menu Order / Position
-              </label>
-              <div className="flex items-center rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-2xs">
-                <Hash className="h-3.5 w-3.5 text-gray-400 mr-2" />
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center justify-between">
+                <label
+                  htmlFor="category-slug"
+                  className="text-[11px] font-bold uppercase tracking-wider text-gray-700"
+                >
+                  URL Slug
+                </label>
+                <span className="text-[10px] text-gray-400 font-medium">
+                  {autoSlug ? "Auto-synced" : "Custom"}
+                </span>
+              </div>
+              <div className="flex h-11 items-center rounded-xl border border-gray-200 bg-gray-50/70 px-3 shadow-2xs transition focus-within:border-purple-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-purple-100">
+                <span className="mr-1 text-xs font-mono text-gray-400">/</span>
                 <input
-                  type="number"
-                  min="0"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
-                  className="w-full text-[13px] font-bold text-gray-900 outline-none"
+                  id="category-slug"
+                  type="text"
+                  value={slug}
+                  onChange={(e) => {
+                    setSlug(slugify(e.target.value));
+                    setAutoSlug(false);
+                  }}
+                  placeholder={slugify(name) || "category-slug"}
+                  className="w-full bg-transparent text-[12px] font-mono text-gray-800 outline-none"
                 />
               </div>
+              <p className="mt-1 text-[10.5px] text-gray-400">Canonical category URL path.</p>
             </div>
           </div>
 
-          {/* 6. Expandable SEO & Description */}
+          {/* 3. Parent Category Picker (Visible ONLY when Subcategory) */}
+          {type === "sub" && (
+            <div className="p-3.5 rounded-2xl bg-purple-50/40 border border-purple-100 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-[10.5px] font-black text-gray-700 uppercase tracking-widest">
+                  Parent Category *
+                </label>
+                <span className="text-[10.5px] font-bold text-gray-500">
+                  Subcategory will live under this collection
+                </span>
+              </div>
+
+              <div className="relative" ref={parentDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setParentDropdownOpen((prev) => !prev)}
+                  className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition shadow-2xs text-left cursor-pointer"
+                >
+                  {selectedParentCategory ? (
+                    <>
+                      {selectedParentCategory.image?.src ? (
+                        <Image
+                          src={selectedParentCategory.image.src}
+                          alt=""
+                          width={28}
+                          height={28}
+                          className="h-7 w-7 rounded-lg object-cover border border-gray-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="h-7 w-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 font-bold text-xs">
+                          <FolderOpen className="h-3.5 w-3.5" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-black text-gray-900 truncate">
+                          {catName(selectedParentCategory)}
+                        </p>
+                        <p className="text-[10px] text-gray-400 font-mono truncate">
+                          /{selectedParentCategory.slug} · {selectedParentCategory.count} products
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="flex-1 text-[12px] font-semibold text-gray-400">
+                      — Select Parent Category —
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${
+                      parentDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {parentDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-30 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden animate-in fade-in duration-150">
+                    <div className="p-2 border-b border-gray-100 bg-gray-50">
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="Search parent categories..."
+                          value={parentSearch}
+                          onChange={(e) => setParentSearch(e.target.value)}
+                          className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-gray-200 text-[11.5px] bg-white outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto divide-y divide-gray-50 p-1">
+                      {filteredParentOptions.length === 0 ? (
+                        <p className="p-3 text-center text-xs text-gray-400">No matching categories found</p>
+                      ) : (
+                        filteredParentOptions.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => handleParentChange(cat.id)}
+                            className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition cursor-pointer ${
+                              parent === cat.id ? "bg-purple-50 text-purple-700" : "hover:bg-gray-50 text-gray-800"
+                            }`}
+                          >
+                            {cat.image?.src ? (
+                              <Image src={cat.image.src} alt="" width={22} height={22} className="h-5.5 w-5.5 rounded-md object-cover shrink-0" />
+                            ) : (
+                              <FolderOpen className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-bold truncate">{catName(cat)}</p>
+                              <p className="text-[10px] text-gray-400 font-mono truncate">/{cat.slug}</p>
+                            </div>
+                            {parent === cat.id && <Check className="h-3.5 w-3.5 text-purple-600 shrink-0" />}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Multi-Parent Cross-Listing Option */}
+              <div className="pt-2 border-t border-purple-100">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10.5px] font-bold text-gray-700 flex items-center gap-1.5">
+                    <Sparkles className="h-3 w-3 text-purple-600" />
+                    Cross-listing (Optional)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCrossDropdownOpen((prev) => !prev)}
+                    className="text-[10.5px] font-bold text-purple-600 hover:underline cursor-pointer"
+                  >
+                    + Add Parent
+                  </button>
+                </div>
+
+                {linkedParents.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {linkedParents.map((pid) => {
+                      const pCat = flat.find((c) => c.id === pid);
+                      return (
+                        <span
+                          key={pid}
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white border border-purple-200 text-[10.5px] font-bold text-purple-800 shadow-2xs"
+                        >
+                          {pCat ? catName(pCat) : `#${pid}`}
+                          <button
+                            type="button"
+                            onClick={() => setLinkedParents((prev) => prev.filter((id) => id !== pid))}
+                            className="hover:text-red-600 cursor-pointer"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {crossDropdownOpen && (
+                  <div
+                    ref={crossDropdownRef}
+                    className="mt-1.5 bg-white border border-gray-200 rounded-xl shadow-lg p-1.5 max-h-36 overflow-y-auto space-y-0.5"
+                  >
+                    {crossListOptions
+                      .filter((c) => !linkedParents.includes(c.id))
+                      .map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setLinkedParents((prev) => [...prev, c.id]);
+                            setCrossDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-1 rounded-lg text-[11px] font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-between cursor-pointer"
+                        >
+                          <span>{catName(c)}</span>
+                          <span className="text-[9.5px] text-gray-400 font-mono">/{c.slug}</span>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Storefront visibility & Display Order */}
+          <div className="flex flex-col gap-2 rounded-xl border border-gray-100 bg-gray-50/70 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-700">
+                Storefront Status
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-gray-400">
+                {isActive ? "Visible to shoppers in menus." : "Hidden from shoppers (draft)."}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5" title="Display Order: lower numbers appear earlier">
+                <Hash className="h-3.5 w-3.5 text-gray-400" />
+                <input
+                  id="category-display-order"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                  className="h-8 w-14 rounded-lg border border-gray-200 bg-white px-1.5 text-center text-xs font-bold text-gray-800 outline-none focus:border-purple-400"
+                  title="Menu display order"
+                />
+              </div>
+
+              <div
+                role="radiogroup"
+                aria-label="Storefront status"
+                className="inline-flex shrink-0 rounded-xl border border-gray-200 bg-white p-0.5 shadow-2xs"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  onClick={() => setIsActive(true)}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] px-3 py-1 text-[11px] font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40 ${
+                    isActive
+                      ? "bg-emerald-600 text-white shadow-2xs"
+                      : "text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  Active
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!isActive}
+                  onClick={() => setIsActive(false)}
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-[10px] px-3 py-1 text-[11px] font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/40 ${
+                    !isActive
+                      ? "bg-gray-800 text-white shadow-2xs"
+                      : "text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  <EyeOff className="h-3 w-3" />
+                  Draft
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Optional description / SEO subtitle */}
           <div>
             <button
               type="button"
               onClick={() => setShowAdvanced((prev) => !prev)}
-              className="text-[12px] font-bold text-gray-500 hover:text-gray-800 flex items-center gap-1.5 transition"
+              aria-expanded={showAdvanced}
+              aria-controls="category-seo"
+              className="flex cursor-pointer items-center gap-1.5 rounded text-[11px] font-bold text-gray-500 transition hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40"
             >
               <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                className={`h-3 w-3 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
               />
-              <span>{showAdvanced ? "Hide SEO & Description" : "+ Add Description / SEO Subtitle"}</span>
+              <span>Description / SEO subtitle</span>
+              <span className="font-medium text-gray-400">(optional)</span>
             </button>
 
             {showAdvanced && (
-              <div className="mt-2.5 space-y-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 animate-in fade-in duration-150">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                    Category Description / Subtitle
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Short description displayed on category pages and used for search engines..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-gray-200 text-[12px] text-gray-800 bg-white outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
-                  />
-                </div>
+              <div
+                id="category-seo"
+                className="mt-2 space-y-1.5 rounded-xl border border-gray-100 bg-gray-50 p-3 animate-in fade-in duration-150"
+              >
+                <label htmlFor="category-description" className="sr-only">
+                  Description / SEO subtitle
+                </label>
+                <textarea
+                  id="category-description"
+                  rows={3}
+                  placeholder="Short description displayed on the category page and used for search engines…"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full resize-y rounded-xl border border-gray-200 bg-white p-2.5 text-[11.5px] text-gray-800 outline-none transition focus:border-purple-400 focus:ring-1 focus:ring-purple-100"
+                />
               </div>
             )}
           </div>
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4 border-t border-purple-100 bg-purple-50/20 shrink-0">
-          <div className="text-[11px] text-gray-400 font-mono hidden sm:block">
-            Path: <span className="text-gray-700 font-bold">{type === "sub" && selectedParentCategory ? `${catName(selectedParentCategory)} > ` : ""}{name || "New Category"}</span>
-          </div>
+        <div className="flex shrink-0 flex-col gap-2 border-t border-purple-100 bg-purple-50/20 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="hidden max-w-[220px] truncate font-mono text-[10.5px] text-gray-400 sm:block">
+            Path:{" "}
+            <span className="font-bold text-gray-700">
+              {type === "sub" && selectedParentCategory
+                ? `${catName(selectedParentCategory)} > `
+                : ""}
+              {name || "New Category"}
+            </span>
+          </p>
 
-          <div className="flex items-center justify-end gap-2.5">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={() => void handleClose()}
               disabled={saving}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-[13px] font-bold text-gray-700 transition shadow-2xs"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-[12px] font-bold text-gray-700 shadow-2xs transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/40 disabled:opacity-60 sm:w-auto cursor-pointer"
             >
               Cancel
             </button>
@@ -1000,21 +993,29 @@ export function CreateCategoryModal({
               type="button"
               onClick={() => void handleSubmit(true)}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-[13px] font-bold text-purple-700 transition shadow-2xs disabled:opacity-60"
-              title="Save this category and immediately start another without closing (Ctrl+Enter)"
+              className="w-full rounded-xl px-3 py-2 text-[11.5px] font-semibold text-purple-700 transition hover:bg-purple-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/40 disabled:opacity-50 sm:w-auto cursor-pointer"
+              title="Create this category and immediately start another (Ctrl+Enter)"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              <span>Save & Add Another</span>
+              Save &amp; add another
             </button>
 
             <button
               type="button"
               onClick={() => void handleSubmit(false)}
               disabled={saving}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-[13px] font-bold text-white transition shadow-md shadow-purple-200 disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-[12px] font-bold text-white shadow-md shadow-purple-200 transition hover:bg-purple-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto cursor-pointer"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-              <span>{type === "sub" ? "Create Subcategory" : "Create Category"}</span>
+              {saving ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Creating…</span>
+                </>
+              ) : (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  <span>{type === "sub" ? "Create Subcategory" : "Create Category"}</span>
+                </>
+              )}
             </button>
           </div>
         </div>

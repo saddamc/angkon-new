@@ -32,10 +32,9 @@ function resolveBrandBannerBySlug(slug?: string): string {
   if (!slug) return "/banners/tees.webp";
   const s = slug.toLowerCase();
 
-  if (s === "tawakkal" || s === "3-piece-suit" || s === "wada-collection") {
-    return "https://res.cloudinary.com/drtzgyetn/image/upload/v1791652408/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/1.jpg";
+  if (s === "tawakkal" || s === "3-piece-suit" || s === "wada-collection" || s === "ethnic" || s.includes("ethnic")) {
+    return "/banners/ethnic-wear.webp";
   }
-  if (s === "ethnic" || s.includes("ethnic")) return "/banners/ethnic-wear.webp";
   if (s === "men") return "/banners/men-banner.webp";
   if (s === "women") return "/banners/women-banner.webp";
   if (s.includes("polo")) return "/banners/polos.webp";

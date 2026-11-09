@@ -12,7 +12,7 @@ import {
   buildCategoryFolderPath,
   buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
-import { getAllDbCategoriesIncludingInactive } from "@/lib/db/categories";
+import { getAllDbCategoriesIncludingInactive, invalidateCategoriesCache } from "@/lib/db/categories";
 import { Product } from "@/models/Product";
 import { cleanCategoryInput, slugifyCategory } from "@/server/category-input";
 import { publishCatalogChange } from "@/lib/catalog-sync";
@@ -36,7 +36,36 @@ function syncRealCategoriesFile(updater: (cats: Record<string, unknown>[]) => Re
 
 export async function GET() {
   try {
-    const categories = await getAllDbCategoriesIncludingInactive();
+    let categories: any[] = [];
+    try {
+      await connectToDatabase();
+      const dbCats = await Category.find({})
+        .sort({ parent: 1, menu_order: 1, name: 1 })
+        .lean();
+
+      if (dbCats && dbCats.length > 0) {
+        categories = dbCats.map((c) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+          parent: c.parent ?? 0,
+          linked_parents: Array.isArray(c.linked_parents) ? c.linked_parents : [],
+          menu_order: c.menu_order ?? 0,
+          description: c.description ?? "",
+          count: c.count ?? 0,
+          is_active: c.is_active !== false,
+          meta_data: Array.isArray(c.meta_data) ? c.meta_data.map((m: any) => ({ key: m.key, value: m.value })) : [],
+          image: c.image ? { id: c.image.id, src: c.image.src, alt: c.image.alt } : null,
+        }));
+      }
+    } catch (dbErr) {
+      console.warn("Direct MongoDB categories fetch error, checking cache helper:", dbErr);
+    }
+
+    if (!categories || categories.length === 0) {
+      categories = (await getAllDbCategoriesIncludingInactive()) || [];
+    }
+
     if (categories && categories.length > 0) {
       // Live product counts. `direct_count` = products listed in this category itself;
       // `count` = distinct products shown on its storefront page (itself + all sub-categories).
@@ -185,7 +214,8 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      await publishCatalogChange();
+      invalidateCategoriesCache();
+    await publishCatalogChange();
     } catch (pubErr) {
       console.warn("Failed to publish catalog change:", pubErr);
     }
@@ -218,6 +248,34 @@ export async function DELETE(request: NextRequest) {
 
     const targetCategory = await Category.findOne(query);
     if (!targetCategory) {
+      // Stale category fallback handling: if the category is not in MongoDB, ensure it's purged from real-categories.json and cache
+      const targetNumId = !isNaN(numericId) ? numericId : null;
+      let removedFromFallback = false;
+      syncRealCategoriesFile((cats) => {
+        const prevLen = cats.length;
+        const filtered = cats.filter((c) => {
+          if (targetNumId !== null && Number(c.id) === targetNumId) return false;
+          if (typeof c.slug === "string" && c.slug === id) return false;
+          return true;
+        });
+        if (filtered.length !== prevLen) removedFromFallback = true;
+        return filtered;
+      });
+
+      invalidateCategoriesCache();
+      await publishCatalogChange().catch(() => {});
+
+      if (removedFromFallback || !isNaN(numericId)) {
+        return NextResponse.json(
+          {
+            message: "Category removed successfully",
+            deletedCategories: 1,
+            deletedProducts: 0,
+          },
+          { status: 200 }
+        );
+      }
+
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
@@ -348,6 +406,7 @@ export async function DELETE(request: NextRequest) {
       // ignore folder deletion if already empty or not a folder
     }
 
+    invalidateCategoriesCache();
     await publishCatalogChange();
 
     return NextResponse.json(

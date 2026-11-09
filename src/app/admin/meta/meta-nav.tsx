@@ -371,12 +371,12 @@ export function MetaSuiteSidebar({
       style={{
         background: META_SIDEBAR_GRADIENT,
       }}
-      className={`relative flex flex-col shrink-0 border-r border-[#dbe2ea] text-slate-800 transition-all duration-300 ease-in-out select-none ${
+      className={`relative flex flex-col shrink-0 text-slate-800 transition-all duration-300 ease-in-out select-none ${
         isDrawer
-          ? "w-full h-full shadow-2xl z-50 overflow-y-auto"
+          ? "w-full h-full z-10 overflow-y-auto"
           : collapsed
-          ? "w-[68px] h-full overflow-visible"
-          : "w-[250px] h-full"
+          ? "w-[68px] h-full overflow-visible border-r border-[#dbe2ea]"
+          : "w-[250px] h-full border-r border-[#dbe2ea]"
       }`}
     >
       {/* ── Mobile Drawer Header ── */}
@@ -629,26 +629,26 @@ export function MetaNavigationHeader({
     <>
       <header className="shrink-0 bg-white border border-slate-200/90 rounded-2xl px-4 sm:px-6 py-3.5 mb-6 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Left: Active Route Title + Info Tooltip (mobile: no hamburger — bottom tab bar handles nav) */}
-          <div className="flex items-center gap-3">
-            {/* Mobile: icon-only hamburger button — bottom tab bar handles primary nav */}
+          {/* Left: Active Route Title + Info Tooltip */}
+          <div className="flex items-center gap-2.5">
+            {/* Mobile: clean icon-only hamburger button — user requested just icon without cut-off text */}
             <button
               type="button"
               onClick={openMobile}
-              className="lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition cursor-pointer"
-              title="Open Meta Suite navigation"
-              aria-label="Open Meta Suite navigation"
+              className="lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition shadow-2xs cursor-pointer shrink-0"
+              title="Open Meta Marketing routes"
+              aria-label="Open Meta Marketing routes"
             >
-              <Menu className="h-4 w-4" />
+              <Menu className="h-4 w-4 text-slate-700" />
             </button>
 
-            {/* Mobile: page title shown next to icon */}
-            <h1 className="sm:hidden text-base font-bold text-slate-900 tracking-tight truncate max-w-[180px]">
+            {/* Mobile: active route name next to icon */}
+            <h1 className="lg:hidden text-base font-bold text-slate-900 tracking-tight truncate max-w-[200px]">
               {activeItem.label}
             </h1>
 
             {/* Desktop: title + info tooltip */}
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 {activeItem.label}
               </h1>

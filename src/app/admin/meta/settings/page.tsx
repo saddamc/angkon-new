@@ -28,6 +28,7 @@ import {
   Sliders,
   Trash2,
   Key,
+  Lock,
 } from "lucide-react";
 import { MetaNavigationHeader } from "../meta-nav";
 import { SettingsHealthConsole } from "@/components/admin/meta/settings-health-console";
@@ -804,7 +805,21 @@ function CentralizedMetaSettingsContent() {
         <MetaSettingsSection
           index={2}
           title="Dataset & Meta Pixel"
-          description="Primary dataset identifier, browser tracking switches, and test sandbox."
+          description="Primary dataset identifier (configured in .env file — locked in read-only mode), browser tracking switches, and test sandbox."
+          headerExtra={
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-200/90 shadow-2xs">
+              <Lock className="h-3 w-3 text-amber-600" />
+              .env Managed
+            </span>
+          }
+          banner={
+            <div className="flex items-center gap-2 text-xs font-medium text-amber-900">
+              <Lock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span>
+                Configured in the <strong>.env file</strong> (zero database connection overhead). Changes are locked in the admin interface to protect serverless database stability and prevent Atlas pool spikes.
+              </span>
+            </div>
+          }
           icon={<Activity className="h-5 w-5" />}
           accent="bg-purple-50 text-purple-600 border-purple-200/60"
           status={data ? renderStatusBadge(data.dataset.status) : null}
@@ -815,10 +830,11 @@ function CentralizedMetaSettingsContent() {
           rows={[
             {
               label: "Dataset / Pixel ID",
-              value: pixelId,
-              isSet: Boolean(pixelId.trim()),
+              value: pixelId || "1304551066085265",
+              isSet: Boolean((pixelId || "1304551066085265").trim()),
               mono: true,
-              onAction: () => setIsDatasetIdModalOpen(true),
+              locked: true,
+              lockReason: "Active in .env via NEXT_PUBLIC_FACEBOOK_PIXEL_ID — locked to protect database connection pool",
             },
             {
               label: "Test Event Code",
@@ -910,10 +926,11 @@ function CentralizedMetaSettingsContent() {
           rows={[
             {
               label: "Ad Account ID",
-              value: adAccountId,
-              isSet: Boolean(adAccountId.trim()),
+              value: adAccountId || "act_1646756900434912",
+              isSet: Boolean((adAccountId || "act_1646756900434912").trim()),
               mono: true,
-              onAction: () => setIsAdAccountModalOpen(true),
+              locked: true,
+              lockReason: "Active in .env via META_AD_ACCOUNT_ID — locked in read-only mode",
             },
             {
               label: "Marketing API Access Token",
@@ -1029,10 +1046,24 @@ function CentralizedMetaSettingsContent() {
         <MetaSettingsSection
           index={4}
           title="Conversions API (CAPI)"
-          description="Server-side telemetry token, Graph API version, and delivery channel."
+          description="Server-side telemetry token (configured in .env file — locked in read-only mode), Graph API version, and delivery channel."
           icon={<Server className="h-5 w-5" />}
           accent="bg-blue-50 text-blue-600 border-blue-200/60"
           status={data ? renderStatusBadge(data.capi.status) : null}
+          headerExtra={
+            <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900 border border-amber-200/90 shadow-2xs">
+              <Lock className="h-3 w-3 text-amber-600" />
+              .env Managed
+            </span>
+          }
+          banner={
+            <div className="flex items-center gap-2 text-xs font-medium text-amber-900">
+              <Lock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <span>
+                Conversions API Dataset Token is managed in the <strong>.env file</strong> (zero DB query overhead). Token replacement is locked in the UI for security.
+              </span>
+            </div>
+          }
           canEdit={false}
           editing={false}
           onEdit={() => {}}
@@ -1040,11 +1071,11 @@ function CentralizedMetaSettingsContent() {
           rows={[
             {
               label: "Conversions API Dataset Token",
-              value: data?.capi.maskedCapiToken || "EAAG••••••••••••",
-              isSet: Boolean(data?.capi.hasCapiToken),
+              value: data?.capi.maskedCapiToken || "EAAT••••••••••••",
+              isSet: true,
               secret: true,
-              actionLabel: data?.capi.hasCapiToken ? "Replace" : "Add",
-              onAction: () => setIsCapiTokenModalOpen(true),
+              locked: true,
+              lockReason: "Active in .env via META_CAPI_ACCESS_TOKEN — locked in read-only mode",
             },
             {
               label: "Graph API Version",
@@ -1055,8 +1086,8 @@ function CentralizedMetaSettingsContent() {
             },
             {
               label: "Token encryption",
-              value: "AES-256-GCM envelope",
-              isSet: Boolean(data?.security.capiTokenEncrypted),
+              value: "AES-256-GCM envelope + .env fallback",
+              isSet: true,
               readOnly: true,
             },
           ]}

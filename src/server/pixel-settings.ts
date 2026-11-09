@@ -69,8 +69,8 @@ export interface PublicAdminPixelSettings
 
 export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   tenantId: DEFAULT_TENANT_ID,
-  enabled: false,
-  pixelId: "",
+  enabled: Boolean(process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID),
+  pixelId: process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID?.trim() || "",
   testEventCode: "",
   domainVerificationToken: "",
   domainVerificationMethod: "dns_txt",
@@ -78,9 +78,9 @@ export const DEFAULT_PIXEL_SETTINGS: PixelSettings = {
   metaOwnershipVerifiedAt: "",
   metaOwnershipSource: "meta_business_manager",
   metaOwnershipConfirmedBy: "",
-  capiAccessToken: "",
+  capiAccessToken: process.env.META_CAPI_ACCESS_TOKEN?.trim() || "",
   marketingApiAccessToken: "",
-  adAccountId: "",
+  adAccountId: process.env.META_AD_ACCOUNT_ID?.trim() || "",
   trackPageView: true,
   trackViewContent: true,
   trackAddToCart: true,
@@ -296,15 +296,21 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
   if (typeof source.pixelId === "string") {
     pixelId = source.pixelId.trim();
   }
+  if (!pixelId && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID) {
+    pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID.trim();
+  }
 
   // Master tracking can only be active if a non-empty pixelId exists
   const enabled = pixelId
     ? typeof source.enabled === "boolean"
       ? source.enabled
-      : false
+      : Boolean(process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID)
     : false;
 
   let adAccountId = typeof source.adAccountId === "string" ? source.adAccountId.trim() : "";
+  if (!adAccountId && process.env.META_AD_ACCOUNT_ID) {
+    adAccountId = process.env.META_AD_ACCOUNT_ID.trim();
+  }
   if (adAccountId && !adAccountId.startsWith("act_") && /^\d+$/.test(adAccountId)) {
     adAccountId = `act_${adAccountId}`;
   }
@@ -333,9 +339,9 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
     metaOwnershipConfirmedBy:
       typeof source.metaOwnershipConfirmedBy === "string" ? source.metaOwnershipConfirmedBy : undefined,
     capiAccessToken:
-      typeof source.capiAccessToken === "string"
+      typeof source.capiAccessToken === "string" && source.capiAccessToken.trim()
         ? decryptTokenString(source.capiAccessToken.trim())
-        : "",
+        : process.env.META_CAPI_ACCESS_TOKEN?.trim() || "",
     marketingApiAccessToken:
       typeof source.marketingApiAccessToken === "string"
         ? decryptTokenString(source.marketingApiAccessToken.trim())

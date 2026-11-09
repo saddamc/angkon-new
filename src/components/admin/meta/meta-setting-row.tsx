@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { CheckCircle2, Pencil, Plus } from "lucide-react";
+import { CheckCircle2, Pencil, Plus, Lock } from "lucide-react";
 
 /**
  * Settings section shell + read-only value rows.
@@ -36,6 +36,10 @@ export interface MetaSettingRowProps {
   auto?: boolean;
   /** Indicates initial load is in progress — renders neutral skeleton placeholder */
   loading?: boolean;
+  /** When true, marks the setting as locked via environment configuration (.env) */
+  locked?: boolean;
+  /** Hover tooltip explaining why the row is locked */
+  lockReason?: string;
 }
 
 export function MetaSettingRow({
@@ -49,6 +53,8 @@ export function MetaSettingRow({
   readOnly = false,
   auto = false,
   loading = false,
+  locked = false,
+  lockReason,
 }: MetaSettingRowProps) {
   const resolvedAction = actionLabel
     ? (!isSet && actionLabel === "Replace" ? (secret ? "Configure" : "Add") : actionLabel)
@@ -93,7 +99,15 @@ export function MetaSettingRow({
           )}
         </div>
 
-        {!readOnly && onAction && (
+        {locked ? (
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-200/90 bg-amber-50/80 px-2.5 py-1 text-[11px] font-semibold text-amber-900 shadow-2xs select-none cursor-default"
+            title={lockReason || "Managed via .env file (locked for database security)"}
+          >
+            <Lock className="h-3 w-3 text-amber-600" />
+            <span>.env locked</span>
+          </span>
+        ) : !readOnly && onAction ? (
           <button
             type="button"
             onClick={onAction}
@@ -102,7 +116,7 @@ export function MetaSettingRow({
             {isSet ? <Pencil className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
             {resolvedAction}
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -136,6 +150,8 @@ export interface MetaSettingsSectionProps {
   belowContent?: ReactNode;
   /** Extra header content (rare). */
   headerExtra?: ReactNode;
+  /** Informational alert banner rendered below header */
+  banner?: ReactNode;
 }
 
 export function MetaSettingsSection({
@@ -154,6 +170,7 @@ export function MetaSettingsSection({
   children,
   belowContent,
   headerExtra,
+  banner,
 }: MetaSettingsSectionProps) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
@@ -199,6 +216,9 @@ export function MetaSettingsSection({
           ))}
         </div>
       </header>
+
+      {/* Optional Top Banner (e.g. .env management lock alert) */}
+      {banner && <div className="border-b border-amber-100/80 bg-amber-50/50 px-5 py-2.5">{banner}</div>}
 
       {/* Body: read-only rows, or the editable form */}
       {editing ? (

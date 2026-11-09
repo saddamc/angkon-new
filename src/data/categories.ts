@@ -31,9 +31,7 @@ export const FASHION_CATEGORIES: FashionCategory[] = [
     sub: [
       { name: "T-Shirts", slug: "men-t-shirts", icon: "👕" },
       { name: "Shirts", slug: "men-shirts", icon: "👔" },
-      { name: "Polos", slug: "men-polos", icon: "🎽" },
       { name: "Jeans", slug: "men-jeans", icon: "👖" },
-      { name: "Pants", slug: "men-pants", icon: "👖" },
       { name: "Hoodies & Sweatshirts", slug: "men-hoodies-sweatshirts", icon: "🧥" },
       { name: "Jackets", slug: "men-jackets", icon: "🧥" },
     ],
@@ -51,7 +49,6 @@ export const FASHION_CATEGORIES: FashionCategory[] = [
       { name: "T-Shirts", slug: "women-t-shirts", icon: "👕" },
       { name: "Shirts", slug: "women-shirts", icon: "👔" },
       { name: "Jeans", slug: "women-jeans", icon: "👖" },
-      { name: "Pants", slug: "women-pants", icon: "👖" },
       { name: "Skirts", slug: "women-skirts", icon: "🩱" },
       { name: "Hoodies & Sweatshirts", slug: "women-hoodies-sweatshirts", icon: "🧥" },
       { name: "Jackets", slug: "women-jackets", icon: "🧥" },

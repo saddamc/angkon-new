@@ -108,10 +108,20 @@ export function buildMetaUserData(userData?: MetaCapiUserData): Record<string, u
   const hashedPhone = normalizeAndHashPhone(userData.phone);
   if (hashedPhone) result.ph = [hashedPhone];
 
-  const hashedFn = hashSha256(userData.firstName);
+  let firstName = userData.firstName?.trim();
+  let lastName = userData.lastName?.trim();
+
+  // If firstName contains spaces and lastName is empty, split full name into first and last name
+  if (firstName && !lastName && firstName.includes(" ")) {
+    const nameParts = firstName.split(/\s+/);
+    firstName = nameParts[0];
+    lastName = nameParts.slice(1).join(" ");
+  }
+
+  const hashedFn = hashSha256(firstName);
   if (hashedFn) result.fn = [hashedFn];
 
-  const hashedLn = hashSha256(userData.lastName);
+  const hashedLn = hashSha256(lastName);
   if (hashedLn) result.ln = [hashedLn];
 
   const city = userData.city || userData.district;

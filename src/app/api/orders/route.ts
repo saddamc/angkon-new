@@ -86,8 +86,12 @@ export async function POST(request: NextRequest) {
       (typeof body.testEventCode === "string" && body.testEventCode.trim() ? body.testEventCode.trim() : undefined) ||
       request.headers.get("x-meta-test-code")?.trim() ||
       undefined;
-    const fbp = request.cookies.get("_fbp")?.value;
-    const fbc = request.cookies.get("_fbc")?.value;
+    const fbp =
+      (typeof body.fbp === "string" && body.fbp.trim() ? body.fbp.trim() : undefined) ||
+      request.cookies.get("_fbp")?.value;
+    const fbc =
+      (typeof body.fbc === "string" && body.fbc.trim() ? body.fbc.trim() : undefined) ||
+      request.cookies.get("_fbc")?.value;
 
     if (!fullName || !phone || !address || !items || items.length === 0) {
       return NextResponse.json(
@@ -428,6 +432,10 @@ export async function POST(request: NextRequest) {
         // Server-side Meta Conversions API (CAPI) for Cash on Delivery purchases
         if (newOrder.paymentMethod === "cod") {
           try {
+            const nameParts = (customerData.fullName || "").trim().split(/\s+/);
+            const firstName = nameParts[0] || customerData.fullName;
+            const lastName = nameParts.slice(1).join(" ") || undefined;
+
             await sendMetaCapiEvent({
               eventName: "Purchase",
               eventId: `order_${newOrder.orderNumber}`,
@@ -435,7 +443,8 @@ export async function POST(request: NextRequest) {
               userData: {
                 email: customerData.email,
                 phone: customerData.phone,
-                firstName: customerData.fullName,
+                firstName,
+                lastName,
                 city: customerData.city,
                 district: customerData.district,
                 postalCode: customerData.postalCode,

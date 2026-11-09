@@ -175,9 +175,28 @@ export default function AdminLayout({
   useEffect(() => {
     if (pathname === "/admin") return;
     void fetchPendingCount();
-    // Fast 12-second polling so new order sound fires promptly
-    const timer = setInterval(() => void fetchPendingCount(), 12_000);
-    return () => clearInterval(timer);
+
+    // Only poll when the browser tab is actively visible to prevent CPU burn and container keep-alive
+    const poll = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      void fetchPendingCount();
+    };
+
+    const timer = setInterval(poll, 30_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void fetchPendingCount();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPendingCount]);
 

@@ -6,7 +6,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useShippingQuote } from "@/hooks/use-shipping-quote";
 import { requestEmailCode, type VerifiedUser } from "@/components/checkout/email-verify-dialog";
 import type { AuthModalUser } from "@/components/checkout/auth-modal";
-import { trackInitiateCheckout, trackPurchase } from "@/lib/fpixel";
+import { trackInitiateCheckout, trackPurchase, getOrCreateFbc, getFbp } from "@/lib/fpixel";
 import { playCheckoutSuccessSound } from "@/lib/sound-alert";
 import type {
   CheckoutFormValues,
@@ -346,6 +346,8 @@ export function useCheckoutFlow() {
           promoCode: appliedPromo?.code || "",
           discount: discountAmount,
           testEventCode: activeTestCode,
+          fbp: getFbp(),
+          fbc: getOrCreateFbc(),
           items: items.map((item) => ({
             productId: item.productId,
             name: item.name,

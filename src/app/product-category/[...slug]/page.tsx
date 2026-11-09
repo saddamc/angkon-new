@@ -60,10 +60,8 @@ function parseSort(sort: string): { orderby: "date" | "price" | "popularity" | "
 
 const SLUG_ALIASES: Record<string, string> = {
   ethnic: "ethnic-wear",
-  cubans: "half-sleeves",
-  "oversized-full-sleeves": "full-sleeves",
+  cubans: "cuban-shirt",
   "t-shirts-men": "tees",
-  "men-pants": "pants",
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

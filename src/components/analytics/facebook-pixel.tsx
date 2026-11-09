@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { pageview, logEventTelemetry, generateEventId } from "@/lib/fpixel";
+import { pageview, logEventTelemetry, generateEventId, getOrCreateFbc } from "@/lib/fpixel";
 
 export interface PixelConfig {
   enabled: boolean;
@@ -139,6 +139,7 @@ export function FacebookPixel({ initialConfig }: { initialConfig?: PixelConfig |
   // Synchronize client-side global tracking flags & Meta consent
   useEffect(() => {
     if (typeof window !== "undefined") {
+      getOrCreateFbc(); // Instantly capture fbclid from URL and preserve _fbc cookie
       window.__angkon_meta_enabled = isEnabled;
       window.__angkon_pixel_events_config = eventsConfig;
       window.__angkon_meta_test_code = testEventCode || undefined;

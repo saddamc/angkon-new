@@ -52,6 +52,10 @@ export async function POST(request: NextRequest) {
 
       try {
         const appBase = process.env.NEXT_PUBLIC_APP_URL || "https://angkon.net";
+        const nameParts = (order.customer.fullName || "").trim().split(/\s+/);
+        const firstName = nameParts[0] || order.customer.fullName;
+        const lastName = nameParts.slice(1).join(" ") || undefined;
+
         await sendMetaCapiEvent({
           eventName: "Purchase",
           eventId: `order_${order.orderNumber}`,
@@ -59,7 +63,8 @@ export async function POST(request: NextRequest) {
           userData: {
             email: order.customer.email,
             phone: order.customer.phone,
-            firstName: order.customer.fullName,
+            firstName,
+            lastName,
             city: order.customer.city,
             district: order.customer.district,
             postalCode: order.customer.postalCode,

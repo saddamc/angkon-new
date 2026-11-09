@@ -99,6 +99,10 @@ async function handleCallback(request: NextRequest) {
       const resolvedClientUserAgent = order.visitorContext?.clientUserAgent || request.headers.get("user-agent") || undefined;
 
       try {
+        const nameParts = (order.customer.fullName || "").trim().split(/\s+/);
+        const firstName = nameParts[0] || order.customer.fullName;
+        const lastName = nameParts.slice(1).join(" ") || undefined;
+
         await sendMetaCapiEvent({
           eventName: "Purchase",
           eventId: `order_${order.orderNumber}`,
@@ -106,7 +110,8 @@ async function handleCallback(request: NextRequest) {
           userData: {
             email: order.customer.email,
             phone: order.customer.phone,
-            firstName: order.customer.fullName,
+            firstName,
+            lastName,
             city: order.customer.city,
             district: order.customer.district,
             postalCode: order.customer.postalCode,

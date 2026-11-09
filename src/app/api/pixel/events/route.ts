@@ -140,6 +140,36 @@ export async function POST(request: NextRequest) {
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
+    // Resolve fbc and fbp from cookies, body payload, or URL parameters
+    const origin =
+      request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")
+        ? request.nextUrl.origin
+        : "https://www.angkon.net";
+
+    let fbp =
+      request.cookies.get("_fbp")?.value ||
+      (typeof (body as Record<string, unknown>).fbp === "string"
+        ? ((body as Record<string, unknown>).fbp as string).trim()
+        : undefined);
+    let fbc =
+      request.cookies.get("_fbc")?.value ||
+      (typeof (body as Record<string, unknown>).fbc === "string"
+        ? ((body as Record<string, unknown>).fbc as string).trim()
+        : undefined);
+
+    // Fallback: If fbc was not in cookies or body, extract fbclid from url
+    if (!fbc && url) {
+      try {
+        const parsedUrl = new URL(url, origin);
+        const fbclid = parsedUrl.searchParams.get("fbclid");
+        if (fbclid && fbclid.trim()) {
+          fbc = `fb.1.${Date.now()}.${fbclid.trim()}`;
+        }
+      } catch {
+        // ignore url parsing error
+      }
+    }
+
     // If matching server event exists, update it to reflect deduplication pairing
     if (isDeduplicated) {
       await MetaEventLog.updateOne(
@@ -162,14 +192,8 @@ export async function POST(request: NextRequest) {
         // forward to Meta Conversions API (CAPI) on the server side so Meta receives both
         // Browser and Server copies with identical event_name and event_id for full deduplication.
         // Purchase is handled authoritatively by /api/orders upon verified order creation.
-        const origin =
-          request.nextUrl.origin && !request.nextUrl.origin.includes("localhost")
-            ? request.nextUrl.origin
-            : "https://www.angkon.net";
         const clientIp = extractClientIp(request);
         const clientUserAgent = request.headers.get("user-agent") || undefined;
-        const fbp = request.cookies.get("_fbp")?.value;
-        const fbc = request.cookies.get("_fbc")?.value;
 
         try {
           await sendMetaCapiEvent(
@@ -198,12 +222,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       eventId,
       deduplicated: isDeduplicated,
       id: String(doc._id),
     });
+
+    if (fbc && !request.cookies.get("_fbc")) {
+      response.cookies.set("_fbc", fbc, {
+        maxAge: 90 * 24 * 60 * 60,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      });
+    }
+
+    return response;
   } catch (error) {
     console.warn("[Meta Ingest] Ingestion warning:", error);
     return NextResponse.json({ error: "Ingestion failed" }, { status: 500 });

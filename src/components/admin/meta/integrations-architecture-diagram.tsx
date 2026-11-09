@@ -96,6 +96,7 @@ export function IntegrationsArchitectureDiagram({
   const [selectedNode, setSelectedNode] = useState<IntegrationNodeType | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState<"flow" | "graph">("flow");
 
   // SVG Connector Lines State
   const [lines, setLines] = useState<
@@ -231,7 +232,7 @@ export function IntegrationsArchitectureDiagram({
       observer.disconnect();
       clearTimeout(t);
     };
-  }, [updateConnectorLines]);
+  }, [updateConnectorLines, mobileViewMode]);
 
   const handleCopyDatasetId = () => {
     void navigator.clipboard.writeText(pixelId);
@@ -304,389 +305,802 @@ export function IntegrationsArchitectureDiagram({
       {/* ── Main Layout: Diagram Canvas (Left) + Information Panel (Right) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* ── LEFT & CENTER: Visual Architecture Diagram Canvas (Cols 8) ── */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 sm:p-7 relative overflow-hidden flex flex-col justify-between min-h-[580px]">
-          {/* Section Titles Header in Graph */}
-          <div className="grid grid-cols-3 gap-4 pb-4 border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-3.5 sm:p-5 md:p-7 relative overflow-hidden flex flex-col justify-between min-h-0 md:min-h-[580px]">
+          {/* Mobile Display Mode Switcher */}
+          <div className="flex md:hidden items-center justify-between pb-3.5 mb-3 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
-              <span>1. Ingestion Sources</span>
-              <InfoPopover
-                title="Ingestion Sources"
-                description="Channels generating e-commerce events from storefront visitors and server transactions."
-              />
+              <Layers className="h-3.5 w-3.5 text-blue-600" />
+              <span className="text-xs font-bold text-slate-700">Display Layout</span>
             </div>
-            <div className="text-center flex items-center justify-center gap-1.5">
-              <span>2. Central Dataset</span>
-              <InfoPopover
-                title="Central Dataset"
-                description="Meta's unified entity aggregating browser, server, and catalog conversion data."
-              />
-            </div>
-            <div className="text-right flex items-center justify-end gap-1.5">
-              <span>3. Used By (Assets)</span>
-              <InfoPopover
-                title="Used By (Target Assets)"
-                description="Downstream Meta business assets powered by this dataset for targeting and ROAS optimization."
-              />
+            <div className="inline-flex rounded-xl bg-slate-100 p-0.5 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setMobileViewMode("flow")}
+                className={`px-3 py-1 rounded-lg transition cursor-pointer text-xs ${
+                  mobileViewMode === "flow"
+                    ? "bg-white text-slate-900 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                Pipeline Flow
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileViewMode("graph")}
+                className={`px-3 py-1 rounded-lg transition cursor-pointer text-xs ${
+                  mobileViewMode === "graph"
+                    ? "bg-white text-slate-900 shadow-2xs font-bold"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                Diagram Map
+              </button>
             </div>
           </div>
 
-          {/* Interactive Graph Nodes & Dynamic SVG Overlay */}
-          <div ref={containerRef} className="relative flex-1 py-8 flex items-center justify-between">
-            {/* SVG Connecting Curved Bezier Lines */}
-            <svg
-              className="absolute inset-0 w-full h-full pointer-events-none z-10"
-              style={{ overflow: "visible" }}
-            >
-              <defs>
-                <linearGradient id="line-gradient-verified" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#059669" stopOpacity="0.85" />
-                </linearGradient>
-                <linearGradient id="line-gradient-attention" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#D97706" stopOpacity="0.85" />
-                </linearGradient>
-                <filter id="glow-verified" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
-              </defs>
+          {/* ── MOBILE PIPELINE FLOW (< md) ── */}
+          <div className={`${mobileViewMode === "flow" ? "block" : "hidden"} md:hidden space-y-3.5 py-1`}>
+            {/* Step 1: Ingestion Sources */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[11px] font-bold text-blue-700">
+                    1
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Ingestion Sources
+                  </span>
+                </div>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>3 Active</span>
+                </span>
+              </div>
 
-              {lines.map((line) => {
-                const dx = line.to.x - line.from.x;
-                const pathData = `M ${line.from.x} ${line.from.y} C ${line.from.x + dx * 0.45} ${
-                  line.from.y
-                }, ${line.to.x - dx * 0.45} ${line.to.y}, ${line.to.x} ${line.to.y}`;
-
-                const strokeColor = getStatusColor(line.status);
-                const isVerified = line.status === "verified";
-
-                return (
-                  <g key={line.id}>
-                    {/* Shadow / Glow Background Line */}
-                    <path
-                      d={pathData}
-                      fill="none"
-                      stroke={strokeColor}
-                      strokeWidth={isVerified ? "3.5" : "2"}
-                      strokeOpacity={isVerified ? "0.2" : "0.15"}
-                      strokeLinecap="round"
-                    />
-                    {/* Foreground Crisp Line */}
-                    <path
-                      d={pathData}
-                      fill="none"
-                      stroke={strokeColor}
-                      strokeWidth={isVerified ? "2.2" : "1.8"}
-                      strokeDasharray={line.status === "unavailable" ? "4 4" : undefined}
-                      strokeLinecap="round"
-                    />
-                    {/* Direction Flow Dots on Active Lines */}
-                    {isVerified && (
-                      <circle
-                        r="3.5"
-                        fill="#FFFFFF"
-                        stroke={strokeColor}
-                        strokeWidth="2"
-                        className="animate-pulse"
+              {/* Stacked Cards for Ingestion Sources */}
+              <div className="space-y-2">
+                {/* CAPI Card */}
+                <div
+                  onClick={() => setSelectedNode("capi")}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md active:scale-[0.99] ${
+                    selectedNode === "capi"
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200/60 shrink-0">
+                        <Server className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs truncate">Conversions API</div>
+                        <div className="text-[11px] text-slate-500 truncate">Server-to-Server Gateway</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isCapiActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
                       >
-                        <animateMotion path={pathData} dur="4s" repeatCount="indefinite" />
-                      </circle>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* ── COLUMN 1: LEFT INTEGRATIONS (Sources) ── */}
-            <div className="w-[180px] sm:w-[210px] space-y-5 z-20">
-              {/* Node 1: Conversions API */}
-              <div
-                ref={capiRef}
-                onClick={() => setSelectedNode("capi")}
-                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
-                  selectedNode === "capi"
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200/90 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200/60">
-                    <Server className="h-4 w-4" />
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isCapiActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{isCapiActive ? "Active" : "Attention"}</span>
+                      </span>
+                      <div className="font-mono text-[10px] font-semibold text-slate-600 mt-1">
+                        {totalCapiAccepted.toLocaleString()} sent
+                      </div>
+                    </div>
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isCapiActive
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isCapiActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                      }`}
-                    />
-                    <span>{isCapiActive ? "Active" : "Attention"}</span>
-                  </span>
                 </div>
-                <div className="font-bold text-slate-900 text-xs">Conversions API</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between">
-                  <span>Server-to-Server</span>
-                  <span className="font-mono font-semibold text-slate-700">
-                    {totalCapiAccepted.toLocaleString()} sent
-                  </span>
-                </div>
-              </div>
 
-              {/* Node 2: Meta Pixel */}
-              <div
-                ref={pixelRef}
-                onClick={() => setSelectedNode("pixel")}
-                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
-                  selectedNode === "pixel"
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200/90 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200/60">
-                    <Globe className="h-4 w-4" />
+                {/* Meta Pixel Card */}
+                <div
+                  onClick={() => setSelectedNode("pixel")}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md active:scale-[0.99] ${
+                    selectedNode === "pixel"
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200/60 shrink-0">
+                        <Globe className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs truncate">Meta Pixel</div>
+                        <div className="text-[11px] text-slate-500 truncate">Storefront JavaScript SDK</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isPixelActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isPixelActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{isPixelActive ? "Active" : "Unconfigured"}</span>
+                      </span>
+                      <div className="font-mono text-[10px] font-semibold text-slate-600 mt-1">
+                        {totalBrowserEvents.toLocaleString()} hits
+                      </div>
+                    </div>
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isPixelActive
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isPixelActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                      }`}
-                    />
-                    <span>{isPixelActive ? "Active" : "Unconfigured"}</span>
-                  </span>
                 </div>
-                <div className="font-bold text-slate-900 text-xs">Meta Pixel</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between">
-                  <span>Meta Pixel JavaScript SDK</span>
-                  <span className="font-mono font-semibold text-slate-700">
-                    {totalBrowserEvents.toLocaleString()} hits
-                  </span>
-                </div>
-              </div>
 
-              {/* Node 3: Domain Verification */}
-              <div
-                ref={domainRef}
-                onClick={() => setSelectedNode("domain")}
-                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
-                  selectedNode === "domain"
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200/90 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60">
-                    <ShieldCheck className="h-4 w-4" />
+                {/* Domain Verification Card */}
+                <div
+                  onClick={() => setSelectedNode("domain")}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md active:scale-[0.99] ${
+                    selectedNode === "domain"
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60 shrink-0">
+                        <ShieldCheck className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs truncate">Domain Verification</div>
+                        <div className="text-[11px] text-slate-500 truncate">angkon.net (AEM)</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isDomainActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-slate-600 border border-slate-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isDomainActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                          }`}
+                        />
+                        <span>{isDomainActive ? "Verified" : "Pending"}</span>
+                      </span>
+                      <div className="text-[10px] font-medium text-emerald-600 mt-1">
+                        DNS Matched
+                      </div>
+                    </div>
                   </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isDomainActive
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-slate-100 text-slate-600 border border-slate-200"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isDomainActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                      }`}
-                    />
-                    <span>{isDomainActive ? "Verified" : "Pending"}</span>
-                  </span>
-                </div>
-                <div className="font-bold text-slate-900 text-xs">Domain Verification</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate">
-                  angkon.net (AEM)
                 </div>
               </div>
             </div>
 
-            {/* ── COLUMN 2: CENTER DATASET (Central Hub) ── */}
-            <div className="w-[190px] sm:w-[230px] z-20">
+            {/* Downward Stream Connector: Ingestion -> Central Dataset */}
+            <div className="flex flex-col items-center justify-center py-0.5">
+              <div className="h-5 w-0.5 bg-gradient-to-b from-slate-200 via-emerald-400 to-blue-500 relative">
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping opacity-75" />
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-50 border border-blue-200/80 text-[10px] font-bold text-blue-700 shadow-2xs my-0.5">
+                <Zap className="h-3 w-3 text-blue-600" />
+                <span>Aggregating into Central Dataset</span>
+              </div>
+              <div className="h-5 w-0.5 bg-gradient-to-b from-blue-500 to-blue-600" />
+            </div>
+
+            {/* Step 2: Central Dataset Hub */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
+                    2
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                    Central Dataset Hub
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-mono">Unified Stream</span>
+              </div>
+
               <div
-                ref={datasetRef}
                 onClick={() => setSelectedNode("dataset")}
-                className={`p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer bg-gradient-to-b from-white via-blue-50/20 to-white shadow-md hover:shadow-xl hover:-translate-y-1 ${
+                className={`p-4 rounded-2xl border-2 transition-all duration-200 cursor-pointer bg-gradient-to-br from-white via-blue-50/30 to-blue-50/10 shadow-sm hover:shadow-md active:scale-[0.99] ${
                   selectedNode === "dataset"
                     ? "border-blue-600 ring-4 ring-blue-100"
-                    : "border-blue-500/80 hover:border-blue-600"
+                    : "border-blue-500"
                 }`}
               >
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#1877F2] to-[#0A57C2] flex items-center justify-center text-white mx-auto shadow-md mb-3">
-                  {/* Meta Infinite Loop Icon */}
-                  <svg className="h-6 w-6 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M16.994 3.003c-2.31 0-4.32 1.35-5.32 3.32-1-1.97-3.01-3.32-5.32-3.32C2.84 3.003 0 5.843 0 9.183c0 4.19 4.31 7.78 10.97 13.82.4.36.93.36 1.33 0C18.96 16.963 23.27 13.373 23.27 9.183c0-3.34-2.84-6.18-6.276-6.18zm-5.32 17.65C5.464 15.113 1.94 11.963 1.94 9.183c0-2.34 1.89-4.24 4.33-4.24 2.06 0 3.86 1.41 4.38 3.42h1.96c.52-2.01 2.32-3.42 4.38-4.24 2.44 0 4.33 1.9 4.33 4.24 0 2.78-3.524 5.93-9.734 11.47z" />
-                  </svg>
-                </div>
-
-                <div className="text-center space-y-1">
-                  <div className="font-bold text-slate-900 text-sm tracking-tight">
-                    {datasetName}
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-[#1877F2] to-[#0A57C2] flex items-center justify-center text-white shrink-0 shadow-xs">
+                    <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M16.994 3.003c-2.31 0-4.32 1.35-5.32 3.32-1-1.97-3.01-3.32-5.32-3.32C2.84 3.003 0 5.843 0 9.183c0 4.19 4.31 7.78 10.97 13.82.4.36.93.36 1.33 0C18.96 16.963 23.27 13.373 23.27 9.183c0-3.34-2.84-6.18-6.276-6.18zm-5.32 17.65C5.464 15.113 1.94 11.963 1.94 9.183c0-2.34 1.89-4.24 4.33-4.24 2.06 0 3.86 1.41 4.38 3.42h1.96c.52-2.01 2.32-3.42 4.38-4.24 2.44 0 4.33 1.9 4.33 4.24 0 2.78-3.524 5.93-9.734 11.47z" />
+                    </svg>
                   </div>
-                  <div className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                    <span>ID: {pixelId}</span>
-                  </div>
-                  <div className="pt-2 flex items-center justify-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[11px] font-bold text-emerald-700">
-                      Synchronizing
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-medium">
-                    Web &amp; Server Dataset
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-slate-900 text-sm tracking-tight truncate">
+                        {datasetName}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[11px] font-bold text-emerald-700">Synchronizing</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-1 gap-2">
+                      <div className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-600 bg-white border border-slate-200/80 px-2 py-0.5 rounded-md truncate">
+                        <span>ID: {pixelId}</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-medium shrink-0">Web &amp; Server Dataset</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* ── COLUMN 3: RIGHT USED BY (Meta Assets) ── */}
-            <div className="w-[180px] sm:w-[210px] space-y-5 z-20">
-              {/* Node 1: Ad Sets */}
-              <div
-                ref={adsetsRef}
-                onClick={() => setSelectedNode("adsets")}
-                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
-                  selectedNode === "adsets"
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200/90 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/60">
-                    <Target className="h-4 w-4" />
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      isMarketingConnected
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : isMarketingScopeReq
-                        ? "bg-amber-50 text-amber-700 border border-amber-200"
-                        : isMarketingConfigured
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "bg-slate-100 text-slate-600 border border-slate-200"
-                    }`}
-                  >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        isMarketingConnected
-                          ? "bg-emerald-500 animate-pulse"
-                          : isMarketingScopeReq
-                          ? "bg-amber-500"
-                          : isMarketingConfigured
-                          ? "bg-blue-500"
-                          : "bg-slate-400"
-                      }`}
-                    />
-                    <span>
-                      {isMarketingConnected
-                        ? "Connected"
-                        : isMarketingScopeReq
-                        ? "Scope Req."
-                        : isMarketingConfigured
-                        ? "Configured"
-                        : "Unavailable"}
-                    </span>
+            {/* Downward Stream Connector: Central Dataset -> Used By */}
+            <div className="flex flex-col items-center justify-center py-0.5">
+              <div className="h-5 w-0.5 bg-gradient-to-b from-blue-600 via-indigo-500 to-emerald-500 relative">
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping opacity-75" />
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-bold text-emerald-700 shadow-2xs my-0.5">
+                <ChevronRight className="h-3 w-3 text-emerald-600 rotate-90" />
+                <span>Distributing to Target Assets</span>
+              </div>
+              <div className="h-5 w-0.5 bg-gradient-to-b from-emerald-500 to-emerald-600" />
+            </div>
+
+            {/* Step 3: Used By (Assets) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[11px] font-bold text-emerald-800">
+                    3
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                    Used By (Target Assets)
                   </span>
                 </div>
-                <div className="font-bold text-slate-900 text-xs">Ad Sets</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 truncate" title={marketingSettings?.accountName || "Plain Stitch"}>
-                  {marketingSettings?.accountName || "Plain Stitch"}
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  <span>3 Linked</span>
+                </span>
+              </div>
+
+              {/* Stacked Cards for Assets */}
+              <div className="space-y-2">
+                {/* Ad Sets Card */}
+                <div
+                  onClick={() => setSelectedNode("adsets")}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md active:scale-[0.99] ${
+                    selectedNode === "adsets"
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/60 shrink-0">
+                        <Target className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs truncate">Ad Sets</div>
+                        <div className="text-[11px] text-slate-500 truncate">
+                          {marketingSettings?.accountName || "Plain Stitch"}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isMarketingConnected
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : isMarketingScopeReq
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : isMarketingConfigured
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-slate-100 text-slate-600 border border-slate-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isMarketingConnected
+                              ? "bg-emerald-500 animate-pulse"
+                              : isMarketingScopeReq
+                              ? "bg-amber-500"
+                              : isMarketingConfigured
+                              ? "bg-blue-500"
+                              : "bg-slate-400"
+                          }`}
+                        />
+                        <span>
+                          {isMarketingConnected
+                            ? "Connected"
+                            : isMarketingScopeReq
+                            ? "Scope Req."
+                            : isMarketingConfigured
+                            ? "Configured"
+                            : "Unavailable"}
+                        </span>
+                      </span>
+                      <div className="text-[10px] font-mono text-slate-500 mt-1">Campaign Optimization</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Custom Audiences Card */}
+                <div
+                  onClick={() => setSelectedNode("audiences")}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md active:scale-[0.99] ${
+                    selectedNode === "audiences"
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200/60 shrink-0">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs truncate">Custom Audiences</div>
+                        <div className="text-[11px] text-slate-500 truncate">Retargeting &amp; Lookalike</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Active</span>
+                      </span>
+                      <div className="text-[10px] font-medium text-indigo-600 mt-1">Dynamic Segments</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Catalog Card */}
+                <div
+                  onClick={() => setSelectedNode("catalog")}
+                  className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md active:scale-[0.99] ${
+                    selectedNode === "catalog"
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-slate-200/90"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-9 w-9 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center border border-pink-200/60 shrink-0">
+                        <ShoppingBag className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 text-xs truncate">Product Catalog</div>
+                        <div className="text-[11px] text-slate-500 truncate">Catalog_Products</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          safeCatalogCount > 0
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            safeCatalogCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{safeCatalogCount > 0 ? "Synced" : "Syncing"}</span>
+                      </span>
+                      <div className="font-mono text-[10px] font-semibold text-slate-700 mt-1">
+                        {safeCatalogCount} items
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── HORIZONTAL ARCHITECTURE DIAGRAM (Desktop & Scrollable on Mobile) ── */}
+          <div className={`${mobileViewMode === "graph" ? "block" : "hidden"} md:block w-full overflow-x-auto pb-2 custom-scrollbar`}>
+            {mobileViewMode === "graph" && (
+              <div className="md:hidden flex items-center justify-center gap-1.5 pb-2.5 text-[11px] text-blue-600 font-medium bg-blue-50/50 rounded-lg p-1.5 mb-2 border border-blue-100">
+                <ArrowRight className="h-3 w-3 animate-pulse" />
+                <span>Swipe horizontally to explore full connected topology</span>
+              </div>
+            )}
+
+            <div className="min-w-[680px]">
+              {/* Section Titles Header in Graph */}
+              <div className="grid grid-cols-3 gap-4 pb-4 border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                <div className="flex items-center gap-1.5">
+                  <span>1. Ingestion Sources</span>
+                  <InfoPopover
+                    title="Ingestion Sources"
+                    description="Channels generating e-commerce events from storefront visitors and server transactions."
+                  />
+                </div>
+                <div className="text-center flex items-center justify-center gap-1.5">
+                  <span>2. Central Dataset</span>
+                  <InfoPopover
+                    title="Central Dataset"
+                    description="Meta's unified entity aggregating browser, server, and catalog conversion data."
+                  />
+                </div>
+                <div className="text-right flex items-center justify-end gap-1.5">
+                  <span>3. Used By (Assets)</span>
+                  <InfoPopover
+                    title="Used By (Target Assets)"
+                    description="Downstream Meta business assets powered by this dataset for targeting and ROAS optimization."
+                  />
                 </div>
               </div>
 
-              {/* Node 2: Audiences */}
-              <div
-                ref={audiencesRef}
-                onClick={() => setSelectedNode("audiences")}
-                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
-                  selectedNode === "audiences"
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200/90 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200/60">
-                    <Users className="h-4 w-4" />
-                  </div>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Active</span>
-                  </span>
-                </div>
-                <div className="font-bold text-slate-900 text-xs">Custom Audiences</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">
-                  Retargeting &amp; Lookalike
-                </div>
-              </div>
+              {/* Interactive Graph Nodes & Dynamic SVG Overlay */}
+              <div ref={containerRef} className="relative flex-1 py-8 flex items-center justify-between">
+                {/* SVG Connecting Curved Bezier Lines */}
+                <svg
+                  className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                  style={{ overflow: "visible" }}
+                >
+                  <defs>
+                    <linearGradient id="line-gradient-verified" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10B981" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="#059669" stopOpacity="0.85" />
+                    </linearGradient>
+                    <linearGradient id="line-gradient-attention" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.85" />
+                      <stop offset="100%" stopColor="#D97706" stopOpacity="0.85" />
+                    </linearGradient>
+                    <filter id="glow-verified" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
 
-              {/* Node 3: Catalog Feed */}
-              <div
-                ref={catalogRef}
-                onClick={() => setSelectedNode("catalog")}
-                className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
-                  selectedNode === "catalog"
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200/90 hover:border-slate-300"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center border border-pink-200/60">
-                    <ShoppingBag className="h-4 w-4" />
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      safeCatalogCount > 0
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
+                  {lines.map((line) => {
+                    const dx = line.to.x - line.from.x;
+                    const pathData = `M ${line.from.x} ${line.from.y} C ${line.from.x + dx * 0.45} ${
+                      line.from.y
+                    }, ${line.to.x - dx * 0.45} ${line.to.y}, ${line.to.x} ${line.to.y}`;
+
+                    const strokeColor = getStatusColor(line.status);
+                    const isVerified = line.status === "verified";
+
+                    return (
+                      <g key={line.id}>
+                        {/* Shadow / Glow Background Line */}
+                        <path
+                          d={pathData}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth={isVerified ? "3.5" : "2"}
+                          strokeOpacity={isVerified ? "0.2" : "0.15"}
+                          strokeLinecap="round"
+                        />
+                        {/* Foreground Crisp Line */}
+                        <path
+                          d={pathData}
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth={isVerified ? "2.2" : "1.8"}
+                          strokeDasharray={line.status === "unavailable" ? "4 4" : undefined}
+                          strokeLinecap="round"
+                        />
+                        {/* Direction Flow Dots on Active Lines */}
+                        {isVerified && (
+                          <circle
+                            r="3.5"
+                            fill="#FFFFFF"
+                            stroke={strokeColor}
+                            strokeWidth="2"
+                            className="animate-pulse"
+                          >
+                            <animateMotion path={pathData} dur="4s" repeatCount="indefinite" />
+                          </circle>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* ── COLUMN 1: LEFT INTEGRATIONS (Sources) ── */}
+                <div className="w-[195px] lg:w-[210px] space-y-5 z-20 shrink-0">
+                  {/* Node 1: Conversions API */}
+                  <div
+                    ref={capiRef}
+                    onClick={() => setSelectedNode("capi")}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
+                      selectedNode === "capi"
+                        ? "border-blue-600 ring-2 ring-blue-100"
+                        : "border-slate-200/90 hover:border-slate-300"
                     }`}
                   >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        safeCatalogCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                      }`}
-                    />
-                    <span>{safeCatalogCount > 0 ? "Synced" : "Syncing"}</span>
-                  </span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-200/60">
+                        <Server className="h-4 w-4" />
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isCapiActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isCapiActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{isCapiActive ? "Active" : "Attention"}</span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Conversions API</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between gap-1">
+                      <span className="truncate">Server-to-Server</span>
+                      <span className="font-mono font-semibold text-slate-700 shrink-0">
+                        {totalCapiAccepted.toLocaleString()} sent
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Node 2: Meta Pixel */}
+                  <div
+                    ref={pixelRef}
+                    onClick={() => setSelectedNode("pixel")}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
+                      selectedNode === "pixel"
+                        ? "border-blue-600 ring-2 ring-blue-100"
+                        : "border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200/60">
+                        <Globe className="h-4 w-4" />
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isPixelActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isPixelActive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{isPixelActive ? "Active" : "Unconfigured"}</span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Meta Pixel JavaScript SDK</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between gap-1">
+                      <span className="truncate">Browser SDK</span>
+                      <span className="font-mono font-semibold text-slate-700 shrink-0">
+                        {totalBrowserEvents.toLocaleString()} hits
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Node 3: Domain Verification */}
+                  <div
+                    ref={domainRef}
+                    onClick={() => setSelectedNode("domain")}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
+                      selectedNode === "domain"
+                        ? "border-blue-600 ring-2 ring-blue-100"
+                        : "border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200/60">
+                        <ShieldCheck className="h-4 w-4" />
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isDomainActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-slate-100 text-slate-600 border border-slate-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isDomainActive ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                          }`}
+                        />
+                        <span>{isDomainActive ? "Verified" : "Pending"}</span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Domain Verification</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+                      angkon.net (AEM)
+                    </div>
+                  </div>
                 </div>
-                <div className="font-bold text-slate-900 text-xs">Product Catalog</div>
-                <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between">
-                  <span>Catalog_Products</span>
-                  <span className="font-mono font-semibold text-slate-700">
-                    {safeCatalogCount} items
-                  </span>
+
+                {/* ── COLUMN 2: CENTER DATASET (Central Hub) ── */}
+                <div className="w-[200px] lg:w-[230px] z-20 shrink-0 px-1">
+                  <div
+                    ref={datasetRef}
+                    onClick={() => setSelectedNode("dataset")}
+                    className={`p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer bg-gradient-to-b from-white via-blue-50/20 to-white shadow-md hover:shadow-xl hover:-translate-y-1 ${
+                      selectedNode === "dataset"
+                        ? "border-blue-600 ring-4 ring-blue-100"
+                        : "border-blue-500/80 hover:border-blue-600"
+                    }`}
+                  >
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#1877F2] to-[#0A57C2] flex items-center justify-center text-white mx-auto shadow-md mb-3">
+                      {/* Meta Infinite Loop Icon */}
+                      <svg className="h-6 w-6 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16.994 3.003c-2.31 0-4.32 1.35-5.32 3.32-1-1.97-3.01-3.32-5.32-3.32C2.84 3.003 0 5.843 0 9.183c0 4.19 4.31 7.78 10.97 13.82.4.36.93.36 1.33 0C18.96 16.963 23.27 13.373 23.27 9.183c0-3.34-2.84-6.18-6.276-6.18zm-5.32 17.65C5.464 15.113 1.94 11.963 1.94 9.183c0-2.34 1.89-4.24 4.33-4.24 2.06 0 3.86 1.41 4.38 3.42h1.96c.52-2.01 2.32-3.42 4.38-4.24 2.44 0 4.33 1.9 4.33 4.24 0 2.78-3.524 5.93-9.734 11.47z" />
+                      </svg>
+                    </div>
+
+                    <div className="text-center space-y-1">
+                      <div className="font-bold text-slate-900 text-sm tracking-tight truncate">
+                        {datasetName}
+                      </div>
+                      <div className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-full">
+                        <span>ID: {pixelId}</span>
+                      </div>
+                      <div className="pt-2 flex items-center justify-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[11px] font-bold text-emerald-700">
+                          Synchronizing
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-400 font-medium">
+                        Web &amp; Server Dataset
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── COLUMN 3: RIGHT USED BY (Meta Assets) ── */}
+                <div className="w-[195px] lg:w-[210px] space-y-5 z-20 shrink-0">
+                  {/* Node 1: Ad Sets */}
+                  <div
+                    ref={adsetsRef}
+                    onClick={() => setSelectedNode("adsets")}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
+                      selectedNode === "adsets"
+                        ? "border-blue-600 ring-2 ring-blue-100"
+                        : "border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/60">
+                        <Target className="h-4 w-4" />
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          isMarketingConnected
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : isMarketingScopeReq
+                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            : isMarketingConfigured
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-slate-100 text-slate-600 border border-slate-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            isMarketingConnected
+                              ? "bg-emerald-500 animate-pulse"
+                              : isMarketingScopeReq
+                              ? "bg-amber-500"
+                              : isMarketingConfigured
+                              ? "bg-blue-500"
+                              : "bg-slate-400"
+                          }`}
+                        />
+                        <span>
+                          {isMarketingConnected
+                            ? "Connected"
+                            : isMarketingScopeReq
+                            ? "Scope Req."
+                            : isMarketingConfigured
+                            ? "Configured"
+                            : "Unavailable"}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Ad Sets</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate" title={marketingSettings?.accountName || "Plain Stitch"}>
+                      {marketingSettings?.accountName || "Plain Stitch"}
+                    </div>
+                  </div>
+
+                  {/* Node 2: Audiences */}
+                  <div
+                    ref={audiencesRef}
+                    onClick={() => setSelectedNode("audiences")}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
+                      selectedNode === "audiences"
+                        ? "border-blue-600 ring-2 ring-blue-100"
+                        : "border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-200/60">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>Active</span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Custom Audiences</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">
+                      Retargeting &amp; Lookalike
+                    </div>
+                  </div>
+
+                  {/* Node 3: Catalog Feed */}
+                  <div
+                    ref={catalogRef}
+                    onClick={() => setSelectedNode("catalog")}
+                    className={`p-3.5 rounded-xl border transition-all duration-200 cursor-pointer bg-white shadow-2xs hover:shadow-md hover:-translate-y-0.5 ${
+                      selectedNode === "catalog"
+                        ? "border-blue-600 ring-2 ring-blue-100"
+                        : "border-slate-200/90 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="h-8 w-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center border border-pink-200/60">
+                        <ShoppingBag className="h-4 w-4" />
+                      </div>
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          safeCatalogCount > 0
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            safeCatalogCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                          }`}
+                        />
+                        <span>{safeCatalogCount > 0 ? "Synced" : "Syncing"}</span>
+                      </span>
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs">Product Catalog</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 flex items-center justify-between gap-1">
+                      <span className="truncate">Catalog_Products</span>
+                      <span className="font-mono font-semibold text-slate-700 shrink-0">
+                        {safeCatalogCount} items
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Graph Footer Status Bar */}
-          <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-            <div className="flex items-center gap-4">
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                <span className="font-medium text-slate-700">Verified Active</span>
+                <span className="font-medium text-slate-700 text-[11px] sm:text-xs">Verified Active</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
-                <span className="font-medium text-slate-700">Attention Required</span>
+                <span className="font-medium text-slate-700 text-[11px] sm:text-xs">Attention Required</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
-                <span className="font-medium text-slate-700">Scope Limited</span>
+                <span className="font-medium text-slate-700 text-[11px] sm:text-xs">Scope Limited</span>
               </div>
             </div>
-            <div className="font-mono text-[11px] text-slate-400">
+            <div className="font-mono text-[10px] sm:text-[11px] text-slate-400">
               Protocol: Meta Graph API v22.0
             </div>
           </div>

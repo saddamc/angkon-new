@@ -123,13 +123,30 @@ export function useAdminOrders() {
     void loadAllCounts();
   }, [load, loadAllCounts, initialStatus]);
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 30 seconds only when tab is visible
   useEffect(() => {
-    const timer = setInterval(() => {
+    const refresh = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
       void load(filterStatus, false);
       void loadAllCounts();
-    }, REFRESH_INTERVAL);
-    return () => clearInterval(timer);
+    };
+
+    const timer = setInterval(refresh, REFRESH_INTERVAL);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void load(filterStatus, false);
+        void loadAllCounts();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [load, loadAllCounts, filterStatus]);
 
   const statusCounts = useMemo(() => {

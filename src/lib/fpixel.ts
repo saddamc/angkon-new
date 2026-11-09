@@ -37,6 +37,48 @@ function getActiveTestEventCode(): string | undefined {
   return undefined;
 }
 
+export function getOrCreateFbc(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  // 1. Check if _fbc cookie already exists
+  try {
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)_fbc=([^;]+)/);
+    if (cookieMatch && cookieMatch[1]) {
+      return decodeURIComponent(cookieMatch[1]);
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Check if fbclid is present in the URL query string
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fbclid = params.get("fbclid");
+    if (fbclid && fbclid.trim()) {
+      const fbc = `fb.1.${Date.now()}.${fbclid.trim()}`;
+      // Persist for 90 days per Meta recommendation
+      const maxAge = 90 * 24 * 60 * 60;
+      document.cookie = `_fbc=${encodeURIComponent(fbc)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+      return fbc;
+    }
+  } catch {
+    // ignore URL parsing errors
+  }
+  return undefined;
+}
+
+export function getFbp(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const cookieMatch = document.cookie.match(/(?:^|;\s*)_fbp=([^;]+)/);
+    if (cookieMatch && cookieMatch[1]) {
+      return decodeURIComponent(cookieMatch[1]);
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
 export function logEventTelemetry(name: string, payload: Record<string, unknown>, testCode?: string) {
   if (typeof window === "undefined") return;
   if (window.__angkon_meta_enabled === false) return;
@@ -71,12 +113,17 @@ export function logEventTelemetry(name: string, payload: Record<string, unknown>
 
   // Non-blocking telemetry to server event buffer
   try {
+    const fbc = getOrCreateFbc();
+    const fbp = getFbp();
+
     const data = JSON.stringify({
       name,
       parameters: payload,
       url,
       testEventCode: testCode,
       source: "browser",
+      fbc,
+      fbp,
       eventId:
         typeof payload.eventId === "string"
           ? payload.eventId

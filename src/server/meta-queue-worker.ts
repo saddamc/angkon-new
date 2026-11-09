@@ -37,6 +37,12 @@ export function startMetaQueueWorker(tenantId = DEFAULT_TENANT_ID): void {
     return;
   }
 
+  // In Vercel serverless environments, in-process setInterval loops consume Fluid CPU
+  // and keep microVM containers awake. In serverless, background work should run via cron or on-demand.
+  if (process.env.VERCEL) {
+    return;
+  }
+
   console.log("[Meta Queue Worker] Starting Conversions API background retry worker (interval: 60s)...");
 
   // Initial delayed drain pass after startup

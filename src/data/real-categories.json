@@ -222,58 +222,6 @@
     }
   },
   {
-    "id": 576,
-    "name": "CARGO",
-    "slug": "cargo-pants",
-    "parent": 175,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 51794,
-      "src": "/banners/pants.webp",
-      "alt": "CARGO"
-    }
-  },
-  {
-    "id": 575,
-    "name": "CARGO",
-    "slug": "cargo",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 51795,
-      "src": "/banners/pants.webp",
-      "alt": "CARGO"
-    }
-  },
-  {
-    "id": 833,
-    "name": "Carpenter Pants",
-    "slug": "carpenter-pants",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 194858,
-      "src": "/banners/pants.webp",
-      "alt": "Carpenter Pants"
-    }
-  },
-  {
-    "id": 306,
-    "name": "Casual Cord Pants",
-    "slug": "casual-cord-pants",
-    "parent": 175,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 5754,
-      "src": "/banners/pants.webp",
-      "alt": "Casual Cord Pants"
-    }
-  },
-  {
     "id": 602,
     "name": "Chokers",
     "slug": "chokers",
@@ -310,19 +258,6 @@
       "id": 201539,
       "src": "/banners/full-sleeves.webp",
       "alt": "Chore"
-    }
-  },
-  {
-    "id": 803,
-    "name": "Cord Pants",
-    "slug": "cord-pants-male",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 178443,
-      "src": "/banners/pants.webp",
-      "alt": "Cord Pants"
     }
   },
   {
@@ -430,20 +365,6 @@
     }
   },
   {
-    "id": 288,
-    "name": "Half Sleeves",
-    "slug": "half-sleeves",
-    "parent": 0,
-    "description": "Cuban Collar & Casual Half Sleeves Shirts",
-    "count": 0,
-    "image": {
-      "id": 288001,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Half Sleeves Shirts"
-    },
-    "menu_order": 3
-  },
-  {
     "id": 289,
     "name": "Cubans",
     "slug": "cuban-shirts-women",
@@ -454,32 +375,6 @@
       "id": 190998,
       "src": "/banners/half-sleeves.webp",
       "alt": "Cubans"
-    }
-  },
-  {
-    "id": 869,
-    "name": "Denim Pants",
-    "slug": "denim-pants-men",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 204455,
-      "src": "/banners/pants.webp",
-      "alt": "Denim Pants"
-    }
-  },
-  {
-    "id": 870,
-    "name": "Denim Pants",
-    "slug": "denim-pants-women",
-    "parent": 175,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 204464,
-      "src": "/banners/pants.webp",
-      "alt": "Denim Pants"
     }
   },
   {
@@ -665,32 +560,6 @@
     }
   },
   {
-    "id": 425,
-    "name": "Formal Pants",
-    "slug": "formal-pants-men-pants",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 162731,
-      "src": "/banners/pants.webp",
-      "alt": "Formal Pants"
-    }
-  },
-  {
-    "id": 307,
-    "name": "Formal Pants",
-    "slug": "formal-pants",
-    "parent": 175,
-    "description": "<div class=\"kvgmc6g5 cxmmr5t8 oygrvhab hcukyx3x c1et5uql ii04i59q\">\r\n<div dir=\"auto\">You might have gotten used to the idea of not wearing pants due to the whole work and class from home situation. That doesn’t mean you don’t deserve some nice pants.</div>\r\n<div dir=\"auto\">Introducing Formal Pants by ANGKON. The perfect pair of formal pants for your presentations. Simple, chic and comfortable pants that are really nice too, so you won&#8217;t mind wearing at home.</div>\r\n<div dir=\"auto\"></div>\r\n<div dir=\"auto\"><span style=\"font-size: 16px\">Stress about the presentations, not the size of the pants you&#8217;ll wear. These nice pants feature a hook at the front to help you adjust the fit. We have also included belt loops so you can achieve the complete boss girl look. </span></div>\r\n</div>",
-    "count": 0,
-    "image": {
-      "id": 192547,
-      "src": "/banners/pants.webp",
-      "alt": "Formal Pants"
-    }
-  },
-  {
     "id": 653,
     "name": "Street Edition",
     "slug": "street-edition",
@@ -717,32 +586,6 @@
     }
   },
   {
-    "id": 441,
-    "name": "Half Sleeve",
-    "slug": "half-sleeve",
-    "parent": 166,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 107306,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Half Sleeve"
-    }
-  },
-  {
-    "id": 447,
-    "name": "Half Sleeve",
-    "slug": "half-sleeve-shirt-women",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 107232,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Half Sleeve"
-    }
-  },
-  {
     "id": 907,
     "name": "Henley",
     "slug": "henley-tshirt",
@@ -766,19 +609,6 @@
       "id": 205948,
       "src": "/banners/tees.webp",
       "alt": "Henley"
-    }
-  },
-  {
-    "id": 927,
-    "name": "High Waisted Pants",
-    "slug": "high-waisted-pants-men",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 210659,
-      "src": "/banners/pants.webp",
-      "alt": "High Waisted Pants"
     }
   },
   {
@@ -1031,60 +861,6 @@
     }
   },
   {
-    "id": 798,
-    "name": "Full Sleeves",
-    "slug": "full-sleeves",
-    "parent": 0,
-    "description": "Oversized & Classic Full Sleeves Shirts",
-    "count": 0,
-    "image": {
-      "id": 798001,
-      "src": "/banners/full-sleeves.webp",
-      "alt": "Full Sleeves Shirts"
-    },
-    "menu_order": 4
-  },
-  {
-    "id": 799,
-    "name": "Oversized Full Sleeves",
-    "slug": "oversized-full-sleeves-womens-shirt",
-    "parent": 167,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 205356,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Oversized Full Sleeves"
-    }
-  },
-  {
-    "id": 281,
-    "name": "Pants",
-    "slug": "men-pants",
-    "parent": 162,
-    "description": "Tired of the same old pairs of Jeans or Gabardine pants?\r\nWell ANGKON has options to spice up your wardrobe.\r\nOur range of men&#8217;s pants include <a href=\"#\">Casual Cord Pants</a> and Formal Gurkhas that could set you apart from the rest.\r\n\r\nThe Slim-Fit Cord Pants coupled with retro style and eye-catching colors are specially designed for the modern disciples. A simple addition, for both work and play.\r\n\r\nThe Gurkha pants are high-waisted, and captures truly elegant formal style. Crafted with premium twill fabric, the pants exude luxury and a great addition for your work wear.",
-    "count": 0,
-    "image": {
-      "id": 206357,
-      "src": "/banners/pants.webp",
-      "alt": "Pants"
-    }
-  },
-  {
-    "id": 175,
-    "name": "Pants",
-    "slug": "pants",
-    "parent": 0,
-    "description": "Trousers, Corduroy & Denim Pants",
-    "count": 0,
-    "image": {
-      "id": 175001,
-      "src": "/banners/pants.webp",
-      "alt": "Pants & Trousers"
-    },
-    "menu_order": 5
-  },
-  {
     "id": 892,
     "name": "Party Shirts",
     "slug": "party-shirts-men",
@@ -1148,33 +924,6 @@
       "src": "/banners/tees.webp",
       "alt": "Plaantik Apparel"
     }
-  },
-  {
-    "id": 520,
-    "name": "Polos",
-    "slug": "polos-women",
-    "parent": 163,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 191141,
-      "src": "/banners/polos.webp",
-      "alt": "Polos"
-    }
-  },
-  {
-    "id": 519,
-    "name": "Polos",
-    "slug": "polos",
-    "parent": 0,
-    "description": "Polos & Fine Knits",
-    "count": 0,
-    "image": {
-      "id": 519001,
-      "src": "/banners/polos.webp",
-      "alt": "Polos & Knits"
-    },
-    "menu_order": 7
   },
   {
     "id": 449,
@@ -1252,32 +1001,6 @@
       "id": 118681,
       "src": "/banners/half-sleeves.webp",
       "alt": "Rayon Linen Blend Shirts"
-    }
-  },
-  {
-    "id": 450,
-    "name": "Regular Cuban",
-    "slug": "regular-cuban",
-    "parent": 288,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 300450,
-      "src": "/banners/half-sleeves.webp",
-      "alt": "Regular Cuban"
-    }
-  },
-  {
-    "id": 515,
-    "name": "Relaxed Fit",
-    "slug": "relaxed-fit",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 192422,
-      "src": "/banners/pants.webp",
-      "alt": "Relaxed Fit"
     }
   },
   {
@@ -1408,32 +1131,6 @@
       "id": 11458,
       "src": "/banners/half-sleeves.webp",
       "alt": "Shirts"
-    }
-  },
-  {
-    "id": 545,
-    "name": "Shorts",
-    "slug": "shorts",
-    "parent": 281,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 168811,
-      "src": "/banners/pants.webp",
-      "alt": "Shorts"
-    }
-  },
-  {
-    "id": 779,
-    "name": "Sidekick Pants",
-    "slug": "sidekick-pants",
-    "parent": 175,
-    "description": "",
-    "count": 0,
-    "image": {
-      "id": 170125,
-      "src": "/banners/pants.webp",
-      "alt": "Sidekick Pants"
     }
   },
   {

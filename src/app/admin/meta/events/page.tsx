@@ -36,37 +36,7 @@ import { DiagnosticsTab } from "./_components/diagnostics-tab";
 import { HistoryTab } from "./_components/history-tab";
 import { EventsSettingsTab } from "./_components/events-settings-tab";
 import { EventsModals } from "./_components/events-modals";
-
-const DEFAULT_META_TIMESERIES: PerformanceDataPoint[] = [
-  { date: "2026-10-31 02:00", timeLabel: "2:00 AM", formattedDateTime: "10/31/26, 2:00 AM", events: 8, websiteEvents: 8, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 05:00", timeLabel: "5:00 AM", formattedDateTime: "10/31/26, 5:00 AM", events: 38, websiteEvents: 38, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 08:00", timeLabel: "8:00 AM", formattedDateTime: "10/31/26, 8:00 AM", events: 38, websiteEvents: 38, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 11:00", timeLabel: "11:00 AM", formattedDateTime: "10/31/26, 11:00 AM", events: 12, websiteEvents: 12, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 13:00", timeLabel: "1:00 PM", formattedDateTime: "10/31/26, 1:00 PM", events: 40, websiteEvents: 40, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 15:00", timeLabel: "3:00 PM", formattedDateTime: "10/31/26, 3:00 PM", events: 42, websiteEvents: 42, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 17:00", timeLabel: "5:00 PM", formattedDateTime: "10/31/26, 5:00 PM", events: 88, websiteEvents: 88, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 19:00", timeLabel: "7:00 PM", formattedDateTime: "10/31/26, 7:00 PM", events: 52, websiteEvents: 52, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 21:00", timeLabel: "9:00 PM", formattedDateTime: "10/31/26, 9:00 PM", events: 156, websiteEvents: 156, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-10-31 23:00", timeLabel: "11:00 PM", formattedDateTime: "10/31/26, 11:00 PM", events: 68, websiteEvents: 68, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 01:00", timeLabel: "1:00 AM", formattedDateTime: "11/01/26, 1:00 AM", events: 122, websiteEvents: 122, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 03:00", timeLabel: "3:00 AM", formattedDateTime: "11/01/26, 3:00 AM", events: 18, websiteEvents: 18, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 05:00", timeLabel: "5:00 AM", formattedDateTime: "11/01/26, 5:00 AM", events: 14, websiteEvents: 14, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 07:00", timeLabel: "7:00 AM", formattedDateTime: "11/01/26, 7:00 AM", events: 20, websiteEvents: 20, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 09:00", timeLabel: "9:00 AM", formattedDateTime: "11/01/26, 9:00 AM", events: 22, websiteEvents: 22, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 11:00", timeLabel: "11:00 AM", formattedDateTime: "11/01/26, 11:00 AM", events: 82, websiteEvents: 82, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 13:00", timeLabel: "1:00 PM", formattedDateTime: "11/01/26, 1:00 PM", events: 20, websiteEvents: 20, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 15:00", timeLabel: "3:00 PM", formattedDateTime: "11/01/26, 3:00 PM", events: 32, websiteEvents: 32, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 17:00", timeLabel: "5:00 PM", formattedDateTime: "11/01/26, 5:00 PM", events: 25, websiteEvents: 25, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 19:00", timeLabel: "7:00 PM", formattedDateTime: "11/01/26, 7:00 PM", events: 10, websiteEvents: 10, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 21:00", timeLabel: "9:00 PM", formattedDateTime: "11/01/26, 9:00 PM", events: 12, websiteEvents: 12, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-01 23:00", timeLabel: "11:00 PM", formattedDateTime: "11/01/26, 11:00 PM", events: 28, websiteEvents: 28, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-02 01:00", timeLabel: "1:00 AM", formattedDateTime: "11/02/26, 1:00 AM", events: 55, websiteEvents: 55, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-02 02:00", timeLabel: "2:00 AM", formattedDateTime: "11/02/26, 2:00 AM", events: 233, websiteEvents: 233, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-02 05:00", timeLabel: "5:00 AM", formattedDateTime: "11/02/26, 5:00 AM", events: 28, websiteEvents: 28, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-02 07:00", timeLabel: "7:00 AM", formattedDateTime: "11/02/26, 7:00 AM", events: 12, websiteEvents: 12, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-02 09:00", timeLabel: "9:00 AM", formattedDateTime: "11/02/26, 9:00 AM", events: 16, websiteEvents: 16, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-  { date: "2026-11-02 11:00", timeLabel: "11:00 AM", formattedDateTime: "11/02/26, 11:00 AM", events: 35, websiteEvents: 35, serverEvents: 0, revenue: 0, orders: 0, spend: 0, clicks: 0, impressions: 0 },
-];
+import { formatWindowLabel } from "./_utils/window-label";
 
 /**
  * Human label for Meta's reported event volume.
@@ -75,8 +45,15 @@ const DEFAULT_META_TIMESERIES: PerformanceDataPoint[] = [
  * the UI must say so rather than inventing a number. Test events are isolated
  * by Meta and never surface in production reporting at all.
  */
-function formatMetaReported(eventName: string, value: number | null): string {
+function formatMetaReported(
+  eventName: string,
+  value: number | null,
+  reason?: "no-permission" | "loading" | "unavailable" | null
+): string {
   if (eventName === "TestEvent") return "Isolated";
+  if (value === null && reason === "no-permission") return "Permission required";
+  if (value === null && reason === "loading") return "Loading…";
+  if (value === null && reason === "unavailable") return "Unavailable";
   return value === null ? "Not reported" : value.toLocaleString();
 }
 
@@ -172,10 +149,17 @@ export default function MetaEventsConsolidatedPage() {
   const [testEventCode, setTestEventCode] = useState("");
 
   // Performance Chart & Live Events Table State
-  const [chartPeriod, setChartPeriod] = useState<"today" | "7d" | "30d" | "month" | "year">("30d");
-  const [timeseries, setTimeseries] = useState<PerformanceDataPoint[]>(DEFAULT_META_TIMESERIES);
+  const [chartPeriod, setChartPeriod] = useState<"today" | "7d" | "28d" | "month" | "year">("28d");
+  const [timeseries, setTimeseries] = useState<PerformanceDataPoint[]>([]);
   const [loadingTimeseries, setLoadingTimeseries] = useState(false);
   const [eventStats, setEventStats] = useState<Record<string, number>>({});
+  const [eventChannelStats, setEventChannelStats] = useState<
+    Record<string, { browser: number; server: number }>
+  >({});
+  const [metaVolumes, setMetaVolumes] = useState<Record<string, number>>({});
+  const [metaVolumesStatus, setMetaVolumesStatus] = useState<
+    "loading" | "ready" | "no-permission" | "error"
+  >("loading");
   const [eventsTableSearch, setEventsTableSearch] = useState("");
   const [eventsTableFilter, setEventsTableFilter] = useState<"ALL" | "BROWSER" | "SERVER">("ALL");
   const [overviewView, setOverviewView] = useState<"activities" | "integrations">("activities");
@@ -239,13 +223,14 @@ export default function MetaEventsConsolidatedPage() {
   // Fetch initial telemetry & settings
   const fetchTelemetry = useCallback(async () => {
     try {
-      const [settingsRes, eventsRes, marketingRes, catalogRes, domainRes, syncRes] = await Promise.allSettled([
+      const [settingsRes, eventsRes, marketingRes, catalogRes, domainRes, syncRes, volumesRes] = await Promise.allSettled([
         fetch("/api/admin/settings/pixel"),
-        fetch("/api/admin/pixel/events"),
+        fetch(`/api/admin/pixel/events?period=${datePreset}`),
         fetch("/api/admin/meta/ads/credentials"),
         fetch("/api/meta/catalog?format=json"),
         fetch("/api/admin/meta/domain-verification/check"),
         fetch("/api/admin/meta/sync/status"),
+        fetch(`/api/admin/meta/events/volumes?period=${datePreset}`),
       ]);
 
       if (settingsRes.status === "fulfilled" && settingsRes.value.ok) {
@@ -259,11 +244,28 @@ export default function MetaEventsConsolidatedPage() {
         const e = await eventsRes.value.json();
         setEvents(e.events || []);
         if (e.stats) setEventStats(e.stats);
+        if (e.eventChannelStats) setEventChannelStats(e.eventChannelStats);
         if (e.deliveryStats) setDeliveryStats(e.deliveryStats);
         if (e.deduplicationStats) setDeduplicationStats(e.deduplicationStats);
         if (e.channelStats) setChannelStats(e.channelStats);
         if (e.testStats) setTestStats(e.testStats);
         if (e.testEvents) setTestEvents(e.testEvents);
+      }
+
+      if (volumesRes.status === "fulfilled") {
+        try {
+          const v = await volumesRes.value.json();
+          if (v?.ok && v.volumes && typeof v.volumes === "object") {
+            setMetaVolumes(v.volumes as Record<string, number>);
+            setMetaVolumesStatus("ready");
+          } else {
+            setMetaVolumes({});
+            setMetaVolumesStatus(v?.reason === "no-permission" ? "no-permission" : "error");
+          }
+        } catch {
+          setMetaVolumes({});
+          setMetaVolumesStatus("error");
+        }
       }
 
       if (marketingRes.status === "fulfilled" && marketingRes.value.ok) {
@@ -302,7 +304,7 @@ export default function MetaEventsConsolidatedPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [datePreset]);
 
   // Manual Trigger for Server-Side Meta Synchronization
   const handleManualSync = useCallback(async () => {
@@ -352,19 +354,17 @@ export default function MetaEventsConsolidatedPage() {
   useEffect(() => {
     let ignore = false;
     setLoadingTimeseries(true);
-    fetch(`/api/admin/meta/analytics/timeseries?period=${chartPeriod}`)
+    fetch(`/api/admin/meta/analytics/timeseries?period=${chartPeriod}&days=${chartPeriod === "28d" ? 28 : chartPeriod === "7d" ? 7 : 30}`)
       .then((res) => (res.ok ? res.json() : { series: [] }))
       .then((data: { series?: PerformanceDataPoint[] }) => {
-        if (!ignore) {
-          if (Array.isArray(data.series) && data.series.length > 0) {
-            const hasEvents = data.series.some((p) => (p.events || 0) > 0);
-            setTimeseries(hasEvents ? data.series : DEFAULT_META_TIMESERIES);
-          } else {
-            setTimeseries(DEFAULT_META_TIMESERIES);
-          }
-        }
+        if (ignore) return;
+        // Render exactly what the ledger returned. Never substitute a fake
+        // series: an empty window must look empty, not invented.
+        setTimeseries(Array.isArray(data.series) ? data.series : []);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!ignore) setTimeseries([]);
+      })
       .finally(() => {
         if (!ignore) setLoadingTimeseries(false);
       });
@@ -567,27 +567,27 @@ export default function MetaEventsConsolidatedPage() {
     return `Last received ${Math.floor(diffSec / 86400)}d ago`;
   }, [events]);
 
-  // Helper for channel distribution per event
+  // Helper for channel distribution per event. Uses full-ledger counts from
+  // the API; the recent-events sample is only a fallback.
   const getEventChannelSplit = useCallback((eventName: string): { browserPct: number; serverPct: number } => {
-    const matching = events.filter((e) => e.name.toLowerCase() === eventName.toLowerCase());
-    if (matching.length === 0) {
-      if (channelStats && (channelStats.browserCount > 0 || channelStats.serverCount > 0)) {
-        return {
-          browserPct: channelStats.browserRatio ?? 50,
-          serverPct: channelStats.serverRatio ?? 50,
-        };
-      }
-      return { browserPct: 50, serverPct: 50 };
+    const direct = eventChannelStats[eventName];
+    if (direct && direct.browser + direct.server > 0) {
+      const total = direct.browser + direct.server;
+      return {
+        browserPct: Math.round((direct.browser / total) * 100),
+        serverPct: Math.round((direct.server / total) * 100),
+      };
     }
+    const matching = events.filter((e) => e.name.toLowerCase() === eventName.toLowerCase());
     const browserCount = matching.filter((e) => e.source === "browser").length;
     const serverCount = matching.filter((e) => e.source === "server").length;
     const total = browserCount + serverCount;
-    if (total === 0) return { browserPct: 50, serverPct: 50 };
+    if (total === 0) return { browserPct: 0, serverPct: 0 };
     return {
       browserPct: Math.round((browserCount / total) * 100),
       serverPct: Math.round((serverCount / total) * 100),
     };
-  }, [events, channelStats]);
+  }, [events, eventChannelStats]);
 
   // E-Commerce Conversion Funnel Ordered Rows with Genuine Meta EMQ & Dual Counts
   const metaEventsRows: MetaEventRow[] = useMemo(() => {
@@ -627,6 +627,10 @@ export default function MetaEventsConsolidatedPage() {
      * must show that, never a fabricated number.
      */
     const getEmqTotal = (eventName: string): number | null => {
+      // Meta's stats edge is the authoritative volume when the token can read
+      // it; Dataset Quality only carries a count in some payload versions.
+      const direct = metaVolumes[eventName];
+      if (typeof direct === "number" && Number.isFinite(direct)) return direct;
       const match = emqEvents.find((e) => e.eventName.toLowerCase() === eventName.toLowerCase());
       return match?.totalEventCount ?? null;
     };
@@ -663,12 +667,14 @@ export default function MetaEventsConsolidatedPage() {
         emq: pvEmq.label,
         emqQuality: pvEmq.quality,
         emqScore: pvEmq.score,
-        total: eventStats.PageView ?? 982,
+        total: eventStats.PageView ?? 0,
         metaReported: pvMetaTotal,
         metaNote:
           pvMetaTotal !== null
-            ? `Meta Dataset Quality reports ${pvMetaTotal.toLocaleString()} PageView events for the current window. The local ANGKON ledger counts verified storefront hits; ad-blockers and privacy filters can widen the gap.`
-            : "Meta has not reported a PageView volume for this dataset yet. The local ANGKON ledger is the only source of truth until Meta rolls one up.",
+            ? `Meta reports ${pvMetaTotal.toLocaleString()} PageView fires for the current window. The local ANGKON ledger counts verified storefront hits; ad-blockers and privacy filters can widen the gap.`
+            : metaVolumesStatus === "no-permission"
+              ? "Meta refused the saved token for the pixel stats edge. Grant ads_read plus pixel-level access (or read_insights) and refresh to display Meta's own volume."
+              : "Meta has not reported a PageView volume for this dataset yet. The local ANGKON ledger is the only source of truth until Meta rolls one up.",
         lastReceived: getEventTimeAgo("PageView"),
         description: "Tracks all storefront URL visits, referrals, and initial visitor attribution cookies (_fbp, _fbc).",
         browserPct: pageViewSplit.browserPct,
@@ -689,12 +695,14 @@ export default function MetaEventsConsolidatedPage() {
         emq: vcEmq.label,
         emqQuality: vcEmq.quality,
         emqScore: vcEmq.score,
-        total: eventStats.ViewContent ?? 230,
+        total: eventStats.ViewContent ?? 0,
         metaReported: vcMetaTotal,
         metaNote:
           vcMetaTotal !== null
-            ? `Meta Dataset Quality reports ${vcMetaTotal.toLocaleString()} ViewContent events for the current window.`
-            : "Meta has not reported a ViewContent volume for this dataset yet.",
+            ? `Meta reports ${vcMetaTotal.toLocaleString()} ViewContent fires for the current window.`
+            : metaVolumesStatus === "no-permission"
+              ? "Meta refused the saved token for the pixel stats edge. Grant ads_read plus pixel-level access (or read_insights) and refresh to display Meta's own volume."
+              : "Meta has not reported a ViewContent volume for this dataset yet.",
         lastReceived: getEventTimeAgo("ViewContent"),
         description: "Fires when shoppers view saree and apparel product detail pages. Matches product IDs to Dynamic Product Ads Catalog.",
         browserPct: viewContentSplit.browserPct,
@@ -715,12 +723,14 @@ export default function MetaEventsConsolidatedPage() {
         emq: atcEmq.label,
         emqQuality: atcEmq.quality,
         emqScore: atcEmq.score,
-        total: eventStats.AddToCart ?? 15,
+        total: eventStats.AddToCart ?? 0,
         metaReported: atcMetaTotal,
         metaNote:
           atcMetaTotal !== null
-            ? `Meta Dataset Quality reports ${atcMetaTotal.toLocaleString()} AddToCart events for the current window.`
-            : "Meta has not reported an AddToCart volume for this dataset yet.",
+            ? `Meta reports ${atcMetaTotal.toLocaleString()} AddToCart fires for the current window.`
+            : metaVolumesStatus === "no-permission"
+              ? "Meta refused the saved token for the pixel stats edge. Grant ads_read plus pixel-level access (or read_insights) and refresh to display Meta's own volume."
+              : "Meta has not reported an AddToCart volume for this dataset yet.",
         lastReceived: getEventTimeAgo("AddToCart"),
         description: "Captures product additions to cart with item price and currency (BDT). Used for abandoned cart re-targeting.",
         browserPct: addToCartSplit.browserPct,
@@ -741,12 +751,14 @@ export default function MetaEventsConsolidatedPage() {
         emq: icEmq.label,
         emqQuality: icEmq.quality,
         emqScore: icEmq.score,
-        total: eventStats.InitiateCheckout ?? 9,
+        total: eventStats.InitiateCheckout ?? 0,
         metaReported: icMetaTotal,
         metaNote:
           icMetaTotal !== null
-            ? `Meta Dataset Quality reports ${icMetaTotal.toLocaleString()} InitiateCheckout events for the current window.`
-            : "Meta has not reported an InitiateCheckout volume for this dataset yet.",
+            ? `Meta reports ${icMetaTotal.toLocaleString()} InitiateCheckout fires for the current window.`
+            : metaVolumesStatus === "no-permission"
+              ? "Meta refused the saved token for the pixel stats edge. Grant ads_read plus pixel-level access (or read_insights) and refresh to display Meta's own volume."
+              : "Meta has not reported an InitiateCheckout volume for this dataset yet.",
         lastReceived: getEventTimeAgo("InitiateCheckout"),
         description: "Tracks opening of the checkout drawer/page before order submission.",
         browserPct: checkoutSplit.browserPct,
@@ -767,12 +779,14 @@ export default function MetaEventsConsolidatedPage() {
         emq: purEmq.label,
         emqQuality: purEmq.quality,
         emqScore: purEmq.score,
-        total: eventStats.Purchase ?? 26,
+        total: eventStats.Purchase ?? 0,
         metaReported: purMetaTotal,
         metaNote:
           purMetaTotal !== null
-            ? `Meta Dataset Quality reports ${purMetaTotal.toLocaleString()} Purchase events for the current window.`
-            : "Meta has not reported a Purchase volume for this dataset yet.",
+            ? `Meta reports ${purMetaTotal.toLocaleString()} Purchase fires for the current window.`
+            : metaVolumesStatus === "no-permission"
+              ? "Meta refused the saved token for the pixel stats edge. Grant ads_read plus pixel-level access (or read_insights) and refresh to display Meta's own volume."
+              : "Meta has not reported a Purchase volume for this dataset yet.",
         lastReceived: getEventTimeAgo("Purchase"),
         description: "Fires upon confirmed order completion. Deduplicated across client browser and server CAPI via unique order number.",
         browserPct: purchaseSplit.browserPct,
@@ -818,7 +832,7 @@ export default function MetaEventsConsolidatedPage() {
         r.name.toLowerCase().includes(q) ||
         r.displayName.toLowerCase().includes(q)
     );
-  }, [eventStats, eventsTableSearch, eventsTableFilter, emqEvents, emqStatus, emqReason, getEventChannelSplit, getEventTimeAgo, testStats, testEvents]);
+  }, [eventStats, eventsTableSearch, eventsTableFilter, emqEvents, emqStatus, emqReason, metaVolumes, metaVolumesStatus, getEventChannelSplit, getEventTimeAgo, testStats, testEvents]);
 
   const handleOpenEventDrawer = useCallback((row: MetaEventRow) => {
     const matchingEmq = emqEvents.find((e) => e.eventName.toLowerCase() === row.name.toLowerCase());
@@ -838,14 +852,14 @@ export default function MetaEventsConsolidatedPage() {
       integration: row.integration,
       browserPct: row.browserPct,
       serverPct: row.serverPct,
-      dedupRate: deduplicationStats?.dedupRate ?? 99.4,
+      dedupRate: deduplicationStats?.dedupRate ?? undefined,
       description: row.description,
-      freshness: matchingEmq?.freshness || (row.emqScore !== null ? "REAL_TIME" : null),
+      freshness: matchingEmq?.freshness ?? null,
       matchKeys: matchingEmq?.matchKeys || [],
       diagnostics: matchingEmq?.diagnostics || [],
       missingIpCount: 0,
       missingUserAgentCount: 0,
-      missingCustomerInfoCount: row.emqScore !== null && row.emqScore < 6 ? 1 : 0,
+      missingCustomerInfoCount: 0,
       deliveryProblemsCount: deliveryStats?.failed || 0,
       samplePayload: recentEvent
         ? {
@@ -855,33 +869,35 @@ export default function MetaEventsConsolidatedPage() {
             timestamp: recentEvent.timestamp,
             parameters: recentEvent.parameters,
           }
-        : {
-            event_name: row.name,
-            event_id: `evt_${Date.now()}`,
-            event_source: row.serverPct > 0 ? "server" : "browser",
-            status: "verified_compliant",
-          },
+        : null,
     };
 
     setSelectedDrawerEvent(drawerData);
     setIsDrawerOpen(true);
   }, [emqEvents, events, deduplicationStats, deliveryStats]);
 
-  const datePresetLabel = useMemo(() => {
+  // The label includes live dates, so it is derived in an effect rather than
+  // during render (which would read the clock on every render pass).
+  const [datePresetLabel, setDatePresetLabel] = useState(() => {
     switch (datePreset) {
       case "today":
         return "Today (Hourly)";
       case "7d":
-        return "Last 7 Days (Oct 26 – Nov 1)";
+        return "Last 7 Days";
       case "month":
-        return "This Month (Oct 1 – Oct 31)";
+        return "This Month";
       case "year":
-        return "This Year (2026)";
+        return "This Year";
       case "28d":
       default:
-        return "Last 28 Days (Oct 5 – Nov 1)";
+        return "Last 28 Days";
     }
-  }, [datePreset]);
+  });
+  useEffect(() => {
+    setDatePresetLabel(
+      formatWindowLabel(datePreset, new Date(nowMs > 0 ? nowMs : Date.now()))
+    );
+  }, [datePreset, nowMs]);
 
   // Filter & Pagination for History Stream
   const filteredEvents = useMemo(() => {
@@ -921,9 +937,32 @@ export default function MetaEventsConsolidatedPage() {
   const hasCapiToken = Boolean(settings?.hasCapiAccessToken);
   const isTelemetryTab = activeTab === "telemetry" || activeTab === "overview" || activeTab === "events-manager";
 
-  // Calculate high-level executive KPIs
+  // The table and drawer share one formatter, with the volume-permission reason
+  // threaded in so a denied token never masquerades as "Meta has no data".
+  const formatMetaReportedFor = useCallback(
+    (eventName: string, value: number | null) =>
+      formatMetaReported(
+        eventName,
+        value,
+        metaVolumesStatus === "no-permission"
+          ? "no-permission"
+          : metaVolumesStatus === "loading"
+            ? "loading"
+            : metaVolumesStatus === "error"
+              ? "unavailable"
+              : null
+      ),
+    [metaVolumesStatus]
+  );
+
+  // Calculate high-level executive KPIs — production events only. The test
+  // sandbox runs alongside the ledger but must never inflate this total.
   const totalEventsCount = useMemo(() => {
-    return metaEventsRows.reduce((acc, r) => acc + (typeof r.total === "number" ? r.total : 0), 0);
+    return metaEventsRows.reduce(
+      (acc, r) =>
+        r.name === "TestEvent" ? acc : acc + (typeof r.total === "number" ? r.total : 0),
+      0
+    );
   }, [metaEventsRows]);
 
   return (
@@ -1041,7 +1080,7 @@ export default function MetaEventsConsolidatedPage() {
           events={events}
           copiedPayloadId={copiedPayloadId}
           onCopyPayload={handleCopyPayload}
-          formatMetaReported={formatMetaReported}
+          formatMetaReported={formatMetaReportedFor}
         />
       )}
 

@@ -44,6 +44,13 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
 
   const inStock = product.stock_status === "instock";
   const discountPct = pricing.hasSale ? Math.round((1 - pricing.current / pricing.regular) * 100) : 0;
+  const isNew = useMemo(() => {
+    if (product.tags?.some((t) => /new/i.test(t.name) || /new/i.test(t.slug))) return true;
+    if (!product.createdAt) return false;
+    const createdTime = new Date(product.createdAt).getTime();
+    if (isNaN(createdTime)) return false;
+    return (Date.now() - createdTime) / (1000 * 60 * 60 * 24) <= 14;
+  }, [product.createdAt, product.tags]);
   const insideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_inside")?.value || "60");
   const outsideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_outside")?.value || "100");
 
@@ -104,21 +111,24 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
       >
         {/* ── 1. Image Container (Portrait 3:4 matching luxury fashion photography) ── */}
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#42070e] border border-[#E1B76F]/20 rounded-none shadow-sm">
-          {/* Top Badges (Sale % or Sold Out) */}
-          {discountPct > 0 && (
-            <div className="absolute left-2 top-2 z-10">
-              <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#530911] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow">
+          {/* Top Badges (NEW, Sale, Sold Out) */}
+          <div className="absolute left-2 top-2 z-10 flex items-center gap-1.5 flex-wrap pointer-events-none">
+            {isNew && (
+              <span className="inline-flex items-center justify-center rounded-full bg-[#E1B76F] text-[#3d060b] px-2 py-0.5 text-[9px] font-black uppercase tracking-wider shadow-md border border-[#fff5db]/50">
+                NEW
+              </span>
+            )}
+            {discountPct > 0 && (
+              <span className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-[#530911] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow-md">
                 Sale!
               </span>
-            </div>
-          )}
-          {!inStock && (
-            <div className="absolute left-2 top-2 z-10">
-              <span className="rounded bg-[#530911]/90 border border-[#E1B76F]/30 px-2 py-0.5 text-[9px] font-bold uppercase text-white shadow">
+            )}
+            {!inStock && (
+              <span className="rounded bg-[#530911]/90 border border-[#E1B76F]/30 px-2 py-0.5 text-[9px] font-bold uppercase text-white shadow-md">
                 Sold Out
               </span>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Product Image with Hover Flip */}
           <Link

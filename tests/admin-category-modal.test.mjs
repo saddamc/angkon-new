@@ -35,14 +35,19 @@ test("modal: header and footer stay fixed while the body scrolls", () => {
   );
 });
 
-test("modal: Category Name and URL Slug are side-by-side in grid", () => {
+test("modal: no visible URL slug field — the server derives it", () => {
   assert.ok(modal.includes("Category Name"), "Category Name must be present");
-  assert.ok(modal.includes("URL Slug"), "URL Slug must be present on the right side of Category Name");
+  assert.ok(!modal.includes("URL Slug"), "the slug field must be removed");
   assert.ok(
-    modal.includes("sm:grid-cols-2"),
-    "Category Name and URL Slug must share a 2-column row on desktop"
+    !modal.includes("Canonical category URL path."),
+    "the slug helper text must be gone"
   );
-  assert.ok(modal.includes("autoSlug"), "slug auto-sync state must be present");
+  assert.ok(!modal.includes("autoSlug"), "slug auto-sync state must be removed");
+  assert.ok(!modal.includes("category-slug"), "no slug input id may remain");
+  assert.ok(
+    modal.includes("generated automatically from this name"),
+    "the UI must explain that the URL is automatic"
+  );
 });
 
 test("modal: slug generation stays server-side and unique", () => {
@@ -91,9 +96,10 @@ test("modal: one primary action; add-another is a secondary ghost", () => {
   assert.ok(solidPrimary.length <= 1, "only the create button may be a solid primary");
 });
 
-test("modal: banner presets have a clear selected state", () => {
-  assert.ok(modal.includes("aria-pressed={selected}"), "presets must expose pressed state");
-  assert.ok(modal.includes("ring-2 ring-purple-200"), "the selected preset must be ringed");
+test("modal: banner upload only — preset chooser removed", () => {
+  assert.ok(!modal.includes("banner preset"), "the preset chooser must be gone");
+  assert.ok(!modal.includes("aria-pressed={selected}"), "no preset toggle may remain");
+  assert.ok(!modal.includes("MAIN_CATEGORY_PRESETS"), "preset data must not be imported");
   assert.ok(modal.includes("1700 × 700 px recommended"), "the size hint must stay");
   assert.ok(modal.includes("Change Image") && modal.includes("Remove"), "replace/remove must stay");
 });

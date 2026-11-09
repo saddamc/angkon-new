@@ -418,7 +418,7 @@ export function EventDetailDrawer({
                 </p>
                 <div className="pt-2 flex items-center justify-between text-[11px] text-emerald-800 font-semibold border-t border-emerald-200/80">
                   <span>Deduplication Success Rate</span>
-                  <span>{event.dedupRate !== undefined ? `${event.dedupRate}% Deduplicated` : "99.4% Verified"}</span>
+                  <span>{event.dedupRate !== undefined ? `${event.dedupRate}% Deduplicated` : "Not measured"}</span>
                 </div>
               </div>
             </div>

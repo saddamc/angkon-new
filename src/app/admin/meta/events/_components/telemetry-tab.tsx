@@ -50,8 +50,8 @@ interface TelemetryTabProps {
   setOverviewView: (v: "activities" | "integrations") => void;
   activeChartMetric: "events" | "revenue" | "orders";
   setActiveChartMetric: (m: "events" | "revenue" | "orders") => void;
-  chartPeriod: "today" | "7d" | "30d" | "month" | "year";
-  setChartPeriod: (p: "today" | "7d" | "30d" | "month" | "year") => void;
+  chartPeriod: "today" | "7d" | "28d" | "month" | "year";
+  setChartPeriod: (p: "today" | "7d" | "28d" | "month" | "year") => void;
   timeseries: PerformanceDataPoint[];
   loadingTimeseries: boolean;
   eventsTableSearch: string;
@@ -127,7 +127,7 @@ export function TelemetryTab({
             <span className="font-semibold text-emerald-600">
               {deliveryStats?.deliverySuccessRate !== null && deliveryStats?.deliverySuccessRate !== undefined
                 ? `${deliveryStats.deliverySuccessRate}% Dispatched`
-                : "100% Dispatched"}
+                : "—"}
             </span>
           </div>
         </div>
@@ -166,7 +166,10 @@ export function TelemetryTab({
             </div>
             <div className="text-[11px] text-slate-500 mt-1 truncate">
               {emqState.status === "ready"
-                ? `${emqEvents.length} event${emqEvents.length === 1 ? "" : "s"} scored live from Meta`
+                ? (() => {
+                    const scored = emqEvents.filter((e) => e.score !== null).length;
+                    return `${scored} event${scored === 1 ? "" : "s"} scored live from Meta`;
+                  })()
                 : emqState.status === "error"
                   ? emqState.message
                   : "Reading match quality from Meta…"}
@@ -199,7 +202,7 @@ export function TelemetryTab({
               <span className="text-2xl font-bold text-emerald-600 tracking-tight">
                 {deduplicationStats?.dedupRate !== null && deduplicationStats?.dedupRate !== undefined
                   ? `${deduplicationStats.dedupRate}%`
-                  : totalEventsCount > 0 ? "100%" : "0%"}
+                  : "—"}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Paired & Deduplicated
@@ -229,22 +232,26 @@ export function TelemetryTab({
           <div>
             <div className="flex items-baseline justify-between">
               <span className="text-sm font-bold text-slate-900">
-                {channelStats?.browserRatio ?? (totalEventsCount > 0 ? 50 : 0)}% Web
+                {channelStats?.browserRatio !== null && channelStats?.browserRatio !== undefined
+                  ? `${channelStats.browserRatio}% Web`
+                  : "— Web"}
               </span>
               <span className="text-xs text-slate-400 font-medium">│</span>
               <span className="text-sm font-bold text-purple-700">
-                {channelStats?.serverRatio ?? (totalEventsCount > 0 ? 50 : 0)}% CAPI Server
+                {channelStats?.serverRatio !== null && channelStats?.serverRatio !== undefined
+                  ? `${channelStats.serverRatio}% CAPI Server`
+                  : "— CAPI Server"}
               </span>
             </div>
             <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden flex mt-2">
               <div
                 className="bg-[#70C5F7] h-full transition-all duration-300"
-                style={{ width: `${channelStats?.browserRatio ?? (totalEventsCount > 0 ? 50 : 0)}%` }}
+                style={{ width: `${channelStats?.browserRatio ?? 0}%` }}
                 title="Browser Pixel"
               />
               <div
                 className="bg-purple-600 h-full transition-all duration-300"
-                style={{ width: `${channelStats?.serverRatio ?? (totalEventsCount > 0 ? 50 : 0)}%` }}
+                style={{ width: `${channelStats?.serverRatio ?? 0}%` }}
                 title="Conversions API"
               />
             </div>
@@ -271,7 +278,7 @@ export function TelemetryTab({
                   Meta Event Match Quality (EMQ)
                 </h3>
                 <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                  Rolling 28-day window · Graph API v22.0
+                  Rolling window · Graph API v22.0
                 </span>
                 {emqState.status === "ready" && emqState.report?.fetchedAt && (
                   <span className="text-[10px] text-slate-400">
@@ -618,7 +625,15 @@ export function TelemetryTab({
                           </div>
                           <div className="text-[10.5px] text-blue-700 font-mono font-medium flex items-center gap-1">
                             <span className="text-[10px] text-slate-400 font-sans font-medium">Meta:</span>
-                            <span>{formatMetaReported(row.name, row.metaReported)}</span>
+                            <span
+                              title={
+                                row.metaReported === null && row.name !== "TestEvent"
+                                  ? row.metaNote
+                                  : undefined
+                              }
+                            >
+                              {formatMetaReported(row.name, row.metaReported)}
+                            </span>
                           </div>
                         </div>
                       </td>

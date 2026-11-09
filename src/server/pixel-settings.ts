@@ -749,7 +749,8 @@ export function sanitizeTelemetryParameters(params?: Record<string, unknown>): R
  */
 export async function getDurablePixelEvents(
   tenantId = DEFAULT_TENANT_ID,
-  limit = 200
+  limit = 200,
+  since?: Date
 ): Promise<{
   events: PixelEventRecord[];
   stats: Record<string, number>;
@@ -775,6 +776,12 @@ export async function getDurablePixelEvents(
     browserRatio: number | null;
     serverRatio: number | null;
   };
+  /**
+   * Per-event browser/server split across the whole production ledger. The
+   * recent-events sample is capped at `limit`, so it must never be used to
+   * infer an event's delivery mix.
+   */
+  eventChannelStats: Record<string, { browser: number; server: number }>;
   testStats: Record<string, number>;
   testEvents: PixelEventRecord[];
 }> {
@@ -807,11 +814,20 @@ export async function getDurablePixelEvents(
       ],
     };
 
+    // When a window is requested, every aggregate below is scoped to it so the
+    // header's date preset matches the numbers on screen.
+    if (since instanceof Date && Number.isFinite(since.getTime())) {
+      productionMatch.createdAt = { $gte: since };
+      testMatch.createdAt = { $gte: since };
+    }
+
     const [
       aggregateCounts,
       aggregateTotal,
       statusCounts,
       channelCounts,
+      eventChannelCounts,
+      dedupGroups,
       docs,
       testDocs,
       testCounts,
@@ -828,6 +844,30 @@ export async function getDurablePixelEvents(
       MetaEventLog.aggregate([
         { $match: productionMatch },
         { $group: { _id: "$source", count: { $sum: 1 } } },
+      ]),
+      MetaEventLog.aggregate([
+        { $match: productionMatch },
+        {
+          $group: {
+            _id: { event: "$eventName", source: "$source" },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+      // Deduplication must cover the whole ledger, not the 200-row sample.
+      MetaEventLog.aggregate([
+        {
+          $match: {
+            ...productionMatch,
+            eventId: { $exists: true, $nin: [null, ""] },
+          },
+        },
+        {
+          $group: {
+            _id: "$eventId",
+            sources: { $addToSet: "$source" },
+          },
+        },
       ]),
       MetaEventLog.find(productionMatch)
         .sort({ createdAt: -1 })
@@ -896,22 +936,26 @@ export async function getDurablePixelEvents(
       serverRatio: totalChannels > 0 ? Math.round((serverCount / totalChannels) * 100) : null,
     };
 
-    // Index events by eventId to compute truthful deduplication evidence
-    const eventIdMap = new Map<string, Set<string>>();
-    for (const doc of docs as any[]) {
-      if (doc.eventId) {
-        if (!eventIdMap.has(doc.eventId)) {
-          eventIdMap.set(doc.eventId, new Set());
-        }
-        eventIdMap.get(doc.eventId)!.add(doc.source);
-      }
+    // Per-event delivery mix, computed from the whole production ledger.
+    const eventChannelStats: Record<string, { browser: number; server: number }> = {};
+    for (const item of eventChannelCounts) {
+      const eventName =
+        item && item._id && typeof item._id.event === "string" ? item._id.event : null;
+      const source = item && item._id && typeof item._id.source === "string" ? item._id.source : null;
+      if (!eventName || !source) continue;
+      const entry = eventChannelStats[eventName] ?? { browser: 0, server: 0 };
+      if (source === "browser") entry.browser += item.count || 0;
+      else if (source === "server") entry.server += item.count || 0;
+      eventChannelStats[eventName] = entry;
     }
 
+    // Deduplication evidence across every eventId in the ledger.
     let pairedCount = 0;
     let browserOnlyCount = 0;
     let serverOnlyCount = 0;
 
-    for (const [, sources] of eventIdMap) {
+    for (const group of dedupGroups) {
+      const sources = new Set<string>(Array.isArray(group.sources) ? group.sources : []);
       if (sources.has("browser") && sources.has("server")) {
         pairedCount++;
       } else if (sources.has("browser")) {
@@ -972,6 +1016,7 @@ export async function getDurablePixelEvents(
         totalUniqueEvents,
       },
       channelStats,
+      eventChannelStats,
       testStats,
       testEvents,
     };
@@ -1003,6 +1048,7 @@ export async function getDurablePixelEvents(
         browserRatio: null,
         serverRatio: null,
       },
+      eventChannelStats: {},
       testStats: {
         total: 0,
         PageView: 0,

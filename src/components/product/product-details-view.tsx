@@ -253,6 +253,13 @@ export function ProductDetailsView({
     [product.price, product.regular_price, product.sale_price],
   );
   const currentPrice = pricing.current;
+  const isNew = useMemo(() => {
+    if (product.tags?.some((t) => /new/i.test(t.name) || /new/i.test(t.slug))) return true;
+    if (!product.createdAt) return false;
+    const createdTime = new Date(product.createdAt).getTime();
+    if (isNaN(createdTime)) return false;
+    return (Date.now() - createdTime) / (1000 * 60 * 60 * 24) <= 14;
+  }, [product.createdAt, product.tags]);
 
   useEffect(() => {
     if (product?.id) {
@@ -529,14 +536,19 @@ export function ProductDetailsView({
                 </>
               )}
 
-              {/* Sale badge */}
-              {pricing.hasSale && (
-                <div className="absolute left-3 top-3 z-10 pointer-events-none">
+              {/* Badges (NEW & Sale) */}
+              <div className="absolute left-3 top-3 z-10 pointer-events-none flex items-center gap-1.5 flex-wrap">
+                {isNew && (
+                  <span className="inline-flex items-center justify-center rounded-full bg-[#E1B76F] text-[#3d060b] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider shadow border border-[#fff5db]/50">
+                    NEW
+                  </span>
+                )}
+                {pricing.hasSale && (
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#530911] text-[9px] font-black uppercase text-white border border-[#E1B76F]/40 shadow-sm">
                     Sale!
                   </span>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Top-Right Circular Zoom Trigger Button */}
               <button

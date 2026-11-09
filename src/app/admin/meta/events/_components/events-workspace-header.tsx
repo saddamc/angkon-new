@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Share2,
@@ -18,6 +19,7 @@ import {
   FileJson,
 } from "lucide-react";
 import type { EventsTabType } from "../_types/events.types";
+import { formatWindowLabel } from "../_utils/window-label";
 
 interface EventsWorkspaceHeaderProps {
   selectedDataset: "angkon_pixel" | "angkon_catalog";
@@ -32,7 +34,7 @@ interface EventsWorkspaceHeaderProps {
   datePresetLabel: string;
   isDateMenuOpen: boolean;
   setIsDateMenuOpen: (val: boolean | ((prev: boolean) => boolean)) => void;
-  setChartPeriod: (p: "today" | "7d" | "30d" | "month" | "year") => void;
+  setChartPeriod: (p: "today" | "7d" | "28d" | "month" | "year") => void;
   onOpenGuide: () => void;
   syncStatus: "synchronizing" | "up_to_date" | "stale" | "failed" | "permission_required" | "unavailable";
   isSyncing: boolean;
@@ -76,6 +78,29 @@ export function EventsWorkspaceHeader({
   isResolvedError,
   isIgnoredError,
 }: EventsWorkspaceHeaderProps) {
+  // Dates come from the clock, so build them after mount instead of during
+  // render. The base labels keep SSR output stable.
+  const [windowLabels, setWindowLabels] = useState<Record<"today" | "7d" | "28d" | "month" | "year", string>>(
+    () => ({
+      today: "Today (Hourly)",
+      "7d": "Last 7 Days",
+      "28d": "Last 28 Days",
+      month: "This Month",
+      year: "This Year",
+    })
+  );
+
+  useEffect(() => {
+    const now = new Date(nowMs > 0 ? nowMs : Date.now());
+    setWindowLabels({
+      today: formatWindowLabel("today", now),
+      "7d": formatWindowLabel("7d", now),
+      "28d": formatWindowLabel("28d", now),
+      month: formatWindowLabel("month", now),
+      year: formatWindowLabel("year", now),
+    });
+  }, [nowMs]);
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-4 sm:p-5">
       {/* Top Row: Dataset Identifier, Business Dropdown, Date Selector & Actions */}
@@ -233,11 +258,11 @@ export function EventsWorkspaceHeader({
               <div className="absolute right-0 top-11 z-50 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 w-56 text-xs">
                 {(
                   [
-                    { key: "today", label: "Today (Hourly Buckets)" },
-                    { key: "7d", label: "Last 7 Days" },
-                    { key: "28d", label: "Last 28 Days (Oct 5 – Nov 1)" },
-                    { key: "month", label: "This Month (Oct 1 – Oct 31)" },
-                    { key: "year", label: "This Year (2026)" },
+                    { key: "today", label: windowLabels.today },
+                    { key: "7d", label: windowLabels["7d"] },
+                    { key: "28d", label: windowLabels["28d"] },
+                    { key: "month", label: windowLabels.month },
+                    { key: "year", label: windowLabels.year },
                   ] as const
                 ).map((item) => (
                   <button
@@ -245,7 +270,7 @@ export function EventsWorkspaceHeader({
                     type="button"
                     onClick={() => {
                       setDatePreset(item.key);
-                      setChartPeriod(item.key === "28d" ? "30d" : item.key);
+                      setChartPeriod(item.key);
                       setIsDateMenuOpen(false);
                     }}
                     className={`w-full text-left px-3 py-2 hover:bg-slate-50 transition flex items-center justify-between cursor-pointer ${

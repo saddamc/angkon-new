@@ -74,3 +74,11 @@ sync-categories.mjs
 # typescript & build info
 *.tsbuildinfo
 next-env.d.ts
+
+
+backups/
+
+# Local database backups
+*.dump
+*.sql
+*.backups

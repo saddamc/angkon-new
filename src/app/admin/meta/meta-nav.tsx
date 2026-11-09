@@ -373,15 +373,18 @@ export function MetaSuiteSidebar({
       }}
       className={`relative flex flex-col shrink-0 border-r border-[#dbe2ea] text-slate-800 transition-all duration-300 ease-in-out select-none ${
         isDrawer
-          ? "w-[260px] h-full shadow-2xl z-50 overflow-y-auto"
+          ? "w-full h-full shadow-2xl z-50 overflow-y-auto"
           : collapsed
           ? "w-[68px] h-full overflow-visible"
           : "w-[250px] h-full"
       }`}
     >
-      {/* ── Mobile Drawer Close Button ── */}
+      {/* ── Mobile Drawer Header ── */}
       {isDrawer && (
-        <div className="flex items-center justify-end px-3 pt-3 pb-1 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#dbe2ea]/80 shrink-0">
+          <span className="font-bold text-[13px] text-slate-800 tracking-tight">
+            Meta Marketing
+          </span>
           <button
             type="button"
             onClick={onClose}
@@ -563,37 +566,39 @@ export function MetaSuiteSidebar({
         })}
       </nav>
 
-      {/* ── Footer / Collapse Trigger ── */}
-      <div className="shrink-0 p-2.5 border-t border-[#dbe2ea]/80 flex items-center justify-end">
-        {!collapsed ? (
-          <button
-            type="button"
-            onClick={toggleCollapse}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition cursor-pointer"
-            title="Collapse sidebar (68px)"
-            aria-label="Collapse sidebar"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-        ) : (
-          <div className="w-full flex justify-center group relative">
+      {/* ── Footer / Collapse Trigger (Desktop only) ── */}
+      {!isDrawer && (
+        <div className="shrink-0 p-2.5 border-t border-[#dbe2ea]/80 flex items-center justify-end">
+          {!collapsed ? (
             <button
               type="button"
               onClick={toggleCollapse}
-              className="h-9 w-9 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition cursor-pointer"
-              title="Expand sidebar (250px)"
-              aria-label="Expand sidebar"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition cursor-pointer"
+              title="Collapse sidebar (68px)"
+              aria-label="Collapse sidebar"
             >
-              <PanelLeftOpen className="h-4 w-4" />
+              <PanelLeftClose className="h-4 w-4" />
             </button>
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-[100] pointer-events-none">
-              <div className="rounded-md bg-[#1c2a38] text-white px-2.5 py-1 text-xs font-medium shadow-lg whitespace-nowrap border border-slate-700/80">
-                Expand sidebar
+          ) : (
+            <div className="w-full flex justify-center group relative">
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                className="h-9 w-9 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200/70 transition cursor-pointer"
+                title="Expand sidebar (250px)"
+                aria-label="Expand sidebar"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-[100] pointer-events-none">
+                <div className="rounded-md bg-[#1c2a38] text-white px-2.5 py-1 text-xs font-medium shadow-lg whitespace-nowrap border border-slate-700/80">
+                  Expand sidebar
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </aside>
   );
 }
@@ -624,8 +629,9 @@ export function MetaNavigationHeader({
     <>
       <header className="shrink-0 bg-white border border-slate-200/90 rounded-2xl px-4 sm:px-6 py-3.5 mb-6 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {/* Left: Mobile Drawer Trigger + Active Route Title + Info Tooltip */}
+          {/* Left: Active Route Title + Info Tooltip (mobile: no hamburger — bottom tab bar handles nav) */}
           <div className="flex items-center gap-3">
+            {/* Mobile: icon-only hamburger button — bottom tab bar handles primary nav */}
             <button
               type="button"
               onClick={openMobile}
@@ -636,7 +642,13 @@ export function MetaNavigationHeader({
               <Menu className="h-4 w-4" />
             </button>
 
-            <div className="flex items-center gap-2">
+            {/* Mobile: page title shown next to icon */}
+            <h1 className="sm:hidden text-base font-bold text-slate-900 tracking-tight truncate max-w-[180px]">
+              {activeItem.label}
+            </h1>
+
+            {/* Desktop: title + info tooltip */}
+            <div className="hidden sm:flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 {activeItem.label}
               </h1>

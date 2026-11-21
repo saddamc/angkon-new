@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { getSessionUserId, hashPassword, validatePassword, verifyPassword } from "@/server/auth";
 import { publicUser } from "@/server/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 /**
  * POST /api/auth/set-password { password, currentPassword? }
@@ -12,6 +13,17 @@ import { publicUser } from "@/server/account";
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIp(request);
+    const limit = await rateLimit(`auth-set-password:ip:${hashIp(ip)}`, 10, 15 * 60, {
+      failClosed: true,
+    });
+    if (!limit.allowed) {
+      return createRateLimitResponse(
+        limit,
+        "Too many password update attempts. Please wait 15 minutes before trying again."
+      );
+    }
+
     const userId = getSessionUserId(request);
     if (!userId) {
       return NextResponse.json({ error: "Please sign in first." }, { status: 401 });

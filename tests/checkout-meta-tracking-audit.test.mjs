@@ -910,7 +910,12 @@ test("Audit Criterion 26: Old static 9700 BDT simulator value is eliminated from
 });
 
 test("Audit Criterion 27 & 28: SSLCommerz tracking token generation, verification, and protected endpoint", async () => {
-  const { createPaymentTrackingToken, verifyPaymentTrackingToken } = await import("../src/server/sslcommerz.ts");
+  const { createTrackingToken, verifyTrackingToken } = await import("../src/server/payments/tracking-token-core.ts");
+  const TRACKING_SECRET = "test-tracking-token-secret";
+  const createPaymentTrackingToken = (orderNumber, total) =>
+    createTrackingToken(orderNumber, total, TRACKING_SECRET);
+  const verifyPaymentTrackingToken = (token, orderNumber) =>
+    verifyTrackingToken(token, orderNumber, TRACKING_SECRET);
 
   const orderNum = "ANG-TEST-SSL-001";
   const token = createPaymentTrackingToken(orderNum, 5000);

@@ -1,9 +1,36 @@
+import dns from "node:dns";
 import mongoose from "mongoose";
+import {
+  validateDatabaseConnection,
+  getAppEnvironment,
+} from "../server/env/app-environment";
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
 
 if (!MONGODB_URI) {
   console.warn("MONGODB_URI, MONGODB_URL, or DATABASE_URL is not defined in environment variables.");
+}
+
+/**
+ * Node's MongoDB driver resolves `mongodb+srv://` with c-ares, which queries
+ * the configured DNS servers directly. Some ISP resolvers refuse SRV queries
+ * (EREFUSED) even though the operating-system resolver succeeds by falling
+ * back to a public resolver. Set MONGODB_DNS_SERVERS=8.8.8.8,1.1.1.1 when that
+ * happens. Leave it unset on Vercel unless a specific resolver is required.
+ */
+const DNS_OVERRIDE = process.env.MONGODB_DNS_SERVERS?.trim();
+if (DNS_OVERRIDE) {
+  const servers = DNS_OVERRIDE.split(/[,;]/)
+    .map((server) => server.trim())
+    .filter(Boolean);
+  if (servers.length > 0) {
+    try {
+      dns.setServers(servers);
+      console.info(`[MongoDB] DNS override active: ${servers.join(", ")}`);
+    } catch (error) {
+      console.warn("[MongoDB] Could not apply MONGODB_DNS_SERVERS:", error);
+    }
+  }
 }
 
 export interface PoolTelemetry {
@@ -114,10 +141,13 @@ function attachTelemetryListeners(m: typeof mongoose) {
 }
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
-  const uri = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
-  if (!uri) {
-    throw new Error("Please define the MONGODB_URI, MONGODB_URL, or DATABASE_URL environment variable.");
+  // Enforce strict environment isolation before connecting
+  const isolation = validateDatabaseConnection();
+  if (!isolation.valid) {
+    throw new Error(isolation.error);
   }
+
+  const uri = isolation.uri;
 
   // 1. If actively connected (readyState === 1), return cached connection immediately
   if (cached.conn && cached.conn.connection.readyState === 1) {
@@ -201,6 +231,27 @@ export function getDatabaseDiagnostics() {
   const readyState = mongoose.connection ? mongoose.connection.readyState : 0;
   const readyStateText = readyStates[readyState] || "unknown";
 
+  let isolationInfo = {
+    environment: "unknown",
+    expectedDatabase: "unknown",
+    actualDatabase: "unknown",
+    sanitizedHost: "unknown",
+    isolationValid: false,
+  };
+
+  try {
+    const iso = validateDatabaseConnection();
+    isolationInfo = {
+      environment: iso.environment,
+      expectedDatabase: iso.expectedDatabase,
+      actualDatabase: iso.actualDatabase,
+      sanitizedHost: iso.sanitizedHost,
+      isolationValid: iso.valid,
+    };
+  } catch {
+    isolationInfo.environment = getAppEnvironment();
+  }
+
   return {
     runtime: {
       nodeVersion: process.version,
@@ -211,6 +262,7 @@ export function getDatabaseDiagnostics() {
       uptimeSeconds: Math.floor(process.uptime()),
       pid: process.pid,
     },
+    isolation: isolationInfo,
     connection: {
       readyState,
       readyStateText,

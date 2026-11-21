@@ -60,7 +60,10 @@ export interface WooProduct {
   shipping_class_id: number;
   /** Available stock count when WC stock management is enabled for this product */
   stock_quantity?: number | null;
-  weight?: string;
+  weight?: string | number;
+  weightUnit?: "g" | "kg";
+  shippingCategory?: "apparel" | "accessories" | "cosmetics" | "general" | string;
+  weightUpdatedAt?: string | Date | null;
   /** Custom metadata array for advanced options like delivery charges */
   meta_data?: { id?: number; key: string; value: string }[];
   updatedAt?: string;

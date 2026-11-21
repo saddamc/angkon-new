@@ -1,0 +1,282 @@
+/**
+ * ANGKON — Application Environment & Database Isolation Engine
+ *
+ * Implements strict environment boundaries between Production, Preview,
+ * Development, and Test environments to guarantee zero shared writable database
+ * access and strict safety containment.
+ */
+
+export type AppEnvironment = "production" | "preview" | "development" | "test";
+
+export const APP_ENVIRONMENTS: readonly AppEnvironment[] = [
+  "production",
+  "preview",
+  "development",
+  "test",
+] as const;
+
+/**
+ * Authoritative Environment-to-Database Mapping
+ *
+ * Each environment is strictly mapped to its own isolated database:
+ * - production  -> angkon
+ * - development -> angkon_dev
+ * - preview     -> angkon_preview
+ * - test        -> angkon_test
+ */
+export const ENVIRONMENT_DATABASE_MAP: Record<AppEnvironment, string> = {
+  production: "angkon",
+  development: "angkon_dev",
+  preview: "angkon_preview",
+  test: "angkon_test",
+};
+
+/**
+ * Resolves the active application environment.
+ *
+ * Resolution Order:
+ * 1. APP_ENVIRONMENT (explicit operator override)
+ * 2. VERCEL_ENV (automated Vercel hosting platform environment)
+ * 3. NODE_ENV === "test" or testing frameworks -> "test"
+ * 4. NODE_ENV === "production" -> "production"
+ * 5. Default fallback -> "development"
+ */
+export function getAppEnvironment(): AppEnvironment {
+  const explicit = process.env.APP_ENVIRONMENT?.trim().toLowerCase();
+  if (explicit) {
+    if (APP_ENVIRONMENTS.includes(explicit as AppEnvironment)) {
+      return explicit as AppEnvironment;
+    }
+    throw new Error(
+      `Invalid APP_ENVIRONMENT "${explicit}". Allowed values: ${APP_ENVIRONMENTS.join(", ")}`
+    );
+  }
+
+  const vercelEnv = process.env.VERCEL_ENV?.trim().toLowerCase();
+  if (vercelEnv) {
+    if (APP_ENVIRONMENTS.includes(vercelEnv as AppEnvironment)) {
+      return vercelEnv as AppEnvironment;
+    }
+  }
+
+  if (
+    process.env.NODE_ENV === "test" ||
+    Boolean(process.env.VITEST) ||
+    Boolean(process.env.JEST_WORKER_ID)
+  ) {
+    return "test";
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return "production";
+  }
+
+  return "development";
+}
+
+export function isProductionEnvironment(): boolean {
+  return getAppEnvironment() === "production";
+}
+
+export function isDevelopmentEnvironment(): boolean {
+  return getAppEnvironment() === "development";
+}
+
+export function isPreviewEnvironment(): boolean {
+  return getAppEnvironment() === "preview";
+}
+
+export function isTestEnvironment(): boolean {
+  return getAppEnvironment() === "test";
+}
+
+export interface ParsedMongoUri {
+  protocol: string;
+  host: string;
+  databaseName: string;
+  sanitizedUri: string;
+}
+
+/**
+ * Parses and extracts database name and host from MongoDB connection URI without exposing credentials.
+ */
+export function parseMongoUri(rawUri: string): ParsedMongoUri {
+  const uri = (rawUri || "").trim();
+  if (!uri) {
+    throw new Error("MongoDB connection URI is empty or not defined.");
+  }
+
+  if (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://")) {
+    throw new Error("Invalid MongoDB connection URI protocol. Must start with mongodb:// or mongodb+srv://");
+  }
+
+  try {
+    const parsed = new URL(uri);
+    const databaseName = parsed.pathname.replace(/^\/+/, "").split("/")[0].split("?")[0].trim();
+    if (!databaseName) {
+      throw new Error("MongoDB connection URI does not specify a target database in its pathname.");
+    }
+
+    const sanitizedUri = `${parsed.protocol}//${parsed.host}/${databaseName}`;
+
+    return {
+      protocol: parsed.protocol,
+      host: parsed.host,
+      databaseName,
+      sanitizedUri,
+    };
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes("MongoDB")) {
+      throw err;
+    }
+    throw new Error(`Failed to parse MongoDB connection URI: ${(err as Error).message}`);
+  }
+}
+
+export interface DatabaseValidationResult {
+  valid: boolean;
+  environment: AppEnvironment;
+  expectedDatabase: string;
+  actualDatabase: string;
+  sanitizedHost: string;
+  uri: string;
+  error?: string;
+}
+
+/**
+ * Validates that the active database connection URI complies with environment isolation rules.
+ *
+ * Rules:
+ * 1. Checks for conflicting connection variables (DATABASE_URL, MONGODB_URI, MONGODB_URL).
+ * 2. Compares actual database against ENVIRONMENT_DATABASE_MAP for the resolved environment.
+ * 3. FORBIDS non-production environments (development, preview, test) from connecting to "angkon".
+ * 4. FORBIDS production from connecting to any database other than "angkon".
+ * 5. Rejects any database mismatch rather than silently rewriting it.
+ */
+export function validateDatabaseConnection(
+  explicitUri?: string,
+  explicitEnv?: AppEnvironment
+): DatabaseValidationResult {
+  const env = explicitEnv || getAppEnvironment();
+  const expectedDatabase = ENVIRONMENT_DATABASE_MAP[env];
+
+  // Check conflicting variables if explicitUri is not provided
+  if (!explicitUri) {
+    const candidates = [
+      { name: "DATABASE_URL", val: process.env.DATABASE_URL?.trim() },
+      { name: "MONGODB_URI", val: process.env.MONGODB_URI?.trim() },
+      { name: "MONGODB_URL", val: process.env.MONGODB_URL?.trim() },
+    ].filter((c) => Boolean(c.val));
+
+    if (candidates.length > 1) {
+      const parsedList = candidates.map((c) => ({
+        name: c.name,
+        parsed: parseMongoUri(c.val!),
+      }));
+
+      const first = parsedList[0].parsed;
+      for (let i = 1; i < parsedList.length; i++) {
+        const other = parsedList[i];
+        if (
+          other.parsed.host !== first.host ||
+          other.parsed.databaseName !== first.databaseName
+        ) {
+          const err = `Conflicting database connection strings: ${parsedList[0].name} points to "${first.databaseName}" on "${first.host}", but ${other.name} points to "${other.parsed.databaseName}" on "${other.parsed.host}". Set a single unambiguous connection variable.`;
+          return {
+            valid: false,
+            environment: env,
+            expectedDatabase,
+            actualDatabase: first.databaseName,
+            sanitizedHost: first.host,
+            uri: "",
+            error: err,
+          };
+        }
+      }
+    }
+  }
+
+  const rawUri =
+    explicitUri ||
+    process.env.DATABASE_URL?.trim() ||
+    process.env.MONGODB_URI?.trim() ||
+    process.env.MONGODB_URL?.trim() ||
+    "";
+
+  if (!rawUri) {
+    return {
+      valid: false,
+      environment: env,
+      expectedDatabase,
+      actualDatabase: "",
+      sanitizedHost: "",
+      uri: "",
+      error: `Missing database configuration. Define DATABASE_URL for environment "${env}".`,
+    };
+  }
+
+  let parsed: ParsedMongoUri;
+  try {
+    parsed = parseMongoUri(rawUri);
+  } catch (err: unknown) {
+    return {
+      valid: false,
+      environment: env,
+      expectedDatabase,
+      actualDatabase: "",
+      sanitizedHost: "",
+      uri: "",
+      error: (err as Error).message,
+    };
+  }
+
+  const actualDatabase = parsed.databaseName;
+
+  // RULE 1: Non-production MUST NEVER connect to production database "angkon"
+  if (env !== "production" && actualDatabase === "angkon") {
+    return {
+      valid: false,
+      environment: env,
+      expectedDatabase,
+      actualDatabase,
+      sanitizedHost: parsed.host,
+      uri: rawUri,
+      error: `CRITICAL ISOLATION VIOLATION: Environment "${env}" is configured with production database "angkon". Non-production environments must connect to their dedicated isolated database "${expectedDatabase}". Refusing unsafe connection.`,
+    };
+  }
+
+  // RULE 2: Production MUST connect to "angkon"
+  if (env === "production" && actualDatabase !== "angkon") {
+    return {
+      valid: false,
+      environment: env,
+      expectedDatabase,
+      actualDatabase,
+      sanitizedHost: parsed.host,
+      uri: rawUri,
+      error: `CRITICAL PRODUCTION CONFIGURATION ERROR: Production environment requires database "angkon", but connection string specifies "${actualDatabase}".`,
+    };
+  }
+
+  // RULE 3: Exact mapping match
+  if (actualDatabase !== expectedDatabase) {
+    return {
+      valid: false,
+      environment: env,
+      expectedDatabase,
+      actualDatabase,
+      sanitizedHost: parsed.host,
+      uri: rawUri,
+      error: `Database isolation mismatch for environment "${env}": expected database "${expectedDatabase}", but connection string specifies "${actualDatabase}".`,
+    };
+  }
+
+  return {
+    valid: true,
+    environment: env,
+    expectedDatabase,
+    actualDatabase,
+    sanitizedHost: `${parsed.host}/${actualDatabase}`,
+    uri: rawUri,
+  };
+}

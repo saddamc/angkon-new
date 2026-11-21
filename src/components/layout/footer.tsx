@@ -89,10 +89,12 @@ const SHOP_LINKS = [
 
 const CLIENT_CARE_LINKS = [
   { label: "My Account & Orders", href: "/my-account" },
-  { label: "Delivery Timing & Shipping", href: "/delivery-time" },
-  { label: "Refund, Trial & Exchange Policy", href: "/refund-and-exchange-policies" },
-  { label: "Privacy & Data Policy", href: "/privacy-policy" },
+  { label: "Delivery Timing & Rates", href: "/delivery-time" },
+  { label: "Return & Refund Policy", href: "/return-refund-policy" },
+  { label: "Warranty & Quality Policy", href: "/warranty-policy" },
+  { label: "Privacy & Data Protection", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/terms" },
+  { label: "Contact Us", href: "/contact-us" },
   { label: "About ANGKON", href: "/about" },
 ];
 

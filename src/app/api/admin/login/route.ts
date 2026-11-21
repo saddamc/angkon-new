@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodeCrypto from "crypto";
-import { clientIp, rateLimit } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { verifyPassword } from "@/server/auth";
 import { RateLimit } from "@/models/RateLimit";
-
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
-
-if (process.env.NODE_ENV === "production" && JWT_SECRET === "angkon_secure_jwt_secret_2026") {
-  console.warn("⚠️ SECURITY WARNING: Using fallback JWT_SECRET in production!");
-}
+import { getJwtSecret } from "@/lib/env";
 
 /** Constant-time string comparison to prevent timing side-channel attacks */
 function timingSafeEqualStr(a: string, b: string): boolean {
@@ -70,7 +63,12 @@ export async function GET(request: NextRequest) {
   if (!token) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
-  const payload = await verify(token, JWT_SECRET);
+  let payload: Record<string, unknown> | null = null;
+  try {
+    payload = await verify(token, getJwtSecret());
+  } catch {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
   if (!payload) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
@@ -86,14 +84,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const ip = clientIp(request);
-    const limit = await rateLimit(`admin-login:ip:${ip}`, 5, 15 * 60);
+    const limit = await rateLimit(`admin-login:ip:${hashIp(ip)}`, 5, 15 * 60, {
+      failClosed: true,
+    });
     if (!limit.allowed) {
-      return NextResponse.json(
-        {
-          error: "Too many admin login attempts from this network. Please wait 15 minutes before trying again.",
-          retryAfterSeconds: limit.retryAfterSeconds,
-        },
-        { status: 429 }
+      return createRateLimitResponse(
+        limit,
+        "Too many admin login attempts from this network. Please wait 15 minutes before trying again."
       );
     }
 
@@ -163,7 +160,7 @@ export async function POST(request: NextRequest) {
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8, // 8 hours
       },
-      JWT_SECRET,
+      getJwtSecret(),
     );
 
     const response = NextResponse.json({

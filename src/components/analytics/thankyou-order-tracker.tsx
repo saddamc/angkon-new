@@ -38,6 +38,11 @@ export function ThankYouOrderTracker() {
           return;
         }
 
+        // Sandbox payments must not emit a real browser Purchase event.
+        if (data.sandbox) {
+          return;
+        }
+
         try {
           sessionStorage.setItem(storageKey, "true");
         } catch {

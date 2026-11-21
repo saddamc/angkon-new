@@ -9,19 +9,18 @@ import {
   validatePassword,
 } from "@/server/auth";
 import { issueVerificationEmail, publicUser } from "@/server/account";
-import { clientIp, rateLimit } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
     const ip = clientIp(request);
-    const limit = await rateLimit(`auth-register:ip:${ip}`, 6, 60 * 60);
+    const limit = await rateLimit(`auth-register:ip:${hashIp(ip)}`, 6, 60 * 60, {
+      failClosed: true,
+    });
     if (!limit.allowed) {
-      return NextResponse.json(
-        {
-          error: "Too many accounts created from this IP address. Please wait an hour before trying again.",
-          retryAfterSeconds: limit.retryAfterSeconds,
-        },
-        { status: 429 }
+      return createRateLimitResponse(
+        limit,
+        "Too many accounts created from this IP address. Please wait an hour before trying again."
       );
     }
 

@@ -3,7 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { normalizeEmail, setSessionCookie, verifyPassword } from "@/server/auth";
 import { publicUser } from "@/server/account";
-import { clientIp, rateLimit } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { securityLog } from "@/server/security-log";
 
 const INVALID = "Invalid email or password.";
 
@@ -17,21 +18,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
     }
 
-    // Active Rate Limiting: 5 attempts per 15 minutes per email, 25 per IP
+    // Active Rate Limiting: 5 attempts per 15 minutes per email, 25 per IP (HMAC-hashed)
     const ip = clientIp(request);
     const [perEmail, perIp] = await Promise.all([
-      rateLimit(`auth-login:email:${email}`, 5, 15 * 60),
-      rateLimit(`auth-login:ip:${ip}`, 25, 15 * 60),
+      rateLimit(`auth-login:email:${hashIp(email)}`, 5, 15 * 60, { failClosed: true }),
+      rateLimit(`auth-login:ip:${hashIp(ip)}`, 25, 15 * 60, { failClosed: true }),
     ]);
 
     if (!perEmail.allowed || !perIp.allowed) {
-      const wait = Math.max(perEmail.retryAfterSeconds, perIp.retryAfterSeconds);
-      return NextResponse.json(
-        {
-          error: "Too many failed login attempts. Please wait a few minutes before trying again.",
-          retryAfterSeconds: wait,
-        },
-        { status: 429 }
+      const activeLimit = !perEmail.allowed ? perEmail : perIp;
+      return createRateLimitResponse(
+        activeLimit,
+        "Too many failed login attempts. Please wait a few minutes before trying again."
       );
     }
 
@@ -42,6 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
+      securityLog("auth.invalid_credentials", {
+        scope: "customer",
+        reason: "unknown-account",
+      });
       return NextResponse.json({ error: INVALID }, { status: 401 });
     }
 
@@ -58,6 +60,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!verifyPassword(password, user.password)) {
+      securityLog("auth.invalid_credentials", {
+        scope: "customer",
+        reason: "bad-password",
+      });
       return NextResponse.json({ error: INVALID }, { status: 401 });
     }
 

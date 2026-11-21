@@ -3,6 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { getSessionUserId } from "@/server/auth";
 import { getCheckoutSettings } from "@/server/checkout-settings";
+import { isOnlinePaymentAvailableForEnvironment } from "@/server/sslcommerz";
 
 const NO_STORE = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
       requireEmailVerification: settings.requireEmailVerification,
       allowGuestCheckout: settings.allowGuestCheckout,
       enablePromoCodes: settings.enablePromoCodes,
+      onlinePaymentAvailable: isOnlinePaymentAvailableForEnvironment(),
       user,
     },
     { headers: NO_STORE }

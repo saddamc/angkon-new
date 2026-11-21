@@ -103,3 +103,18 @@ All critical and high-severity security findings identified during Phase 1 have 
 - **CWE**: CWE-209
 - **Status**: **RESOLVED**
 - **Remediation Applied**: Standardized error responses to prevent internal database connection strings or stack traces from leaking to client responses.
+
+---
+
+### SEC-09: [HIGH] Fixed-Window Rate Limiting Boundary Burst Vulnerability
+- **OWASP**: A04:2021 — Insecure Design / A07:2021 — Identification and Authentication Failures
+- **CWE**: CWE-799 (Improper Control of Interaction Frequency)
+- **Status**: **RESOLVED & VERIFIED**
+- **Affected File**: [`src/server/rate-limit.ts`](file:///d:/Client%20Project/✅%20Agkon-New/src/server/rate-limit.ts)
+- **Vulnerability**: Fixed-window bucket calculation (`Math.floor(nowMs / windowSizeMs) * windowSizeMs`) permitted boundary bursts (an attacker could send 100% of the limit at the end of window $N$ and another 100% at the start of window $N+1$, achieving 2x throughput in a fraction of the window).
+- **Remediation Applied**:
+  - Implemented weighted sliding-window counter algorithm (`calculateSlidingWindowCount`).
+  - Evaluates previous window counter weighted by the overlapping fraction of the rolling window ($1 - \frac{t_{elapsed}}{W}$).
+  - Concurrently executes atomic upsert of the current bucket and lean read of the previous window bucket via `Promise.all`.
+  - Blocks boundary burst attempts where cumulative weighted requests exceed the safe limit.
+- **Verification**: Verified via dedicated unit test suite [`tests/sliding-window-rate-limit.test.mjs`](file:///d:/Client%20Project/✅%20Agkon-New/tests/sliding-window-rate-limit.test.mjs).

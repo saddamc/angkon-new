@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { connectToDatabase } from "@/lib/mongodb";
 import { EmailCode } from "@/models/EmailCode";
+import { getJwtSecret } from "@/lib/env";
 
 /**
  * One-time email codes used to verify an address during checkout.
@@ -12,8 +13,6 @@ export const CODE_TTL_MS = 10 * 60 * 1000;
 export const CODE_RESEND_COOLDOWN_MS = 60 * 1000;
 export const CODE_MAX_ATTEMPTS = 5;
 
-const SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
-
 export function generateCode(): string {
   return String(crypto.randomInt(0, 10 ** CODE_LENGTH)).padStart(CODE_LENGTH, "0");
 }
@@ -23,7 +22,7 @@ export function isWellFormedCode(value: unknown): value is string {
 }
 
 export function hashCode(email: string, code: string): string {
-  return crypto.createHmac("sha256", SECRET).update(`${email}:${code}`).digest("hex");
+  return crypto.createHmac("sha256", getJwtSecret()).update(`${email}:${code}`).digest("hex");
 }
 
 /** Create (or replace) the pending code for an email. Returns the code, cooldown, or a db-error sentinel. */

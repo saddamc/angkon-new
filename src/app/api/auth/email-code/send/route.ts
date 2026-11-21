@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { EMAIL_REGEX, normalizeEmail } from "@/server/auth";
 import { CODE_TTL_MS, discardEmailCode, issueEmailCode } from "@/server/email-code";
-import { clientIp, rateLimit } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 import { sendVerificationCodeEmail } from "@/lib/email/account-emails";
 
 /**
@@ -25,15 +25,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Stop code-spamming a victim's inbox, and stop one visitor from hammering the sender.
+    const ip = clientIp(request);
     const [perEmail, perIp] = await Promise.all([
-      rateLimit(`code-send:email:${email}`, 6, 60 * 60),
-      rateLimit(`code-send:ip:${clientIp(request)}`, 20, 60 * 60),
+      rateLimit(`code-send:email:${hashIp(email)}`, 6, 60 * 60, { failClosed: true }),
+      rateLimit(`code-send:ip:${hashIp(ip)}`, 20, 60 * 60, { failClosed: true }),
     ]);
     if (!perEmail.allowed || !perIp.allowed) {
-      const wait = Math.max(perEmail.retryAfterSeconds, perIp.retryAfterSeconds);
-      return NextResponse.json(
-        { error: "Too many codes requested. Please wait a while before trying again.", reason: "limit", retryAfterSeconds: wait },
-        { status: 429 },
+      const activeLimit = !perEmail.allowed ? perEmail : perIp;
+      return createRateLimitResponse(
+        activeLimit,
+        "Too many codes requested. Please wait a while before trying again."
       );
     }
 

@@ -1,202 +1,128 @@
 /**
- * ANGKON Luxury Apparel — SSLCOMMERZ Payment Gateway Integration
- * Supports Sandbox and Production live environments with bKash, Nagad, Rocket,
- * VISA, Mastercard, AMEX, and automated IPN verification.
+ * ANGKON – SSLCOMMERZ shared merchant configuration & safety engine.
+ *
+ * The actual gateway client lives in `src/server/payments/providers/sslcommerz/`.
+ * This module exposes credential selection, live readiness checks, environment
+ * validation, and signed tracking token helpers.
  */
 
-import crypto from "crypto";
+import { getJwtSecret } from "../lib/env";
+import { getAppEnvironment, type AppEnvironment } from "./env/app-environment";
+import {
+  createTrackingToken,
+  verifyTrackingToken,
+} from "./payments/tracking-token-core";
 
 export function createPaymentTrackingToken(orderNumber: string, total: number): string {
-  const secret = process.env.JWT_SECRET || "angkon-tracking-secret";
-  const payload = `${orderNumber}:${total}:${Date.now()}`;
-  const sig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-  return `${Buffer.from(payload).toString("base64url")}.${sig}`;
+  return createTrackingToken(orderNumber, total, getJwtSecret());
 }
 
 export function verifyPaymentTrackingToken(token: string, expectedOrderNumber: string): boolean {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 2) return false;
-    const [payloadB64, sig] = parts;
-    const payload = Buffer.from(payloadB64, "base64url").toString("utf8");
-    const [orderNumber, , timestampStr] = payload.split(":");
-    if (orderNumber !== expectedOrderNumber) return false;
+  return verifyTrackingToken(token, expectedOrderNumber, getJwtSecret());
+}
 
-    const timestamp = parseInt(timestampStr, 10);
-    if (isNaN(timestamp) || Date.now() - timestamp > 15 * 60 * 1000) return false; // 15 min expiration
+export interface SslcommerzCredentials {
+  mode: "sandbox" | "live";
+  storeId: string;
+  storePassword: string;
+  configured: boolean;
+}
 
-    const secret = process.env.JWT_SECRET || "angkon-tracking-secret";
-    const expectedSig = crypto.createHmac("sha256", secret).update(payload).digest("hex");
-    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
-  } catch {
+/**
+ * Sandbox and live must never share a store. The scoped pair wins when set:
+ *
+ *   live    → SSLCOMMERZ_LIVE_STORE_ID / SSLCOMMERZ_LIVE_STORE_PASSWORD
+ *   sandbox → SSLCOMMERZ_SANDBOX_STORE_ID / SSLCOMMERZ_SANDBOX_STORE_PASSWORD
+ *
+ * The legacy `SSLCOMMERZ_STORE_ID` / `SSLCOMMERZ_STORE_PASSWORD` pair is kept
+ * as a fallback so existing deployments keep working.
+ */
+export function getSslcommerzCredentials(): SslcommerzCredentials {
+  const live =
+    process.env.SSLCOMMERZ_IS_LIVE?.trim().toLowerCase() === "true" ||
+    process.env.SSLCOMMERZ_MODE?.trim().toLowerCase() === "live";
+
+  const scopedId = live
+    ? process.env.SSLCOMMERZ_LIVE_STORE_ID?.trim()
+    : process.env.SSLCOMMERZ_SANDBOX_STORE_ID?.trim();
+  const scopedPassword = live
+    ? process.env.SSLCOMMERZ_LIVE_STORE_PASSWORD?.trim()
+    : process.env.SSLCOMMERZ_SANDBOX_STORE_PASSWORD?.trim();
+
+  const storeId = scopedId || process.env.SSLCOMMERZ_STORE_ID?.trim() || "";
+  const storePassword =
+    scopedPassword || process.env.SSLCOMMERZ_STORE_PASSWORD?.trim() || "";
+
+  return {
+    mode: live ? "live" : "sandbox",
+    storeId,
+    storePassword,
+    configured: Boolean(storeId && storePassword),
+  };
+}
+
+export function isSslcommerzConfigured(): boolean {
+  return getSslcommerzCredentials().configured;
+}
+
+export function isSslcommerzLive(): boolean {
+  return getSslcommerzCredentials().mode === "live";
+}
+
+/**
+ * Validates whether SSLCOMMERZ is strictly live-ready for real payments:
+ * 1. Must be in live mode (SSLCOMMERZ_IS_LIVE=true or SSLCOMMERZ_MODE=live).
+ * 2. Dedicated store credentials must be configured.
+ * 3. Store ID must not be a sandbox test ID (no "testbox", "sandbox", or "test" prefixes).
+ */
+export function isSslcommerzLiveReady(customCreds?: Partial<SslcommerzCredentials>): boolean {
+  const creds = customCreds
+    ? {
+        mode: customCreds.mode || "sandbox",
+        storeId: customCreds.storeId || "",
+        storePassword: customCreds.storePassword || "",
+        configured: Boolean(customCreds.storeId && customCreds.storePassword),
+      }
+    : getSslcommerzCredentials();
+  if (creds.mode !== "live") return false;
+  if (!creds.configured) return false;
+
+  const id = creds.storeId.toLowerCase();
+  if (id.includes("testbox") || id.includes("sandbox") || id.startsWith("test")) {
     return false;
   }
+  return true;
 }
 
-export interface SslcommerzInitParams {
-  orderNumber: string;
-  total: number;
-  customer: {
-    fullName: string;
-    email: string;
-    phone: string;
-    address: string;
-    city: string;
-    district: string;
-    postalCode?: string;
-  };
-  appBaseUrl: string;
-}
+/**
+ * Determines whether online payment should be offered at checkout for the given environment.
+ *
+ * In Production:
+ * - MUST return false unless dedicated Live credentials and explicit Live mode are configured.
+ * - Sandbox credentials or sandbox mode in production MUST return false.
+ *
+ * In Development & Preview:
+ * - Returns true if gateway credentials (sandbox or live) are configured.
+ */
+export function isOnlinePaymentAvailableForEnvironment(
+  env?: AppEnvironment,
+  customCreds?: Partial<SslcommerzCredentials>
+): boolean {
+  const appEnv = env || getAppEnvironment();
+  const creds = customCreds
+    ? {
+        mode: customCreds.mode || "sandbox",
+        storeId: customCreds.storeId || "",
+        storePassword: customCreds.storePassword || "",
+        configured: Boolean(customCreds.storeId && customCreds.storePassword),
+      }
+    : getSslcommerzCredentials();
 
-export interface SslcommerzInitResult {
-  success: boolean;
-  gatewayUrl?: string | null;
-  sessionKey?: string;
-  simulated?: boolean;
-  message?: string;
-  error?: string;
-}
+  if (!creds.configured) return false;
 
-export interface SslcommerzValidationResult {
-  isValid: boolean;
-  status: string;
-  amount: number;
-  tranId: string;
-  valId: string;
-  bankTranId?: string;
-  cardType?: string;
-  cardBrand?: string;
-}
-
-export async function initiateSslcommerzPayment(
-  params: SslcommerzInitParams
-): Promise<SslcommerzInitResult> {
-  const storeId = process.env.SSLCOMMERZ_STORE_ID?.trim();
-  const storePasswd = process.env.SSLCOMMERZ_STORE_PASSWORD?.trim();
-  const isLive = process.env.SSLCOMMERZ_IS_LIVE === "true";
-
-  // If merchant credentials are not configured, gracefully simulate or return pending payment
-  if (!storeId || !storePasswd) {
-    return {
-      success: true,
-      simulated: true,
-      gatewayUrl: null,
-      message: "SSLCOMMERZ credentials not configured in environment. Order recorded as pending online payment.",
-    };
+  if (appEnv === "production") {
+    return isSslcommerzLiveReady(creds);
   }
 
-  const endpoint = isLive
-    ? "https://securepay.sslcommerz.com/gwprocess/v4/api.php"
-    : "https://sandbox.sslcommerz.com/gwprocess/v4/api.php";
-
-  const baseUrl = params.appBaseUrl.replace(/\/$/, "");
-
-  const postData = new URLSearchParams({
-    store_id: storeId,
-    store_passwd: storePasswd,
-    total_amount: Math.max(1, Math.round(params.total)).toString(),
-    currency: "BDT",
-    tran_id: params.orderNumber,
-    success_url: `${baseUrl}/api/payment/sslcommerz/callback?status=success`,
-    fail_url: `${baseUrl}/api/payment/sslcommerz/callback?status=fail`,
-    cancel_url: `${baseUrl}/api/payment/sslcommerz/callback?status=cancel`,
-    ipn_url: `${baseUrl}/api/payment/sslcommerz/ipn`,
-    shipping_method: "NO",
-    product_name: "ANGKON Luxury Apparel",
-    product_category: "Apparel",
-    product_profile: "physical-goods",
-    cus_name: params.customer.fullName || "Valued Customer",
-    cus_email: params.customer.email || "support@angkon.com",
-    cus_add1: params.customer.address || "Dhaka, Bangladesh",
-    cus_city: params.customer.city || params.customer.district || "Dhaka",
-    cus_state: params.customer.district || "Dhaka",
-    cus_postcode: params.customer.postalCode || "1200",
-    cus_country: "Bangladesh",
-    cus_phone: params.customer.phone || "01700000000",
-    ship_name: params.customer.fullName || "Valued Customer",
-    ship_add1: params.customer.address || "Dhaka, Bangladesh",
-    ship_city: params.customer.city || params.customer.district || "Dhaka",
-    ship_state: params.customer.district || "Dhaka",
-    ship_postcode: params.customer.postalCode || "1200",
-    ship_country: "Bangladesh",
-  });
-
-  try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: postData.toString(),
-    });
-
-    const data = await res.json();
-
-    if (data.status === "SUCCESS" && data.GatewayPageURL) {
-      return {
-        success: true,
-        gatewayUrl: data.GatewayPageURL,
-        sessionKey: data.sessionkey,
-      };
-    }
-
-    return {
-      success: false,
-      error: data.failedreason || "Payment gateway rejected initiation request.",
-    };
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Network error contacting SSLCOMMERZ gateway";
-    return { success: false, error: msg };
-  }
-}
-
-export async function validateSslcommerzTransaction(
-  valId: string
-): Promise<SslcommerzValidationResult> {
-  const storeId = process.env.SSLCOMMERZ_STORE_ID?.trim();
-  const storePasswd = process.env.SSLCOMMERZ_STORE_PASSWORD?.trim();
-  const isLive = process.env.SSLCOMMERZ_IS_LIVE === "true";
-
-  if (!storeId || !storePasswd) {
-    return {
-      isValid: false,
-      status: "UNCONFIGURED",
-      amount: 0,
-      tranId: "",
-      valId,
-    };
-  }
-
-  const endpoint = isLive
-    ? "https://securepay.sslcommerz.com/validator/api/validationserverAPI.php"
-    : "https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php";
-
-  const url = `${endpoint}?val_id=${encodeURIComponent(valId)}&store_id=${encodeURIComponent(
-    storeId
-  )}&store_passwd=${encodeURIComponent(storePasswd)}&format=json`;
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const isValid = data.status === "VALID" || data.status === "VALIDATED";
-
-    return {
-      isValid,
-      status: data.status || "INVALID",
-      amount: parseFloat(data.amount || "0"),
-      tranId: data.tran_id || "",
-      valId: data.val_id || valId,
-      bankTranId: data.bank_tran_id,
-      cardType: data.card_type,
-      cardBrand: data.card_brand,
-    };
-  } catch (error) {
-    console.error("SSLCOMMERZ validation error:", error);
-    return {
-      isValid: false,
-      status: "ERROR",
-      amount: 0,
-      tranId: "",
-      valId,
-    };
-  }
+  return creds.configured;
 }

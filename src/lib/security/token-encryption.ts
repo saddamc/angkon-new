@@ -27,10 +27,19 @@ export function deriveKeyFromSecret(secret: string): Buffer {
  */
 export function getMasterKey(): Buffer {
   const secret =
-    process.env.META_TOKEN_ENCRYPTION_KEY ||
-    process.env.ENCRYPTION_KEY ||
-    process.env.JWT_SECRET ||
-    "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
+    process.env.META_TOKEN_ENCRYPTION_KEY?.trim() ||
+    process.env.ENCRYPTION_KEY?.trim() ||
+    process.env.JWT_SECRET?.trim();
+
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "META_TOKEN_ENCRYPTION_KEY, ENCRYPTION_KEY or JWT_SECRET is required in production."
+      );
+    }
+    return deriveKeyFromSecret("angkon_local_dev_only_encryption_key_change_me");
+  }
+
   return deriveKeyFromSecret(secret);
 }
 
@@ -45,7 +54,9 @@ export function getRotationKeys(): Buffer[] {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  // Also include standard fallbacks as secondary rotation keys so existing tokens continue to decrypt
+  // Legacy decryption keys only. New tokens are encrypted with getMasterKey();
+  // these keep older DB values readable until the token migration re-encrypts
+  // them. Remove them after running /api/admin/meta/security/migrate-tokens.
   const fallbacks = [
     process.env.META_TOKEN_ENCRYPTION_KEY,
     process.env.ENCRYPTION_KEY,

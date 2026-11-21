@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, setSessionCookie, validatePassword } from "@/server/auth";
 import { findUserByToken, publicUser } from "@/server/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 /**
  * GET  /api/auth/reset-password?token=… — check a link is still valid (for the page).
@@ -9,12 +10,29 @@ import { findUserByToken, publicUser } from "@/server/account";
  * is marked verified and they're signed in.
  */
 export async function GET(request: NextRequest) {
+  const ip = clientIp(request);
+  const limit = await rateLimit(`auth-reset-get:ip:${hashIp(ip)}`, 30, 15 * 60);
+  if (!limit.allowed) {
+    return createRateLimitResponse(limit, "Too many requests. Please wait a few minutes.");
+  }
+
   const user = await findUserByToken("reset", request.nextUrl.searchParams.get("token"));
   return NextResponse.json({ valid: Boolean(user), email: user?.email ?? null });
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIp(request);
+    const limit = await rateLimit(`auth-reset-post:ip:${hashIp(ip)}`, 10, 15 * 60, {
+      failClosed: true,
+    });
+    if (!limit.allowed) {
+      return createRateLimitResponse(
+        limit,
+        "Too many password reset attempts. Please wait 15 minutes before trying again."
+      );
+    }
+
     const body = await request.json();
     const passwordError = validatePassword(body.password);
     if (passwordError) {

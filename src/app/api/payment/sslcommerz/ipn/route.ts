@@ -1,102 +1,91 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import { Order } from "@/models/Order";
-import { validateSslcommerzTransaction } from "@/server/sslcommerz";
-import { sendMetaCapiEvent } from "@/server/meta-capi";
+import { rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { securityLog } from "@/server/security-log";
+import { ProcessIpnService } from "@/server/payments/services/process-ipn";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * SSLCOMMERZ IPN (legacy path).
+ *
+ * Durable inbox persistence, deduplication and validator-confirmed settlement
+ * live in ProcessIpnService. This route only parses the payload and enforces
+ * gateway-friendly rate ceilings: a retry storm must never be mistaken for a
+ * customer abusing the checkout.
+ */
 export async function POST(request: NextRequest) {
   try {
-    let tranId = "";
-    let valId = "";
-    let status = "";
+    let payload: Record<string, unknown> = {};
 
     const contentType = request.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
-      const json = await request.json();
-      tranId = json.tran_id || "";
-      valId = json.val_id || "";
-      status = json.status || "";
+      payload = await request.json().catch(() => ({}));
     } else {
-      const formData = await request.formData();
-      tranId = formData.get("tran_id")?.toString() || "";
-      valId = formData.get("val_id")?.toString() || "";
-      status = formData.get("status")?.toString() || "";
+      const formData = await request.formData().catch(() => new FormData());
+      formData.forEach((value, key) => {
+        payload[key] = value.toString();
+      });
     }
 
-    if (!tranId || !valId) {
-      return NextResponse.json({ error: "Missing required IPN parameters" }, { status: 400 });
+    const tranId = String(payload.tran_id || payload.tranId || "").trim();
+    const status = String(payload.status || "").trim().toUpperCase();
+
+    if (!tranId || !/^[A-Za-z0-9_-]{4,60}$/.test(tranId)) {
+      return NextResponse.json({ error: "Missing or invalid tran_id" }, { status: 400 });
     }
 
-    const validation = await validateSslcommerzTransaction(valId);
-    if (!validation.isValid && status !== "VALID" && status !== "VALIDATED") {
-      return NextResponse.json({ error: "Transaction validation failed" }, { status: 400 });
+    const perTransaction = await rateLimit(`sslcommerz:ipn:tran:${tranId}`, 60, 60);
+    if (!perTransaction.allowed) {
+      securityLog("webhook.rate_limited", { provider: "sslcommerz", scope: "tran" });
+      return createRateLimitResponse(
+        perTransaction,
+        "Too many notifications for this transaction; retry later."
+      );
     }
 
-    await connectToDatabase();
-    const order = await Order.findOne({ orderNumber: tranId });
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    const globalCeiling = await rateLimit("sslcommerz:ipn:global", 3000, 60);
+    if (!globalCeiling.allowed) {
+      securityLog("webhook.rate_limited", { provider: "sslcommerz", scope: "global" });
+      return createRateLimitResponse(
+        globalCeiling,
+        "Gateway notification ceiling reached; retry later."
+      );
     }
 
-    // Update order status atomically
-    order.paymentStatus = "paid";
-    if (order.orderStatus === "pending") {
-      order.orderStatus = "processing";
-    }
-    order.notes = `${order.notes || ""} [IPN Verified: ValID=${valId}, Bank=${validation.bankTranId || "N/A"}]`.trim();
+    const result = await ProcessIpnService.processWebhook({
+      ...payload,
+      tran_id: tranId,
+      status,
+    });
 
-    // Dispatch server-side Meta Conversions API (CAPI) Purchase event if callback hasn't already sent it
-    if (!order.notes?.includes("[CAPI_PURCHASE_SENT]")) {
-      order.notes = `${order.notes || ""} [CAPI_PURCHASE_SENT]`.trim();
-      await order.save();
-
-      try {
-        const appBase = process.env.NEXT_PUBLIC_APP_URL || "https://angkon.net";
-        const nameParts = (order.customer.fullName || "").trim().split(/\s+/);
-        const firstName = nameParts[0] || order.customer.fullName;
-        const lastName = nameParts.slice(1).join(" ") || undefined;
-
-        await sendMetaCapiEvent({
-          eventName: "Purchase",
-          eventId: `order_${order.orderNumber}`,
-          eventSourceUrl: `${appBase}/checkout`,
-          userData: {
-            email: order.customer.email,
-            phone: order.customer.phone,
-            firstName,
-            lastName,
-            city: order.customer.city,
-            district: order.customer.district,
-            postalCode: order.customer.postalCode,
-            clientIp: order.visitorContext?.clientIp,
-            clientUserAgent: order.visitorContext?.clientUserAgent,
-            fbp: order.visitorContext?.fbp,
-            fbc: order.visitorContext?.fbc,
-          },
-          customData: {
-            value: order.total,
-            currency: "BDT",
-            order_id: order.orderNumber,
-            num_items: order.items.reduce((acc, it) => acc + it.quantity, 0),
-            content_ids: order.items.map((it) => it.productId),
-            content_type: "product",
-            contents: order.items.map((it) => ({
-              id: String(it.productId),
-              quantity: it.quantity,
-              item_price: it.price,
-            })),
-          },
-        });
-      } catch (err) {
-        console.warn("[Meta CAPI] SSLCOMMERZ IPN post-payment purchase error:", err);
-      }
-    } else {
-      await order.save();
+    if (!result.ok && result.error?.includes("Attempt not found")) {
+      return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, message: "IPN processed successfully" });
+    if (result.ignored) {
+      securityLog("payment.verification_rejected", {
+        provider: "sslcommerz",
+        source: "ipn",
+        reason: "unverified-or-unsupported-status",
+      });
+      return NextResponse.json({ success: true, ignored: true });
+    }
+
+    if (result.alreadyProcessed) {
+      securityLog("payment.duplicate_notification", {
+        provider: "sslcommerz",
+        source: "ipn",
+      });
+    }
+
+    return NextResponse.json({
+      success: result.ok,
+      duplicate: Boolean(result.alreadyProcessed),
+    });
   } catch (error) {
-    console.error("SSLCOMMERZ IPN error:", error);
+    console.error("[SSLCOMMERZ] IPN error:", error);
+    // A 500 makes SSLCOMMERZ retry; the durable inbox and reconciliation
+    // worker provide additional recovery if the retry never arrives.
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

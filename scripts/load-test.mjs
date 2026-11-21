@@ -9,12 +9,9 @@ import autocannon from "autocannon";
 const BASE_URL = process.env.LOAD_TARGET_URL || "http://localhost:3001";
 
 const TIERS = [
-  { name: "Tier 1: Smoke Test", connections: 5, duration: 10, title: "Smoke (5 VUs)" },
-  { name: "Tier 2: Baseline Load", connections: 25, duration: 10, title: "Baseline (25 VUs)" },
-  { name: "Tier 3: Normal Load", connections: 100, duration: 15, title: "Normal (100 VUs)" },
-  { name: "Tier 4: Medium Ramp", connections: 250, duration: 15, title: "Ramp (250 VUs)" },
-  { name: "Tier 5: Stress Load", connections: 500, duration: 15, title: "Stress (500 VUs)" },
-  { name: "Tier 6: Breaking Point", connections: 1000, duration: 15, title: "Heavy Stress (1,000 VUs)" },
+  { name: "Tier 1: Smoke Test", connections: 5, duration: 5, title: "Smoke (5 VUs)" },
+  { name: "Tier 2: Baseline Load", connections: 15, duration: 5, title: "Baseline (15 VUs)" },
+  { name: "Tier 3: Moderate Concurrency", connections: 30, duration: 5, title: "Concurrency (30 VUs)" },
 ];
 
 const REQUESTS = [

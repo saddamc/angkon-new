@@ -1,7 +1,5 @@
 import Image from "next/image";
-import { Lock, Tag, AlertCircle, Loader2 } from "lucide-react";
-import { formatPrice } from "@/utils/price";
-import { getColorDisplayName } from "@/utils/color-swatches";
+import { Lock, Tag, ShieldCheck } from "lucide-react";
 import type { CartItem } from "@/types/product";
 import type { ShippingQuote } from "@/lib/shipping";
 
@@ -12,9 +10,7 @@ interface OrderSummarySidebarProps {
   shippingLoading: boolean;
   discountAmount: number;
   finalTotal: number;
-  isSubmitting: boolean;
-  placing: boolean;
-  submitError: string | null;
+  checkoutStep: 1 | 2 | 3;
 }
 
 export function OrderSummarySidebar({
@@ -24,42 +20,53 @@ export function OrderSummarySidebar({
   shippingLoading,
   discountAmount,
   finalTotal,
-  isSubmitting,
-  placing,
-  submitError,
+  checkoutStep,
 }: OrderSummarySidebarProps) {
-  const isBusy = isSubmitting || placing;
+  const formatPrice = (price: number) => `৳${Math.round(price).toLocaleString("en-BD")}`;
+
+  const getColorDisplayName = (color: string) => {
+    return color.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   return (
-    <div className="lg:sticky lg:top-24">
-      <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#3b050b] p-6 sm:p-7 shadow-xl space-y-4">
-        <h3 className="font-serif text-xl font-bold text-white pb-3 border-b border-[#E1B76F]/20">
-          Order summary
-        </h3>
+    <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#3b050b] p-5 sm:p-6 shadow-sm sticky top-24">
+      <div className="flex items-center justify-between border-b border-[#E1B76F]/20 pb-2 mb-4">
+        <h2 className="text-base font-serif font-bold text-white">Order Summary</h2>
+        <span className="text-xs text-white/60">
+          {items.reduce((acc, item) => acc + item.quantity, 0)} items
+        </span>
+      </div>
 
-        {/* Line items thumbnail list */}
-        <div className="divide-y divide-[#E1B76F]/15 max-h-[300px] overflow-y-auto pr-1">
-          {items.map((item) => (
+      <div className="space-y-4">
+        {/* Item list */}
+        <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+          {items.map((item, idx) => (
             <div
-              key={`${item.productId}-${item.size}-${item.color || ""}`}
-              className="flex justify-between items-center py-3 gap-3"
+              key={`${item.productId}-${item.size}-${item.color}-${idx}`}
+              className="flex items-center justify-between gap-3 text-xs"
             >
-              <div className="flex gap-3 items-center min-w-0">
-                {item.image && (
-                  <div className="relative h-12 w-10 shrink-0 overflow-hidden rounded-lg border border-[#E1B76F]/30 bg-[#42070e]">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#280504] border border-[#E1B76F]/20">
+                  {item.image ? (
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      className="object-cover object-top"
-                      sizes="48px"
+                      sizes="40px"
+                      className="object-cover"
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-white/40">
+                      No Img
+                    </div>
+                  )}
+                </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-white truncate">{item.name}</p>
                   <p className="text-[11px] text-white/60">
-                    {item.size ? `Size: ${item.size} • ` : ""}{item.color ? `Color: ${getColorDisplayName(item.color)} • ` : ""}Qty: {item.quantity}
+                    {item.size ? `Size: ${item.size} • ` : ""}
+                    {item.color ? `Color: ${getColorDisplayName(item.color)} • ` : ""}
+                    Qty: {item.quantity}
                   </p>
                 </div>
               </div>
@@ -119,34 +126,28 @@ export function OrderSummarySidebar({
           <span className="text-xl font-bold text-[#E1B76F]">{formatPrice(finalTotal)}</span>
         </div>
 
-        {/* Submission Error */}
-        {submitError && (
-          <div className="rounded-xl border border-rose-500/50 bg-rose-950/40 p-3 text-xs text-rose-200 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-            <span>{submitError}</span>
-          </div>
-        )}
-
-        {/* Order CTA Button */}
-        <button
-          type="submit"
-          disabled={isBusy}
-          className="w-full h-12 rounded-xl bg-[#E1B76F] text-[#530911] font-bold text-sm uppercase tracking-wider hover:bg-[#f3cb87] active:scale-98 transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isBusy ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin text-[#530911]" />
-              <span>Placing Order…</span>
-            </>
-          ) : (
-            <span>Place order · {formatPrice(finalTotal)}</span>
-          )}
-        </button>
+        {/* Step Guide Badge */}
+        <div className="rounded-xl bg-[#280504]/90 border border-white/5 p-3 text-center">
+          <span className="text-[11px] font-semibold text-[#E1B76F] uppercase tracking-wider block">
+            {checkoutStep === 1
+              ? "Step 1 of 3: Delivery Details"
+              : checkoutStep === 2
+                ? "Step 2 of 3: Order Review"
+                : "Step 3 of 3: Payment Selection"}
+          </span>
+          <p className="text-[11.5px] text-white/70 mt-0.5">
+            {checkoutStep === 1
+              ? "Complete address form to continue to review."
+              : checkoutStep === 2
+                ? "Verify your order items and delivery details."
+                : "Choose Cash on Delivery or Secure Online Payment."}
+          </p>
+        </div>
 
         {/* Trust Footer */}
         <p className="text-[11px] text-center text-white/55 flex items-center justify-center gap-1.5 pt-1">
-          <Lock className="h-3 w-3 text-[#E1B76F]" />
-          Your personal information is handled securely.
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+          <span>SSLCOMMERZ 256-Bit Bank-Grade Security</span>
         </p>
       </div>
     </div>

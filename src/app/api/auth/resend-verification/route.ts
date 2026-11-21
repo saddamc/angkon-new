@@ -3,10 +3,24 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { getSessionUserId } from "@/server/auth";
 import { canSendVerification, issueVerificationEmail } from "@/server/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 /** POST /api/auth/resend-verification — signed-in customer asks for a new link. */
 export async function POST(request: NextRequest) {
   try {
+    const ipLimit = await rateLimit(
+      `auth-resend-verify:ip:${hashIp(clientIp(request))}`,
+      10,
+      60 * 60,
+      { failClosed: true }
+    );
+    if (!ipLimit.allowed) {
+      return createRateLimitResponse(
+        ipLimit,
+        "Too many verification emails requested. Please wait before trying again."
+      );
+    }
+
     const userId = getSessionUserId(request);
     if (!userId) {
       return NextResponse.json({ error: "Please sign in first." }, { status: 401 });

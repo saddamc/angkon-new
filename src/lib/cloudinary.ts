@@ -1,4 +1,5 @@
 import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
+import { getAppEnvironment } from "@/server/env/app-environment";
 
 // Initialize Cloudinary with environment variables
 cloudinary.config({
@@ -140,18 +141,45 @@ export async function uploadToCloudinary(
   file: Buffer | string,
   options: UploadOptions = {}
 ): Promise<UploadApiResponse> {
-  const uploadFolder = options.folder || "ANGKON";
+  const appEnv = getAppEnvironment();
+  if (appEnv === "test") {
+    return {
+      public_id: options.publicId || `test_mock_${Date.now()}`,
+      version: 1,
+      format: options.format || "webp",
+      resource_type: "image",
+      created_at: new Date().toISOString(),
+      bytes: 1024,
+      width: 800,
+      height: 800,
+      url: "https://res.cloudinary.com/mock/image/upload/mock.webp",
+      secure_url: "https://res.cloudinary.com/mock/image/upload/mock.webp",
+    } as UploadApiResponse;
+  }
+  let uploadFolder = options.folder || "ANGKON";
+  let targetPublicId = options.publicId;
+
+  // Strict non-production media isolation: ensure uploads and overwrites cannot touch production "ANGKON/" assets
+  if (appEnv !== "production") {
+    if (!uploadFolder.startsWith("DEV") && !uploadFolder.startsWith("ANGKON_DEV")) {
+      uploadFolder = `ANGKON_DEV/${uploadFolder.replace(/^ANGKON\/?/, "")}`.replace(/\/+$/, "");
+    }
+    if (targetPublicId && targetPublicId.startsWith("ANGKON/") && !targetPublicId.startsWith("ANGKON_DEV/")) {
+      targetPublicId = targetPublicId.replace(/^ANGKON\//, "ANGKON_DEV/");
+    }
+  }
+
   const uploadOptions: Record<string, unknown> = {
     folder: uploadFolder,
     asset_folder: uploadFolder,
     resource_type: "image",
     overwrite: options.overwrite ?? true,
-    unique_filename: !options.publicId,
+    unique_filename: !targetPublicId,
     use_filename: true,
   };
 
-  if (options.publicId) {
-    uploadOptions.public_id = options.publicId;
+  if (targetPublicId) {
+    uploadOptions.public_id = targetPublicId;
   }
 
   if (options.format) {
@@ -228,6 +256,13 @@ export async function deleteFromCloudinary(
   }
 
   const publicId = extractPublicIdFromUrl(publicIdOrUrl);
+
+  const appEnv = getAppEnvironment();
+  if (appEnv !== "production" && process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true") {
+    console.info(`[Cloudinary Mock (${appEnv})] Non-production deletion of "${publicId}" safely mocked.`);
+    return { result: "ok" };
+  }
+
   return cloudinary.uploader.destroy(publicId, {
     resource_type: "image",
     invalidate: true,
@@ -310,6 +345,12 @@ export async function deleteCloudinaryFolder(
   ];
   if (protectedPaths.includes(cleanPath)) {
     throw new Error(`Refusing to delete protected Cloudinary root/category path: "${folderPath}"`);
+  }
+
+  const appEnv = getAppEnvironment();
+  if (appEnv !== "production" && process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true") {
+    console.info(`[Cloudinary Mock (${appEnv})] Non-production folder deletion of "${cleanPath}" safely mocked.`);
+    return { resourcesDeleted: 0, folderDeleted: true };
   }
 
   try {

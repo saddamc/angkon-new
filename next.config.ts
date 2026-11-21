@@ -69,10 +69,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     cpus: 1,
-  },
-  typescript: {
-    // Type checking is verified independently via tsc with dedicated memory allocation
-    ignoreBuildErrors: true,
+    agentUpgrade: "security",
   },
 };
 

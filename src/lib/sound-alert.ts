@@ -11,7 +11,7 @@ const STORAGE_KEY = "angkon_order_sound_enabled";
 
 let sharedAudioCtx: AudioContext | null = null;
 
-function getAudioContext(): AudioContext | null {
+function getAudioContext(shouldResume = false): AudioContext | null {
   if (typeof window === "undefined") return null;
   try {
     const AudioCtx =
@@ -21,8 +21,8 @@ function getAudioContext(): AudioContext | null {
     if (!sharedAudioCtx || sharedAudioCtx.state === "closed") {
       sharedAudioCtx = new AudioCtx();
     }
-    if (sharedAudioCtx.state === "suspended") {
-      void sharedAudioCtx.resume();
+    if (shouldResume && sharedAudioCtx.state === "suspended") {
+      void sharedAudioCtx.resume().catch(() => {});
     }
     return sharedAudioCtx;
   } catch {
@@ -33,9 +33,13 @@ function getAudioContext(): AudioContext | null {
 // Unlock audio on the first user interaction anywhere on the page
 if (typeof window !== "undefined") {
   const unlock = () => {
-    const ctx = getAudioContext();
-    if (ctx && ctx.state === "suspended") {
-      void ctx.resume();
+    try {
+      const ctx = getAudioContext(true);
+      if (ctx && ctx.state === "suspended") {
+        void ctx.resume().catch(() => {});
+      }
+    } catch {
+      // Ignore audio permission block
     }
     window.removeEventListener("pointerdown", unlock);
     window.removeEventListener("keydown", unlock);
@@ -68,7 +72,7 @@ export function setSoundEnabled(enabled: boolean): void {
  * Audibly rings on the computer when a new order is received.
  */
 export function playOrderAlertSound(volume = 0.8): void {
-  const ctx = getAudioContext();
+  const ctx = getAudioContext(true);
   if (!ctx) return;
 
   try {
@@ -101,7 +105,7 @@ export function playOrderAlertSound(volume = 0.8): void {
  * Single pleasant confirmation chime for customer checkout
  */
 export function playCheckoutSuccessSound(volume = 0.5): void {
-  const ctx = getAudioContext();
+  const ctx = getAudioContext(true);
   if (!ctx) return;
 
   try {

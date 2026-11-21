@@ -52,15 +52,42 @@ On Vercel, add the same variables under **Settings → Environment Variables** (
 
 ---
 
-## 3. Run it
+## 3. Payments, Courier & Stock
+
+SSLCOMMERZ (online payment) and Steadfast (courier) are integrated server-side.
+Pathao implements the same courier contract but stays inactive until its
+city/zone mapping is configured.
+
+- **Payments:** verified with the SSLCOMMERZ validator (`val_id` + amount +
+  currency + `tran_id`). Reconciliation runs daily; the admin order row shows a
+  payment timeline and a manual reconcile action.
+- **Courier:** create/refresh consignments from the order row (truck icon).
+  Webhooks are optional; status is always re-read from the provider.
+- **Stock:** reserved atomically at order creation, restored on
+  cancellation/payment failure, committed on payment/COD delivery.
+
+New server-only variables: `CRON_SECRET`, `META_TOKEN_ENCRYPTION_KEY`,
+`SSLCOMMERZ_*`, `STEADFAST_*`, `PATHAO_*`. See
+[`docs/production/PAYMENTS-COURIER-RUNBOOK.md`](docs/production/PAYMENTS-COURIER-RUNBOOK.md)
+for the sandbox checklist, migration and go-live steps.
+
+```bash
+npm run typecheck          # tsc --noEmit
+npm run probe:integrations # read-only sandbox readiness probe
+```
+
+---
+
+## 4. Run it
 
 ```bash
 npm install
 npm run dev        # http://localhost:3001  (webpack)
 npm run dev:turbo  # http://localhost:3000  (turbopack)
-npm run build      # production build
+npm run build      # production build (typechecks)
 npm start          # run the production build
 npm run lint
+npm run typecheck
 npm run test:e2e   # Playwright
 ```
 
@@ -68,7 +95,7 @@ Admin panel: **`/admin`**.
 
 ---
 
-## 4. Project structure
+## 5. Project structure
 
 ```
 src/

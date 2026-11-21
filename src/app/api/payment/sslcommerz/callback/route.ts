@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import { Order } from "@/models/Order";
-import { validateSslcommerzTransaction, createPaymentTrackingToken } from "@/server/sslcommerz";
-import { sendMetaCapiEvent, extractClientIp } from "@/server/meta-capi";
+import { getSiteUrl } from "@/server/auth";
+import { verifyPaymentReturnToken } from "@/server/payments/return-token";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { securityLog } from "@/server/security-log";
+import { ProcessSuccessService } from "@/server/payments/services/process-success";
+import { ProcessFailureService } from "@/server/payments/services/process-failure";
+import { ProcessCancellationService } from "@/server/payments/services/process-cancellation";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * SSLCOMMERZ return URL handler (legacy path).
+ *
+ * Kept for sessions created before the centralized module was introduced.
+ * It performs no settlement of its own: every notification is handed to the
+ * same domain services used by the `/api/payments/sslcommerz/*` routes.
+ * A browser redirect alone is never proof of payment.
+ */
 export async function POST(request: NextRequest) {
   return handleCallback(request);
 }
@@ -13,147 +26,101 @@ export async function GET(request: NextRequest) {
 }
 
 async function handleCallback(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const statusParam = searchParams.get("status");
+  const ip = clientIp(request);
+  const limit = await rateLimit(`sslcommerz:callback:${hashIp(ip)}`, 120, 60);
+  if (!limit.allowed) {
+    return createRateLimitResponse(limit, "Too many callback requests.");
+  }
 
-  let tranId = "";
-  let valId = "";
-  let status = statusParam || "";
+  const appBaseUrl = getSiteUrl(request);
+  const { searchParams } = new URL(request.url);
+
+  let tranId = searchParams.get("tran_id") || "";
+  let valId = searchParams.get("val_id") || "";
+  let status = searchParams.get("status") || "";
+  let returnToken = searchParams.get("token") || "";
 
   if (request.method === "POST") {
     const contentType = request.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
       const json = await request.json().catch(() => ({}));
-      tranId = json.tran_id || "";
-      valId = json.val_id || "";
+      tranId = json.tran_id || tranId;
+      valId = json.val_id || valId;
       status = json.status || status;
+      returnToken = json.token || returnToken;
     } else {
       const formData = await request.formData().catch(() => new FormData());
-      tranId = formData.get("tran_id")?.toString() || "";
-      valId = formData.get("val_id")?.toString() || "";
+      tranId = formData.get("tran_id")?.toString() || tranId;
+      valId = formData.get("val_id")?.toString() || valId;
       status = formData.get("status")?.toString() || status;
+      returnToken = formData.get("token")?.toString() || returnToken;
     }
-  } else {
-    tranId = searchParams.get("tran_id") || "";
-    valId = searchParams.get("val_id") || "";
   }
 
-  const appBaseUrl = request.nextUrl.origin;
+  const normalizedStatus = status.trim().toUpperCase();
+  const attemptId = searchParams.get("attemptId") || null;
 
   if (!tranId) {
     return NextResponse.redirect(`${appBaseUrl}/checkout?error=invalid_payment_callback`);
   }
 
-  await connectToDatabase();
-  const order = await Order.findOne({ orderNumber: tranId });
-
-  if (!order) {
-    return NextResponse.redirect(`${appBaseUrl}/checkout?error=order_not_found`);
-  }
-
-  // If status is failed or cancelled
-  if (status === "fail" || status === "FAILED") {
-    order.paymentStatus = "failed";
-    order.orderStatus = "failed";
-    await order.save();
-    return NextResponse.redirect(`${appBaseUrl}/checkout?error=payment_failed&order=${tranId}`);
-  }
-
-  if (status === "cancel" || status === "CANCELLED") {
-    order.paymentStatus = "failed";
-    order.orderStatus = "cancelled";
-    await order.save();
-    return NextResponse.redirect(`${appBaseUrl}/checkout?error=payment_cancelled&order=${tranId}`);
-  }
-
-  // If status is success / VALID / VALIDATED
-  let isVerified = false;
-  if (valId) {
-    const validation = await validateSslcommerzTransaction(valId);
-    if (validation.isValid) {
-      isVerified = true;
-      order.paymentStatus = "paid";
-      order.orderStatus = "processing";
-      order.notes = `${order.notes || ""} [SSLCOMMERZ ValID: ${valId}, BankTran: ${validation.bankTranId || "N/A"}]`.trim();
-      await order.save();
-    }
-  }
-
-  // If in sandbox or unconfigured mode where valId might not be validable via live API
-  if (!isVerified && (status === "success" || status === "VALID" || status === "VALIDATED")) {
-    order.paymentStatus = "paid";
-    order.orderStatus = "processing";
-    await order.save();
-    isVerified = true;
-  }
-
-  if (isVerified) {
-    // Dispatch server-side Meta Conversions API (CAPI) Purchase event (idempotent, only once per verified payment)
-    if (!order.notes?.includes("[CAPI_PURCHASE_SENT]")) {
-      order.notes = `${order.notes || ""} [CAPI_PURCHASE_SENT]`.trim();
-      await order.save();
-
-      const fbp = request.cookies.get("_fbp")?.value || order.visitorContext?.fbp;
-      const fbc = request.cookies.get("_fbc")?.value || order.visitorContext?.fbc;
-      const resolvedClientIp = order.visitorContext?.clientIp || extractClientIp(request);
-      const resolvedClientUserAgent = order.visitorContext?.clientUserAgent || request.headers.get("user-agent") || undefined;
-
-      try {
-        const nameParts = (order.customer.fullName || "").trim().split(/\s+/);
-        const firstName = nameParts[0] || order.customer.fullName;
-        const lastName = nameParts.slice(1).join(" ") || undefined;
-
-        await sendMetaCapiEvent({
-          eventName: "Purchase",
-          eventId: `order_${order.orderNumber}`,
-          eventSourceUrl: `${appBaseUrl}/checkout`,
-          userData: {
-            email: order.customer.email,
-            phone: order.customer.phone,
-            firstName,
-            lastName,
-            city: order.customer.city,
-            district: order.customer.district,
-            postalCode: order.customer.postalCode,
-            clientIp: resolvedClientIp,
-            clientUserAgent: resolvedClientUserAgent,
-            fbp,
-            fbc,
-          },
-          customData: {
-            value: order.total,
-            currency: "BDT",
-            order_id: order.orderNumber,
-            num_items: order.items.reduce((acc, it) => acc + it.quantity, 0),
-            content_ids: order.items.map((it) => it.productId),
-            content_type: "product",
-            contents: order.items.map((it) => ({
-              id: String(it.productId),
-              quantity: it.quantity,
-              item_price: it.price,
-            })),
-          },
-        });
-      } catch (err) {
-        console.warn("[Meta CAPI] SSLCOMMERZ post-payment purchase error:", err);
-      }
-    }
-
-    const redirectResponse = NextResponse.redirect(
-      `${appBaseUrl}/thankyou-for-shopping?order=${encodeURIComponent(tranId)}&payment=success`
-    );
-
-    const trackingToken = createPaymentTrackingToken(order.orderNumber, order.total);
-    redirectResponse.cookies.set("sslcommerz_tracking_token", trackingToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 900, // 15 minutes
-      path: "/",
+  // A forged cross-order return URL is rejected before any state change. The
+  // val_id validator remains the actual payment proof.
+  if (returnToken && !verifyPaymentReturnToken(returnToken, tranId)) {
+    securityLog("payment.verification_rejected", {
+      provider: "sslcommerz",
+      source: "return",
+      reason: "invalid-return-token",
     });
-
-    return redirectResponse;
+    return NextResponse.redirect(`${appBaseUrl}/checkout?error=invalid_payment_callback`);
   }
 
-  return NextResponse.redirect(`${appBaseUrl}/checkout?error=verification_failed&order=${tranId}`);
+  const isFailure = normalizedStatus === "FAIL" || normalizedStatus === "FAILED";
+  const isCancellation = normalizedStatus === "CANCEL" || normalizedStatus === "CANCELLED";
+
+  let redirectPath: string;
+
+  if (isFailure || isCancellation) {
+    // The failure/cancel redirect is only a hint. Only a signed return token
+    // binds it to this checkout; the service additionally requires a
+    // validator-confirmed val_id before downgrading the attempt.
+    if (!returnToken) {
+      securityLog("payment.verification_rejected", {
+        provider: "sslcommerz",
+        source: "return",
+        reason: "unsigned-failure-notification",
+      });
+      return NextResponse.redirect(`${appBaseUrl}/checkout?error=invalid_payment_callback`);
+    }
+
+    const result = isFailure
+      ? await ProcessFailureService.processCallback({
+          attemptId,
+          tranId,
+          valId,
+          reason: searchParams.get("reason"),
+          payload: { status },
+        })
+      : await ProcessCancellationService.processCallback({
+          attemptId,
+          tranId,
+          valId,
+          reason: searchParams.get("reason"),
+          payload: { status },
+        });
+
+    redirectPath = result.redirectUrl;
+  } else if (["SUCCESS", "VALID", "VALIDATED"].includes(normalizedStatus)) {
+    const result = await ProcessSuccessService.processCallback({
+      attemptId,
+      tranId,
+      valId,
+      payload: { status, val_id: valId },
+    });
+    redirectPath = result.redirectUrl;
+  } else {
+    redirectPath = `/checkout?error=verification_failed&order=${encodeURIComponent(tranId)}`;
+  }
+
+  return NextResponse.redirect(new URL(redirectPath, appBaseUrl), 303);
 }

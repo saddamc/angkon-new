@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { EMAIL_REGEX, EMAIL_RESEND_COOLDOWN_MS, normalizeEmail } from "@/server/auth";
 import { issuePasswordResetEmail } from "@/server/account";
-import { clientIp, rateLimit } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 // Same answer whether or not the account exists, so this can't be used to
 // discover which emails are registered.
@@ -16,14 +16,13 @@ const GENERIC_OK = {
 export async function POST(request: NextRequest) {
   try {
     const ip = clientIp(request);
-    const ipLimit = await rateLimit(`auth-forgot:ip:${ip}`, 5, 15 * 60);
+    const ipLimit = await rateLimit(`auth-forgot:ip:${hashIp(ip)}`, 5, 15 * 60, {
+      failClosed: true,
+    });
     if (!ipLimit.allowed) {
-      return NextResponse.json(
-        {
-          error: "Too many password reset requests from this network. Please wait 15 minutes before trying again.",
-          retryAfterSeconds: ipLimit.retryAfterSeconds,
-        },
-        { status: 429 }
+      return createRateLimitResponse(
+        ipLimit,
+        "Too many password reset requests from this network. Please wait 15 minutes before trying again."
       );
     }
 
@@ -33,7 +32,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
     }
 
-    const emailLimit = await rateLimit(`auth-forgot:email:${email}`, 3, 15 * 60);
+    const emailLimit = await rateLimit(`auth-forgot:email:${hashIp(email)}`, 3, 15 * 60, {
+      failClosed: true,
+    });
     if (!emailLimit.allowed) {
       return NextResponse.json(GENERIC_OK); // Quietly rate-limit to prevent account probing
     }

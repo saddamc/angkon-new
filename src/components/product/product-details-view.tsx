@@ -258,6 +258,7 @@ export function ProductDetailsView({
     if (!product.createdAt) return false;
     const createdTime = new Date(product.createdAt).getTime();
     if (isNaN(createdTime)) return false;
+    // eslint-disable-next-line react-hooks/purity
     return (Date.now() - createdTime) / (1000 * 60 * 60 * 24) <= 14;
   }, [product.createdAt, product.tags]);
 

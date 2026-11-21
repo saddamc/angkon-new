@@ -15,6 +15,7 @@ import type {
   ConfirmedCustomer,
   AccountInfo,
   VerifyDialogState,
+  CheckoutPaymentMethod,
 } from "../_types/checkout.types";
 
 declare global {
@@ -30,7 +31,13 @@ async function loadCheckoutConfig(): Promise<CheckoutConfig> {
   } catch {
     /* fall through */
   }
-  return { requireEmailVerification: false, allowGuestCheckout: true, enablePromoCodes: true, user: null };
+  return {
+    requireEmailVerification: false,
+    allowGuestCheckout: true,
+    enablePromoCodes: true,
+    onlinePaymentAvailable: false,
+    user: null,
+  };
 }
 
 export function useCheckoutFlow() {
@@ -49,7 +56,11 @@ export function useCheckoutFlow() {
   const [confirmedCustomer, setConfirmedCustomer] = useState<ConfirmedCustomer | null>(null);
 
   // Payment method: Cash on Delivery by default
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "sslcommerz">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("cod");
+
+  // Delivery method: Home Delivery by default, or Store Pickup
+  const [deliveryMethod, setDeliveryMethod] = useState<"home" | "pickup">("home");
+  const [pickupLocation, setPickupLocation] = useState("Niketan Showroom (Gulshan, Dhaka)");
 
   // Promo Code state
   const [couponCode, setCouponCode] = useState("");
@@ -62,6 +73,10 @@ export function useCheckoutFlow() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalView, setAuthModalView] = useState<"login" | "register">("login");
 
+  // Step state for professional 3-step checkout
+  const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1);
+  const [policyAccepted, setPolicyAccepted] = useState(true);
+
   // Post-order guest account creation state
   const [postOrderPassword, setPostOrderPassword] = useState("");
   const [showPostPassword, setShowPostPassword] = useState(false);
@@ -73,9 +88,15 @@ export function useCheckoutFlow() {
   const items = useCartStore((state) => state.items);
   const subtotal = useCartStore((state) => state.subtotal());
   const clearCart = useCartStore((state) => state.clearCart);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const removeItem = useCartStore((state) => state.removeItem);
 
   // Order submission in-flight flag
   const [placing, setPlacing] = useState(false);
+
+  // Stable key for this checkout attempt. Reused on retries so a double-click
+  // or a network retry cannot create a second order or gateway session.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   // Optional OTP verification fallback when server demands it
   const [verifyDialog, setVerifyDialog] = useState<VerifyDialogState | null>(null);
@@ -90,10 +111,13 @@ export function useCheckoutFlow() {
     watch,
     setValue,
     getValues,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutFormValues>({
     defaultValues: {
       name: "",
+      firstName: "",
+      lastName: "",
       phone: "",
       email: "",
       streetAddress: "",
@@ -124,7 +148,12 @@ export function useCheckoutFlow() {
         if (value && !getValues(field)) setValue(field, value);
       };
 
-      fill("name", u.name);
+      if (u.name) {
+        fill("name", u.name);
+        const nameParts = u.name.trim().split(" ");
+        fill("firstName", nameParts[0] || "");
+        fill("lastName", nameParts.slice(1).join(" ") || "");
+      }
       fill("phone", u.phone);
       fill("email", u.email);
       fill("streetAddress", u.address?.address);
@@ -137,6 +166,13 @@ export function useCheckoutFlow() {
     };
   }, [getValues, setValue]);
 
+  // Online payment is only selectable when the gateway is configured.
+  useEffect(() => {
+    if (checkoutConfig && checkoutConfig.onlinePaymentAvailable === false && paymentMethod !== "cod") {
+      setPaymentMethod("cod");
+    }
+  }, [checkoutConfig, paymentMethod]);
+
   // Delivery fee dynamically calculated from server
   const { quote: shippingQuote, loading: shippingLoading } = useShippingQuote(
     items,
@@ -144,7 +180,8 @@ export function useCheckoutFlow() {
     watchedCity,
     appliedPromo?.discount ?? 0,
   );
-  const shippingFee = shippingQuote?.zoneKnown ? shippingQuote.fee : 0;
+  const effectiveShippingFee = deliveryMethod === "pickup" ? 0 : (shippingQuote?.zoneKnown ? shippingQuote.fee : 0);
+  const shippingFee = effectiveShippingFee;
 
   // Track InitiateCheckout on checkout mount
   useEffect(() => {
@@ -252,6 +289,7 @@ export function useCheckoutFlow() {
       requireEmailVerification: c?.requireEmailVerification ?? false,
       allowGuestCheckout: c?.allowGuestCheckout ?? true,
       enablePromoCodes: c?.enablePromoCodes ?? true,
+      onlinePaymentAvailable: c?.onlinePaymentAvailable ?? false,
       user: {
         name: user.name || getValues("name") || "",
         email: user.email,
@@ -292,8 +330,59 @@ export function useCheckoutFlow() {
     }
   };
 
+  // Step navigation helpers
+  const proceedToReview = async (): Promise<boolean> => {
+    setSubmitError(null);
+    const valid = await trigger(["name", "phone", "email", "streetAddress", "district", "city"]);
+    if (valid) {
+      setCheckoutStep(2);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const proceedToPayment = (): boolean => {
+    setSubmitError(null);
+    if (!policyAccepted) {
+      setSubmitError("Please accept the purchase terms and policies to proceed.");
+      return false;
+    }
+    setCheckoutStep(3);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    return true;
+  };
+
+  const backToDelivery = () => {
+    setSubmitError(null);
+    setCheckoutStep(1);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const backToReview = () => {
+    setSubmitError(null);
+    setCheckoutStep(2);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   // Submit Order
-  const onSubmit = async (data: CheckoutFormValues, skipVerification = false) => {
+  const onSubmit = async (
+    data: CheckoutFormValues,
+    skipVerification = false,
+    methodOverride?: CheckoutPaymentMethod
+  ) => {
+    const activePaymentMethod = methodOverride || paymentMethod;
+    if (methodOverride && methodOverride !== paymentMethod) {
+      setPaymentMethod(methodOverride);
+    }
     setPlacing(true);
     setSubmitError(null);
 
@@ -327,22 +416,46 @@ export function useCheckoutFlow() {
         (typeof window !== "undefined" && window.__angkon_meta_test_code) ||
         (typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("test_event_code") || undefined : undefined);
 
+      // One idempotency key per checkout attempt; retained across retries.
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current =
+          typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `ck_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+      }
+
+      const resolvedFullName =
+        data.name ||
+        [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+        "Valued Customer";
+      const resolvedAddress =
+        deliveryMethod === "pickup"
+          ? `Store Pickup: ${pickupLocation}`
+          : data.streetAddress;
+      const resolvedDistrict =
+        deliveryMethod === "pickup" ? "Dhaka" : (data.district || "Dhaka");
+      const resolvedCity =
+        deliveryMethod === "pickup" ? "Dhaka" : (data.city || data.district || "Dhaka");
+
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKeyRef.current,
           ...(activeTestCode ? { "x-meta-test-code": activeTestCode } : {}),
         },
         body: JSON.stringify({
-          fullName: data.name,
-          address: data.streetAddress,
-          city: data.city || data.district,
-          district: data.district,
+          fullName: resolvedFullName,
+          address: resolvedAddress,
+          city: resolvedCity,
+          district: resolvedDistrict,
           postalCode: data.postcode || "",
           phone: data.phone,
           email: data.email,
           orderNotes: data.orderNotes || "",
-          paymentMethod,
+          paymentMethod: activePaymentMethod,
+          policyAccepted: true,
+          policyVersion: "2026.1",
           promoCode: appliedPromo?.code || "",
           discount: discountAmount,
           testEventCode: activeTestCode,
@@ -387,6 +500,20 @@ export function useCheckoutFlow() {
         return;
       }
 
+      // A successful HTTP response is not enough for an online order — the
+      // gateway session must exist. Never show the success screen otherwise.
+      const isOnlineActive = activePaymentMethod !== "cod";
+      if (isOnlineActive && !result.gatewayUrl) {
+        setSubmitError(
+          result.error ||
+            "Online payment could not be started. Please choose Cash on Delivery."
+        );
+        return;
+      }
+
+      // This attempt completed; a future checkout starts with a fresh key.
+      idempotencyKeyRef.current = null;
+
       setOrderId(result.orderNumber || result.orderId);
       if (result.account) setAccountInfo(result.account);
       if (typeof result.shippingFee === "number") setConfirmedShippingFee(result.shippingFee);
@@ -401,14 +528,14 @@ export function useCheckoutFlow() {
       });
 
       if (result.gatewayUrl) {
-        // Redirect customer to SSLCOMMERZ gateway for online card/MFS processing.
+        // Redirect customer to SSLCOMMERZ official hosted payment page (full-page redirect)
         clearCart();
         try {
           localStorage.removeItem("angkon_applied_promo");
         } catch {
           /* ignore */
         }
-        window.location.href = result.gatewayUrl;
+        window.location.assign(result.gatewayUrl);
         return;
       }
 
@@ -448,6 +575,7 @@ export function useCheckoutFlow() {
       requireEmailVerification: c?.requireEmailVerification ?? false,
       allowGuestCheckout: c?.allowGuestCheckout ?? true,
       enablePromoCodes: c?.enablePromoCodes ?? true,
+      onlinePaymentAvailable: c?.onlinePaymentAvailable ?? false,
       user: {
         name: user.name,
         email: user.email,
@@ -533,6 +661,8 @@ export function useCheckoutFlow() {
     items,
     subtotal,
     clearCart,
+    updateQuantity,
+    removeItem,
     placing,
     verifyDialog,
     setVerifyDialog,
@@ -546,8 +676,24 @@ export function useCheckoutFlow() {
     shippingQuote,
     shippingLoading,
     shippingFee,
+    effectiveShippingFee,
+    deliveryMethod,
+    setDeliveryMethod,
+    pickupLocation,
+    setPickupLocation,
     discountAmount,
     finalTotal,
+    checkoutStep,
+    setCheckoutStep,
+    policyAccepted,
+    setPolicyAccepted,
+    proceedToReview,
+    proceedToPayment,
+    backToDelivery,
+    backToReview,
+    getValues,
+    setValue,
+    watch,
     isLoggedIn,
     loggedInEmail,
     isEmailVerified,

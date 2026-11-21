@@ -3,7 +3,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { EMAIL_REGEX, normalizeEmail, setSessionCookie } from "@/server/auth";
 import { consumeEmailCode, isWellFormedCode } from "@/server/email-code";
-import { clientIp, rateLimit } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 import { publicUser } from "@/server/account";
 
 /**
@@ -22,12 +22,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Enter the 6-digit code from your email." }, { status: 400 });
     }
 
+    const ip = clientIp(request);
     const [perEmail, perIp] = await Promise.all([
-      rateLimit(`code-verify:email:${email}`, 12, 15 * 60),
-      rateLimit(`code-verify:ip:${clientIp(request)}`, 40, 15 * 60),
+      rateLimit(`code-verify:email:${hashIp(email)}`, 12, 15 * 60, { failClosed: true }),
+      rateLimit(`code-verify:ip:${hashIp(ip)}`, 40, 15 * 60, { failClosed: true }),
     ]);
     if (!perEmail.allowed || !perIp.allowed) {
-      return NextResponse.json({ error: "Too many attempts. Please wait a few minutes and try again." }, { status: 429 });
+      const activeLimit = !perEmail.allowed ? perEmail : perIp;
+      return createRateLimitResponse(
+        activeLimit,
+        "Too many verification attempts. Please wait a few minutes and try again."
+      );
     }
 
     const check = await consumeEmailCode(email, code);

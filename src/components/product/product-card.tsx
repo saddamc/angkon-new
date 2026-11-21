@@ -49,6 +49,7 @@ export function ProductCard({ product, eager = false }: ProductCardProps) {
     if (!product.createdAt) return false;
     const createdTime = new Date(product.createdAt).getTime();
     if (isNaN(createdTime)) return false;
+    // eslint-disable-next-line react-hooks/purity
     return (Date.now() - createdTime) / (1000 * 60 * 60 * 24) <= 14;
   }, [product.createdAt, product.tags]);
   const insideFee = parseInt(product.meta_data?.slice().reverse().find(m => m.key === "_delivery_inside")?.value || "60");

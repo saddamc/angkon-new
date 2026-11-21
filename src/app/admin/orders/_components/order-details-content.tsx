@@ -1,0 +1,2320 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Banknote,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Copy,
+  CreditCard,
+  ExternalLink,
+  MapPin,
+  MoreVertical,
+  Package,
+  PackageCheck,
+  Phone,
+  Printer,
+  RefreshCw,
+  RotateCcw,
+  ShieldCheck,
+  ShoppingCart,
+  Truck,
+  User,
+  X,
+  XCircle,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
+import {
+  formatBDT,
+  type OrderDetailsPayload,
+  type WCOrder,
+} from "../_types/orders.types";
+import {
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+  SHIPMENT_STATUS_LABELS,
+  COURIER_SETTLEMENT_LABELS,
+} from "@/server/orders/workflow";
+import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/tracking";
+import { CourierLogo } from "@/components/admin/courier-logo";
+import { printCourierLabel } from "./print-label";
+import { WhatsAppIcon } from "./whatsapp-icon";
+import {
+  buildWhatsAppUrl,
+  generateWhatsAppMessage,
+} from "@/server/whatsapp/whatsapp-templates";
+import { ProductThumbnail } from "./product-thumbnail";
+import { OrderActivityView } from "./order-activity-view";
+
+export interface OrderDetailsContentProps {
+  data: OrderDetailsPayload;
+  isDrawer?: boolean;
+  busy?: boolean;
+  onStatusTransition: (status: string, reason?: string) => Promise<boolean>;
+  onReopenOrder?: (reason: string) => Promise<boolean>;
+  onOpenShipment: (orderStub: WCOrder) => void;
+  onRefreshShipment: (shipmentId: string) => Promise<boolean>;
+  onCancelShipment: (orderStub: WCOrder, reason?: string) => Promise<boolean>;
+  onReconcileSslcommerz: (orderNumber: string) => Promise<boolean>;
+  onAddNote: (text: string) => Promise<boolean>;
+  onSaveSettlement: (payload: {
+    collectedCodAmount: number;
+    settledCodAmount: number;
+    courierCharge: number;
+    settlementNote: string;
+    markSettled: boolean;
+  }) => Promise<boolean>;
+  onRecordPayment: (payload: {
+    action: "advance" | "refund";
+    amount: number;
+    method?: string;
+    reference?: string;
+    note?: string;
+  }) => Promise<boolean>;
+  onCodFallback?: () => void;
+  onCopy: (value: string, label: string) => void;
+  fullPageHref?: string;
+  onClose?: () => void;
+  notificationBanner?: string | null;
+}
+
+function formatDateTime(v?: string | null) {
+  if (!v) return "—";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function buildOrderStub(order: OrderDetailsPayload["order"]): WCOrder {
+  return {
+    id: order.orderNumber,
+    number: order.orderNumber,
+    status: order.orderStatus,
+    paymentStatus: order.paymentStatus,
+    payment_status: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    courier: order.courier || "",
+    shipmentStatus: order.shipmentStatus || "none",
+    shipmentBookingState: order.shipmentBookingState || "not_booked",
+    trackingCode: order.trackingCode || "",
+    consignmentId: order.consignmentId || "",
+    date_created: order.createdAt,
+    total: String(order.total),
+    paidAmount: order.financials.advancePaidAmount,
+    outstandingAmount: order.financials.outstandingAmount,
+    expectedCodAmount: order.financials.expectedCodAmount,
+    collectedCodAmount: order.financials.collectedCodAmount,
+    settledCodAmount: order.financials.settledCodAmount,
+    courierCharge: order.financials.courierCharge,
+    discrepancyAmount: order.financials.discrepancyAmount,
+    codSettlementStatus: order.financials.codSettlementStatus,
+    shipping_total: String(order.shippingFee || 0),
+    billing: {
+      first_name: order.customer.fullName,
+      email: order.customer.email || "",
+      phone: order.customer.phone,
+      address_1: order.customer.address,
+      city: order.customer.district || order.customer.city,
+      postcode: order.customer.postalCode || "",
+    },
+    line_items: order.items.map((it) => ({
+      id: it.productId,
+      name: it.name,
+      price: it.price,
+      quantity: it.quantity,
+      size: it.size,
+      color: it.color,
+      image: it.image ? { src: it.image } : undefined,
+    })),
+  };
+}
+
+function settlementBadgeClass(status: string) {
+  switch (status) {
+    case "settled":
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "collected":
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    case "discrepancy":
+      return "bg-rose-50 text-rose-700 border-rose-200";
+    case "expected":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    default:
+      return "bg-slate-50 text-slate-600 border-slate-200";
+  }
+}
+
+function getOrderStatusBadge(status: string) {
+  const norm = (status || "pending").toLowerCase();
+  switch (norm) {
+    case "confirmed":
+      return "bg-sky-50 text-sky-800 border-sky-200";
+    case "processing":
+      return "bg-blue-50 text-blue-800 border-blue-200";
+    case "ready_to_ship":
+      return "bg-purple-50 text-purple-800 border-purple-200";
+    case "shipped":
+      return "bg-indigo-50 text-indigo-800 border-indigo-200";
+    case "delivered":
+    case "completed":
+      return "bg-emerald-50 text-emerald-800 border-emerald-200";
+    case "cancelled":
+      return "bg-rose-50 text-rose-800 border-rose-200";
+    case "returned":
+    case "refunded":
+      return "bg-stone-100 text-stone-700 border-stone-200";
+    default:
+      return "bg-amber-50 text-amber-800 border-amber-200";
+  }
+}
+
+function getPaymentStatusBadge(status: string) {
+  const norm = (status || "pending").toLowerCase();
+  switch (norm) {
+    case "paid":
+      return "bg-emerald-50 text-emerald-800 border-emerald-200";
+    case "partially_paid":
+      return "bg-blue-50 text-blue-800 border-blue-200";
+    case "failed":
+      return "bg-rose-50 text-rose-800 border-rose-200";
+    case "refund_pending":
+      return "bg-amber-50 text-amber-800 border-amber-200";
+    case "refunded":
+    case "partially_refunded":
+      return "bg-stone-100 text-stone-700 border-stone-200";
+    default:
+      return "bg-amber-50 text-amber-800 border-amber-200";
+  }
+}
+
+function getShipmentStatusBadge(status: string, bookingState?: string) {
+  const norm = (status || "none").toLowerCase();
+  if (norm === "delivered") return "bg-emerald-50 text-emerald-800 border-emerald-200";
+  if (norm === "in_transit" || norm === "out_for_delivery" || norm === "picked_up")
+    return "bg-indigo-50 text-indigo-800 border-indigo-200";
+  if (norm === "created" || bookingState === "booked")
+    return "bg-purple-50 text-purple-800 border-purple-200";
+  if (norm === "cancelled" || bookingState === "cancelled")
+    return "bg-rose-50 text-rose-800 border-rose-200";
+  if (norm === "returned") return "bg-stone-100 text-stone-700 border-stone-200";
+  if (bookingState === "booking_in_progress")
+    return "bg-amber-50 text-amber-800 border-amber-200";
+  return "bg-stone-100 text-stone-600 border-stone-200";
+}
+
+export function OrderDetailsContent({
+  data,
+  isDrawer = false,
+  busy = false,
+  onStatusTransition,
+  onReopenOrder,
+  onOpenShipment,
+  onRefreshShipment,
+  onCancelShipment,
+  onReconcileSslcommerz,
+  onAddNote,
+  onSaveSettlement,
+  onRecordPayment,
+  onCodFallback,
+  onCopy,
+  fullPageHref,
+  onClose,
+  notificationBanner,
+}: OrderDetailsContentProps) {
+  const { order, payments, shipments, timeline, auditLogs: _auditLogs } = data;
+  const fin = order.financials;
+  const allowed = order.allowedNextStatuses || [];
+  const orderStub = buildOrderStub(order);
+
+  const [activeTab, setActiveTab] = useState<"overview" | "activity" | "payment" | "shipment">("overview");
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const [updateStatusModalOpen, setUpdateStatusModalOpen] = useState(false);
+  const [targetStatusToUpdate, setTargetStatusToUpdate] = useState(allowed[0] || "");
+  const [updateStatusReason, setUpdateStatusReason] = useState("");
+
+  const [reopenModalOpen, setReopenModalOpen] = useState(false);
+  const [reopenReason, setReopenReason] = useState("");
+  const [reopenBusy, setReopenBusy] = useState(false);
+
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setActionsMenuOpen(false);
+      }
+    };
+    if (moreMenuOpen || actionsMenuOpen) {
+      document.addEventListener("mousedown", handleOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+    };
+  }, [moreMenuOpen, actionsMenuOpen]);
+
+  const [actionBusy, setActionBusy] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    status: "cancelled" | "returned";
+    title: string;
+    message: string;
+  } | null>(null);
+  const [confirmReason, setConfirmReason] = useState("");
+
+  // Settlement form
+  const [collectedInput, setCollectedInput] = useState(
+    String(fin.collectedCodAmount || fin.expectedCodAmount || 0)
+  );
+  const [settledInput, setSettledInput] = useState(String(fin.settledCodAmount || 0));
+  const [chargeInput, setChargeInput] = useState(String(fin.courierCharge || 0));
+  const [settlementNote, setSettlementNote] = useState(order.settlementNote || "");
+
+  // Manual advance / refund form
+  const [payFormOpen, setPayFormOpen] = useState<"advance" | "refund" | null>(null);
+  const [payAmount, setPayAmount] = useState("");
+  const [payMethod, setPayMethod] = useState("bkash");
+  const [payRef, setPayRef] = useState("");
+  const [payNote, setPayNote] = useState("");
+
+  const activeShipment = shipments.find(
+    (s) => !["cancelled", "returned", "failed"].includes(s.status)
+  );
+
+  const runTransition = async (status: string, reason?: string) => {
+    setActionBusy(true);
+    try {
+      await onStatusTransition(status, reason);
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  // WhatsApp chat link with dynamic status template and financial accuracy
+  const custPhone = order.customer.phone || "";
+  const wcLikeOrder: Partial<WCOrder> = {
+    id: order.orderNumber,
+    number: order.orderNumber,
+    status: order.orderStatus,
+    payment_status: order.paymentStatus,
+    paymentMethod: order.paymentMethod,
+    total: String(order.total || 0),
+    paidAmount: order.paymentStatus === "paid" ? order.total : 0,
+    courier: order.courier,
+    trackingCode: order.trackingCode,
+    consignmentId: order.consignmentId,
+    billing: {
+      first_name: order.customer.fullName,
+      phone: order.customer.phone,
+      address_1: order.customer.address,
+      city: order.customer.city,
+    },
+    line_items: (order.items || []).map((li: { name: string; quantity: number }) => ({
+      name: li.name,
+      quantity: li.quantity,
+    })),
+  };
+  const waMessage = generateWhatsAppMessage(wcLikeOrder);
+  const waUrl = buildWhatsAppUrl(custPhone, waMessage);
+
+  // Stepper calculations
+  const steps = [
+    { key: "placed", label: "Placed", sub: formatDateTime(order.createdAt) },
+    { key: "confirmed", label: "Confirmed", sub: order.orderStatus !== "pending" ? "Verified" : "—" },
+    {
+      key: "processing",
+      label: "Processing",
+      sub: ["processing", "ready_to_ship", "shipped", "delivered", "completed"].includes(order.orderStatus)
+        ? "Preparing order"
+        : "—",
+    },
+    {
+      key: "shipped",
+      label: "Shipped",
+      sub: ["shipped", "delivered", "completed"].includes(order.orderStatus) ? "In delivery" : "—",
+    },
+    {
+      key: "delivered",
+      label: "Delivered",
+      sub: ["delivered", "completed"].includes(order.orderStatus) ? "Delivered" : "—",
+    },
+  ];
+
+  const getStepStatus = (key: string) => {
+    const status = order.orderStatus;
+    const statusRanks: Record<string, number> = {
+      pending: 1,
+      on_hold: 1,
+      failed: 1,
+      confirmed: 2,
+      processing: 3,
+      ready_to_ship: 3,
+      shipped: 4,
+      delivered: 5,
+      completed: 5,
+      cancelled: 0,
+      returned: 0,
+    };
+    const stepRanks: Record<string, number> = {
+      placed: 1,
+      confirmed: 2,
+      processing: 3,
+      shipped: 4,
+      delivered: 5,
+    };
+    const currentRank = statusRanks[status] || 1;
+    const thisStepRank = stepRanks[key] || 1;
+    if (thisStepRank < currentRank) return "completed";
+    if (thisStepRank === currentRank) return "active";
+    return "pending";
+  };
+
+  const getProgressPercent = () => {
+    const status = order.orderStatus;
+    if (status === "pending") return 10;
+    if (status === "confirmed") return 30;
+    if (status === "processing" || status === "ready_to_ship") return 55;
+    if (status === "shipped") return 80;
+    if (status === "delivered" || status === "completed") return 100;
+    return 10;
+  };
+
+  // Reusable sub-card renderers
+  const renderConfirmBanner = () => {
+    if (!confirmAction) return null;
+    return (
+      <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 space-y-3">
+        <p className="text-[13px] font-bold text-rose-900">{confirmAction.title}</p>
+        <p className="text-[12px] text-gray-700">{confirmAction.message}</p>
+        <input
+          type="text"
+          value={confirmReason}
+          onChange={(e) => setConfirmReason(e.target.value)}
+          placeholder="Reason for audit log (optional)..."
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[12px] outline-none focus:border-rose-400"
+        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={actionBusy}
+            onClick={async () => {
+              const target = confirmAction.status;
+              setConfirmAction(null);
+              await runTransition(target, confirmReason || undefined);
+            }}
+            className="rounded-lg bg-rose-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-rose-700 cursor-pointer shadow-xs"
+          >
+            Confirm {confirmAction.status}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmAction(null)}
+            className="rounded-lg bg-white border border-gray-200 px-4 py-2 text-[12px] font-medium text-gray-700 hover:bg-gray-100 cursor-pointer"
+          >
+            Keep Order
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLifecycleBadgesStrip = () => (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 rounded-2xl border border-stone-200/90 bg-white p-3 shadow-xs">
+      {/* 1. Order Status */}
+      <div className="flex flex-col gap-1 p-2 rounded-xl bg-stone-50/70 border border-stone-100">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          Order Status
+        </span>
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${getOrderStatusBadge(
+            order.orderStatus
+          )}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus}
+        </span>
+      </div>
+
+      {/* 2. Payment Status */}
+      <div className="flex flex-col gap-1 p-2 rounded-xl bg-stone-50/70 border border-stone-100">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          Payment ({order.paymentMethod === "cod" ? "COD" : "Online"})
+        </span>
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${getPaymentStatusBadge(
+            order.paymentStatus
+          )}`}
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}
+        </span>
+      </div>
+
+      {/* 3. Shipment Status */}
+      <div className="flex flex-col gap-1 p-2 rounded-xl bg-stone-50/70 border border-stone-100">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          Shipment {order.courier ? `(${getCourierLabel(order.courier)})` : ""}
+        </span>
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${getShipmentStatusBadge(
+            order.shipmentStatus || (activeShipment ? activeShipment.status : "none"),
+            order.shipmentBookingState
+          )}`}
+        >
+          <Truck className="h-3 w-3" />
+          {SHIPMENT_STATUS_LABELS[order.shipmentStatus || ""] ||
+            (activeShipment
+              ? SHIPMENT_STATUS_LABELS[activeShipment.status] || activeShipment.status
+              : "Not Booked")}
+        </span>
+      </div>
+
+      {/* 4. Courier Settlement Status */}
+      <div className="flex flex-col gap-1 p-2 rounded-xl bg-stone-50/70 border border-stone-100">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+          COD Settlement
+        </span>
+        <span
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${settlementBadgeClass(
+            fin.codSettlementStatus
+          )}`}
+        >
+          <Banknote className="h-3 w-3" />
+          {COURIER_SETTLEMENT_LABELS[fin.codSettlementStatus] || fin.codSettlementStatus}
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderUpdateStatusModal = () => {
+    if (!updateStatusModalOpen) return null;
+
+    const isExceptional =
+      targetStatusToUpdate === "cancelled" ||
+      targetStatusToUpdate === "returned" ||
+      targetStatusToUpdate === "refunded";
+
+    const reasonRequired = isExceptional;
+    const canSubmit = !actionBusy && (!reasonRequired || updateStatusReason.trim().length >= 3);
+
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-purple-600" />
+              <h3 className="text-[14px] font-bold text-gray-900">Update Order Status</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUpdateStatusModalOpen(false)}
+              className="rounded-lg p-1 text-gray-400 hover:bg-stone-100 hover:text-gray-600 cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-1 text-[12px]">
+            <p className="text-gray-500">
+              Order: <strong className="font-mono text-gray-900">#{order.orderNumber}</strong> · Current:{" "}
+              <strong className="capitalize text-gray-900">
+                {ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus}
+              </strong>
+            </p>
+            <p className="text-[11px] text-gray-400">
+              Only valid state machine transitions are permitted. Exceptional changes require a mandatory admin reason for audit logging.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11.5px] font-bold text-gray-700">Select Target Status</label>
+            {allowed.length === 0 ? (
+              <p className="text-[12px] text-gray-500 rounded-lg bg-stone-50 p-3 border border-stone-200">
+                No further forward status transitions available from &ldquo;{order.orderStatus}&rdquo;.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                {allowed.map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => setTargetStatusToUpdate(st)}
+                    className={`flex items-center justify-between rounded-xl border p-2.5 text-left text-[12px] font-semibold transition cursor-pointer ${
+                      targetStatusToUpdate === st
+                        ? "border-purple-600 bg-purple-50/70 text-purple-900 ring-2 ring-purple-100"
+                        : "border-stone-200 bg-white text-gray-700 hover:bg-stone-50"
+                    }`}
+                  >
+                    <span className="capitalize">{ORDER_STATUS_LABELS[st] || st.replace(/_/g, " ")}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${getOrderStatusBadge(
+                        st
+                      )}`}
+                    >
+                      {st}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11.5px] font-bold text-gray-700">
+              Admin Reason {reasonRequired ? <span className="text-rose-500">* (Mandatory)</span> : <span className="text-gray-400 font-normal">(Optional note)</span>}
+            </label>
+            <textarea
+              rows={2}
+              value={updateStatusReason}
+              onChange={(e) => setUpdateStatusReason(e.target.value)}
+              placeholder={
+                reasonRequired
+                  ? "Explain why this exceptional status change is being applied..."
+                  : "Internal audit note..."
+              }
+              className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] outline-none focus:border-purple-500 resize-none"
+            />
+            {reasonRequired && updateStatusReason.trim().length < 3 && (
+              <p className="text-[10.5px] text-rose-600">
+                Minimum 3 characters required for audit trail.
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-stone-100 pt-3">
+            <button
+              type="button"
+              onClick={() => setUpdateStatusModalOpen(false)}
+              className="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 hover:bg-stone-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canSubmit || allowed.length === 0}
+              onClick={async () => {
+                setUpdateStatusModalOpen(false);
+                await runTransition(targetStatusToUpdate, updateStatusReason.trim() || undefined);
+              }}
+              className="rounded-xl bg-purple-600 px-4 py-2 text-[12px] font-bold text-white shadow-xs hover:bg-purple-700 disabled:opacity-40 cursor-pointer transition"
+            >
+              Confirm Status Transition
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReopenModal = () => {
+    if (!reopenModalOpen) return null;
+
+    const isEligible = order.reopenEligibility?.eligible !== false;
+    const canSubmit = !reopenBusy && !actionBusy && isEligible && reopenReason.trim().length >= 3;
+
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-emerald-600" />
+              <h3 className="text-[14px] font-bold text-gray-900">Reopen Cancelled Order</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReopenModalOpen(false)}
+              className="rounded-lg p-1 text-gray-400 hover:bg-stone-100 hover:text-gray-600 cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-1 text-[12px]">
+            <p className="text-gray-600">
+              Recovering order <strong className="font-mono text-gray-900">#{order.orderNumber}</strong> from cancelled state.
+            </p>
+            <p className="text-[11px] text-gray-500">
+              Previous cancellation records and status history will be fully preserved in the audit log.
+            </p>
+          </div>
+
+          {/* Pre-conditions Verification Checklist */}
+          <div className="space-y-2 rounded-xl bg-stone-50 border border-stone-200/80 p-3 text-[11.5px]">
+            <p className="font-bold text-gray-700 uppercase tracking-wider text-[10px]">
+              Pre-Flight Safety Verifications
+            </p>
+
+            {/* Check 1: Courier consignment */}
+            <div className="flex items-start gap-2">
+              {!activeShipment ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className="font-semibold text-gray-900">Courier Consignment Check</p>
+                <p className="text-gray-600 text-[11px]">
+                  {!activeShipment
+                    ? "Verified: No active courier consignment exists."
+                    : `Active shipment detected (${activeShipment.status}). Courier cancellation must be verified first.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Check 2: Stock re-reservation */}
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-gray-900">Inventory Re-reservation</p>
+                <p className="text-gray-600 text-[11px]">
+                  Stock for all ordered items will be atomically verified & re-reserved upon reopening.
+                </p>
+              </div>
+            </div>
+
+            {/* Check 3: Payment integrity */}
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-gray-900">Payment & Restoration Target</p>
+                <p className="text-gray-600 text-[11px]">
+                  {order.reopenEligibility?.summary ||
+                    (order.paymentMethod === "cod"
+                      ? "COD order will be restored to Pending with collectible balance."
+                      : "Online order will be restored to Pending and payment kept as Pending.")}
+                </p>
+              </div>
+            </div>
+
+            {/* Check 4: Non-automatic courier/payment check */}
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="h-4 w-4 text-purple-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-gray-900">Financial Safety Guarantee</p>
+                <p className="text-gray-600 text-[11px]">
+                  Reopening will never automatically book a courier or execute a charge.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {order.reopenEligibility?.eligible === false && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[12px] text-rose-800 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-600" />
+              <span>{order.reopenEligibility.reason}</span>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-[11.5px] font-bold text-gray-700">
+              Admin Reason <span className="text-rose-500">* (Mandatory for audit trail)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={reopenReason}
+              onChange={(e) => setReopenReason(e.target.value)}
+              placeholder="State customer authorization or operational reason for reopening this order..."
+              className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-[12px] outline-none focus:border-emerald-500 resize-none"
+            />
+            {reopenReason.trim().length < 3 && (
+              <p className="text-[10.5px] text-rose-600">
+                Minimum 3 characters required.
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-stone-100 pt-3">
+            <button
+              type="button"
+              disabled={reopenBusy}
+              onClick={() => setReopenModalOpen(false)}
+              className="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 hover:bg-stone-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canSubmit || !onReopenOrder}
+              onClick={async () => {
+                if (!onReopenOrder) return;
+                setReopenBusy(true);
+                try {
+                  const ok = await onReopenOrder(reopenReason.trim());
+                  if (ok) {
+                    setReopenModalOpen(false);
+                  }
+                } finally {
+                  setReopenBusy(false);
+                }
+              }}
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-[12.5px] font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-40 cursor-pointer transition flex items-center gap-1.5"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Confirm Reopen Order</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderOrderProgressStepper = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs overflow-hidden">
+      <div className="flex items-center gap-2 mb-4">
+        <Clock className="h-4 w-4 text-purple-600" />
+        <h3 className="text-[13px] font-bold text-gray-900">Order Progress</h3>
+      </div>
+
+      <div className="overflow-x-auto pb-2 -mx-2 px-2">
+        <div className="min-w-[440px] relative flex items-center justify-between px-3">
+          <div className="absolute left-6 right-6 top-3 h-0.5 bg-gray-200 -z-0" />
+          <div
+            className="absolute left-6 top-3 h-0.5 bg-purple-600 transition-all duration-300 -z-0"
+            style={{ width: `${getProgressPercent()}%` }}
+          />
+
+          {steps.map((st) => {
+            const state = getStepStatus(st.key);
+            return (
+              <div key={st.key} className="relative z-10 flex flex-col items-center text-center">
+                <div
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                    state === "completed"
+                      ? "bg-purple-600 text-white"
+                      : state === "active"
+                        ? "bg-purple-600 text-white ring-4 ring-purple-100"
+                        : "border-2 border-gray-300 bg-white text-gray-400"
+                  }`}
+                >
+                  {state === "completed" ? (
+                    <Check className="h-3.5 w-3.5 stroke-[3]" />
+                  ) : state === "active" ? (
+                    <span className="h-2 w-2 rounded-full bg-white" />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                  )}
+                </div>
+                <p
+                  className={`mt-2 text-[11.5px] font-bold whitespace-nowrap ${
+                    state !== "pending" ? "text-gray-900" : "text-gray-400"
+                  }`}
+                >
+                  {st.label}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-0.5 max-w-[84px] truncate">{st.sub}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderCustomerInfoCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
+      <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+        <User className="h-3.5 w-3.5 text-purple-600" />
+        Customer Information
+      </h3>
+      <div className="space-y-2 text-[12.5px]">
+        <p className="font-bold text-gray-900">{order.customer.fullName}</p>
+        <div className="flex items-center gap-2 text-gray-600">
+          <Phone className="h-3.5 w-3.5 text-gray-400" />
+          <span className="font-mono">{order.customer.phone}</span>
+          {waUrl && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#25D366] text-white hover:scale-110 transition shadow-2xs"
+              title="Chat on WhatsApp"
+              aria-label="Chat on WhatsApp"
+            >
+              <WhatsAppIcon className="h-2.5 w-2.5 fill-current" />
+            </a>
+          )}
+        </div>
+        <div className="flex items-start gap-2 pt-0.5 text-gray-700">
+          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-500" />
+          <span>
+            {order.customer.address}, {order.customer.city}
+            {order.customer.district &&
+            order.customer.district.toLowerCase() !== order.customer.city.toLowerCase()
+              ? `, ${order.customer.district}`
+              : ""}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPricingBreakdownCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
+      <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+        <ShoppingCart className="h-3.5 w-3.5 text-purple-600" />
+        Pricing Breakdown
+      </h3>
+      <div className="space-y-2 text-[12.5px]">
+        <div className="flex justify-between text-gray-600">
+          <span>Subtotal</span>
+          <span className="tabular-nums font-semibold">{formatBDT(order.subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Delivery Charge</span>
+          <span className="tabular-nums font-semibold">{formatBDT(order.shippingFee)}</span>
+        </div>
+        <div className="flex justify-between border-t border-stone-100 pt-2 text-[14px] font-bold text-gray-900">
+          <span>Total Amount</span>
+          <span className="tabular-nums">{formatBDT(fin.orderTotal)}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderProductsListCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white overflow-hidden shadow-xs">
+      <div className="border-b border-stone-100 bg-stone-50/70 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+        Products ({order.items.length})
+      </div>
+      <div className="divide-y divide-stone-100">
+        {order.items.map((item, i) => (
+          <div key={`${item.productId}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3 text-[12.5px]">
+            <div className="flex items-center gap-3 min-w-0">
+              <ProductThumbnail
+                src={item.image}
+                alt={item.name}
+                size={40}
+                className="h-10 w-10"
+                iconClassName="h-4 w-4"
+              />
+              <div className="min-w-0">
+                <p className="font-bold text-gray-900 truncate">{item.name}</p>
+                <p className="text-[11px] text-gray-500">
+                  Qty: {item.quantity}
+                  {item.size ? ` · Size: ${item.size}` : ""}
+                  {item.color ? ` · Color: ${item.color}` : ""}
+                </p>
+              </div>
+            </div>
+            <span className="font-bold tabular-nums text-gray-900">
+              {formatBDT(item.price * item.quantity)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderPaymentManagementCard = () => (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+            <CreditCard className="h-3.5 w-3.5 text-purple-600" />
+            Payment Management
+          </h3>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" && (
+              <>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void onReconcileSslcommerz(order.orderNumber)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                >
+                  <ShieldCheck className="h-3 w-3" />
+                  Verify SSLCOMMERZ
+                </button>
+                {onCodFallback && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onCodFallback}
+                    className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-100 cursor-pointer"
+                    title="Allow COD fallback with customer agreement"
+                  >
+                    <Banknote className="h-3 w-3 text-amber-700" />
+                    Switch to COD
+                  </button>
+                )}
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => setPayFormOpen((v) => (v === "advance" ? null : "advance"))}
+              className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
+            >
+              + Record Payment
+            </button>
+            {fin.advancePaidAmount > 0 && (
+              <button
+                type="button"
+                onClick={() => setPayFormOpen((v) => (v === "refund" ? null : "refund"))}
+                className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+              >
+                Record Refund
+              </button>
+            )}
+          </div>
+        </div>
+
+        {payFormOpen && (
+          <div className="rounded-xl border border-purple-200 bg-purple-50/40 p-3 space-y-2">
+            <p className="text-[11.5px] font-bold text-purple-900">
+              {payFormOpen === "refund"
+                ? "Record Refund Entry"
+                : "Record Verified Advance / Manual Payment"}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                min={1}
+                placeholder="Amount (BDT)"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
+              />
+              {payFormOpen === "advance" && (
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value)}
+                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
+                >
+                  <option value="bkash">bKash Advance</option>
+                  <option value="nagad">Nagad Advance</option>
+                  <option value="bank">Bank Transfer</option>
+                  <option value="cash">Cash Advance</option>
+                </select>
+              )}
+              <input
+                type="text"
+                placeholder="Reference / TXN ID"
+                value={payRef}
+                onChange={(e) => setPayRef(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
+              />
+              <input
+                type="text"
+                placeholder="Note"
+                value={payNote}
+                onChange={(e) => setPayNote(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={!Number(payAmount) || Number(payAmount) <= 0}
+                onClick={async () => {
+                  const ok = await onRecordPayment({
+                    action: payFormOpen,
+                    amount: Number(payAmount),
+                    method: payMethod,
+                    reference: payRef,
+                    note: payNote,
+                  });
+                  if (ok) {
+                    setPayFormOpen(null);
+                    setPayAmount("");
+                    setPayRef("");
+                    setPayNote("");
+                  }
+                }}
+                className="rounded-lg bg-purple-600 px-3 py-1.5 text-[11.5px] font-bold text-white disabled:opacity-50 cursor-pointer"
+              >
+                Save {payFormOpen === "refund" ? "Refund" : "Payment"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPayFormOpen(null)}
+                className="rounded-lg bg-white px-3 py-1.5 text-[11.5px] font-medium text-gray-600 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {payments.length === 0 ? (
+          <p className="text-[12px] text-gray-400">
+            No payment gateway attempts recorded yet.
+          </p>
+        ) : (
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {payments.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-[11.5px] space-y-1"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold uppercase text-slate-800">
+                    {p.provider} {p.cardType ? `· ${p.cardType}` : ""}
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">
+                    {p.status} · {formatBDT(p.amount)}
+                  </span>
+                </div>
+                <p className="font-mono text-[10.5px] text-slate-500">
+                  TXN: {p.tranId}
+                  {p.valId ? ` · VAL: ${p.valId}` : ""}
+                  {p.bankTranId ? ` · GW: ${p.bankTranId}` : ""}
+                </p>
+                <p className="text-[10.5px] text-slate-500">
+                  Validated: {formatDateTime(p.validatedAt || p.paidAt)}
+                  {p.refundedAmount ? ` · Refunded: ${formatBDT(p.refundedAmount)} (${p.refundRefId || "no ref"})` : ""}
+                </p>
+                {p.note && <p className="text-slate-600">{p.note}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderShipmentCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+          <Truck className="h-3.5 w-3.5 text-purple-600" />
+          Consignment & Dispatch History
+        </h3>
+        {activeShipment && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void onRefreshShipment(activeShipment.id)}
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
+            >
+              <RefreshCw className={`h-3 w-3 ${busy ? "animate-spin" : ""}`} />
+              Sync Status
+            </button>
+            {!["delivered", "partial_delivered", "returned"].includes(activeShipment.status) && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void onCancelShipment(orderStub, "Admin cancelled shipment")}
+                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 cursor-pointer"
+              >
+                Cancel Consignment
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {shipments.length === 0 ? (
+        <p className="text-[12px] text-gray-400">
+          No courier consignments created yet for this order.
+        </p>
+      ) : (
+        <div className="space-y-2.5">
+          {shipments.map((s) => {
+            const trackUrl = getCourierTrackingUrl(s.provider, s.trackingCode, s.consignmentId);
+            return (
+              <div
+                key={s.id}
+                className="rounded-xl border border-stone-200 bg-stone-50/50 p-3 space-y-2 text-[12px]"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CourierLogo provider={s.provider} size="sm" className="shadow-2xs" />
+                    <span className="font-bold text-gray-900">{getCourierLabel(s.provider)}</span>
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">
+                      {s.status.replace(/_/g, " ")}
+                    </span>
+                    {s.consignmentId && (
+                      <span className="font-mono text-[11px] text-gray-600">
+                        CID: {s.consignmentId}
+                      </span>
+                    )}
+                    {s.trackingCode && (
+                      <span className="font-mono text-[11px] text-gray-600">
+                        Tracking: {s.trackingCode}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900">{formatBDT(s.codAmount)} COD</span>
+                    {trackUrl && (
+                      <a
+                        href={trackUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Track
+                      </a>
+                    )}
+                  </div>
+                </div>
+                {(s.events?.length ?? 0) > 0 && (
+                  <ul className="space-y-1 border-t border-stone-200/70 pt-2 text-[11px] text-slate-600">
+                    {(s.events || []).slice(-5).map((ev, idx) => (
+                      <li key={idx} className="flex justify-between gap-2">
+                        <span className="capitalize">
+                          {ev.status.replace(/_/g, " ")}
+                          {ev.note ? ` — ${ev.note}` : ""}
+                        </span>
+                        <span className="text-slate-400 shrink-0">{formatDateTime(ev.at)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCodSettlementCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+          <Banknote className="h-3.5 w-3.5 text-purple-600" />
+          Courier COD Settlement
+        </h3>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${settlementBadgeClass(
+            fin.codSettlementStatus
+          )}`}
+        >
+          {fin.codSettlementStatus}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-[11.5px]">
+        <div>
+          <p className="text-[10px] uppercase text-slate-400">Expected COD</p>
+          <p className="font-bold text-slate-900">{formatBDT(fin.expectedCodAmount)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase text-slate-400">Collected</p>
+          <p className="font-bold text-blue-700">{formatBDT(fin.collectedCodAmount)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase text-slate-400">Settled to Bank</p>
+          <p className="font-bold text-emerald-700">{formatBDT(fin.settledCodAmount)}</p>
+        </div>
+      </div>
+
+      <div className="space-y-2 rounded-xl border border-stone-200 p-3 text-[12px]">
+        <p className="text-[11.5px] font-bold text-gray-700">Update Settlement Details</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="text-[10.5px] text-gray-500">Courier Collected (৳)</label>
+            <input
+              type="number"
+              min={0}
+              value={collectedInput}
+              onChange={(e) => setCollectedInput(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
+            />
+          </div>
+          <div>
+            <label className="text-[10.5px] text-gray-500">Bank Settled (৳)</label>
+            <input
+              type="number"
+              min={0}
+              value={settledInput}
+              onChange={(e) => setSettledInput(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
+            />
+          </div>
+          <div>
+            <label className="text-[10.5px] text-gray-500">Courier Fee (৳)</label>
+            <input
+              type="number"
+              min={0}
+              value={chargeInput}
+              onChange={(e) => setChargeInput(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
+            />
+          </div>
+        </div>
+        <input
+          type="text"
+          value={settlementNote}
+          onChange={(e) => setSettlementNote(e.target.value)}
+          placeholder="Bank payout ref / settlement note..."
+          className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-[12px]"
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px] text-gray-400">
+            {order.settledAt ? `Settled: ${formatDateTime(order.settledAt)}` : "Not yet settled"}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              void onSaveSettlement({
+                collectedCodAmount: Number(collectedInput) || 0,
+                courierCharge: Number(chargeInput) || 0,
+                settledCodAmount: Number(settledInput) || 0,
+                settlementNote,
+                markSettled: true,
+              })
+            }
+            className="rounded-lg bg-purple-600 px-3.5 py-1.5 text-[11.5px] font-bold text-white hover:bg-purple-700 cursor-pointer shadow-xs"
+          >
+            Reconcile Settlement
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Right sidebar renderers for Full Page View
+  const renderAvailableNextActionsCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3.5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[13px] font-bold text-gray-900 tracking-tight">Available Next Actions</h3>
+        <span className="text-[11px] font-medium text-gray-500">
+          Status: <strong className="capitalize text-gray-800">{order.orderStatus.replace(/_/g, " ")}</strong>
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {/* If Cancelled: Show Governed Reopen Recovery Action */}
+        {order.orderStatus === "cancelled" && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 space-y-2.5">
+            <div className="flex items-center gap-1.5 text-emerald-900 font-bold text-[12.5px]">
+              <RotateCcw className="h-4 w-4 text-emerald-600" />
+              <span>Cancelled Order Recovery</span>
+            </div>
+            <p className="text-[11.5px] text-gray-600">
+              {order.reopenEligibility?.summary ||
+                "This order was cancelled. Eligible cancelled orders can be recovered without creating automatic courier bookings or payments."}
+            </p>
+            {order.reopenEligibility?.eligible === false && (
+              <p className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
+                ⚠️ Reopen locked: {order.reopenEligibility.reason}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={busy || actionBusy || order.reopenEligibility?.eligible === false || !onReopenOrder}
+              onClick={() => {
+                setReopenReason("");
+                setReopenModalOpen(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-[12.5px] font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-40 transition cursor-pointer"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reopen Cancelled Order
+            </button>
+          </div>
+        )}
+
+        {/* Update Status Action Dialog Trigger */}
+        {allowed.length > 0 && (
+          <button
+            type="button"
+            disabled={busy || actionBusy}
+            onClick={() => {
+              setTargetStatusToUpdate(allowed[0] || "");
+              setUpdateStatusReason("");
+              setUpdateStatusModalOpen(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-50 border border-purple-200 py-2.5 text-[12.5px] font-bold text-purple-700 hover:bg-purple-100 transition cursor-pointer"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Update Order Status...
+          </button>
+        )}
+
+        {allowed.includes("confirmed") && (
+          <button
+            type="button"
+            disabled={busy || actionBusy}
+            onClick={() => void runTransition("confirmed", "Order confirmed by admin")}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-50 border border-sky-200 py-2 text-[12px] font-bold text-sky-800 hover:bg-sky-100 transition cursor-pointer"
+          >
+            <Check className="h-4 w-4" />
+            Confirm Order Directly
+          </button>
+        )}
+
+        {allowed.includes("processing") && (
+          <button
+            type="button"
+            disabled={busy || actionBusy}
+            onClick={() => void runTransition("processing", "Processing & packing started")}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-50 border border-blue-200 py-2 text-[12px] font-bold text-blue-800 hover:bg-blue-100 transition cursor-pointer"
+          >
+            <PackageCheck className="h-4 w-4" />
+            Start Processing
+          </button>
+        )}
+
+        {allowed.includes("ready_to_ship") && (
+          <button
+            type="button"
+            disabled={busy || actionBusy}
+            onClick={() => void runTransition("ready_to_ship", "Marked Ready to Ship")}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-50 border border-purple-200 py-2 text-[12px] font-bold text-purple-800 hover:bg-purple-100 transition cursor-pointer"
+          >
+            <Package className="h-4 w-4" />
+            Mark Ready to Ship
+          </button>
+        )}
+
+        <button
+          type="button"
+          disabled={busy || actionBusy || (!order.bookingEligibility.ok && !activeShipment)}
+          onClick={() => onOpenShipment(orderStub)}
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer"
+        >
+          <Truck className="h-4 w-4" />
+          {activeShipment ? "View Shipment / Consignment" : "Create Steadfast Shipment"}
+        </button>
+
+        {allowed.includes("cancelled") && (
+          <button
+            type="button"
+            disabled={busy || actionBusy || (activeShipment && ["in_transit", "out_for_delivery", "picked_up"].includes(activeShipment.status))}
+            onClick={() => {
+              setConfirmReason("");
+              setConfirmAction({
+                status: "cancelled",
+                title: "Cancel Order?",
+                message: "Cancelled orders are locked and can only be restored via governed Reopen Order.",
+              });
+            }}
+            className="w-full flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50/60 py-2 text-[12px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition cursor-pointer"
+          >
+            <XCircle className="h-4 w-4" />
+            Cancel Order
+          </button>
+        )}
+      </div>
+
+      {!order.bookingEligibility.ok && !activeShipment && (
+        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+          {order.bookingEligibility.reason || "Order must be confirmed before courier booking"}
+        </p>
+      )}
+    </div>
+  );
+
+  const renderOrderFinancialsSidebarCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3.5">
+      <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+        <h3 className="text-[13px] font-bold text-gray-900 tracking-tight">Order Financials</h3>
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${settlementBadgeClass(
+            fin.codSettlementStatus
+          )}`}
+        >
+          {fin.codSettlementStatus}
+        </span>
+      </div>
+
+      <div className="space-y-2 text-[12.5px]">
+        <div className="flex justify-between text-gray-600">
+          <span>Subtotal</span>
+          <span className="tabular-nums font-semibold">{formatBDT(order.subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Delivery Charge</span>
+          <span className="tabular-nums font-semibold">{formatBDT(order.shippingFee)}</span>
+        </div>
+        <div className="flex justify-between border-t border-stone-100 pt-2 font-bold text-gray-900 text-[13.5px]">
+          <span>Order Total</span>
+          <span className="tabular-nums">{formatBDT(fin.orderTotal)}</span>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-stone-50 border border-stone-200/80 p-3 space-y-2 text-[12px]">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Advance Paid:</span>
+          <span className="font-bold text-emerald-700 tabular-nums">{formatBDT(fin.advancePaidAmount)}</span>
+        </div>
+        {order.paymentMethod !== "cod" && fin.outstandingAmount > 0 && (
+          <div className="flex justify-between items-center">
+            <span className="text-rose-600 font-medium">Outstanding Online:</span>
+            <span className="font-bold text-rose-700 tabular-nums">{formatBDT(fin.outstandingAmount)}</span>
+          </div>
+        )}
+        <div className="flex justify-between items-center border-t border-stone-200 pt-1.5">
+          <span className="text-purple-900 font-bold">COD Collectible:</span>
+          <span className="font-bold text-purple-700 text-[13px] tabular-nums">
+            {formatBDT(fin.codAmountToCollect)}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPaymentSummarySidebarCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[13px] font-bold text-gray-900 tracking-tight flex items-center gap-2">
+          <CreditCard className="h-4 w-4 text-purple-600" />
+          Payment Summary
+        </h3>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-[10.5px] font-bold uppercase border ${
+            order.paymentStatus === "paid"
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-amber-50 text-amber-700 border-amber-200"
+          }`}
+        >
+          {order.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+        </span>
+      </div>
+
+      <div className="space-y-1.5 text-[12px]">
+        <div className="flex justify-between text-gray-600">
+          <span>Method</span>
+          <span className="font-bold text-gray-800 capitalize">
+            {order.paymentMethod === "cod" ? "Cash on Delivery (COD)" : order.paymentMethod}
+          </span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Advance Paid</span>
+          <span className="font-semibold text-emerald-700 tabular-nums">
+            {formatBDT(fin.advancePaidAmount)}
+          </span>
+        </div>
+        <div className="flex justify-between text-gray-600">
+          <span>Balance Outstanding</span>
+          <span className="font-semibold text-purple-700 tabular-nums">
+            {formatBDT(fin.codAmountToCollect)}
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setActiveTab("payment")}
+        className="w-full text-center text-[11.5px] font-bold text-purple-700 hover:text-purple-900 hover:underline pt-1 cursor-pointer"
+      >
+        View Transactions & Payment History →
+      </button>
+    </div>
+  );
+
+  const renderShipmentSummarySidebarCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[13px] font-bold text-gray-900 tracking-tight flex items-center gap-2">
+          <Truck className="h-4 w-4 text-purple-600" />
+          Shipment Summary
+        </h3>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-[10.5px] font-bold capitalize border ${
+            activeShipment
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-stone-100 text-stone-600 border-stone-200"
+          }`}
+        >
+          {activeShipment ? activeShipment.status.replace(/_/g, " ") : "Not Booked"}
+        </span>
+      </div>
+
+      {activeShipment ? (
+        <div className="space-y-2 text-[12px]">
+          <div className="flex justify-between items-center text-gray-600">
+            <span>Courier</span>
+            <span className="inline-flex items-center gap-1.5 font-bold text-gray-800">
+              <CourierLogo provider={activeShipment.provider} size="xs" />
+              {getCourierLabel(activeShipment.provider)}
+            </span>
+          </div>
+          {activeShipment.consignmentId && (
+            <div className="flex justify-between text-gray-600">
+              <span>Consignment ID</span>
+              <span className="font-mono font-semibold text-gray-900">
+                {activeShipment.consignmentId}
+              </span>
+            </div>
+          )}
+          {activeShipment.trackingCode && (
+            <div className="flex justify-between text-gray-600">
+              <span>Tracking Code</span>
+              <span className="font-mono font-semibold text-gray-900">
+                {activeShipment.trackingCode}
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-[12px] text-gray-500">No consignment booked yet.</p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setActiveTab("shipment")}
+        className="w-full text-center text-[11.5px] font-bold text-purple-700 hover:text-purple-900 hover:underline pt-1 cursor-pointer"
+      >
+        View Shipment Tracking & Settlement →
+      </button>
+    </div>
+  );
+
+  const renderCustomerContactSidebarCard = () => (
+    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3">
+      <h3 className="text-[13px] font-bold text-gray-900 tracking-tight flex items-center gap-2">
+        <User className="h-4 w-4 text-purple-600" />
+        Customer Contact
+      </h3>
+      <div className="space-y-2 text-[12.5px]">
+        <p className="font-bold text-gray-900">{order.customer.fullName}</p>
+        <div className="flex items-center gap-2 text-gray-600">
+          <Phone className="h-3.5 w-3.5 text-gray-400" />
+          <a href={`tel:${order.customer.phone}`} className="font-mono hover:text-purple-700">
+            {order.customer.phone}
+          </a>
+          {waUrl && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#25D366] text-white hover:scale-110 transition shadow-2xs"
+              title="Chat on WhatsApp"
+              aria-label="Chat on WhatsApp"
+            >
+              <WhatsAppIcon className="h-2.5 w-2.5 fill-current" />
+            </a>
+          )}
+        </div>
+        <div className="flex items-start gap-2 pt-0.5 text-gray-600">
+          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-500" />
+          <span>
+            {order.customer.address}, {order.customer.city}
+            {order.customer.district &&
+            order.customer.district.toLowerCase() !== order.customer.city.toLowerCase()
+              ? `, ${order.customer.district}`
+              : ""}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1. DRAWER PREVIEW VIEW (When isDrawer === true)
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (isDrawer) {
+    return (
+      <div className="flex h-full flex-col bg-[#f8f9fc]">
+        {renderUpdateStatusModal()}
+        {renderReopenModal()}
+
+        {/* Top Slide-Over Header */}
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-stone-200/90 bg-white px-6 py-3.5 shadow-2xs">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-gray-900 tracking-tight font-mono">
+                Order #{order.orderNumber}
+              </h2>
+              <span
+                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold capitalize ${getOrderStatusBadge(
+                  order.orderStatus
+                )}`}
+              >
+                {ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[11.5px] text-gray-500">
+              {formatDateTime(order.createdAt)} · {order.paymentMethod === "cod" ? "COD Order" : "Online Order"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Dedicated Order Actions Menu */}
+            <div className="relative" ref={actionsMenuRef}>
+              <button
+                type="button"
+                onClick={() => setActionsMenuOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3 py-1.5 text-[12px] font-bold text-white hover:bg-purple-700 cursor-pointer shadow-2xs transition"
+              >
+                <span>Order Actions</span>
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+
+              {actionsMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 z-40 w-56 rounded-xl border border-stone-200 bg-white p-1.5 shadow-xl space-y-0.5 text-[12px] font-medium animate-in fade-in-0 duration-100">
+                  {allowed.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        setTargetStatusToUpdate(allowed[0] || "");
+                        setUpdateStatusReason("");
+                        setUpdateStatusModalOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-800 hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-purple-600" />
+                      Update Order Status
+                    </button>
+                  )}
+
+                  {order.orderStatus === "cancelled" && onReopenOrder && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        setReopenReason("");
+                        setReopenModalOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-emerald-700 hover:bg-emerald-50 cursor-pointer font-bold"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5 text-emerald-600" />
+                      Reopen Cancelled Order
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    disabled={!order.bookingEligibility.ok && !activeShipment}
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      onOpenShipment(orderStub);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 disabled:opacity-40 cursor-pointer"
+                  >
+                    <Truck className="h-3.5 w-3.5 text-purple-600" />
+                    {activeShipment ? "View Shipment / Consignment" : "Create Steadfast Shipment"}
+                  </button>
+
+                  {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        void onReconcileSslcommerz(order.orderNumber);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-blue-700 hover:bg-blue-50 cursor-pointer"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
+                      Verify SSLCOMMERZ
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      printCourierLabel(orderStub, activeShipment);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
+                  >
+                    <Printer className="h-3.5 w-3.5 text-gray-400" />
+                    Print Packing Slip
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      onCopy(order.orderNumber, "Order number");
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
+                  >
+                    <Copy className="h-3.5 w-3.5 text-gray-400" />
+                    Copy Order #
+                  </button>
+
+                  {allowed.includes("cancelled") && (
+                    <button
+                      type="button"
+                      disabled={Boolean(
+                        activeShipment &&
+                          ["in_transit", "out_for_delivery", "picked_up"].includes(
+                            activeShipment.status
+                          )
+                      )}
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        setConfirmReason("");
+                        setConfirmAction({
+                          status: "cancelled",
+                          title: "Cancel Order?",
+                          message:
+                            "Cancelled orders are locked and can only be restored via governed Reopen Order.",
+                        });
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-50 cursor-pointer border-t border-stone-100 disabled:opacity-40"
+                    >
+                      <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                      Cancel Order
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => printCourierLabel(orderStub, activeShipment)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-700 hover:bg-stone-50 cursor-pointer shadow-2xs"
+            >
+              <Printer className="h-3.5 w-3.5 text-gray-500" />
+              <span>Print</span>
+            </button>
+
+            {/* More Dropdown */}
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                type="button"
+                onClick={() => setMoreMenuOpen((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-700 hover:bg-stone-50 cursor-pointer shadow-2xs"
+              >
+                <span>More</span>
+                <MoreVertical className="h-3.5 w-3.5 text-gray-400" />
+              </button>
+
+              {moreMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 z-30 w-44 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg space-y-0.5 text-[12px] font-medium animate-in fade-in-0 duration-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMoreMenuOpen(false);
+                      onCopy(order.orderNumber, "Order number");
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    <Copy className="h-3.5 w-3.5 text-gray-400" />
+                    Copy Order #
+                  </button>
+                  {fullPageHref && (
+                    <Link
+                      href={fullPageHref}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                      Open Dedicated Page
+                    </Link>
+                  )}
+                  {allowed.includes("cancelled") && (
+                    <button
+                      type="button"
+                      disabled={Boolean(
+                        activeShipment &&
+                          ["in_transit", "out_for_delivery", "picked_up"].includes(
+                            activeShipment.status
+                          )
+                      )}
+                      onClick={() => {
+                        setMoreMenuOpen(false);
+                        setConfirmReason("");
+                        setConfirmAction({
+                          status: "cancelled",
+                          title: "Cancel Order?",
+                          message:
+                            "Cancelled orders are locked and can only be restored via governed Reopen Order.",
+                        });
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40"
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Cancel Order
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {onClose && (
+              <button
+                type="button"
+                aria-label="Close drawer"
+                onClick={onClose}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-stone-200 bg-white text-gray-500 hover:bg-stone-50 cursor-pointer shadow-2xs ml-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Tab Navigation Capsules */}
+        <div className="border-b border-stone-200/80 bg-white px-6 py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {(["overview", "activity", "payment", "shipment"] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-full px-4 py-1.5 text-[12px] font-bold capitalize transition cursor-pointer shrink-0 ${
+                  isActive
+                    ? "bg-purple-600 text-white shadow-xs"
+                    : "bg-transparent text-gray-600 hover:bg-purple-50 hover:text-purple-700"
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {confirmAction && renderConfirmBanner()}
+
+          {activeTab === "overview" && (
+            <div className="space-y-4">
+              {renderLifecycleBadgesStrip()}
+              {renderOrderProgressStepper()}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {renderCustomerInfoCard()}
+                {renderPricingBreakdownCard()}
+              </div>
+              {renderProductsListCard()}
+            </div>
+          )}
+
+          {activeTab === "activity" && (
+            <OrderActivityView
+              order={order}
+              timeline={timeline}
+              busy={busy}
+              onAddNote={onAddNote}
+              isDrawer={true}
+            />
+          )}
+
+          {activeTab === "payment" && renderPaymentManagementCard()}
+
+          {activeTab === "shipment" && (
+            <div className="space-y-4">
+              {renderShipmentCard()}
+              {renderCodSettlementCard()}
+            </div>
+          )}
+        </div>
+
+        {/* Sticky Bottom Actions Bar */}
+        <div className="sticky bottom-0 z-20 flex items-center justify-between border-t border-stone-200/90 bg-white px-6 py-3.5 shadow-sm">
+          {order.orderStatus === "cancelled" && onReopenOrder ? (
+            <button
+              type="button"
+              disabled={busy || actionBusy || order.reopenEligibility?.eligible === false}
+              onClick={() => {
+                setReopenReason("");
+                setReopenModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-[12px] font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-40 cursor-pointer transition"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reopen Order
+            </button>
+          ) : allowed.includes("cancelled") ? (
+            <button
+              type="button"
+              disabled={
+                busy ||
+                actionBusy ||
+                Boolean(
+                  activeShipment &&
+                    ["in_transit", "out_for_delivery", "picked_up"].includes(activeShipment.status)
+                )
+              }
+              onClick={() => {
+                setConfirmReason("");
+                setConfirmAction({
+                  status: "cancelled",
+                  title: "Cancel Order?",
+                  message:
+                    "Cancelled orders are locked and can only be restored via governed Reopen Order.",
+                });
+              }}
+              className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-[12px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer disabled:opacity-40"
+            >
+              Cancel Order
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2">
+            {allowed.length > 0 && (
+              <button
+                type="button"
+                disabled={busy || actionBusy}
+                onClick={() => {
+                  setTargetStatusToUpdate(allowed[0] || "");
+                  setUpdateStatusReason("");
+                  setUpdateStatusModalOpen(true);
+                }}
+                className="rounded-xl border border-stone-200 bg-stone-100 px-3.5 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-200 cursor-pointer"
+              >
+                Update Status
+              </button>
+            )}
+
+            {allowed.includes("confirmed") && (
+              <button
+                type="button"
+                disabled={busy || actionBusy}
+                onClick={() => void runTransition("confirmed", "Order confirmed by admin")}
+                className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-[12px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
+              >
+                Confirm Order
+              </button>
+            )}
+
+            {allowed.includes("processing") && (
+              <button
+                type="button"
+                disabled={busy || actionBusy}
+                onClick={() => void runTransition("processing", "Processing & packing started")}
+                className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-[12px] font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
+              >
+                Start Processing
+              </button>
+            )}
+
+            {allowed.includes("ready_to_ship") && (
+              <button
+                type="button"
+                disabled={busy || actionBusy}
+                onClick={() => void runTransition("ready_to_ship", "Marked Ready to Ship")}
+                className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-[12px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
+              >
+                Mark Ready to Ship
+              </button>
+            )}
+
+            <button
+              type="button"
+              disabled={busy || actionBusy || (!order.bookingEligibility.ok && !activeShipment)}
+              onClick={() => onOpenShipment(orderStub)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-5 py-2 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 cursor-pointer transition"
+            >
+              <Truck className="h-4 w-4" />
+              {activeShipment ? "View Shipment" : "Create Shipment"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2. FULL-PAGE ORDER DETAILS VIEW (/admin/orders/[id])
+  // Responsive two-column desktop layout (lg:grid-cols-3) & single-column mobile
+  // ─────────────────────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-6">
+      {renderUpdateStatusModal()}
+      {renderReopenModal()}
+
+      {/* Full-Page Top Header matching Section 3 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/90 pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3.5">
+          <Link
+            href="/admin/orders"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-gray-700 hover:bg-stone-50 hover:text-purple-700 transition shadow-2xs self-start"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Orders</span>
+          </Link>
+          <div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-xl font-bold text-gray-900 tracking-tight font-mono">
+                Order #{order.orderNumber}
+              </h1>
+              <span
+                className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold capitalize ${getOrderStatusBadge(
+                  order.orderStatus
+                )}`}
+              >
+                {ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[12px] text-gray-500">
+              Placed on {formatDateTime(order.createdAt)} · {order.paymentMethod === "cod" ? "COD Order" : "Online Order"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          {notificationBanner && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-[12px] font-semibold text-emerald-800 animate-in fade-in">
+              {notificationBanner}
+            </div>
+          )}
+
+          {/* Dedicated Order Actions Menu */}
+          <div className="relative" ref={actionsMenuRef}>
+            <button
+              type="button"
+              onClick={() => setActionsMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-[12.5px] font-bold text-white hover:bg-purple-700 cursor-pointer shadow-2xs transition"
+            >
+              <span>Order Actions</span>
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+
+            {actionsMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 z-40 w-56 rounded-xl border border-stone-200 bg-white p-1.5 shadow-xl space-y-0.5 text-[12px] font-medium animate-in fade-in-0 duration-100">
+                {allowed.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      setTargetStatusToUpdate(allowed[0] || "");
+                      setUpdateStatusReason("");
+                      setUpdateStatusModalOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-800 hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-purple-600" />
+                    Update Order Status
+                  </button>
+                )}
+
+                {order.orderStatus === "cancelled" && onReopenOrder && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      setReopenReason("");
+                      setReopenModalOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-emerald-700 hover:bg-emerald-50 cursor-pointer font-bold"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 text-emerald-600" />
+                    Reopen Cancelled Order
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!order.bookingEligibility.ok && !activeShipment}
+                  onClick={() => {
+                    setActionsMenuOpen(false);
+                    onOpenShipment(orderStub);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 disabled:opacity-40 cursor-pointer"
+                >
+                  <Truck className="h-3.5 w-3.5 text-purple-600" />
+                  {activeShipment ? "View Shipment / Consignment" : "Create Steadfast Shipment"}
+                </button>
+
+                {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      void onReconcileSslcommerz(order.orderNumber);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-blue-700 hover:bg-blue-50 cursor-pointer"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
+                    Verify SSLCOMMERZ
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionsMenuOpen(false);
+                    printCourierLabel(orderStub, activeShipment);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
+                >
+                  <Printer className="h-3.5 w-3.5 text-gray-400" />
+                  Print Packing Slip
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActionsMenuOpen(false);
+                    onCopy(order.orderNumber, "Order number");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
+                >
+                  <Copy className="h-3.5 w-3.5 text-gray-400" />
+                  Copy Order #
+                </button>
+
+                {allowed.includes("cancelled") && (
+                  <button
+                    type="button"
+                    disabled={Boolean(
+                      activeShipment &&
+                        ["in_transit", "out_for_delivery", "picked_up"].includes(
+                          activeShipment.status
+                        )
+                    )}
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      setConfirmReason("");
+                      setConfirmAction({
+                        status: "cancelled",
+                        title: "Cancel Order?",
+                        message:
+                          "Cancelled orders are locked and can only be restored via governed Reopen Order.",
+                      });
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-50 cursor-pointer border-t border-stone-100 disabled:opacity-40"
+                  >
+                    <XCircle className="h-3.5 w-3.5 text-rose-500" />
+                    Cancel Order
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => printCourierLabel(orderStub, activeShipment)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-gray-700 hover:bg-stone-50 hover:text-purple-700 transition shadow-2xs cursor-pointer"
+          >
+            <Printer className="h-4 w-4 text-gray-500" />
+            <span>Print Slip</span>
+          </button>
+
+          {/* More Actions Dropdown */}
+          <div className="relative" ref={moreMenuRef}>
+            <button
+              type="button"
+              onClick={() => setMoreMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-gray-700 hover:bg-stone-50 hover:text-purple-700 transition shadow-2xs cursor-pointer"
+            >
+              <span>More</span>
+              <MoreVertical className="h-4 w-4 text-gray-400" />
+            </button>
+
+            {moreMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 z-30 w-44 rounded-xl border border-stone-200 bg-white p-1.5 shadow-lg space-y-0.5 text-[12px] font-medium animate-in fade-in-0 duration-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreMenuOpen(false);
+                    onCopy(order.orderNumber, "Order number");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 cursor-pointer"
+                >
+                  <Copy className="h-3.5 w-3.5 text-gray-400" />
+                  Copy Order #
+                </button>
+                {allowed.includes("cancelled") && (
+                  <button
+                    type="button"
+                    disabled={Boolean(
+                      activeShipment &&
+                        ["in_transit", "out_for_delivery", "picked_up"].includes(
+                          activeShipment.status
+                        )
+                    )}
+                    onClick={() => {
+                      setMoreMenuOpen(false);
+                      setConfirmReason("");
+                      setConfirmAction({
+                        status: "cancelled",
+                        title: "Cancel Order?",
+                        message:
+                          "Cancelled orders are locked and can only be restored via governed Reopen Order.",
+                      });
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40"
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Cancel Order
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 4 Independent Lifecycles Strip */}
+      {renderLifecycleBadgesStrip()}
+
+      {/* Responsive Two-Column Grid: Left Main (2 cols) & Right Sidebar (1 col) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left Column (Main Content) */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Tab Navigation Capsules */}
+          <div className="flex items-center gap-2 border-b border-stone-200/90 pb-3 overflow-x-auto no-scrollbar">
+            {(["overview", "activity", "payment", "shipment"] as const).map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`rounded-full px-4 py-1.5 text-[12.5px] font-bold capitalize transition cursor-pointer shrink-0 ${
+                    isActive
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : "bg-white text-gray-600 hover:bg-purple-50 hover:text-purple-700 border border-stone-200/80"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+
+          {confirmAction && renderConfirmBanner()}
+
+          {/* TAB 1: OVERVIEW */}
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              {renderOrderProgressStepper()}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {renderCustomerInfoCard()}
+                {renderPricingBreakdownCard()}
+              </div>
+              {renderProductsListCard()}
+            </div>
+          )}
+
+          {/* TAB 2: ACTIVITY — Internal notes & Immutable Audit Trail */}
+          {activeTab === "activity" && (
+            <OrderActivityView
+              order={order}
+              timeline={timeline}
+              busy={busy}
+              onAddNote={onAddNote}
+              isDrawer={false}
+            />
+          )}
+
+          {/* TAB 3: PAYMENT */}
+          {activeTab === "payment" && renderPaymentManagementCard()}
+
+          {/* TAB 4: SHIPMENT */}
+          {activeTab === "shipment" && (
+            <div className="space-y-6">
+              {renderShipmentCard()}
+              {renderCodSettlementCard()}
+            </div>
+          )}
+        </div>
+
+        {/* Right Sidebar (1 column) */}
+        <div className="lg:col-span-1 space-y-5">
+          {renderAvailableNextActionsCard()}
+          {renderOrderFinancialsSidebarCard()}
+          {renderPaymentSummarySidebarCard()}
+          {renderShipmentSummarySidebarCard()}
+          {renderCustomerContactSidebarCard()}
+        </div>
+      </div>
+    </div>
+  );
+}

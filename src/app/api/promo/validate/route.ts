@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCheckoutSettings } from "@/server/checkout-settings";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 /**
  * POST /api/promo/validate { code, subtotal }
  * Validates a promo code against active store discounts.
+ * Rate-limited to prevent brute-force discount code guessing.
  */
 export async function POST(request: NextRequest) {
   try {
+    const ip = clientIp(request);
+    const limit = await rateLimit(`promo-validate:ip:${hashIp(ip)}`, 20, 60);
+    if (!limit.allowed) {
+      return createRateLimitResponse(
+        limit,
+        "Too many promo code attempts. Please wait a minute before trying again."
+      );
+    }
+
     const body = (await request.json().catch(() => ({}))) as { code?: unknown; subtotal?: unknown };
     const code = String(body.code || "").trim().toUpperCase();
     const subtotal = Math.max(0, Number(body.subtotal) || 0);

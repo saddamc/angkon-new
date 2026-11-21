@@ -336,7 +336,11 @@
       },
       {
         "key": "ps_category_image",
-        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792418908/ANGKON/CATEGORIES/ETHNIC_WEAR/DASTAAN/file_nz1gxu.webp"
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp"
+      },
+      {
+        "key": "angkon_category_image",
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp"
       },
       {
         "key": "_angkon_icon",
@@ -348,10 +352,15 @@
       }
     ],
     "image": {
-      "id": 1792418906432,
-      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792418908/ANGKON/CATEGORIES/ETHNIC_WEAR/DASTAAN/file_nz1gxu.webp",
+      "id": 1795155579121,
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp",
       "alt": "Guzel"
-    }
+    },
+    "imageUrl": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp",
+    "imageId": 1795155579121,
+    "imageAlt": "Guzel",
+    "icon": "",
+    "bgTheme": "blue"
   },
   {
     "id": 992,
@@ -370,11 +379,11 @@
       },
       {
         "key": "ps_category_image",
-        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420466/ANGKON/CATEGORIES/ethnic-wear/aiman-aisha/file_dyukly.webp"
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155710/ANGKON/CATEGORIES/ETHNIC_WEAR/AIMAN_AISHA/file_j9wjpo.webp"
       },
       {
         "key": "angkon_category_image",
-        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420466/ANGKON/CATEGORIES/ethnic-wear/aiman-aisha/file_dyukly.webp"
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155710/ANGKON/CATEGORIES/ETHNIC_WEAR/AIMAN_AISHA/file_j9wjpo.webp"
       },
       {
         "key": "_angkon_icon",
@@ -386,10 +395,15 @@
       }
     ],
     "image": {
-      "id": 1792420467044,
-      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420466/ANGKON/CATEGORIES/ethnic-wear/aiman-aisha/file_dyukly.webp",
+      "id": 1795155711267,
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155710/ANGKON/CATEGORIES/ETHNIC_WEAR/AIMAN_AISHA/file_j9wjpo.webp",
       "alt": "Aiman Aisha"
-    }
+    },
+    "imageUrl": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155710/ANGKON/CATEGORIES/ETHNIC_WEAR/AIMAN_AISHA/file_j9wjpo.webp",
+    "imageId": 1795155711267,
+    "imageAlt": "Aiman Aisha",
+    "icon": "",
+    "bgTheme": "blue"
   },
   {
     "id": 993,
@@ -408,11 +422,11 @@
       },
       {
         "key": "ps_category_image",
-        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420693/ANGKON/CATEGORIES/ethnic-wear/safa-marwa/file_iwgpo5.webp"
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155635/ANGKON/CATEGORIES/ETHNIC_WEAR/SAFA_MARWA/file_c1cxzj.webp"
       },
       {
         "key": "angkon_category_image",
-        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420693/ANGKON/CATEGORIES/ethnic-wear/safa-marwa/file_iwgpo5.webp"
+        "value": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155635/ANGKON/CATEGORIES/ETHNIC_WEAR/SAFA_MARWA/file_c1cxzj.webp"
       },
       {
         "key": "_angkon_icon",
@@ -424,10 +438,15 @@
       }
     ],
     "image": {
-      "id": 1792420693642,
-      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1792420693/ANGKON/CATEGORIES/ethnic-wear/safa-marwa/file_iwgpo5.webp",
+      "id": 1795155636580,
+      "src": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155635/ANGKON/CATEGORIES/ETHNIC_WEAR/SAFA_MARWA/file_c1cxzj.webp",
       "alt": "Safa Marwa"
-    }
+    },
+    "imageUrl": "https://res.cloudinary.com/drtzgyetn/image/upload/v1795155635/ANGKON/CATEGORIES/ETHNIC_WEAR/SAFA_MARWA/file_c1cxzj.webp",
+    "imageId": 1795155636580,
+    "imageAlt": "Safa Marwa",
+    "icon": "",
+    "bgTheme": "blue"
   },
   {
     "id": 1003,

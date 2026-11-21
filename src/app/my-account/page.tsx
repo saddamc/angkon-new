@@ -1,23 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/tracking";
 import {
   AlertTriangle,
   ArrowRight,
   Calendar,
   CheckCircle2,
   Clock,
+  ExternalLink,
   Eye,
   EyeOff,
+  FileText,
   KeyRound,
   LogOut,
   Mail,
   MailCheck,
+  MapPin,
   Package,
   Phone,
+  Printer,
   ShieldCheck,
+  ShoppingBag,
+  Truck,
   User as UserIcon,
+  X,
+  CreditCard,
+  Sparkles,
 } from "lucide-react";
 
 interface UserProfile {
@@ -31,15 +42,45 @@ interface UserProfile {
   addresses?: Array<{ fullName: string; phone: string; address: string; city: string; district: string }>;
 }
 
+interface OrderItem {
+  productId: number;
+  slug?: string;
+  name: string;
+  price: number;
+  quantity: number;
+  size?: string;
+  color?: string;
+  image?: string;
+}
+
 interface OrderSummary {
+  _id?: string;
   orderNumber: string;
+  subtotal?: number;
   total: number;
   shippingFee: number;
+  discount?: number;
+  promoCode?: string;
   orderStatus: string;
   paymentMethod: string;
+  paymentStatus?: string;
+  paidAmount?: number;
+  paidAt?: string;
+  courier?: string;
+  shipmentStatus?: string;
+  trackingCode?: string;
+  consignmentId?: string;
   createdAt: string;
-  items: { productId: number; name: string; price: number; quantity: number; size?: string }[];
-  customer: { fullName: string; phone: string; address: string; district: string };
+  items: OrderItem[];
+  customer: {
+    fullName: string;
+    email?: string;
+    phone: string;
+    address: string;
+    city?: string;
+    district: string;
+    postalCode?: string;
+  };
 }
 
 type Notice = { text: string; type: "error" | "success" | "info" } | null;
@@ -52,22 +93,22 @@ const VERIFY_NOTICES: Record<string, Notice> = {
 
 const PASSWORD_HINT = "At least 8 characters, with a letter and a number";
 
-/* ── Small shared pieces ─────────────────────────────────────────────── */
+/* ── UI Helpers ──────────────────────────────────────────────────────── */
 
 const inputClass =
-  "w-full rounded-xl border border-[#530911] bg-[#230407] px-4 py-3 text-sm text-white placeholder-[#7a6550] focus:border-[#E1B76F] focus:outline-none";
+  "w-full rounded-xl border border-[#530911] bg-[#1a0306] px-4 py-3 text-sm text-white placeholder-stone-400 focus:border-[#E1B76F] focus:ring-1 focus:ring-[#E1B76F]/50 focus:outline-none transition shadow-inner";
 const primaryButton =
-  "w-full rounded-xl bg-[#E1B76F] py-3.5 text-xs font-black uppercase tracking-wider text-[#530911] hover:bg-[#edd19b] transition shadow-md disabled:opacity-50";
+  "w-full rounded-xl bg-gradient-to-r from-[#E1B76F] to-[#edd19b] py-3.5 text-xs font-black uppercase tracking-wider text-[#240407] hover:brightness-105 active:scale-[0.99] transition shadow-lg disabled:opacity-50 cursor-pointer";
 
 function NoticeBanner({ notice }: { notice: Notice }) {
   if (!notice) return null;
   const styles = {
-    success: "border-green-500/50 bg-green-950/40 text-green-300",
-    error: "border-red-500/50 bg-red-950/40 text-red-300",
-    info: "border-[#E1B76F]/40 bg-[#3b050b] text-white/90",
+    success: "border-green-500/50 bg-green-950/70 text-green-200",
+    error: "border-red-500/50 bg-red-950/70 text-red-200",
+    info: "border-[#E1B76F]/40 bg-[#3b050b] text-[#E1B76F]",
   }[notice.type];
   return (
-    <div role="status" className={`rounded-xl border p-4 text-center text-sm font-semibold ${styles}`}>
+    <div role="status" className={`rounded-xl border p-4 text-center text-sm font-semibold shadow-md ${styles}`}>
       {notice.text}
     </div>
   );
@@ -99,7 +140,7 @@ function PasswordInput({
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        className="absolute right-3 top-3.5 text-[#7a6550] hover:text-[#E1B76F]"
+        className="absolute right-3 top-3.5 text-stone-400 hover:text-[#E1B76F] transition cursor-pointer"
         aria-label={show ? "Hide password" : "Show password"}
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -110,7 +151,7 @@ function PasswordInput({
 
 function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
   return (
-    <label className="block text-xs font-bold uppercase tracking-wider text-white mb-1.5">
+    <label className="block text-xs font-bold uppercase tracking-wider text-stone-200 mb-1.5">
       {children} {required && <span className="text-red-400">*</span>}
     </label>
   );
@@ -126,15 +167,238 @@ async function postJson(url: string, body?: unknown) {
   return { ok: res.ok, data };
 }
 
-/* ── Page ────────────────────────────────────────────────────────────── */
+/* ── Interactive Official Printable Invoice Modal ────────────────────── */
+
+function InvoiceModal({
+  order,
+  onClose,
+}: {
+  order: OrderSummary;
+  onClose: () => void;
+}) {
+  const isPaid = order.paymentStatus === "paid" || (order.paidAmount && order.paidAmount >= order.total);
+  const paidAmount = order.paidAmount ?? (isPaid ? order.total : 0);
+  const balanceDue = Math.max(0, order.total - paidAmount);
+  const subtotal = order.subtotal ?? (order.total - (order.shippingFee || 0) + (order.discount || 0));
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+      {/* Modal Card */}
+      <div className="relative w-full max-w-3xl rounded-2xl bg-[#220407] border border-[#E1B76F]/40 shadow-2xl overflow-hidden my-auto">
+        {/* Modal Top Control Bar (Hidden on print) */}
+        <div className="flex items-center justify-between px-6 py-4 bg-[#2f060c] border-b border-[#E1B76F]/30 no-print">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-[#E1B76F]" />
+            <span className="text-xs font-black uppercase tracking-wider text-white">
+              Official Tax Invoice & Receipt
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#E1B76F] px-3.5 py-1.5 text-xs font-black uppercase text-[#240407] hover:bg-[#edd19b] transition shadow-md cursor-pointer"
+            >
+              <Printer className="h-3.5 w-3.5" /> Print Invoice
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-stone-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              aria-label="Close invoice"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Printable Invoice Sheet Container */}
+        <div
+          id="angkon-printable-invoice"
+          className="p-6 sm:p-8 bg-[#1f0306] text-stone-200 overflow-y-auto max-h-[82vh]"
+        >
+          {/* Brand Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 border-b border-[#530911] gap-4">
+            <div>
+              <span className="font-heading text-2xl sm:text-3xl font-black uppercase tracking-tight text-white block">
+                ANGKON
+              </span>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#E1B76F] mt-0.5">
+                Authentic Ethnic Luxury Apparel
+              </p>
+              <p className="text-[11px] text-stone-400 mt-1 leading-relaxed">
+                House 12, Road 4, Banani, Dhaka-1213, Bangladesh<br />
+                Hotline: +880 1829-370699 • contact@angkon.com.bd • angkon.com.bd
+              </p>
+            </div>
+            <div className="text-left sm:text-right">
+              <span className="inline-block px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-[#3b050b] text-[#E1B76F] border border-[#E1B76F]/30">
+                Tax Invoice / Receipt
+              </span>
+              <p className="font-mono text-sm font-bold text-white mt-2">
+                INV-{order.orderNumber}
+              </p>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Date: {new Date(order.createdAt).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}
+              </p>
+            </div>
+          </div>
+
+          {/* Customer & Order Metadata */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-b border-[#530911]">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#E1B76F] mb-1.5">
+                Billed & Shipped To:
+              </p>
+              <p className="text-sm font-bold text-white">{order.customer.fullName}</p>
+              <p className="text-xs text-stone-300 mt-0.5">{order.customer.phone}</p>
+              {order.customer.email && <p className="text-xs text-stone-400">{order.customer.email}</p>}
+              <p className="text-xs text-stone-300 mt-1.5 leading-relaxed">
+                {order.customer.address}, {order.customer.city ? `${order.customer.city}, ` : ""}{order.customer.district}
+              </p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#E1B76F] mb-1.5">
+                Order & Payment Info:
+              </p>
+              <p className="text-xs text-stone-300">
+                <span className="text-stone-400">Order ID:</span> <strong className="text-white font-mono">#{order.orderNumber}</strong>
+              </p>
+              <p className="text-xs text-stone-300 mt-1">
+                <span className="text-stone-400">Payment Method:</span>{" "}
+                <span className="font-semibold text-white">
+                  {order.paymentMethod === "sslcommerz" || order.paymentMethod === "online"
+                    ? "SSLCOMMERZ Online Gateway"
+                    : order.paymentMethod === "cod"
+                    ? "Cash on Delivery"
+                    : order.paymentMethod.toUpperCase()}
+                </span>
+              </p>
+              <p className="text-xs text-stone-300 mt-1">
+                <span className="text-stone-400">Payment Status:</span>{" "}
+                {isPaid ? (
+                  <span className="inline-flex items-center gap-1 font-bold text-green-400">
+                    <CheckCircle2 className="h-3 w-3" /> PAID IN FULL
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 font-bold text-amber-400">
+                    <Clock className="h-3 w-3" /> CASH ON DELIVERY
+                  </span>
+                )}
+              </p>
+              {order.courier && (
+                <p className="text-xs text-stone-300 mt-1">
+                  <span className="text-stone-400">Assigned Courier:</span> {getCourierLabel(order.courier)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Line Items Table */}
+          <div className="py-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#530911] text-stone-400 uppercase tracking-wider text-[10px]">
+                    <th className="py-2.5 font-bold">Item Description</th>
+                    <th className="py-2.5 font-bold text-center">Variant</th>
+                    <th className="py-2.5 font-bold text-center">Qty</th>
+                    <th className="py-2.5 font-bold text-right">Price</th>
+                    <th className="py-2.5 font-bold text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#530911]/60">
+                  {order.items.map((it, idx) => (
+                    <tr key={idx} className="hover:bg-white/[0.02]">
+                      <td className="py-3 pr-2">
+                        <span className="font-semibold text-white block">{it.name}</span>
+                        {it.color && <span className="text-[10px] text-stone-400">Color: {it.color}</span>}
+                      </td>
+                      <td className="py-3 text-center text-stone-300">
+                        {it.size ? <span className="rounded bg-[#33070d] px-2 py-0.5 border border-[#530911] font-mono">{it.size}</span> : "Standard"}
+                      </td>
+                      <td className="py-3 text-center font-bold text-white">{it.quantity}</td>
+                      <td className="py-3 text-right text-stone-300">৳{Number(it.price).toLocaleString("en-BD")}</td>
+                      <td className="py-3 text-right font-bold text-white">
+                        ৳{Number(it.price * it.quantity).toLocaleString("en-BD")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Financial Totals */}
+          <div className="border-t border-[#530911] pt-4 flex flex-col sm:flex-row justify-between items-start gap-4">
+            <div className="text-xs text-stone-400 max-w-sm">
+              <p className="font-semibold text-stone-300">Notice & Terms:</p>
+              <p className="mt-1 leading-relaxed text-[11px]">
+                Goods once sold can be exchanged within 7 days in their original unused condition with tags intact. Please keep this official invoice for all returns and customer care.
+              </p>
+            </div>
+            <div className="w-full sm:w-64 space-y-1.5 text-xs">
+              <div className="flex justify-between text-stone-300">
+                <span>Subtotal:</span>
+                <span>৳{Number(subtotal).toLocaleString("en-BD")}</span>
+              </div>
+              <div className="flex justify-between text-stone-300">
+                <span>Home Delivery:</span>
+                <span>৳{Number(order.shippingFee || 0).toLocaleString("en-BD")}</span>
+              </div>
+              {Boolean(order.discount && order.discount > 0) && (
+                <div className="flex justify-between text-[#E1B76F]">
+                  <span>Discount {order.promoCode ? `(${order.promoCode})` : ""}:</span>
+                  <span>-৳{Number(order.discount).toLocaleString("en-BD")}</span>
+                </div>
+              )}
+              <div className="border-t border-[#530911] pt-2 mt-2 flex justify-between text-sm font-black text-white">
+                <span>Grand Total:</span>
+                <span className="text-[#E1B76F]">৳{Number(order.total).toLocaleString("en-BD")}</span>
+              </div>
+              <div className="flex justify-between text-xs text-stone-300 pt-1">
+                <span>Amount Paid:</span>
+                <span className="font-bold text-green-400">৳{Number(paidAmount).toLocaleString("en-BD")}</span>
+              </div>
+              <div className="flex justify-between text-xs text-stone-300">
+                <span>Balance Due:</span>
+                <span className={`font-bold ${balanceDue > 0 ? "text-amber-400" : "text-stone-400"}`}>
+                  ৳{Number(balanceDue).toLocaleString("en-BD")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Invoice Footer Seal */}
+          <div className="mt-8 pt-4 border-t border-[#530911] flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-400 gap-2">
+            <span>Official Computer-Generated Tax Invoice • ANGKON Luxury Fashion</span>
+            <span className="font-mono text-stone-400">Auth Token: ANG-{order.orderNumber.slice(-8)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Page ───────────────────────────────────────────────────────── */
 
 export default function MyAccountPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "security">("orders");
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<OrderSummary | null>(null);
+
   // The verification link redirects here with ?verify=success|invalid|error.
-  // Only rendered after the session check, so server and client markup match.
   const [notice, setNotice] = useState<Notice>(() => {
     if (typeof window === "undefined") return null;
     const key = new URLSearchParams(window.location.search).get("verify");
@@ -181,7 +445,6 @@ export default function MyAccountPage() {
     if (key && VERIFY_NOTICES[key]) {
       setNotice(VERIFY_NOTICES[key]);
     }
-    // Drop ?verify=… from the address bar so a refresh doesn't repeat the message.
     if (window.location.search.includes("verify=")) {
       window.history.replaceState(null, "", window.location.pathname);
     }
@@ -285,12 +548,19 @@ export default function MyAccountPage() {
       setNotice({ text: "You have been signed out.", type: "info" });
     });
 
+  // Calculate lifetime purchase total
+  const totalSpent = useMemo(() => {
+    return orders
+      .filter((o) => o.orderStatus !== "cancelled")
+      .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+  }, [orders]);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#230407] text-white flex items-center justify-center py-20">
+      <div className="min-h-screen bg-[#200407] text-white flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#E1B76F] border-t-transparent" />
-          <p className="text-xs uppercase tracking-widest text-white/80">Loading your account…</p>
+          <p className="text-xs uppercase tracking-widest text-stone-300 font-semibold">Loading your account…</p>
         </div>
       </div>
     );
@@ -299,22 +569,82 @@ export default function MyAccountPage() {
   /* ── Signed in ─────────────────────────────────────────────────────── */
   if (user) {
     const needsPassword = !user.hasPassword;
+    const userInitials = (user.name || "A")
+      .split(" ")
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+
     return (
-      <div className="min-h-screen bg-[#230407] text-white py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1100px] space-y-6">
+      <div className="min-h-screen bg-gradient-to-b from-[#220407] via-[#1a0306] to-[#120204] text-white py-10 px-4 sm:px-6 lg:px-8">
+        {/* Global Print Stylesheet for Invoices */}
+        <style jsx global>{`
+          @media print {
+            body * {
+              visibility: hidden !important;
+            }
+            #angkon-printable-invoice,
+            #angkon-printable-invoice * {
+              visibility: visible !important;
+            }
+            #angkon-printable-invoice {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 24px !important;
+              background: #ffffff !important;
+              color: #111827 !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+            #angkon-printable-invoice table th {
+              color: #4b5563 !important;
+              border-color: #e5e7eb !important;
+            }
+            #angkon-printable-invoice table td {
+              color: #111827 !important;
+              border-color: #f3f4f6 !important;
+            }
+            #angkon-printable-invoice h1,
+            #angkon-printable-invoice h2,
+            #angkon-printable-invoice h3,
+            #angkon-printable-invoice strong,
+            #angkon-printable-invoice span.text-white {
+              color: #111827 !important;
+            }
+            #angkon-printable-invoice .text-stone-200,
+            #angkon-printable-invoice .text-stone-300,
+            #angkon-printable-invoice .text-stone-400 {
+              color: #4b5563 !important;
+            }
+            #angkon-printable-invoice .text-\\[\\#E1B76F\\] {
+              color: #92400e !important;
+            }
+            #angkon-printable-invoice .border-\\[\\#530911\\] {
+              border-color: #e5e7eb !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+          }
+        `}</style>
+
+        <div className="mx-auto max-w-[1140px] space-y-6">
           <NoticeBanner notice={notice} />
 
-          {/* Email verification */}
+          {/* Email verification reminder banner */}
           {!user.emailVerified && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#E1B76F]/40 bg-[#3b050b] p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-white" />
+            <div className="flex flex-col gap-4 rounded-2xl border border-amber-500/40 bg-[#34070e] p-5 sm:flex-row sm:items-center sm:justify-between shadow-xl">
+              <div className="flex gap-3.5">
+                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
                 <div>
-                  <p className="text-sm font-bold text-white">Please verify your email</p>
-                  <p className="mt-1 text-xs text-white/80">
-                    We sent a link to <strong className="text-white">{user.email}</strong>. Verifying lets you
-                    {needsPassword ? " set a password," : ""} see orders you placed earlier with this email, and
-                    recover your account.
+                  <p className="text-sm font-bold text-white">Email Verification Required</p>
+                  <p className="mt-1 text-xs text-stone-300 leading-relaxed">
+                    We sent a verification link to <strong className="text-white font-mono">{user.email}</strong>.
+                    Verifying enables seamless invoice downloads, password recovery, and order synchronization.
                   </p>
                 </div>
               </div>
@@ -322,25 +652,25 @@ export default function MyAccountPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={submitting}
-                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/40 bg-[#530911] px-5 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#530911] disabled:opacity-50"
+                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/50 bg-[#530911] px-5 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#240407] disabled:opacity-50 cursor-pointer shadow-md"
               >
-                <MailCheck className="h-3.5 w-3.5" /> Resend link
+                <MailCheck className="h-4 w-4" /> Resend verification link
               </button>
             </div>
           )}
 
-          {/* Set a password (account created at checkout, email verified) */}
+          {/* Prompt to set password if account was created at checkout */}
           {needsPassword && user.emailVerified && (
             <form
               onSubmit={handleSetPassword}
-              className="rounded-2xl border border-[#E1B76F]/40 bg-[#3b050b] p-5 sm:p-6"
+              className="rounded-2xl border border-[#E1B76F]/40 bg-[#2d060c] p-5 sm:p-6 shadow-xl"
             >
-              <div className="flex items-start gap-3">
-                <KeyRound className="mt-0.5 h-5 w-5 flex-shrink-0 text-white" />
+              <div className="flex items-start gap-3.5">
+                <KeyRound className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#E1B76F]" />
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-white">Set a password for your account</p>
-                  <p className="mt-1 text-xs text-white/80">
-                    Your account was created with your order. Add a password so you can sign in on any device.
+                  <p className="text-sm font-bold text-white">Secure Your Account With a Password</p>
+                  <p className="mt-1 text-xs text-stone-300">
+                    Your account was generated during checkout. Set a password to easily sign in from any mobile device or desktop.
                   </p>
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <div className="flex-1">
@@ -349,7 +679,7 @@ export default function MyAccountPage() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="rounded-xl bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#530911] transition hover:bg-[#edd19b] disabled:opacity-50"
+                      className="rounded-xl bg-gradient-to-r from-[#E1B76F] to-[#edd19b] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#240407] transition hover:brightness-105 disabled:opacity-50 cursor-pointer shadow-md"
                     >
                       Save password
                     </button>
@@ -359,178 +689,503 @@ export default function MyAccountPage() {
             </form>
           )}
 
-          <div className="rounded-2xl border border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-2xl">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#530911] pb-6 gap-4">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/80">My account</span>
-                <h1 className="font-heading text-2xl sm:text-4xl font-black uppercase text-white mt-1">
-                  Welcome, {user.name}
-                </h1>
-                <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/80">
-                  <span className="font-mono">{user.email}</span>
-                  {user.emailVerified ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-green-900/40 px-2 py-0.5 text-[10px] font-bold uppercase text-green-300">
-                      <ShieldCheck className="h-3 w-3" /> Verified
+          {/* User Profile Header Card */}
+          <div className="rounded-3xl border border-[#E1B76F]/25 bg-[#25050a] p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            {/* Top decorative gradient glow */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[#E1B76F]/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#530911] pb-6 gap-6 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-[#E1B76F] to-[#f4deb3] text-[#240407] font-black text-xl flex items-center justify-center shadow-lg border-2 border-white/20">
+                  {userInitials}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#E1B76F]">
+                      ANGKON Luxury Member
                     </span>
-                  ) : (
-                    <span className="rounded-full bg-[#530911] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                      Not verified
-                    </span>
-                  )}
-                  {user.phone && <span>• {user.phone}</span>}
-                </p>
+                    <Sparkles className="h-3 w-3 text-[#E1B76F]" />
+                  </div>
+                  <h1 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white mt-0.5">
+                    Welcome, {user.name}
+                  </h1>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2.5 text-xs text-stone-300">
+                    <span className="font-mono text-stone-300">{user.email}</span>
+                    {user.emailVerified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-950/70 border border-green-500/40 px-2.5 py-0.5 text-[10px] font-bold uppercase text-green-300">
+                        <ShieldCheck className="h-3 w-3" /> Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-950/70 border border-amber-500/40 px-2.5 py-0.5 text-[10px] font-bold uppercase text-amber-300">
+                        <AlertTriangle className="h-3 w-3" /> Unverified
+                      </span>
+                    )}
+                    {user.phone && <span className="text-stone-400">• {user.phone}</span>}
+                  </div>
+                </div>
               </div>
+
               <button
                 onClick={handleLogout}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[#E1B76F]/30 bg-[#530911] px-5 py-2.5 text-xs font-bold uppercase text-white hover:bg-[#E1B76F] hover:text-[#530911] transition"
+                className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-[#E1B76F]/30 bg-[#3a060f] px-5 py-2.5 text-xs font-bold uppercase text-stone-200 hover:text-white hover:bg-[#E1B76F] hover:text-[#240407] transition shadow-md cursor-pointer"
               >
                 <LogOut className="h-3.5 w-3.5" /> Sign out
               </button>
             </div>
 
-            {/* Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="rounded-xl border border-[#530911] bg-[#230407] p-5">
-                <Package className="h-5 w-5 text-white" />
-                <p className="mt-3 text-2xl font-black text-white">{orders.length}</p>
-                <p className="text-xs uppercase tracking-wider text-white/80">{orders.length === 1 ? "Order" : "Orders"}</p>
+            {/* Quick Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 relative z-10">
+              <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-5 shadow-inner">
+                <div className="flex items-center justify-between text-stone-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-300">Total Orders</span>
+                  <Package className="h-5 w-5 text-[#E1B76F]" />
+                </div>
+                <p className="mt-3 text-3xl font-black text-white">{orders.length}</p>
+                <p className="text-xs text-stone-400 mt-0.5">{orders.length === 1 ? "Order placed" : "Orders placed"}</p>
               </div>
-              <div className="rounded-xl border border-[#530911] bg-[#230407] p-5">
-                <ShieldCheck className="h-5 w-5 text-white" />
-                <p className="mt-3 text-sm font-bold text-white">Delivery address</p>
-                <p className="mt-1 text-xs text-white/80">
+
+              <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-5 shadow-inner">
+                <div className="flex items-center justify-between text-stone-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-300">Total Fashion Purchased</span>
+                  <ShoppingBag className="h-5 w-5 text-[#E1B76F]" />
+                </div>
+                <p className="mt-3 text-3xl font-black text-[#E1B76F]">৳{totalSpent.toLocaleString("en-BD")}</p>
+                <p className="text-xs text-stone-400 mt-0.5">Across confirmed orders</p>
+              </div>
+
+              <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-5 shadow-inner">
+                <div className="flex items-center justify-between text-stone-400">
+                  <span className="text-xs font-bold uppercase tracking-wider text-stone-300">Primary Delivery Address</span>
+                  <MapPin className="h-5 w-5 text-[#E1B76F]" />
+                </div>
+                <p className="mt-3 text-sm font-bold text-white truncate">
                   {user.addresses && user.addresses.length > 0
-                    ? `${user.addresses[0].address}, ${user.addresses[0].district}`
-                    : "Saved with your first order."}
+                    ? user.addresses[0].address
+                    : orders.length > 0
+                    ? orders[0].customer.address
+                    : "No address recorded yet"}
+                </p>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  {user.addresses && user.addresses.length > 0
+                    ? `${user.addresses[0].city ? `${user.addresses[0].city}, ` : ""}${user.addresses[0].district}`
+                    : orders.length > 0
+                    ? orders[0].customer.district
+                    : "Saved with your first order"}
                 </p>
               </div>
-              <div className="rounded-xl border border-[#530911] bg-[#230407] p-5">
-                <KeyRound className="h-5 w-5 text-white" />
-                <p className="mt-3 text-sm font-bold text-white">Password</p>
-                {user.hasPassword ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowChangePassword((v) => !v)}
-                    className="mt-1 text-xs font-bold text-[#E1B76F] underline underline-offset-4 hover:text-white"
-                  >
-                    {showChangePassword ? "Cancel" : "Change password"}
-                  </button>
+            </div>
+
+            {/* Portal Tab Navigation */}
+            <div className="flex items-center gap-2 border-b border-[#530911] mt-8 pt-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("orders")}
+                className={`pb-3.5 px-4 text-xs font-bold uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2 ${
+                  activeTab === "orders"
+                    ? "border-[#E1B76F] text-[#E1B76F]"
+                    : "border-transparent text-stone-400 hover:text-white"
+                }`}
+              >
+                <Package className="h-4 w-4" />
+                Orders & Invoices
+                <span className="ml-1 rounded-full bg-[#3d0710] px-2 py-0.5 text-[10px] text-stone-300">
+                  {orders.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("addresses")}
+                className={`pb-3.5 px-4 text-xs font-bold uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2 ${
+                  activeTab === "addresses"
+                    ? "border-[#E1B76F] text-[#E1B76F]"
+                    : "border-transparent text-stone-400 hover:text-white"
+                }`}
+              >
+                <MapPin className="h-4 w-4" />
+                Delivery Address
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("security")}
+                className={`pb-3.5 px-4 text-xs font-bold uppercase tracking-wider transition border-b-2 cursor-pointer flex items-center gap-2 ${
+                  activeTab === "security"
+                    ? "border-[#E1B76F] text-[#E1B76F]"
+                    : "border-transparent text-stone-400 hover:text-white"
+                }`}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Security & Access
+              </button>
+            </div>
+
+            {/* Tab 1: Orders & Invoices Content */}
+            {activeTab === "orders" && (
+              <div className="mt-6">
+                {orders.length === 0 ? (
+                  <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-10 text-center shadow-inner">
+                    <Clock className="h-12 w-12 text-stone-500 mx-auto mb-3" />
+                    <p className="text-base font-bold text-white">No Orders Placed Yet</p>
+                    <p className="text-xs text-stone-300 mt-1.5 max-w-md mx-auto leading-relaxed">
+                      {user.emailVerified
+                        ? "Any order placed using this account or your verified email will automatically appear here with complete tracking and downloadable official tax invoices."
+                        : "Orders placed with this account appear here. Prior orders using your email address will synchronize once verified."}
+                    </p>
+                    <Link
+                      href="/products"
+                      className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#E1B76F] to-[#edd19b] px-6 py-3 text-xs font-black uppercase text-[#240407] hover:brightness-105 transition shadow-lg cursor-pointer"
+                    >
+                      Explore Luxury Collection <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
                 ) : (
-                  <p className="mt-1 text-xs text-white/80">
-                    {user.emailVerified ? "Not set yet — use the form above." : "Verify your email to set one."}
-                  </p>
+                  <div className="space-y-4">
+                    {orders.map((ord) => {
+                      const isOrderPaid =
+                        ord.paymentStatus === "paid" ||
+                        (ord.paidAmount && ord.paidAmount >= ord.total);
+
+                      return (
+                        <div
+                          key={ord.orderNumber}
+                          className="rounded-2xl border border-[#530911] bg-[#1a0306] p-5 sm:p-6 transition hover:border-[#E1B76F]/50 shadow-lg"
+                        >
+                          {/* Order Header Row */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#530911]/60 pb-4">
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              <span className="font-mono text-sm font-bold text-white">
+                                #{ord.orderNumber}
+                              </span>
+                              <span className="text-xs text-stone-400 inline-flex items-center gap-1">
+                                <Calendar className="h-3.5 w-3.5 text-stone-400" />
+                                {new Date(ord.createdAt).toLocaleDateString("en-BD", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                              {ord.paymentMethod === "sslcommerz" || ord.paymentMethod === "online" ? (
+                                <span className="rounded-full bg-[#3d0710] border border-[#E1B76F]/30 px-2.5 py-0.5 text-[10px] font-bold uppercase text-[#E1B76F]">
+                                  SSLCOMMERZ Online
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-[#2a060c] border border-stone-600 px-2.5 py-0.5 text-[10px] font-bold uppercase text-stone-300">
+                                  Cash on Delivery
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3">
+                              {/* Payment Status Pill */}
+                              {isOrderPaid ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-green-950/70 border border-green-500/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-green-300">
+                                  <CheckCircle2 className="h-3 w-3" /> Paid
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-950/70 border border-amber-500/40 px-2.5 py-0.5 text-[11px] font-bold uppercase text-amber-300">
+                                  <Clock className="h-3 w-3" /> COD (Unpaid)
+                                </span>
+                              )}
+
+                              {/* Fulfillment Status Pill */}
+                              <span className="inline-flex items-center gap-1 rounded-full bg-[#3b050b] border border-[#530911] px-3 py-0.5 text-[11px] font-bold uppercase text-stone-200">
+                                {ord.orderStatus}
+                              </span>
+
+                              {/* Total Amount */}
+                              <span className="text-base font-black text-[#E1B76F]">
+                                ৳{Number(ord.total).toLocaleString("en-BD")}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Order Details & Items */}
+                          <div className="pt-4">
+                            <p className="text-xs text-stone-300">
+                              <strong className="text-white">Delivery to:</strong> {ord.customer.fullName} ({ord.customer.phone}) —{" "}
+                              {ord.customer.address}, {ord.customer.district}
+                            </p>
+
+                            {/* Item preview chips */}
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {ord.items.map((it, idx) => (
+                                <div
+                                  key={idx}
+                                  className="inline-flex items-center gap-2 rounded-lg bg-[#240407] border border-[#530911] px-3 py-1.5 text-xs text-stone-200 shadow-inner"
+                                >
+                                  {it.image && (
+                                    <div className="relative h-6 w-6 rounded overflow-hidden flex-shrink-0 bg-stone-800">
+                                      <Image
+                                        src={it.image}
+                                        alt={it.name}
+                                        fill
+                                        sizes="24px"
+                                        className="object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  <span className="font-medium text-white">{it.name}</span>
+                                  {it.size && (
+                                    <span className="text-[10px] font-mono rounded bg-[#38060d] px-1.5 py-0.5 text-[#E1B76F]">
+                                      {it.size}
+                                    </span>
+                                  )}
+                                  <span className="text-stone-400 font-bold">× {it.quantity}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Courier Tracking Strip (if courier assigned) */}
+                            {(ord.courier || ord.trackingCode || ord.consignmentId) && (() => {
+                              const trackUrl = getCourierTrackingUrl(
+                                ord.courier,
+                                ord.trackingCode,
+                                ord.consignmentId
+                              );
+                              const refCode = ord.trackingCode || ord.consignmentId;
+                              return (
+                                <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#E1B76F]/30 bg-[#240407] px-4 py-2.5 text-xs shadow-inner">
+                                  <div className="flex flex-wrap items-center gap-2.5 text-stone-200">
+                                    <Truck className="h-4 w-4 text-[#E1B76F]" />
+                                    <span className="font-bold text-[#E1B76F]">
+                                      {getCourierLabel(ord.courier)}
+                                    </span>
+                                    {ord.shipmentStatus && ord.shipmentStatus !== "none" && (
+                                      <span className="rounded bg-[#530911] px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                                        {ord.shipmentStatus.replace(/_/g, " ")}
+                                      </span>
+                                    )}
+                                    {refCode && (
+                                      <span className="font-mono text-stone-300">
+                                        Tracking: {refCode}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {trackUrl && (
+                                    <a
+                                      href={trackUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 font-bold text-[#E1B76F] hover:underline cursor-pointer"
+                                    >
+                                      Track Parcel <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
+                            {/* Actions: View & Print Official Invoice */}
+                            <div className="mt-4 pt-3 border-t border-[#530911]/60 flex flex-wrap items-center justify-between gap-3">
+                              <span className="text-[11px] text-stone-400">
+                                Official invoice includes tax details, transaction IDs & print view.
+                              </span>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedInvoiceOrder(ord)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#E1B76F]/50 bg-[#2d060c] px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#240407] transition shadow-md cursor-pointer"
+                                >
+                                  <FileText className="h-3.5 w-3.5" /> View & Print Invoice
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            </div>
-
-            {showChangePassword && user.hasPassword && (
-              <form onSubmit={handleSetPassword} className="mt-4 grid gap-3 rounded-xl border border-[#530911] bg-[#230407] p-5 sm:grid-cols-[1fr_1fr_auto]">
-                <PasswordInput value={currentPass} onChange={setCurrentPass} placeholder="Current password" autoComplete="current-password" />
-                <PasswordInput value={newPass} onChange={setNewPass} placeholder={PASSWORD_HINT} autoComplete="new-password" />
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-xl bg-[#E1B76F] px-6 py-3 text-xs font-black uppercase tracking-wider text-[#530911] transition hover:bg-[#edd19b] disabled:opacity-50"
-                >
-                  Update
-                </button>
-              </form>
             )}
 
-            {/* Orders */}
-            <div className="mt-10">
-              <h2 className="font-heading text-xl font-bold uppercase text-white mb-4 pb-2 border-b border-[#530911] flex items-center gap-2">
-                <Package className="h-5 w-5" /> Your orders
-              </h2>
-
-              {orders.length === 0 ? (
-                <div className="rounded-xl border border-[#530911] bg-[#230407] p-8 text-center">
-                  <Clock className="h-10 w-10 text-white/50 mx-auto mb-3" />
-                  <p className="text-sm font-semibold text-white">No orders yet.</p>
-                  <p className="text-xs text-white/80 mt-1 max-w-sm mx-auto">
-                    {user.emailVerified
-                      ? "Orders you place with this account or email will appear here."
-                      : "Orders placed with this account appear here. Earlier orders using this email show up once it's verified."}
-                  </p>
-                  <Link
-                    href="/products"
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#E1B76F] px-6 py-2.5 text-xs font-black uppercase text-[#530911] hover:bg-[#edd19b] transition"
-                  >
-                    Start shopping <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders.map((ord) => (
-                    <div key={ord.orderNumber} className="rounded-xl border border-[#530911] bg-[#230407] p-5 transition hover:border-[#E1B76F]/50">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#530911]/50 pb-3">
-                        <div>
-                          <span className="font-mono text-sm font-bold text-white">#{ord.orderNumber}</span>
-                          <span className="text-xs text-white/80 ml-3 inline-flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(ord.createdAt).toLocaleDateString("en-BD", { year: "numeric", month: "short", day: "numeric" })}
-                          </span>
+            {/* Tab 2: Delivery Address Content */}
+            {activeTab === "addresses" && (
+              <div className="mt-6">
+                <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-6 shadow-inner">
+                  <div className="flex items-center justify-between border-b border-[#530911] pb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[#E1B76F]" /> Primary Delivery Address
+                    </span>
+                    <span className="rounded-full bg-green-950/80 border border-green-500/40 px-2 py-0.5 text-[10px] font-bold text-green-300 uppercase">
+                      Default
+                    </span>
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm">
+                    {user.addresses && user.addresses.length > 0 ? (
+                      user.addresses.map((addr, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <p className="font-bold text-white">{addr.fullName || user.name}</p>
+                          <p className="text-xs text-stone-300">{addr.phone || user.phone}</p>
+                          <p className="text-xs text-stone-300">
+                            {addr.address}, {addr.city ? `${addr.city}, ` : ""}{addr.district}
+                          </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[#530911] px-3 py-0.5 text-xs font-semibold uppercase text-white">
-                            <CheckCircle2 className="h-3 w-3" /> {ord.orderStatus}
-                          </span>
-                          <span className="text-sm font-black text-white">৳{Number(ord.total).toLocaleString("en-BD")}</span>
-                        </div>
-                      </div>
-                      <div className="pt-3">
-                        <p className="text-xs text-white/80">
-                          <strong className="text-white">Delivery to:</strong> {ord.customer.fullName} ({ord.customer.phone}) — {ord.customer.address}, {ord.customer.district}
+                      ))
+                    ) : orders.length > 0 ? (
+                      <div className="space-y-1">
+                        <p className="font-bold text-white">{orders[0].customer.fullName}</p>
+                        <p className="text-xs text-stone-300">{orders[0].customer.phone}</p>
+                        <p className="text-xs text-stone-300">
+                          {orders[0].customer.address}, {orders[0].customer.district}
                         </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {ord.items.map((it, idx) => (
-                            <span key={idx} className="text-xs bg-[#240403] border border-[#530911] text-white px-2.5 py-1 rounded-md">
-                              {it.name} {it.size ? `(${it.size})` : ""} × {it.quantity}
-                            </span>
-                          ))}
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ) : (
+                      <p className="text-xs text-stone-400">
+                        No delivery address saved yet. Your shipping address will be safely saved when you complete your first order.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Tab 3: Security & Access Content */}
+            {activeTab === "security" && (
+              <div className="mt-6 space-y-6">
+                {/* Change Password Card */}
+                <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-6 shadow-inner">
+                  <div className="flex items-center justify-between border-b border-[#530911] pb-3">
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                        <KeyRound className="h-4 w-4 text-[#E1B76F]" /> Account Password
+                      </h3>
+                      <p className="text-xs text-stone-400 mt-1">
+                        Ensure your account uses a secure password of at least 8 characters.
+                      </p>
+                    </div>
+                    {user.hasPassword && (
+                      <button
+                        type="button"
+                        onClick={() => setShowChangePassword((v) => !v)}
+                        className="text-xs font-bold text-[#E1B76F] hover:underline cursor-pointer"
+                      >
+                        {showChangePassword ? "Cancel" : "Change password"}
+                      </button>
+                    )}
+                  </div>
+
+                  {(!user.hasPassword || showChangePassword) && (
+                    <form onSubmit={handleSetPassword} className="mt-5 space-y-4 max-w-lg">
+                      {user.hasPassword && (
+                        <div>
+                          <Label required>Current Password</Label>
+                          <PasswordInput
+                            value={currentPass}
+                            onChange={setCurrentPass}
+                            placeholder="Enter current password"
+                            autoComplete="current-password"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <Label required>New Password</Label>
+                        <PasswordInput
+                          value={newPass}
+                          onChange={setNewPass}
+                          placeholder={PASSWORD_HINT}
+                          autoComplete="new-password"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="rounded-xl bg-gradient-to-r from-[#E1B76F] to-[#edd19b] px-6 py-2.5 text-xs font-black uppercase tracking-wider text-[#240407] hover:brightness-105 transition shadow-md disabled:opacity-50 cursor-pointer"
+                      >
+                        {submitting ? "Saving…" : "Update Password"}
+                      </button>
+                    </form>
+                  )}
+                </div>
+
+                {/* Account Verification & Recovery */}
+                <div className="rounded-2xl border border-[#530911] bg-[#1a0306] p-6 shadow-inner">
+                  <div className="flex items-center justify-between border-b border-[#530911] pb-3">
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-[#E1B76F]" /> Email Verification Status
+                      </h3>
+                      <p className="text-xs text-stone-400 mt-1">
+                        Registered email: <span className="font-mono text-white">{user.email}</span>
+                      </p>
+                    </div>
+                    {user.emailVerified ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-green-950/70 border border-green-500/40 px-3 py-1 text-xs font-bold uppercase text-green-300">
+                        <ShieldCheck className="h-3.5 w-3.5" /> Verified
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResend}
+                        disabled={submitting}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#E1B76F]/40 bg-[#3a060f] px-3.5 py-1.5 text-xs font-bold text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#240407] transition cursor-pointer"
+                      >
+                        <MailCheck className="h-3.5 w-3.5" /> Resend verification link
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Official Printable Invoice Modal */}
+        {selectedInvoiceOrder && (
+          <InvoiceModal
+            order={selectedInvoiceOrder}
+            onClose={() => setSelectedInvoiceOrder(null)}
+          />
+        )}
       </div>
     );
   }
 
   /* ── Signed out ────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-[#230407] text-white">
-      <div className="border-b border-[#530911] bg-[#240403] py-12 px-4 text-center">
-        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/80">ANGKON</span>
-        <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">My Account</h1>
-        <p className="mt-2 text-xs sm:text-sm text-white/80 max-w-md mx-auto">
-          Sign in to track your orders and check out faster.
+    <div className="min-h-screen bg-gradient-to-b from-[#220407] via-[#1a0306] to-[#120204] text-white py-12 px-4 sm:px-6 lg:px-8">
+      {/* Page Header */}
+      <div className="text-center max-w-xl mx-auto mb-8">
+        <span className="text-[11px] font-black uppercase tracking-[0.3em] text-[#E1B76F] block">
+          ANGKON • LUXURY ETHNIC COUTURE
+        </span>
+        <h1 className="mt-2 font-heading text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">
+          My Account
+        </h1>
+        <p className="mt-2 text-xs sm:text-sm text-stone-300 max-w-md mx-auto leading-relaxed">
+          Sign in to track orders in real-time, view official invoices, and manage your luxury wardrobe.
         </p>
       </div>
 
-      <div className="container mx-auto max-w-[1100px] px-4 pt-6">
+      <div className="mx-auto max-w-md mb-6">
         <NoticeBanner notice={notice} />
       </div>
 
-      <div className="container mx-auto max-w-[1100px] px-4 py-10 lg:px-8">
+      <div className="mx-auto max-w-md">
         {mode === "forgot" ? (
-          <form onSubmit={handleForgot} className="mx-auto max-w-md space-y-5 rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-xl">
-            <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#530911]">Reset password</h2>
-            <p className="text-xs text-white/80">
-              Enter your email and we&apos;ll send a link to set a new password. This also works if your account was created
-              with an order and has no password yet.
+          <form
+            onSubmit={handleForgot}
+            className="space-y-5 rounded-3xl border border-[#E1B76F]/25 bg-[#25050a] p-6 sm:p-8 shadow-2xl animate-in fade-in duration-200"
+          >
+            <h2 className="font-heading text-2xl font-black uppercase text-white pb-3 border-b border-[#530911]">
+              Reset password
+            </h2>
+            <p className="text-xs text-stone-300 leading-relaxed">
+              Enter your email address and we&apos;ll send an official link to securely reset your password. This also works if your account was created with an order.
             </p>
             <div>
               <Label required>Email address</Label>
               <div className="relative">
-                <input type="email" required value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
-                <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                <input
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  className={inputClass}
+                />
+                <Mail className="absolute right-3 top-3.5 h-4 w-4 text-stone-400" />
               </div>
             </div>
             <button type="submit" disabled={submitting} className={primaryButton}>
@@ -542,25 +1197,25 @@ export default function MyAccountPage() {
                 setMode("auth");
                 setAuthTab("login");
               }}
-              className="w-full text-xs font-bold text-[#E1B76F] hover:underline"
+              className="w-full text-xs font-bold text-[#E1B76F] hover:underline cursor-pointer pt-2"
             >
               ← Back to sign in
             </button>
           </form>
         ) : (
-          <div className="mx-auto max-w-md">
+          <div className="rounded-3xl border border-[#E1B76F]/25 bg-[#25050a] p-6 sm:p-8 shadow-2xl">
             {/* Tab switcher: Toggle between Sign in & Create account */}
-            <div className="flex rounded-2xl bg-[#230407] p-1.5 border border-[#530911] mb-6 shadow-inner">
+            <div className="flex rounded-2xl bg-[#1a0306] p-1.5 border border-[#530911] mb-6 shadow-inner">
               <button
                 type="button"
                 onClick={() => {
                   setAuthTab("login");
                   setNotice(null);
                 }}
-                className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition ${
+                className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer ${
                   authTab === "login"
-                    ? "bg-[#E1B76F] text-[#530911] shadow-md"
-                    : "text-white/70 hover:text-white"
+                    ? "bg-gradient-to-r from-[#E1B76F] to-[#edd19b] text-[#240407] shadow-md"
+                    : "text-stone-300 hover:text-white"
                 }`}
               >
                 Sign In
@@ -571,10 +1226,10 @@ export default function MyAccountPage() {
                   setAuthTab("register");
                   setNotice(null);
                 }}
-                className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition ${
+                className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer ${
                   authTab === "register"
-                    ? "bg-[#E1B76F] text-[#530911] shadow-md"
-                    : "text-white/70 hover:text-white"
+                    ? "bg-gradient-to-r from-[#E1B76F] to-[#edd19b] text-[#240407] shadow-md"
+                    : "text-stone-300 hover:text-white"
                 }`}
               >
                 Create Account
@@ -583,20 +1238,35 @@ export default function MyAccountPage() {
 
             {authTab === "login" ? (
               /* Sign in Form */
-              <form onSubmit={handleLogin} className="space-y-5 rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
-                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#530911]">Sign in</h2>
+              <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in duration-200">
+                <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#530911]">
+                  Sign in
+                </h2>
                 <div>
                   <Label required>Email address</Label>
                   <div className="relative">
-                    <input type="email" required value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
-                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      autoComplete="email"
+                      className={inputClass}
+                    />
+                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-stone-400" />
                   </div>
                 </div>
                 <div>
                   <Label required>Password</Label>
-                  <PasswordInput value={loginPass} onChange={setLoginPass} placeholder="••••••••" autoComplete="current-password" />
+                  <PasswordInput
+                    value={loginPass}
+                    onChange={setLoginPass}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                  />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -604,7 +1274,7 @@ export default function MyAccountPage() {
                       setNotice(null);
                       setMode("forgot");
                     }}
-                    className="text-xs font-bold text-[#E1B76F] hover:underline"
+                    className="text-xs font-bold text-[#E1B76F] hover:underline cursor-pointer"
                   >
                     Forgot password?
                   </button>
@@ -612,7 +1282,7 @@ export default function MyAccountPage() {
                 <button type="submit" disabled={submitting} className={primaryButton}>
                   {submitting ? "Signing in…" : "Sign in"}
                 </button>
-                <div className="pt-4 border-t border-[#530911] text-center text-xs text-white/70">
+                <div className="pt-4 border-t border-[#530911] text-center text-xs text-stone-300">
                   Don&apos;t have an account yet?{" "}
                   <button
                     type="button"
@@ -628,41 +1298,73 @@ export default function MyAccountPage() {
               </form>
             ) : (
               /* Register Form */
-              <form onSubmit={handleRegister} className="space-y-4 rounded-2xl border-2 border-[#530911] bg-[#240403] p-6 sm:p-8 shadow-xl animate-in fade-in duration-200">
-                <h2 className="font-heading text-2xl sm:text-3xl font-black uppercase text-white pb-2 border-b border-[#530911]">Create account</h2>
+              <form onSubmit={handleRegister} className="space-y-4 animate-in fade-in duration-200">
+                <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#530911]">
+                  Create account
+                </h2>
                 <div>
                   <Label required>Full name</Label>
                   <div className="relative">
-                    <input type="text" required value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="Your full name" autoComplete="name" className={inputClass} />
-                    <UserIcon className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                    <input
+                      type="text"
+                      required
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      placeholder="Your full name"
+                      autoComplete="name"
+                      className={inputClass}
+                    />
+                    <UserIcon className="absolute right-3 top-3.5 h-4 w-4 text-stone-400" />
                   </div>
                 </div>
                 <div>
                   <Label required>Email address</Label>
                   <div className="relative">
-                    <input type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={inputClass} />
-                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                    <input
+                      type="email"
+                      required
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      autoComplete="email"
+                      className={inputClass}
+                    />
+                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-stone-400" />
                   </div>
                 </div>
                 <div>
                   <Label>Phone number</Label>
                   <div className="relative">
-                    <input type="tel" value={regPhone} onChange={(e) => setRegPhone(e.target.value)} placeholder="017XXXXXXXX" autoComplete="tel" className={inputClass} />
-                    <Phone className="absolute right-3 top-3.5 h-4 w-4 text-[#7a6550]" />
+                    <input
+                      type="tel"
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      placeholder="017XXXXXXXX"
+                      autoComplete="tel"
+                      className={inputClass}
+                    />
+                    <Phone className="absolute right-3 top-3.5 h-4 w-4 text-stone-400" />
                   </div>
                 </div>
                 <div>
                   <Label required>Password</Label>
-                  <PasswordInput value={regPass} onChange={setRegPass} placeholder={PASSWORD_HINT} autoComplete="new-password" />
+                  <PasswordInput
+                    value={regPass}
+                    onChange={setRegPass}
+                    placeholder={PASSWORD_HINT}
+                    autoComplete="new-password"
+                  />
                 </div>
-                <p className="text-[11px] text-white/80 leading-relaxed">
+                <p className="text-[11px] text-stone-300 leading-relaxed">
                   We&apos;ll email you a link to verify your address. By creating an account you agree to our{" "}
-                  <Link href="/privacy-policy" className="text-[#E1B76F] underline">Privacy Policy</Link>.
+                  <Link href="/privacy-policy" className="text-[#E1B76F] underline">
+                    Privacy Policy
+                  </Link>.
                 </p>
                 <button type="submit" disabled={submitting} className={primaryButton}>
                   {submitting ? "Creating account…" : "Create account"}
                 </button>
-                <div className="pt-4 border-t border-[#530911] text-center text-xs text-white/70">
+                <div className="pt-4 border-t border-[#530911] text-center text-xs text-stone-300">
                   Already have an account?{" "}
                   <button
                     type="button"

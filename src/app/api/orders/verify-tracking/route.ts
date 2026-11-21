@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
-import { verifyPaymentTrackingToken } from "@/server/sslcommerz";
+import { isSslcommerzLive, verifyPaymentTrackingToken } from "@/server/sslcommerz";
 import { getSessionUserId } from "@/server/auth";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +62,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       verified: true,
+      // Sandbox payments must not emit a real browser Purchase event.
+      sandbox: !isSslcommerzLive(),
       orderNumber: order.orderNumber,
       eventId: `order_${order.orderNumber}`,
       value: order.total,

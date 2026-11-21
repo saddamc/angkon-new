@@ -5,10 +5,7 @@ import {
   validateTenantAccess,
   DEFAULT_TENANT_ID,
 } from "./tenant";
-
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
+import { getJwtSecret } from "@/lib/env";
 
 /** Constant-time string comparison to prevent timing side-channel attacks */
 function timingSafeEqualStr(a: string, b: string): boolean {
@@ -55,10 +52,11 @@ export async function verifyAdminToken(
     if (parts.length !== 3) return { valid: false };
     const [header, body, sig] = parts;
     const data = `${header}.${body}`;
+    const secret = getJwtSecret();
 
     const key = await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(JWT_SECRET),
+      new TextEncoder().encode(secret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"]
@@ -113,23 +111,17 @@ export interface AdminSessionAuthResult {
  * 2. Client requesting an unauthorized store (e.g. forged header or query param) -> HTTP 403 Forbidden.
  * 3. Never silently falls back or allows unverified cross-tenant data access.
  */
-export async function requireAdminSession(
+/**
+ * Core administrator session guard: token validity + tenant membership.
+ *
+ * Use this for payment/courier/admin-order routes. It is intentionally NOT
+ * coupled to the Meta feature flag; `requireAdminSession` adds that flag for
+ * the Meta routes that need it.
+ */
+export async function requireAdminSessionCore(
   request: NextRequest | Request
 ): Promise<AdminSessionAuthResult> {
-  // 1. Feature Flag Check
-  if (!isMetaSuiteEnabled()) {
-    return {
-      authorized: false,
-      tenantId: DEFAULT_TENANT_ID,
-      authorizedTenants: [DEFAULT_TENANT_ID],
-      response: NextResponse.json(
-        { error: "Meta Marketing Suite is disabled in this environment." },
-        { status: 403 }
-      ),
-    };
-  }
-
-  // 2. Token Extraction from HttpOnly Cookie or Authorization Header
+  // 1. Token Extraction from HttpOnly Cookie or Authorization Header
   let token: string | undefined;
 
   if ("cookies" in request && typeof request.cookies?.get === "function") {
@@ -188,6 +180,55 @@ export async function requireAdminSession(
     tenantId: tenantValidation.activeTenantId,
     authorizedTenants,
   };
+}
+
+/**
+ * Administrator guard for the Meta routes: the core session check plus the
+ * Meta-suite feature flag. Payment/courier/orders routes must use
+ * `requireAdminSessionCore` instead so an unrelated Meta switch cannot disable
+ * checkout operations.
+ */
+export async function requireAdminSession(
+  request: NextRequest | Request
+): Promise<AdminSessionAuthResult> {
+  if (!isMetaSuiteEnabled()) {
+    return {
+      authorized: false,
+      tenantId: DEFAULT_TENANT_ID,
+      authorizedTenants: [DEFAULT_TENANT_ID],
+      response: NextResponse.json(
+        { error: "Meta Marketing Suite is disabled in this environment." },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return requireAdminSessionCore(request);
+}
+
+/**
+ * Server-side guard requiring a valid super administrator session AND verified tenant membership.
+ * Independent of the Meta Marketing Suite feature flag.
+ */
+export async function requireSuperAdminSessionCore(
+  request: NextRequest | Request
+): Promise<AdminSessionAuthResult> {
+  const result = await requireAdminSessionCore(request);
+  if (!result.authorized) {
+    return result;
+  }
+  if (result.role !== "superadmin") {
+    return {
+      authorized: false,
+      tenantId: result.tenantId,
+      authorizedTenants: result.authorizedTenants,
+      response: NextResponse.json(
+        { error: "Forbidden: Super Administrator privileges required." },
+        { status: 403 }
+      ),
+    };
+  }
+  return result;
 }
 
 /**

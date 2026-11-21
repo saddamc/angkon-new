@@ -3,8 +3,8 @@ import { cookies } from "next/headers";
 import type { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User, IUser } from "@/models/User";
+import { getJwtSecret } from "@/lib/env";
 
-const JWT_SECRET = process.env.JWT_SECRET || "angkon_secure_jwt_secret_2026";
 export const AUTH_COOKIE_NAME = "angkon_user_token";
 
 export interface AuthTokenPayload {
@@ -69,8 +69,9 @@ export function createAuthToken(user: {
     exp: now + 60 * 60 * 24 * 30, // 30 days session
   };
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+  const secret = getJwtSecret();
   const signature = crypto
-    .createHmac("sha256", JWT_SECRET)
+    .createHmac("sha256", secret)
     .update(`${header}.${encodedPayload}`)
     .digest("base64")
     .replace(/=/g, "")
@@ -86,8 +87,9 @@ export function verifyAuthToken(token: string): AuthTokenPayload | null {
     if (parts.length !== 3) return null;
 
     const [header, payload, signature] = parts;
+    const secret = getJwtSecret();
     const expectedSig = crypto
-      .createHmac("sha256", JWT_SECRET)
+      .createHmac("sha256", secret)
       .update(`${header}.${payload}`)
       .digest("base64")
       .replace(/=/g, "")

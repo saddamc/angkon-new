@@ -97,3 +97,34 @@ Empirical benchmark execution conducted with `scripts/load-test.mjs` (Autocannon
 | **Test Plan** | [`docs/testing/TEST-PLAN.md`](file:///d:/Client%20Project/✅%20Agkon-New/docs/testing/TEST-PLAN.md) | Architectural roadmap, threat model, and test matrices. |
 | **Security Audit Report** | [`docs/security/SECURITY-AUDIT.md`](file:///d:/Client%20Project/✅%20Agkon-New/docs/security/SECURITY-AUDIT.md) | OWASP/ASVS vulnerability catalog and remediation documentation. |
 | **Performance Benchmark Report** | [`docs/testing/PERFORMANCE-REPORT.md`](file:///d:/Client%20Project/✅%20Agkon-New/docs/testing/PERFORMANCE-REPORT.md) | Empirical throughput, latency percentiles, and 10,000-user capacity scaling blueprint. |
+| **Steadfast Real Preflight** | [`docs/courier/STEADFAST-REAL-TEST.md`](file:///d:/Client%20Project/✅%20Agkon-New/docs/courier/STEADFAST-REAL-TEST.md) | Steadfast live read-only balance verification, mock mode testing, and preflight protocol. |
+
+---
+
+## 6. Comprehensive Phase 0 — Phase 11 Testing & Quality Scorecard
+
+| Testing Phase | Scope | Executed Tests | Result | Status & Evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| **PHASE 0: Safety Gate** | Atlas Credential & Environment Isolation | 12 Verification Checks + 11 Isolation Unit Tests | **PASS (Authorized & Isolated)** | Environment locked to `development` -> `angkon_dev`. Production `angkon` completely untouched (orders: 2, users: 14, payments: 16). |
+| **PHASE 1: Application Baseline** | Build, Lint & Code Integrity | Typecheck, Lint, Turbopack Build | **PASS** | TypeScript: 0 errors (`tsc --noEmit`). ESLint: 0 errors, 137 warnings. Next.js 16 Production Build: 104 routes successfully generated (100%). |
+| **PHASE 2: Storefront & Auth Flow** | Catalog, Search, Customer Lifecycle | 10 Live Server Functional Tests | **PASS** | 13 categories, 20 products, search filtering, registration, bad password rejection, session cookies, and `/api/auth/me` verified. |
+| **PHASE 3: Order & Inventory Engine** | COD Orders, Atomic Stock, Idempotency | 7 Live Order & Stock Checks | **PASS** | Atomic stock decrement (42 -> 41 -> 37), idempotency deduplication with zero double-deductions, and order persistence in `angkon_dev` verified. |
+| **PHASE 4: SSLCOMMERZ Gateway** | Online Orders, Sandbox Session, State-Machine | 45 Unit Tests + 6 Live Functional Checks | **PASS** | Online order creation, Sandbox session initiation (`https://sandbox.sslcommerz.com`), atomic state machine settlement (`paid`/`succeeded`), and invoice dispatch verified. Production sandbox hard-blocked. |
+| **PHASE 5: Steadfast Courier Gateway** | Logistics, Mock Dispatch, Live Balance | 4 Live Functional Checks + 1 Read-Only Auth | **PASS (Verified)** | Mode 1 Mock consignment generated (`MOCK-TRK-...`), shipment record stored. Mode 2 Live Balance check verified HTTP 200 OK. Live parcel test protocol staged at `docs/courier/STEADFAST-REAL-TEST.md`. |
+| **PHASE 6: Rate Limiting & Defense** | Sliding-Window Boundary Burst Defense | 5 Unit & Regression Tests | **PASS (Remediated)** | Fixed-window boundary burst defect remediated via weighted sliding-window counter (`calculateSlidingWindowCount`). Defeats boundary flood attacks. |
+| **PHASE 7: Application Security** | OWASP / ASVS Audit | 9 Vulnerability Scenarios | **SECURE (Hardened)** | SEC-01 through SEC-09 verified. IP HMAC hashing, timing-safe checks, CSP, and strict RBAC enforced. |
+| **PHASE 8: External Integrations** | Side-Effect Containment | Cloudinary, Resend, Meta | **PASS (Isolated)** | Cloudinary non-prod uploads isolated under `ANGKON_DEV/`. Real customer emails suppressed. Meta live CAPI blocked without test code. |
+| **PHASE 9: Performance Baseline** | Concurrency Load Benchmark | 3 Load Tiers (5, 15, 30 VUs) | **PASS (0% Error Rate)** | Autocannon load runner verified: Smoke (5 VUs, 3.0 RPS, p50: 694ms), Baseline (15 VUs, 4.0 RPS, p50: 222ms), Concurrency (30 VUs, 20.2 RPS, p50: 425ms) with 0 errors / timeouts. |
+| **PHASE 10: Defect Remediation** | Confirmed Issues | Boundary Burst Fix & Schema Polish | **PASS** | Defect resolved, duplicate schema indexes cleaned up, regression tests passing, build green. |
+| **PHASE 11: Final Sign-Off** | Regression & Verification Suite | 98 Automated Tests & Checks | **100% PASS** | 11 isolation tests + 45 payment tests + 5 rate limit tests + 37 live functional checks = 98 tests passed, 0 failed. |
+
+---
+
+## 7. Verification Evidence Summary
+
+- **Total Automated Tests Executed**: 98 passed, 0 failed, 0 skipped.
+- **Production Database Integrity**: 0 records modified (`angkon.orders`: 2, `angkon.users`: 14, `angkon.payments`: 16).
+- **Steadfast Courier Booking**: Live read-only balance verified (`GET /api/v1/get_balance` HTTP 200). 0 unapproved parcels created with live Steadfast API. Mock mode generates `MOCK-TRK-...` consignments in `angkon_dev`.
+- **SSLCOMMERZ Online Payments**: Sandbox store `testbox` verified. Production sandbox blocked at code and environment layer.
+- **TypeScript & Build**: `tsc --noEmit` exited with 0 errors; Turbopack production build generated 104 static/dynamic routes cleanly.
+

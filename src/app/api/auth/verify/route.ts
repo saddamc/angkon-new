@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteUrl, setSessionCookie } from "@/server/auth";
 import { findUserByToken } from "@/server/account";
+import { clientIp, hashIp, rateLimit } from "@/server/rate-limit";
 
 /**
  * GET /api/auth/verify?token=… — the link in the verification email.
@@ -12,6 +13,15 @@ export async function GET(request: NextRequest) {
   const redirectTo = (status: string) => new URL(`/my-account?verify=${status}`, getSiteUrl(request));
 
   try {
+    const limit = await rateLimit(
+      `auth-verify:ip:${hashIp(clientIp(request))}`,
+      30,
+      15 * 60
+    );
+    if (!limit.allowed) {
+      return NextResponse.redirect(redirectTo("rate_limited"));
+    }
+
     const user = await findUserByToken("verify", token);
     if (!user) {
       return NextResponse.redirect(redirectTo("invalid"));

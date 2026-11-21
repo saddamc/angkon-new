@@ -1,4 +1,5 @@
 import type { UseFormRegister, FieldErrors } from "react-hook-form";
+import { ArrowRight } from "lucide-react";
 import { DIVISIONS } from "@/data/bangladesh-districts";
 import type { CheckoutFormValues } from "../_types/checkout.types";
 
@@ -7,6 +8,7 @@ interface DeliveryDetailsStepProps {
   errors: FieldErrors<CheckoutFormValues>;
   isLoggedIn: boolean;
   isEmailVerified: boolean;
+  onContinueToReview: () => void;
 }
 
 export function DeliveryDetailsStep({
@@ -14,6 +16,7 @@ export function DeliveryDetailsStep({
   errors,
   isLoggedIn,
   isEmailVerified,
+  onContinueToReview,
 }: DeliveryDetailsStepProps) {
   return (
     <div className="rounded-2xl border border-[#E1B76F]/25 bg-[#3b050b] p-5 sm:p-6 shadow-sm space-y-4">
@@ -185,6 +188,18 @@ export function DeliveryDetailsStep({
           className="w-full resize-none rounded-xl border border-[#E1B76F]/30 bg-[#42070e] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#E1B76F]"
           {...register("orderNotes")}
         />
+      </div>
+
+      {/* Step 1 Primary CTA */}
+      <div className="pt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={onContinueToReview}
+          className="inline-flex items-center justify-center gap-2.5 w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#E1B76F] to-[#caa25e] px-7 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider text-[#230407] shadow-lg shadow-[#E1B76F]/20 hover:brightness-110 active:scale-[0.98] transition cursor-pointer"
+        >
+          <span>Continue to Review Order</span>
+          <ArrowRight className="h-4 w-4" />
+        </button>
       </div>
     </div>
   );

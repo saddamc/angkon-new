@@ -20,6 +20,7 @@ import {
 import { PromoSettings } from "./promo-settings";
 import { ShippingSettings } from "./shipping-settings";
 import { CheckoutSettings } from "./checkout-settings";
+import { CourierSettings } from "./courier-settings";
 
 const STORE_URL = "https://angkon.net";
 
@@ -29,6 +30,34 @@ const inputClass =
 export default function AdminSettingsPage() {
   const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState("general");
+  const [role, setRole] = useState<string>("admin");
+  const [roleLoaded, setRoleLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/login", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data?.role) {
+          setRole(data.role);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setRoleLoaded(true));
+  }, []);
+
+  const isSuperAdmin = role === "superadmin";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const param = new URLSearchParams(window.location.search).get("tab");
+    if (param) {
+      if (param === "courier" && roleLoaded && !isSuperAdmin) {
+        setActiveTab("general");
+      } else {
+        setActiveTab(param);
+      }
+    }
+  }, [roleLoaded, isSuperAdmin]);
   const [mail, setMail] = useState<{ orderEmails: string[]; senderEmail: string; emailServiceConfigured: boolean } | null>(null);
 
   useEffect(() => {
@@ -49,6 +78,7 @@ export default function AdminSettingsPage() {
     { key: "general", label: "General", icon: Store },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "shipping", label: "Shipping", icon: Truck },
+    ...(isSuperAdmin ? [{ key: "courier", label: "Courier & Dispatch", icon: Truck }] : []),
     { key: "checkout", label: "Checkout", icon: ShoppingCart },
     ...(isDevMode ? [{ key: "pixel", label: "Meta Pixel", icon: Activity }] : []),
     { key: "appearance", label: "Appearance", icon: Palette },
@@ -187,6 +217,8 @@ export default function AdminSettingsPage() {
           )}
 
           {activeTab === "shipping" && <ShippingSettings />}
+
+          {activeTab === "courier" && isSuperAdmin && <CourierSettings />}
 
           {activeTab === "checkout" && <CheckoutSettings />}
 

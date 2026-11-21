@@ -1,8 +1,19 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { executeMetaSync } from "@/server/meta-sync";
 import { verifyAdminToken } from "@/server/admin-auth";
+import { getCronSecret } from "@/lib/env";
+import { DEFAULT_TENANT_ID } from "@/server/tenant";
 
 export const dynamic = "force-dynamic";
+
+function safeEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 /**
  * GET/POST /api/cron/meta-sync
@@ -12,25 +23,21 @@ export const dynamic = "force-dynamic";
  * or an active superadmin session cookie.
  */
 async function handleCronSync(request: NextRequest) {
-  const cronSecret =
-    process.env.CRON_SECRET ||
-    process.env.JWT_SECRET ||
-    "35c6873774cfc2f4ca50ec33e8035e8db6f326a0c13c452527c57c5439dadbabc29b834bc77365846171055743c5d1d38c7d5a078c88b7b691199f57d78bdb92";
+  const cronSecret = getCronSecret();
+  if (!cronSecret) {
+    return NextResponse.json(
+      { ok: false, error: "CRON_SECRET is not configured on the server." },
+      { status: 503 }
+    );
+  }
+
   const authHeader = request.headers.get("authorization") || "";
   const querySecret = request.nextUrl.searchParams.get("secret") || "";
 
   let authorized = false;
-  let tenantId = "primary_store";
+  let tenantId = DEFAULT_TENANT_ID;
 
-  const isVercelCron =
-    request.headers.get("x-vercel-cron") === "1" ||
-    Boolean(request.headers.get("user-agent")?.includes("vercel-cron"));
-
-  if (
-    isVercelCron ||
-    authHeader === `Bearer ${cronSecret}` ||
-    querySecret === cronSecret
-  ) {
+  if (safeEqual(authHeader, `Bearer ${cronSecret}`) || safeEqual(querySecret, cronSecret)) {
     authorized = true;
   } else {
     // Check if called from an admin browser session
@@ -39,7 +46,7 @@ async function handleCronSync(request: NextRequest) {
       const verified = await verifyAdminToken(token);
       if (verified.valid && verified.role === "superadmin") {
         authorized = true;
-        tenantId = verified.defaultTenant || "primary_store";
+        tenantId = verified.defaultTenant || DEFAULT_TENANT_ID;
       }
     }
   }

@@ -1,19 +1,16 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose from "mongoose";
+import {
+  RateLimitBucket,
+  type IRateLimitBucket,
+} from "./RateLimitBucket";
 
-/** Counter for a rate-limit bucket (e.g. "code-send:email:a@b.com"). Cleans itself up. */
-export interface IRateLimit extends Document {
-  key: string;
-  count: number;
-  resetAt: Date;
-}
+export type IRateLimit = IRateLimitBucket;
 
-const RateLimitSchema = new Schema<IRateLimit>({
-  key: { type: String, required: true, unique: true, index: true },
-  count: { type: Number, default: 0 },
-  resetAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
-});
+/**
+ * Backward-compatible export pointing to the dedicated RateLimitBucket collection.
+ */
+export const RateLimit =
+  mongoose.models.RateLimitBucket || RateLimitBucket;
 
-export const RateLimit: Model<IRateLimit> =
-  mongoose.models.RateLimit || mongoose.model<IRateLimit>("RateLimit", RateLimitSchema);
-
+export { RateLimitBucket };
 export default RateLimit;

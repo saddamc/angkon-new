@@ -4,6 +4,7 @@ import { MetaEventLog, MetaEventStatus, IMetaEventLog } from "@/models/MetaEvent
 import { getPixelSettings, DEFAULT_TENANT_ID } from "./pixel-settings";
 import { normalizeMetaContentId, normalizeMetaContentIds } from "@/lib/meta-product-id";
 import { sanitizeClientIp, extractClientIp, isValidIp, isPublicIp } from "./client-ip";
+import { getAppEnvironment } from "@/server/env/app-environment";
 
 export { extractClientIp, sanitizeClientIp, isValidIp, isPublicIp };
 
@@ -331,6 +332,30 @@ export async function executeMetaGraphApiPost(
 
   if (testCode) {
     requestBody.test_event_code = testCode;
+  }
+
+  const appEnv = getAppEnvironment();
+
+  // Test mode: strictly mock without external network calls
+  if (appEnv === "test") {
+    return {
+      ok: true,
+      status: 200,
+      data: { events_received: 1, test_mode: true },
+      fbtraceId: `test_fbtrace_${Date.now()}`,
+      isTransient: false,
+    };
+  }
+
+  // Development & Preview: Suppress live events from production dataset unless test_event_code is provided
+  if (appEnv !== "production" && !testCode && process.env.ENABLE_PRODUCTION_META_EVENTS !== "true") {
+    return {
+      ok: true,
+      status: 200,
+      data: { events_received: 1, mocked: true },
+      fbtraceId: `mock_non_prod_${Date.now()}`,
+      isTransient: false,
+    };
   }
 
   const endpoint = `https://graph.facebook.com/${GRAPH_API_VERSION}/${encodeURIComponent(

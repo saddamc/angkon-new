@@ -134,6 +134,22 @@ test("Codebase Static Verification: meta-capi.ts pairs client_ip_address and cli
   const pixelEventsRoute = fs.readFileSync("src/app/api/pixel/events/route.ts", "utf8");
   assert.match(pixelEventsRoute, /clientIp\s*=\s*extractClientIp\(request\)/, "pixel events route must use extractClientIp");
 
-  const sslCallbackRoute = fs.readFileSync("src/app/api/payment/sslcommerz/callback/route.ts", "utf8");
-  assert.match(sslCallbackRoute, /extractClientIp\(request\)/, "sslcommerz callback route must use extractClientIp");
+  // The post-payment CAPI call moved into the shared settlement module. It must
+  // use the customer's IP/UA captured at checkout — never the gateway's IP from
+  // the callback request.
+  const sslSettlement = fs.readFileSync("src/server/payments/capi.ts", "utf8");
+  assert.match(
+    sslSettlement,
+    /visitorContext\?\.clientIp/,
+    "settlement must use the customer IP captured at checkout"
+  );
+  assert.match(
+    sslSettlement,
+    /visitorContext\?\.clientUserAgent/,
+    "settlement must use the paired user-agent captured at checkout"
+  );
+  assert.ok(
+    !/extractClientIp\(request\)/.test(sslSettlement),
+    "the gateway callback IP must not replace the customer IP"
+  );
 });

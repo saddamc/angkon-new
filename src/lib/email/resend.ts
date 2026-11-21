@@ -3,6 +3,7 @@ import {
   getCustomerOrderEmailHtml,
   getAdminOrderEmailHtml,
 } from "./templates";
+import { getAppEnvironment } from "@/server/env/app-environment";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
@@ -19,6 +20,29 @@ export async function sendEmail({
   html,
   from,
 }: SendEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  const appEnv = getAppEnvironment();
+
+  // Test environment: strictly mock without external network calls
+  if (appEnv === "test") {
+    return { success: true, id: `test_mock_${Date.now()}` };
+  }
+
+  let recipients = Array.isArray(to) ? to : [to];
+  let emailSubject = subject;
+
+  // Development & Preview: Prevent accidental customer emails unless explicitly enabled
+  if (appEnv !== "production" && process.env.ENABLE_REAL_EMAIL !== "true") {
+    const safeRedirect = process.env.SAFE_TEST_EMAIL?.trim();
+    if (!safeRedirect) {
+      console.info(
+        `[Email Mock (${appEnv})] Non-production email delivery suppressed. To: ${recipients.join(", ")} | Subject: "${subject}"`
+      );
+      return { success: true, id: `mock_${appEnv}_${Date.now()}` };
+    }
+    recipients = [safeRedirect];
+    emailSubject = `[${appEnv.toUpperCase()} TEST - For: ${Array.isArray(to) ? to.join(",") : to}] ${subject}`;
+  }
+
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
@@ -27,7 +51,6 @@ export async function sendEmail({
   }
 
   const sender = from || process.env.EMAIL_FROM || "ANGKON <noreply@angkon.net>";
-  const recipients = Array.isArray(to) ? to : [to];
 
   try {
     const res = await fetch(RESEND_API_URL, {
@@ -39,7 +62,7 @@ export async function sendEmail({
       body: JSON.stringify({
         from: sender.trim(),
         to: recipients.map((r) => r.trim()).filter(Boolean),
-        subject,
+        subject: emailSubject,
         html,
       }),
       signal: AbortSignal.timeout(10000), // 10 second safety timeout

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
+import { isLocalTestOrder } from "@/server/courier";
 
 // GET /api/admin/reports — fetch reports data from MongoDB Atlas
 export async function GET(request: NextRequest) {
@@ -31,13 +32,18 @@ export async function GET(request: NextRequest) {
 
     const [allOrders, totalProducts] = await Promise.all([
       Order.find({})
-        .select("orderStatus paymentStatus createdAt total shippingFee items customer.phone customer.email")
+        .select("orderNumber orderStatus paymentStatus createdAt total shippingFee items customer isTestOrder")
         .lean(),
       Product.countDocuments(),
     ]);
 
+    // Financial & reporting isolation: strictly exclude test and sandbox orders from production financial reports
+    const productionOrders = allOrders.filter(
+      (ord) => !ord.isTestOrder && !isLocalTestOrder(ord.orderNumber, ord.customer, ord)
+    );
+
     // Filter orders by time window
-    const ordersInPeriod = allOrders.filter((ord) => {
+    const ordersInPeriod = productionOrders.filter((ord) => {
       const d = new Date(ord.createdAt);
       if (d < startDate) return false;
       if (endDate && d > endDate) return false;
@@ -87,7 +93,7 @@ export async function GET(request: NextRequest) {
       completed: 0,
       cancelled: 0,
     };
-    for (const ord of allOrders) {
+    for (const ord of productionOrders) {
       const st = ord.orderStatus || "pending";
       statusCounts[st] = (statusCounts[st] || 0) + 1;
     }
@@ -114,7 +120,12 @@ export async function GET(request: NextRequest) {
           total_shipping: totalShipping.toFixed(2),
           total_refunds: cancelledOrders.length,
           total_discount: "0.00",
-          total_customers: new Set(allOrders.map((o) => o.customer?.phone || o.customer?.email).filter(Boolean)).size,
+          total_customers: new Set(
+            productionOrders
+              .map((o) => (o.customer as { phone?: string; email?: string } | undefined)?.phone || (o.customer as { phone?: string; email?: string } | undefined)?.email)
+              .filter(Boolean)
+          ).size,
+          test_orders_excluded: allOrders.length - productionOrders.length,
         },
         order_statuses: orderStatuses,
         top_sellers: [],

@@ -16,16 +16,13 @@ import {
   X,
   Bell,
   ChevronRight,
-  ChevronDown,
   BarChart3,
   FolderOpen,
   PanelLeft,
   Volume2,
   VolumeX,
   Activity,
-  Layers,
-  Globe,
-  DatabaseBackup,
+  CreditCard,
 } from "lucide-react";
 import {
   isSoundEnabled,
@@ -37,23 +34,14 @@ import {
 
 const isMetaEnabled = process.env.NEXT_PUBLIC_DISABLE_META_ROUTES !== "true";
 
-const META_SUB_ROUTES = [
-  { href: "/admin/meta", label: "Overview", icon: Layers, exact: true },
-  { href: "/admin/meta/events", label: "Events Manager", icon: Activity, exact: false },
-  { href: "/admin/meta/ads", label: "Ads & Attribution", icon: BarChart3, exact: false },
-  { href: "/admin/meta/catalog", label: "Catalog Feed", icon: Package, exact: false },
-  { href: "/admin/meta/domain-verification", label: "Domain Verification", icon: Globe, exact: false },
-  { href: "/admin/meta/backup", label: "Backup & Restore", icon: DatabaseBackup, exact: false },
-  { href: "/admin/meta/settings", label: "Meta Suite Settings", icon: Settings, exact: false },
-];
-
 const NAV = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
   { href: "/admin/customers", label: "Customers", icon: Users },
+  { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   ...(isMetaEnabled
     ? [{ href: "/admin/meta", label: "Meta Marketing", icon: Activity }]
     : []),
@@ -71,17 +59,10 @@ export default function AdminLayout({
   const pathname = usePathname();
   const isMetaRoute = pathname.startsWith("/admin/meta");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Desktop: icon-only by default; click toggle for full labels
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  // Desktop: expanded by default on standard admin routes
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   // Hover flyout state (Meta Business Suite style: expand on hover, hide on leave)
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  const [metaSubmenuOpen, setMetaSubmenuOpen] = useState(isMetaRoute);
-
-  useEffect(() => {
-    if (isMetaRoute) {
-      setMetaSubmenuOpen(true);
-    }
-  }, [isMetaRoute]);
   const [pendingCount, setPendingCount] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<{
@@ -145,16 +126,16 @@ export default function AdminLayout({
     });
   };
 
-  // Fetch real pending order count & detect new orders to play sound
+  // Fetch real order status counts & detect new orders to play sound
   const fetchPendingCount = useCallback(async () => {
     try {
       const res = await authFetch(
-        "/api/admin/orders?per_page=1&status=pending"
+        "/api/admin/orders?per_page=1"
       );
       if (res.ok) {
         const data = await res.json();
-        const currentCount = data.total ?? 0;
-        setPendingCount(currentCount);
+        const pending = data.statusCounts?.pending ?? 0;
+        setPendingCount(pending);
 
         const latest = data.orders?.[0];
         if (latest) {
@@ -354,13 +335,13 @@ export default function AdminLayout({
             />
           </div>
           {showSidebarContent && (
-            <div className="min-w-0 flex-1 overflow-hidden">
-              <p className="text-[14px] font-bold tracking-tight text-[#530911] whitespace-nowrap">
+            <div className="min-w-0 flex-1 overflow-hidden flex flex-col justify-center">
+              <span className="text-[14px] font-bold tracking-tight text-[#530911] leading-tight whitespace-nowrap">
                 ANGKON
-              </p>
-              <p className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 whitespace-nowrap">
+              </span>
+              <span className="text-[10px] uppercase font-semibold tracking-wider text-gray-400 leading-tight whitespace-nowrap mt-0.5">
                 Admin Panel
-              </p>
+              </span>
             </div>
           )}
           {sidebarOpen && (
@@ -375,75 +356,31 @@ export default function AdminLayout({
           )}
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Single-Level Strict (No nested submenus) */}
         <nav className="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto">
-          {filteredNav.map(({ href, label, icon: Icon }) => {
+          {filteredNav.map((item) => {
+            const { href, label, icon: Icon } = item;
+            const isOrders = href === "/admin/orders";
+            const isPayments = href === "/admin/payments" || href.includes("payment_status");
+            const isSettings = href === "/admin/settings";
             const isMeta = href === "/admin/meta";
-            const active =
-              pathname.startsWith(href) ||
-              (href === "/admin/meta" && pathname.startsWith("/admin/pixel"));
 
-            if (isMeta && showSidebarContent) {
-              return (
-                <div key={href} className="space-y-1">
-                  <div
-                    onClick={() => setMetaSubmenuOpen((prev) => !prev)}
-                    className={`group relative flex items-center justify-between rounded-xl py-2.5 px-3 text-[13px] font-medium transition-all duration-200 cursor-pointer ${
-                      active
-                        ? "bg-purple-600 text-white shadow-md shadow-purple-200"
-                        : "text-gray-500 hover:bg-purple-50 hover:text-purple-600"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Icon
-                        className={`h-[19px] w-[19px] flex-shrink-0 transition-colors ${
-                          active
-                            ? "text-white"
-                            : "text-gray-400 group-hover:text-purple-500"
-                        }`}
-                      />
-                      <span className="whitespace-nowrap overflow-hidden font-bold">
-                        {label}
-                      </span>
-                    </div>
-                    <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${
-                        active ? "text-white" : "text-gray-400"
-                      } ${metaSubmenuOpen ? "rotate-180" : "rotate-0"}`}
-                    />
-                  </div>
+            const currentSearch = typeof window !== "undefined" ? window.location.search : "";
+            const isPaymentFilter = currentSearch.includes("payment_status") || pathname.startsWith("/admin/payments");
 
-                  {metaSubmenuOpen && (
-                    <div className="pl-4 pr-1 py-1 space-y-0.5 animate-in fade-in-0 duration-150">
-                      {META_SUB_ROUTES.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isSubActive = sub.exact
-                          ? pathname === sub.href
-                          : pathname === sub.href || pathname.startsWith(`${sub.href}/`);
-                        return (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            onClick={() => setSidebarOpen(false)}
-                            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[12px] transition-all ${
-                              isSubActive
-                                ? "bg-purple-100 text-purple-800 font-bold shadow-2xs"
-                                : "text-gray-600 hover:bg-purple-50/70 hover:text-purple-700 font-medium"
-                            }`}
-                          >
-                            <SubIcon
-                              className={`h-3.5 w-3.5 shrink-0 ${
-                                isSubActive ? "text-purple-700" : "text-gray-400"
-                              }`}
-                            />
-                            <span className="truncate">{sub.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
+            let active = false;
+            if (isOrders) {
+              active = pathname.startsWith("/admin/orders") && !isPaymentFilter;
+            } else if (isPayments) {
+              active = pathname.startsWith("/admin/payments") || (pathname.startsWith("/admin/orders") && isPaymentFilter);
+            } else if (isSettings) {
+              active = pathname.startsWith("/admin/settings");
+            } else if (isMeta) {
+              active = pathname.startsWith("/admin/meta") || pathname.startsWith("/admin/pixel");
+            } else if (href === "/admin/dashboard") {
+              active = pathname === "/admin/dashboard";
+            } else {
+              active = pathname.startsWith(href);
             }
 
             return (
@@ -466,7 +403,7 @@ export default function AdminLayout({
                   }`}
                 />
                 <span
-                  className={`whitespace-nowrap overflow-hidden transition-all duration-300 ${
+                  className={`whitespace-nowrap overflow-hidden transition-all duration-300 font-medium ${
                     showSidebarContent
                       ? "w-auto opacity-100"
                       : "w-0 opacity-0"

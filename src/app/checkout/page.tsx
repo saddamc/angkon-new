@@ -5,13 +5,12 @@ import { CheckoutSkeleton } from "./_components/checkout-skeleton";
 import { EmptyBagView } from "./_components/empty-bag-view";
 import { OrderSuccessView } from "./_components/order-success-view";
 import { CheckoutHeader, CheckoutTitle } from "./_components/checkout-header";
-import { AccountStepCard } from "./_components/account-step-card";
-import { DeliveryDetailsStep } from "./_components/delivery-details-step";
-import { PromoCodeStep } from "./_components/promo-code-step";
-import { PaymentMethodStep } from "./_components/payment-method-step";
-import { OrderSummarySidebar } from "./_components/order-summary-sidebar";
+import { ShippingBillingCard } from "./_components/shipping-billing-card";
+import { PaymentDeliveryMethodsCard } from "./_components/payment-delivery-methods-card";
+import { StarTechOrderSummary } from "./_components/startech-order-summary";
 import { AuthModal } from "@/components/checkout/auth-modal";
 import { EmailVerifyDialog } from "@/components/checkout/email-verify-dialog";
+import type { CheckoutFormValues } from "./_types/checkout.types";
 
 export default function CheckoutPage() {
   const flow = useCheckoutFlow();
@@ -54,76 +53,72 @@ export default function CheckoutPage() {
     return <EmptyBagView />;
   }
 
-  // 4. Main Checkout Flow
+  const handleOrderSubmit = async (data: CheckoutFormValues) => {
+    await flow.onSubmit(data, false, flow.paymentMethod);
+  };
+
   return (
     <div className="min-h-screen bg-[#530911] text-white">
       <CheckoutHeader />
 
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 py-6 md:py-10">
         <CheckoutTitle />
 
-        <form onSubmit={flow.handleSubmit((data) => flow.onSubmit(data))}>
-          <div className="grid gap-8 lg:grid-cols-[1.18fr_0.82fr] xl:grid-cols-[1.2fr_0.8fr] items-start">
-            {/* ── LEFT COLUMN: Form Steps ── */}
-            <div className="space-y-6">
-              <AccountStepCard
-                isLoggedIn={flow.isLoggedIn}
-                loggedInEmail={flow.loggedInEmail}
-                isEmailVerified={flow.isEmailVerified}
-                onSignOut={flow.handleSignOut}
-                onOpenLogin={() => {
-                  flow.setAuthModalView("login");
-                  flow.setAuthModalOpen(true);
-                }}
-                onOpenRegister={() => {
-                  flow.setAuthModalView("register");
-                  flow.setAuthModalOpen(true);
-                }}
-              />
+        {/* ── Main Two-Column Layout ── */}
+        <div className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr] xl:grid-cols-[1.3fr_0.7fr] items-start">
+          {/* ── LEFT COLUMN: Shipping & Payment ── */}
+          <div className="space-y-6">
+            {/* 1. Shipping & Billing */}
+            <ShippingBillingCard
+              register={flow.register}
+              errors={flow.errors}
+              setValue={flow.setValue}
+              getValues={flow.getValues}
+              isLoggedIn={flow.isLoggedIn}
+              isEmailVerified={flow.isEmailVerified}
+            />
 
-              <DeliveryDetailsStep
-                register={flow.register}
-                errors={flow.errors}
-                isLoggedIn={flow.isLoggedIn}
-                isEmailVerified={flow.isEmailVerified}
-              />
-
-              {flow.checkoutConfig?.enablePromoCodes !== false && (
-                <PromoCodeStep
-                  couponCode={flow.couponCode}
-                  setCouponCode={flow.setCouponCode}
-                  appliedPromo={flow.appliedPromo}
-                  couponLoading={flow.couponLoading}
-                  couponMessage={flow.couponMessage}
-                  couponError={flow.couponError}
-                  onApplyCoupon={flow.handleApplyCoupon}
-                  onRemoveCoupon={flow.handleRemoveCoupon}
-                />
-              )}
-
-              <PaymentMethodStep
-                paymentMethod={flow.paymentMethod}
-                setPaymentMethod={flow.setPaymentMethod}
-              />
-            </div>
-
-            {/* ── RIGHT COLUMN: Sticky Order Summary ── */}
-            <OrderSummarySidebar
-              items={flow.items}
-              subtotal={flow.subtotal}
-              shippingQuote={flow.shippingQuote}
-              shippingLoading={flow.shippingLoading}
-              discountAmount={flow.discountAmount}
-              finalTotal={flow.finalTotal}
-              isSubmitting={flow.isSubmitting}
-              placing={flow.placing}
-              submitError={flow.submitError}
+            {/* 2. Payment Method */}
+            <PaymentDeliveryMethodsCard
+              paymentMethod={flow.paymentMethod}
+              setPaymentMethod={flow.setPaymentMethod}
+              onlinePaymentAvailable={flow.checkoutConfig?.onlinePaymentAvailable === true}
             />
           </div>
-        </form>
+
+          {/* ── RIGHT COLUMN: Sticky Order Summary ── */}
+          <StarTechOrderSummary
+            items={flow.items}
+            onUpdateQuantity={flow.updateQuantity}
+            onRemoveItem={flow.removeItem}
+            subtotal={flow.subtotal}
+            deliveryMethod={flow.deliveryMethod}
+            pickupLocation={flow.pickupLocation}
+            effectiveShippingFee={flow.effectiveShippingFee}
+            isFreeDelivery={Boolean(flow.shippingQuote?.isFree)}
+            appliedPromo={flow.appliedPromo}
+            discountAmount={flow.discountAmount}
+            finalTotal={flow.finalTotal}
+            couponCode={flow.couponCode}
+            setCouponCode={flow.setCouponCode}
+            couponLoading={flow.couponLoading}
+            couponMessage={flow.couponMessage}
+            couponError={flow.couponError}
+            onApplyCoupon={flow.handleApplyCoupon}
+            onRemoveCoupon={flow.handleRemoveCoupon}
+            policyAccepted={flow.policyAccepted}
+            setPolicyAccepted={flow.setPolicyAccepted}
+            placing={flow.placing}
+            submitError={flow.submitError}
+            paymentMethod={flow.paymentMethod}
+            onConfirmOrder={() => {
+              void flow.handleSubmit(handleOrderSubmit)();
+            }}
+          />
+        </div>
       </div>
 
-      {/* ── Dedicated Auth Modal (Login / Register / OTP) ── */}
+      {/* ── Auth Modal (Login / Register) ── */}
       <AuthModal
         isOpen={flow.authModalOpen}
         initialView={flow.authModalView}

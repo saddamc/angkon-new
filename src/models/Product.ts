@@ -1,5 +1,8 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export type ShippingCategory = "apparel" | "accessories" | "cosmetics" | "general";
+export type WeightUnit = "g" | "kg";
+
 export interface IProductImage {
   id: number;
   src: string;
@@ -53,7 +56,10 @@ export interface IProduct extends Document {
   tags: IProductTagRef[];
   attributes: IProductAttribute[];
   sku?: string;
-  weight?: string;
+  weight?: string | number;
+  weightUnit?: WeightUnit;
+  shippingCategory?: ShippingCategory | string;
+  weightUpdatedAt?: Date | null;
   shipping_class_id: number;
   stock_quantity?: number | null;
   manage_stock?: boolean;
@@ -136,7 +142,10 @@ const ProductSchema = new Schema<IProduct>(
     tags: { type: [ProductTagRefSchema], default: [] },
     attributes: { type: [ProductAttributeSchema], default: [] },
     sku: { type: String, default: "" },
-    weight: { type: String, default: "" },
+    weight: { type: Schema.Types.Mixed, default: "" },
+    weightUnit: { type: String, enum: ["g", "kg"], default: "kg" },
+    shippingCategory: { type: String, default: "" },
+    weightUpdatedAt: { type: Date, default: null },
     shipping_class_id: { type: Number, default: 0 },
     stock_quantity: { type: Number, default: null },
     meta_data: { type: [ProductMetaDataSchema], default: [] },

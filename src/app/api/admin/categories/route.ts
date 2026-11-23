@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import {
@@ -34,7 +35,12 @@ function syncRealCategoriesFile(updater: (cats: Record<string, unknown>[]) => Re
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     let categories: any[] = [];
     try {
@@ -118,6 +124,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     await connectToDatabase();
@@ -236,6 +247,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   const urlParams = new URL(request.url);
   const id = urlParams.searchParams.get("id");
   const deleteProducts = urlParams.searchParams.get("delete_products") === "true";

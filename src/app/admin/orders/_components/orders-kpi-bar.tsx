@@ -7,6 +7,8 @@ import {
   Package,
   RotateCcw,
   ShoppingCart,
+  TrendingDown,
+  TrendingUp,
   Truck,
 } from "lucide-react";
 import type { AdminOrdersHookReturn } from "../_hooks/use-admin-orders";
@@ -15,155 +17,174 @@ interface OrdersKpiBarProps {
   state: AdminOrdersHookReturn;
 }
 
+interface Trend {
+  direction: "up" | "down" | "flat";
+  label: string;
+}
+
+function pctChange(current: number, previous: number): Trend | null {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return null;
+  if (previous <= 0) {
+    if (current <= 0) return { direction: "flat", label: "0% vs last 7 days" };
+    return { direction: "up", label: `+${current} new vs last 7 days` };
+  }
+  const change = Math.round(((current - previous) / previous) * 100);
+  if (change === 0) return { direction: "flat", label: "0% vs last 7 days" };
+  return {
+    direction: change > 0 ? "up" : "down",
+    label: `${change > 0 ? "+" : ""}${change}% vs last 7 days`,
+  };
+}
+
 export function OrdersKpiBar({ state }: OrdersKpiBarProps) {
   const { summary, statusCounts, handleFilterChange, filterStatus, paymentFilter, handlePaymentFilterChange } =
     state;
 
-  const paymentIssuesCount = summary.paymentIssuesCount ?? 0;
+  const total = summary.totalOrders || 0;
+  const trends = summary.trends;
+  const totalTrend = trends ? pctChange(trends.total7d, trends.totalPrev7d) : null;
+  const deliveredTrend = trends ? pctChange(trends.delivered7d, trends.deliveredPrev7d) : null;
+  const returnsIssues = summary.cancelledReturnedCount || 0;
+  const paymentIssues = summary.paymentIssuesCount ?? 0;
+  const returnsShare = total > 0 ? ((returnsIssues / total) * 100).toFixed(1) : "0.0";
 
-  const cards = [
+  const select = (key: string) => {
+    if (paymentFilter !== "any") handlePaymentFilterChange("any");
+    handleFilterChange(key);
+  };
+
+  const cards: {
+    key: string;
+    label: string;
+    value: number;
+    sub?: string;
+    trend?: Trend | null;
+    icon: typeof ShoppingCart;
+    iconTone: string;
+    activeTone: string;
+    isActive: boolean;
+  }[] = [
     {
       key: "any",
       label: "Total Orders",
-      value: summary.totalOrders.toLocaleString("en-BD"),
-      badge: "+12%",
-      badgeSub: "vs last 30 days",
+      value: total,
+      trend: totalTrend,
       icon: ShoppingCart,
       iconTone: "bg-purple-100 text-purple-600",
       activeTone: "ring-2 ring-purple-500",
       isActive: filterStatus === "any" && paymentFilter === "any",
-      onClick: () => {
-        if (paymentFilter !== "any") handlePaymentFilterChange("any");
-        handleFilterChange("any");
-      },
     },
     {
       key: "pending",
       label: "Pending",
-      value: summary.pendingCount.toLocaleString("en-BD"),
-      sub: "Needs confirmation",
+      value: summary.pendingCount ?? statusCounts.pending ?? 0,
+      sub: "Awaiting review",
       icon: Clock,
-      iconTone: "bg-orange-100 text-orange-600",
-      activeTone: "ring-2 ring-orange-500",
+      iconTone: "bg-amber-100 text-amber-700",
+      activeTone: "ring-2 ring-amber-500",
       isActive: filterStatus === "pending",
-      onClick: () => {
-        if (paymentFilter !== "any") handlePaymentFilterChange("any");
-        handleFilterChange("pending");
-      },
     },
     {
-      key: "processing",
-      label: "Processing",
-      value: (statusCounts.processing ?? 0).toLocaleString("en-BD"),
-      sub: "Preparing orders",
+      key: "needs_action",
+      label: "Needs Action",
+      value: summary.needsActionCount ?? statusCounts.needs_action ?? 0,
+      sub: "Payment or booking required",
+      icon: AlertTriangle,
+      iconTone: "bg-amber-100 text-amber-600",
+      activeTone: "ring-2 ring-amber-500",
+      isActive: filterStatus === "needs_action",
+    },
+    {
+      key: "ready_to_book",
+      label: "Ready to Book",
+      value: summary.readyToBookCount ?? statusCounts.ready_to_book ?? 0,
+      sub: "Paid & waiting for courier",
       icon: Package,
       iconTone: "bg-blue-100 text-blue-600",
       activeTone: "ring-2 ring-blue-500",
-      isActive: filterStatus === "processing",
-      onClick: () => {
-        if (paymentFilter !== "any") handlePaymentFilterChange("any");
-        handleFilterChange("processing");
-      },
+      isActive: filterStatus === "ready_to_book",
     },
     {
-      key: "shipped",
-      label: "Shipped",
-      value: summary.shippedCount.toLocaleString("en-BD"),
-      sub: "In delivery",
+      key: "in_transit",
+      label: "In Transit",
+      value: summary.inTransitCount ?? statusCounts.in_transit ?? 0,
+      sub: "Active courier deliveries",
       icon: Truck,
       iconTone: "bg-indigo-100 text-indigo-600",
       activeTone: "ring-2 ring-indigo-500",
-      isActive: filterStatus === "shipped",
-      onClick: () => {
-        if (paymentFilter !== "any") handlePaymentFilterChange("any");
-        handleFilterChange("shipped");
-      },
+      isActive: filterStatus === "in_transit",
     },
     {
       key: "delivered",
       label: "Delivered",
-      value: summary.deliveredCount.toLocaleString("en-BD"),
-      sub: "Completed",
+      value: summary.deliveredCount || 0,
+      trend: deliveredTrend,
       icon: CheckCircle2,
       iconTone: "bg-emerald-100 text-emerald-600",
       activeTone: "ring-2 ring-emerald-500",
       isActive: filterStatus === "delivered",
-      onClick: () => {
-        if (paymentFilter !== "any") handlePaymentFilterChange("any");
-        handleFilterChange("delivered");
-      },
     },
     {
-      key: "returned",
-      label: "Returned",
-      value: (statusCounts.returned ?? 0).toLocaleString("en-BD"),
-      sub: "Returned parcels",
+      key: "issues",
+      label: "Returns / Issues",
+      value: returnsIssues,
+      sub:
+        paymentIssues > 0
+          ? `${returnsShare}% total · ${paymentIssues} Payment Issues`
+          : `${returnsShare}% of total orders`,
       icon: RotateCcw,
       iconTone: "bg-rose-100 text-rose-600",
       activeTone: "ring-2 ring-rose-500",
-      isActive: filterStatus === "returned",
-      onClick: () => {
-        if (paymentFilter !== "any") handlePaymentFilterChange("any");
-        handleFilterChange("returned");
-      },
-    },
-    {
-      key: "payment_issues",
-      label: "Payment Issues",
-      value: paymentIssuesCount.toLocaleString("en-BD"),
-      sub: "Unresolved online",
-      icon: AlertTriangle,
-      iconTone:
-        paymentIssuesCount > 0 ? "bg-amber-100 text-amber-700" : "bg-stone-100 text-stone-500",
-      activeTone: "ring-2 ring-amber-500",
-      isActive: paymentFilter === "issues",
-      onClick: () => {
-        handleFilterChange("any");
-        handlePaymentFilterChange("issues");
-      },
+      isActive: filterStatus === "issues",
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7">
       {cards.map((card) => {
         const Icon = card.icon;
         const isActive = card.isActive;
+        const TrendIcon =
+          card.trend?.direction === "down" ? TrendingDown : TrendingUp;
         return (
           <button
             key={card.key}
             type="button"
-            onClick={card.onClick}
-            className={`group flex flex-col justify-between rounded-2xl border border-stone-200/90 bg-white p-3.5 shadow-xs transition-all duration-200 hover:border-purple-300 hover:shadow-sm text-left cursor-pointer ${
-              isActive
-                ? "border-purple-400 bg-purple-50/20 shadow-xs ring-1 ring-purple-200"
-                : ""
+            onClick={() => select(card.key)}
+            title={card.sub ? `${card.label} — ${card.sub}` : `${card.label} — click to filter`}
+            className={`group flex items-center gap-2.5 rounded-xl border border-stone-200/90 bg-white px-3 py-2.5 text-left shadow-xs transition-all duration-200 hover:border-purple-300 hover:shadow-sm cursor-pointer ${
+              isActive ? "border-purple-400 bg-purple-50/20 ring-1 ring-purple-200" : ""
             }`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${card.iconTone} transition-transform group-hover:scale-105`}
-              >
-                <Icon className="h-4 w-4" />
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${card.iconTone} transition-transform group-hover:scale-105`}
+            >
+              <Icon className="h-4 w-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[11px] font-semibold text-gray-500">
+                {card.label}
               </span>
-              {card.badge && (
-                <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-100">
-                  {card.badge}
+              <span className="flex items-baseline gap-1.5">
+                <span className="text-[17px] font-bold leading-tight tracking-tight text-gray-900 tabular-nums">
+                  {card.value.toLocaleString("en-BD")}
                 </span>
-              )}
-            </div>
-
-            <div className="mt-2.5 space-y-0.5">
-              <p className="text-[11px] font-semibold text-gray-500 truncate">{card.label}</p>
-              <p className="text-[18px] font-bold tracking-tight text-gray-900 tabular-nums">
-                {card.value}
-              </p>
-              {card.badgeSub ? (
-                <p className="text-[10px] text-gray-400 truncate">{card.badgeSub}</p>
-              ) : card.sub ? (
-                <p className="text-[10px] text-gray-400 truncate">{card.sub}</p>
-              ) : null}
-            </div>
+                {card.trend && (
+                  <span
+                    className={`flex items-center gap-0.5 truncate text-[9.5px] font-semibold ${
+                      card.trend.direction === "down"
+                        ? "text-rose-600"
+                        : card.trend.direction === "flat"
+                          ? "text-gray-400"
+                          : "text-emerald-600"
+                    }`}
+                  >
+                    {card.trend.direction !== "flat" && <TrendIcon className="h-2.5 w-2.5" />}
+                    {card.trend.label}
+                  </span>
+                )}
+              </span>
+            </span>
           </button>
         );
       })}

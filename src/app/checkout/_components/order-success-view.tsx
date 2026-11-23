@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckCircle, Sparkles, Eye, EyeOff, Loader2, ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/utils/price";
+import { getPaymentMethodLabel } from "@/lib/payment-methods";
 import type { ConfirmedCustomer, AccountInfo, CheckoutPaymentMethod } from "../_types/checkout.types";
 
 interface OrderSuccessViewProps {
@@ -74,15 +75,7 @@ export function OrderSuccessView({
           <div className="flex justify-between items-center pb-3 border-b border-[#E1B76F]/20">
             <span className="text-white/60 text-xs font-bold uppercase tracking-wider">Payment method</span>
             <strong className="text-white font-bold text-xs sm:text-sm">
-              {paymentMethod === "cod"
-                ? "Cash on Delivery (COD)"
-                : paymentMethod === "bkash"
-                ? "bKash Online"
-                : paymentMethod === "nagad"
-                ? "Nagad Online"
-                : paymentMethod === "cards"
-                ? "Card Payment (SSLCOMMERZ)"
-                : "Online Payment (SSLCOMMERZ)"}
+              {getPaymentMethodLabel(paymentMethod)}
             </strong>
           </div>
 

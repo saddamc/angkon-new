@@ -2,11 +2,13 @@
  * Utilities for formatting payment amounts, dates, and card credentials for customer display.
  */
 
-export function formatCurrency(amount: number, currency: string = "BDT"): string {
+export function formatCurrency(amount?: number | null, currency: string = "BDT"): string {
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return "—";
   const formatted = new Intl.NumberFormat("en-BD", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(value);
 
   return currency === "BDT" ? `৳${formatted}` : `${currency} ${formatted}`;
 }

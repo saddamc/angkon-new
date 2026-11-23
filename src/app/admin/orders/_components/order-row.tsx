@@ -17,15 +17,20 @@ import {
   AlertTriangle,
   AlertCircle,
   MoreVertical,
-  Printer,
   RotateCcw,
+  RefreshCw,
+  Loader2,
+  Check,
+  XCircle,
 } from "lucide-react";
-import { getCourierTrackingUrl, getCourierLabel } from "@/server/courier/tracking";
+import { getCourierTrackingUrl } from "@/server/courier/tracking";
+import { getPaymentMethodBadge, isOnlinePaymentMethod } from "@/lib/payment-methods";
 import { CourierLogo } from "@/components/admin/courier-logo";
-import { printCourierLabel } from "./print-label";
+import { CourierPrintAction } from "./courier-print-action";
 import { WhatsAppIcon } from "./whatsapp-icon";
 import { ProductThumbnail } from "./product-thumbnail";
 import { getOrderActionCategory } from "./needs-action-helper";
+import { ORDER_TABLE_GRID } from "./order-table-grid";
 import {
   STATUS_BADGE,
   STATUS_LABEL_MAP,
@@ -94,6 +99,7 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
     openOrderDetails,
     selectedOrderIds,
     toggleSelectOrder,
+    refreshShipment,
   } = state;
 
   const custName =
@@ -106,6 +112,7 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
   const firstItem = order.line_items?.[0];
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [checkingCourier, setCheckingCourier] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const mobileButtonRef = useRef<HTMLButtonElement | null>(null);
   const activeTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -247,7 +254,7 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
           `Hello ${custName}, this is Angkon regarding your order #${order.number || order.id}.`
         )}`
       : null;
-  const productName = firstItem?.name ?? "—";
+  const productName = firstItem?.name ?? "â€”";
   const productQty = (order.line_items || []).reduce(
     (sum, li) => sum + (li.quantity || 1),
     0
@@ -271,10 +278,45 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
   const isFinal = FINAL_STATUSES.includes(order.status) || order.status === "failed";
   const isSelected = selectedOrderIds.includes(String(order.id));
   const hasCourier = Boolean(order.courier || order.trackingCode || order.consignmentId);
+  const hasConsignment = Boolean(order.consignmentId || order.trackingCode);
+  const rawShipmentStatus = (order.shipmentStatus || "not_booked").toLowerCase();
+  const isDelivered = rawShipmentStatus === "delivered" || order.status === "delivered";
+  const isInTransit = ["in_transit", "out_for_delivery", "picked_up"].includes(rawShipmentStatus);
+  const isConsignmentCancelled = rawShipmentStatus === "cancelled";
+  // Steadfast reports "unknown" for consignments cancelled in the merchant
+  // portal — that must never be displayed as a successful active booking.
+  const isUnknownCourierStatus = rawShipmentStatus === "unknown";
+  const isReturnOrException = ["returned", "return_initiated", "hold", "delivery_failed", "partial_delivered"].includes(rawShipmentStatus);
+  const isBooked =
+    (hasConsignment || ["in_review", "booked", "pickup_pending", "created", "pending"].includes(rawShipmentStatus)) &&
+    !isDelivered &&
+    !isInTransit &&
+    !isReturnOrException &&
+    !isConsignmentCancelled &&
+    !isUnknownCourierStatus;
+  const isMockConsignment = Boolean(
+    order.courierIsMock ||
+    order.courierOperatingMode === "mock" ||
+    (order.trackingCode && order.trackingCode.startsWith("MOCK-")) ||
+    (order.consignmentId && order.consignmentId.startsWith("MOCK-"))
+  );
+  const bookingFailed =
+    order.shipmentBookingState === "booking_failed" ||
+    order.shipmentStatus === "booking_failed" ||
+    Boolean(order.courierBookingError);
+  const bookingInProgress =
+    order.shipmentBookingState === "booking_in_progress" ||
+    order.shipmentBookingState === "booking_pending";
+  const courierStatusLabel = (order.shipmentStatus || "not synced").replace(/_/g, " ");
   const shipmentStatusLabel = (order.shipmentStatus || "none").replace(/_/g, " ");
+  const isCourierCodMismatch = Boolean(order.shipmentCodMismatch);
 
-  const isSslcommerz = (order.paymentMethod || "").toLowerCase() === "sslcommerz";
-  const isUnpaidSsl = isSslcommerz && paymentStatus !== "paid" && !isFinal;
+  // Any SSLCOMMERZ gateway channel (sslcommerz/cards/bkash/nagad/online) —
+  // not just the generic one — drives the online-payment action strip.
+  const isGatewayOrder = isOnlinePaymentMethod(order.paymentMethod);
+  const isOnlinePaymentPending = isGatewayOrder && (paymentStatus === "pending" || paymentStatus === "unpaid");
+  const isOnlinePaymentFailed = isGatewayOrder && (paymentStatus === "failed" || paymentStatus === "cancelled");
+  const isUnpaidSsl = isGatewayOrder && paymentStatus !== "paid" && !isFinal;
   const actionCategory = getOrderActionCategory(order);
   const showActionStrip = state.filterStatus === "needs_action" || actionCategory !== null;
 
@@ -305,10 +347,10 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
   );
 
   return (
-    <div className="group border-b border-gray-100 last:border-b-0">
+    <div className="group">
       {/* Desktop Table Row */}
       <div
-        className={`hidden lg:grid grid-cols-[28px_minmax(130px,1.15fr)_minmax(150px,1.2fr)_minmax(170px,1.3fr)_100px_130px_90px_110px_90px] items-center gap-2.5 px-5 py-3.5 text-left transition ${
+        className={`hidden lg:grid ${ORDER_TABLE_GRID} items-center gap-3 px-4 py-3 text-left transition ${
           isSelected ? "bg-purple-50/70" : "hover:bg-purple-50/30"
         }`}
       >
@@ -340,18 +382,18 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
               <Copy className="h-2.5 w-2.5" />
             </button>
           </div>
-          <p className="text-[11px] text-gray-500">
+          <p
+            className="text-[11px] text-gray-500"
+            title={order.channel === "admin" ? "Admin Order" : "Website Order"}
+          >
             {order.date_created
               ? new Date(order.date_created).toLocaleDateString("en-GB", {
                   day: "2-digit",
                   month: "short",
                   year: "numeric",
                 })
-              : "—"}
+              : "â€”"}
           </p>
-          <span className="inline-block mt-0.5 rounded-md bg-stone-100 px-1.5 py-0.5 text-[9.5px] font-medium text-stone-700">
-            {order.channel === "admin" ? "Admin Order" : "Website Order"}
-          </span>
         </div>
 
         {/* Customer Info */}
@@ -405,105 +447,460 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
               {productName}
             </p>
             <p className="text-[10.5px] text-gray-500">
-              {itemCount > 1 ? `${itemCount} items · ` : ""}Qty: {productQty}
-              {firstItem?.size ? ` · Size: ${firstItem.size}` : ""}
+              {itemCount > 1 ? `${itemCount} items Â· ` : ""}Qty: {productQty}
+              {firstItem?.size ? ` Â· Size: ${firstItem.size}` : ""}
             </p>
           </div>
         </div>
 
         {/* Payment Method & Independent Status */}
-        <div className="flex flex-col items-start gap-1 min-w-0">
-          <span
-            className={`rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-tight ${
-              isSslcommerz
-                ? "border-purple-200 bg-purple-50 text-purple-700"
-                : "border-stone-200 bg-stone-50 text-stone-700"
-            }`}
-          >
-            {isSslcommerz ? "SSLCOMMERZ" : "COD"}
-          </span>
-          <button
-            type="button"
-            onClick={() => openPaymentDetails(order)}
-            title="View payment validation & history"
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.2 text-[9.5px] font-bold cursor-pointer hover:shadow-xs transition ${paymentBadge.cls}`}
-          >
-            {paymentBadge.label}
-          </button>
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <div className="flex max-w-full flex-wrap items-center gap-1">
+            <span
+              className={`inline-flex shrink-0 items-center whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-tight ${
+                isGatewayOrder
+                  ? "border-purple-200 bg-purple-50 text-purple-700"
+                  : "border-stone-200 bg-stone-50 text-stone-700"
+              }`}
+            >
+              {getPaymentMethodBadge(order.paymentMethod)}
+            </span>
+            <button
+              type="button"
+              onClick={() => openPaymentDetails(order)}
+              title="View payment validation & history"
+              className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[9px] font-bold transition hover:shadow-xs cursor-pointer ${paymentBadge.cls}`}
+            >
+              {paymentBadge.label}
+            </button>
+          </div>
+
+          {/* Compact Inline Payment Warning & Actions */}
+          {isUnpaidSsl && (
+            <div className="flex min-w-0 flex-col items-start gap-1">
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-800"
+                title="Online payment unverified. Verify gateway or switch to COD before shipping."
+              >
+                <AlertTriangle className="h-2.5 w-2.5 shrink-0 text-amber-600" />
+                Unpaid Online
+              </span>
+              <div className="flex items-center gap-1 whitespace-nowrap text-[9px] font-semibold text-gray-600">
+                <button
+                  type="button"
+                  onClick={() => openPaymentDetails(order)}
+                  className="text-purple-700 hover:underline cursor-pointer"
+                  title="Verify payment with SSLCOMMERZ"
+                >
+                  Verify
+                </button>
+                <span className="text-gray-300">·</span>
+                <button
+                  type="button"
+                  onClick={() => state.setCodFallbackModal(order)}
+                  className="text-amber-800 hover:underline cursor-pointer"
+                  title="Switch order to Cash on Delivery"
+                >
+                  To COD
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Courier & Shipment Status */}
-        <div className="flex flex-col items-start gap-1 min-w-0">
-          {hasCourier ? (
-            <>
+        {/* Courier, consignment & delivery status */}
+        <div className="flex w-full min-w-0 flex-col items-start gap-1">
+          {isCourierCodMismatch && (
+            <span
+              role="alert"
+              className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[9px] font-bold text-rose-800"
+              title={`Paid order, but active courier consignment is set to collect ৳${Number(order.shipmentCodAmount || 0).toLocaleString("en-BD")}. Do not dispatch; cancel and rebook in the courier portal.`}
+            >
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              COD mismatch · ৳{Number(order.shipmentCodAmount || 0).toLocaleString("en-BD")}
+            </span>
+          )}
+          {bookingInProgress ? (
+            /* 1. Booking in progress (server downgrades stale locks to retryable) */
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-800 opacity-90 cursor-not-allowed"
+              title="A courier booking is in progress. This unlocks automatically if the attempt stalls."
+            >
+              <Loader2 className="h-3 w-3 animate-spin text-amber-600" />
+              <span>Booking…</span>
+            </button>
+          ) : bookingFailed ? (
+            /* 2. Booking failed -> Retry booking + error */
+            <div className="flex flex-col items-start gap-1">
               <button
                 type="button"
+                disabled={isFinal}
                 onClick={() => openShipment(order)}
-                className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[9.5px] font-bold capitalize transition hover:shadow-xs cursor-pointer ${shipmentBadgeTone}`}
-                title="Manage courier shipment"
-                aria-label="Manage courier shipment"
+                className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-100 cursor-pointer shadow-2xs transition"
+                title={order.courierBookingError || "Previous booking failed. Click to review and retry safely."}
               >
-                <CourierLogo provider={order.courier || "steadfast"} size="xs" className="shrink-0" />
-                <span className="truncate">
-                  {getCourierLabel(order.courier).replace(" Courier", "")}
-                </span>
+                <RotateCcw className="h-3 w-3" />
+                <span>Retry booking</span>
               </button>
-              {(order.trackingCode || order.consignmentId) && (
-                <div className="flex max-w-full items-center gap-1">
+              {order.courierBookingError && (
+                <span
+                  className="max-w-[150px] truncate text-[9.5px] font-medium text-rose-600"
+                  title={order.courierBookingError}
+                >
+                  {order.courierBookingError}
+                </span>
+              )}
+            </div>
+          ) : isDelivered ? (
+            /* 3. Delivered -> Delivered + View details */
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[9.5px] font-bold text-emerald-800">
+                  <CheckCircle2 className="h-2.5 w-2.5" />
+                  Delivered
+                </span>
+                {isMockConsignment && (
+                  <span className="rounded bg-stone-200 px-1 text-[8px] font-bold text-stone-600" title="Simulated consignment in development">
+                    TEST
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => openOrderDetails(order.id)}
+                  className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-gray-600 hover:text-purple-700 cursor-pointer"
+                >
+                  <Eye className="h-2.5 w-2.5" />
+                  View details
+                </button>
+                <CourierPrintAction
+                  order={order}
+                  className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-gray-500 hover:text-purple-700 cursor-pointer"
+                  iconClassName="h-2.5 w-2.5"
+                  iconOnly
+                  ariaLabel="Open courier portal to print the official label"
+                />
+              </div>
+            </div>
+          ) : isInTransit ? (
+            /* 4. In transit -> In transit + View tracking */
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9.5px] font-bold text-blue-700">
+                  <Truck className="h-2.5 w-2.5 animate-pulse" />
+                  In transit
+                </span>
+                {isMockConsignment && (
+                  <span className="rounded bg-stone-200 px-1 text-[8px] font-bold text-stone-600" title="Simulated consignment in development">
+                    TEST
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                {trackUrl ? (
+                  <a
+                    href={trackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-blue-700 hover:underline"
+                    title="View courier tracking"
+                  >
+                    <span>View tracking</span>
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                ) : (
                   <button
                     type="button"
                     onClick={() =>
                       void copyValue(
-                        String(order.trackingCode || order.consignmentId),
-                        "Tracking code"
+                        String(order.consignmentId || order.trackingCode),
+                        "Tracking Code"
                       )
                     }
-                    className="truncate font-mono text-[10.5px] text-gray-500 hover:text-purple-600 cursor-pointer"
-                    title="Click to copy tracking code"
+                    className="truncate font-mono text-[9.5px] font-semibold text-gray-700 hover:text-purple-700 cursor-pointer max-w-[110px]"
+                    title="Copy tracking code"
                   >
                     {order.trackingCode || order.consignmentId}
                   </button>
-                  {trackUrl && (
-                    <a
-                      href={trackUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-purple-600 shrink-0"
-                      title="Track on courier portal"
-                    >
-                      <ExternalLink className="h-2.5 w-2.5" />
-                    </a>
-                  )}
+                )}
+                <button
+                  type="button"
+                  disabled={checkingCourier}
+                  onClick={async () => {
+                    setCheckingCourier(true);
+                    try {
+                      await refreshShipment(
+                        String(order.consignmentId || order.trackingCode),
+                        false
+                      );
+                    } finally {
+                      setCheckingCourier(false);
+                    }
+                  }}
+                  className="text-gray-400 hover:text-blue-700 disabled:opacity-50 cursor-pointer"
+                  title="Refresh tracking status"
+                >
+                  <RefreshCw className={`h-2.5 w-2.5 ${checkingCourier ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+            </div>
+          ) : isConsignmentCancelled ? (
+            /* 5a. Consignment cancelled at the courier — rebook or sync */
+            <div className="flex flex-col items-start gap-1">
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9.5px] font-bold text-rose-700"
+                title="This parcel was cancelled at the courier. Re-book Steadfast or check status."
+              >
+                <XCircle className="h-2.5 w-2.5" />
+                Cancelled
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {!isFinal && (
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      printCourierLabel(order);
-                    }}
-                    className="text-gray-400 hover:text-purple-600 shrink-0"
-                    title="Print 4x6 Shipping Label"
+                    onClick={() => openShipment(order)}
+                    className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[9.5px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer shadow-2xs transition"
+                    title="Re-book courier consignment for this order"
                   >
-                    <Printer className="h-2.5 w-2.5" />
+                    <Truck className="h-2.5 w-2.5" />
+                    Re-book
                   </button>
-                </div>
-              )}
+                )}
+                {hasConsignment && (
+                  <button
+                    type="button"
+                    disabled={checkingCourier}
+                    onClick={async () => {
+                      setCheckingCourier(true);
+                      try {
+                        await refreshShipment(
+                          String(order.consignmentId || order.trackingCode),
+                          false
+                        );
+                      } finally {
+                        setCheckingCourier(false);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[9.5px] font-bold text-gray-600 hover:border-purple-300 hover:text-purple-700 disabled:opacity-50 cursor-pointer"
+                    title="Check latest status from Steadfast"
+                  >
+                    <RefreshCw className={`h-2.5 w-2.5 ${checkingCourier ? "animate-spin" : ""}`} />
+                    {checkingCourier ? "Checking" : "Check"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => openOrderDetails(order.id)}
+                  className="text-[9.5px] font-semibold text-gray-500 hover:text-purple-700 cursor-pointer"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          ) : isUnknownCourierStatus ? (
+            /* 5b. Courier reported no recognizable status — commonly a portal
+                   cancellation. Never display this as a successful booking. */
+            <div className="flex flex-col items-start gap-1">
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-800"
+                title="Steadfast did not return a recognizable status for this consignment. This commonly happens after the parcel is cancelled in the Steadfast portal — open the order and use 'Mark cancelled (portal)' if you cancelled it there."
+              >
+                <AlertTriangle className="h-2.5 w-2.5 text-amber-600" />
+                Check Courier
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="truncate max-w-[95px] text-[9px] font-bold capitalize text-amber-700">
+                  {courierStatusLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openOrderDetails(order.id)}
+                  className="text-[9.5px] font-semibold text-purple-700 hover:underline cursor-pointer"
+                  title="Verify at the courier, then mark cancelled locally if needed"
+                >
+                  Verify / Mark cancelled
+                </button>
+              </div>
+            </div>
+          ) : isReturnOrException ? (
+            /* 5. Return / Exception -> Attention required */
+            <div className="flex flex-col items-start gap-1">
+              <span
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-800"
+                title={`Shipment status: ${courierStatusLabel}`}
+              >
+                <AlertTriangle className="h-2.5 w-2.5 text-amber-600" />
+                Attention required
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="truncate max-w-[95px] text-[9px] font-bold capitalize text-amber-700">
+                  {courierStatusLabel}
+                </span>
+                {hasConsignment && (
+                  <button
+                    type="button"
+                    disabled={checkingCourier}
+                    onClick={async () => {
+                      setCheckingCourier(true);
+                      try {
+                        await refreshShipment(
+                          String(order.consignmentId || order.trackingCode),
+                          false
+                        );
+                      } finally {
+                        setCheckingCourier(false);
+                      }
+                    }}
+                    className="text-gray-400 hover:text-purple-700 disabled:opacity-50 cursor-pointer"
+                    title="Refresh status from Steadfast"
+                  >
+                    <RefreshCw className={`h-2.5 w-2.5 ${checkingCourier ? "animate-spin" : ""}`} />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => openOrderDetails(order.id)}
+                  className="text-[9.5px] font-semibold text-purple-700 hover:underline cursor-pointer"
+                >
+                  Details
+                </button>
+              </div>
+            </div>
+          ) : isBooked ? (
+            /* 6. Booking successful -> Booked + tracking code */
+            <>
+              <div className="flex max-w-full flex-wrap items-center gap-1">
+                {rawShipmentStatus === "in_review" ? (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[9.5px] font-bold text-sky-700"
+                    title="Consignment booked with Steadfast, in hub review"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
+                    In Review
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9.5px] font-bold text-emerald-700" title="Manage courier shipment" aria-label="Manage courier shipment">
+                    <CheckCircle2 className="h-2.5 w-2.5" />
+                    Booked
+                  </span>
+                )}
+                {isMockConsignment && (
+                  <span className="rounded bg-stone-200 px-1 text-[8px] font-bold text-stone-600" title="Simulated consignment in development">
+                    TEST
+                  </span>
+                )}
+              </div>
+
+              <div className="flex max-w-full min-w-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void copyValue(
+                      String(order.consignmentId || order.trackingCode),
+                      "Tracking Code"
+                    )
+                  }
+                  className="truncate font-mono text-[10.5px] font-semibold text-gray-700 hover:text-purple-700 cursor-pointer"
+                  title="Click to copy tracking code"
+                >
+                  {order.trackingCode || order.consignmentId}
+                </button>
+                {trackUrl && (
+                  <a
+                    href={trackUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 text-gray-400 hover:text-purple-700"
+                    title="Open courier tracking"
+                  >
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1">
+                <CourierPrintAction
+                  order={order}
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-0.5 text-[9.5px] font-bold text-gray-600 hover:border-purple-300 hover:text-purple-700 cursor-pointer"
+                  iconClassName="h-2.5 w-2.5"
+                >
+                  Open Steadfast
+                </CourierPrintAction>
+                <button
+                  type="button"
+                  disabled={checkingCourier}
+                  onClick={async () => {
+                    setCheckingCourier(true);
+                    try {
+                      await refreshShipment(
+                        String(order.consignmentId || order.trackingCode),
+                        false
+                      );
+                    } finally {
+                      setCheckingCourier(false);
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-[9.5px] font-bold text-blue-700 hover:bg-blue-100 disabled:opacity-50 cursor-pointer"
+                  title="Pull the latest delivery status from Steadfast"
+                >
+                  <RefreshCw className={`h-2.5 w-2.5 ${checkingCourier ? "animate-spin" : ""}`} />
+                  {checkingCourier ? "Checking" : "Check"}
+                </button>
+              </div>
             </>
           ) : (
-            <button
-              type="button"
-              disabled={isFinal}
-              onClick={() => openShipment(order)}
-              className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-700 px-2 py-0.5 text-[10px] font-bold shadow-2xs cursor-pointer transition"
-              title="Ship with Steadfast Courier"
-            >
-              <Truck className="h-3 w-3 text-purple-600 shrink-0" />
-              <span>Ship Steadfast</span>
-            </button>
+            /* 7. Not booked -> Send to Steadfast (with payment eligibility gating) */
+            isOnlinePaymentPending ? (
+              <div className="flex w-full min-w-0 flex-col items-start gap-1">
+                <span
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-800"
+                  title="Online payment pending. Cannot book courier until payment is verified."
+                >
+                  <Clock className="h-3 w-3 shrink-0" />
+                  Payment Pending
+                </span>
+                <div className="flex items-center gap-1 whitespace-nowrap text-[9.5px] font-semibold text-gray-500">
+                  <button
+                    type="button"
+                    onClick={() => openPaymentDetails(order)}
+                    className="text-purple-700 hover:underline cursor-pointer"
+                  >
+                    Verify payment
+                  </button>
+                  <span className="text-gray-300">·</span>
+                  <span>to book courier</span>
+                </div>
+              </div>
+            ) : isOnlinePaymentFailed ? (
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-800 opacity-60 cursor-not-allowed"
+                title="Online payment failed. Cannot book courier."
+              >
+                <AlertCircle className="h-3 w-3 shrink-0" />
+                <span>Payment Failed</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={isFinal}
+                onClick={() => openShipment(order)}
+                className="inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-600 px-2.5 py-1 text-[10.5px] font-bold text-white shadow-2xs transition hover:bg-emerald-700 disabled:opacity-40 cursor-pointer"
+                title="Review parcel details and send to Steadfast"
+              >
+                <Truck className="h-3 w-3 shrink-0" />
+                <span>Send to Steadfast</span>
+              </button>
+            )
           )}
         </div>
 
         {/* Total & Remaining / Advance Breakdown */}
-        <div className="min-w-0">
+        <div className="min-w-0 whitespace-nowrap">
           <p className="text-[13px] font-bold tabular-nums text-gray-900">
             {formatBDT(order.total)}
           </p>
@@ -525,21 +922,15 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
         </div>
 
         {/* Order Status */}
-        <div>
+        <div className="min-w-0">
           <button
             type="button"
-            disabled={FINAL_STATUSES.includes(order.status)}
             onClick={() => {
-              if (!FINAL_STATUSES.includes(order.status)) {
-                setSelectedStatus(null);
-                setStatusModal(order);
-              }
+              setSelectedStatus(null);
+              setStatusModal(order);
             }}
-            className={`inline-flex items-center justify-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold capitalize transition ${
-              FINAL_STATUSES.includes(order.status)
-                ? "opacity-75 cursor-not-allowed"
-                : "cursor-pointer hover:shadow-xs"
-            } ${statusColor}`}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold capitalize transition cursor-pointer hover:shadow-xs hover:ring-1 hover:ring-purple-300 ${statusColor}`}
+            title="Click to change order status"
           >
             {statusLabel}
           </button>
@@ -547,6 +938,21 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
 
         {/* Actions */}
         <div className="relative flex items-center justify-end gap-1.5">
+          {order.status === "pending" && (
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.stopPropagation();
+                await state.handleStatusChange(order.id, "confirmed");
+              }}
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition shadow-2xs"
+              title="Confirm Order (Customer verified)"
+            >
+              <Check className="h-3 w-3 text-emerald-600" />
+              <span>Confirm</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => openOrderDetails(order.id)}
@@ -578,97 +984,7 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
         </div>
       </div>
 
-      {/* Prioritized Needs Action Strip */}
-      {showActionStrip && actionCategory && (
-        <div className="hidden lg:flex items-center justify-between gap-3 border-t border-purple-100/70 bg-purple-50/30 px-5 py-2 text-[11.5px]">
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${actionCategory.badgeTone}`}
-            >
-              <AlertCircle className="h-3 w-3 shrink-0" />
-              {actionCategory.label}
-            </span>
-            <span className="truncate text-gray-700 max-w-[500px]">
-              {actionCategory.reason}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {actionCategory.actionKind === "verify_payment" && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => openPaymentDetails(order)}
-                  className="rounded-lg border border-purple-300 bg-white px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-50 transition cursor-pointer"
-                >
-                  Verify Gateway
-                </button>
-                <button
-                  type="button"
-                  onClick={() => state.setCodFallbackModal(order)}
-                  className="rounded-lg bg-purple-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-purple-700 transition cursor-pointer"
-                >
-                  Switch to COD
-                </button>
-              </>
-            )}
-
-            {actionCategory.actionKind === "confirm_order" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedStatus("confirmed");
-                  setStatusModal(order);
-                }}
-                className="rounded-lg bg-orange-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-orange-700 transition cursor-pointer"
-              >
-                Confirm Order
-              </button>
-            )}
-
-            {actionCategory.actionKind === "book_shipment" && (
-              <button
-                type="button"
-                onClick={() => openShipment(order)}
-                className="rounded-lg bg-purple-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-purple-700 transition cursor-pointer"
-              >
-                Send to Steadfast
-              </button>
-            )}
-
-            {actionCategory.actionKind === "retry_booking" && (
-              <button
-                type="button"
-                onClick={() => openShipment(order)}
-                className="rounded-lg bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-rose-700 transition cursor-pointer"
-              >
-                Retry Booking
-              </button>
-            )}
-
-            {actionCategory.actionKind === "view_delivery" && (
-              <button
-                type="button"
-                onClick={() => openShipment(order)}
-                className="rounded-lg border border-gray-300 bg-white px-2.5 py-1 text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
-              >
-                Inspect Tracking
-              </button>
-            )}
-
-            {actionCategory.actionKind === "settle_cod" && (
-              <Link
-                href={`/admin/orders/${encodeURIComponent(String(order.number || order.id))}`}
-                className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 transition"
-              >
-                Settle Courier COD
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Responsive Mobile / Tablet Card (< lg) — zero horizontal overflow */}
+      {/* Responsive Mobile / Tablet Card (< lg) â€” zero horizontal overflow */}
       <div
         className={`lg:hidden p-4 space-y-3 transition ${
           isSelected ? "bg-purple-50/70" : "hover:bg-purple-50/20"
@@ -691,26 +1007,32 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
               >
                 #{order.number || order.id}
               </button>
-              <p className="text-[11px] text-gray-500">
+              <p
+                className="text-[11px] text-gray-500"
+                title={order.channel === "admin" ? "Admin Order" : "Website Order"}
+              >
                 {order.date_created
                   ? new Date(order.date_created).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
                     })
-                  : "—"}
+                  : "â€”"}
               </p>
-              <span className="inline-block mt-0.5 rounded-md bg-stone-100 px-1.5 py-0.5 text-[9.5px] font-medium text-stone-700">
-                {order.channel === "admin" ? "Admin Order" : "Website Order"}
-              </span>
             </div>
           </div>
 
-          <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${statusColor}`}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedStatus(null);
+              setStatusModal(order);
+            }}
+            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold cursor-pointer transition hover:ring-1 hover:ring-purple-300 ${statusColor}`}
+            title="Click to change order status"
           >
             {statusLabel}
-          </span>
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-2 rounded-xl border border-purple-100/70 bg-purple-50/25 p-3 text-[12px]">
@@ -756,11 +1078,24 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
             {!isFinal && (
               <button
                 type="button"
+                disabled={bookingInProgress}
                 onClick={() => openShipment(order)}
-                className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700"
+                className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold ${
+                  bookingInProgress
+                    ? "border-amber-200 bg-amber-50 text-amber-800 opacity-70 cursor-not-allowed"
+                    : "border-blue-200 bg-blue-50 text-blue-700"
+                }`}
               >
-                <Truck className="h-3 w-3" />
-                {hasCourier ? `${order.courier || "Courier"} · ${shipmentStatusLabel}` : "Send to Courier"}
+                {bookingInProgress ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Truck className="h-3 w-3" />
+                )}
+                {bookingInProgress
+                  ? "Booking…"
+                  : hasCourier
+                    ? `${order.courier || "Courier"} · ${shipmentStatusLabel}`
+                    : "Send to Steadfast"}
               </button>
             )}
             {isUnpaidSsl && (
@@ -774,6 +1109,20 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            {order.status === "pending" && (
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await state.handleStatusChange(order.id, "confirmed");
+                }}
+                className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 cursor-pointer transition shadow-2xs"
+                title="Confirm Order (Customer verified)"
+              >
+                <Check className="h-3 w-3 text-emerald-600" />
+                <span>Confirm</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => openOrderDetails(order.id)}
@@ -837,18 +1186,14 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
               <Eye className="h-3.5 w-3.5 text-gray-400" />
               View Details
             </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setMenuOpen(false);
-                printCourierLabel(order);
-              }}
+            <CourierPrintAction
+              order={order}
+              onClick={() => setMenuOpen(false)}
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 cursor-pointer transition-colors"
+              iconClassName="h-3.5 w-3.5 text-gray-400"
             >
-              <Printer className="h-3.5 w-3.5 text-gray-400" />
-              Print Slip
-            </button>
+              Open Steadfast Portal
+            </CourierPrintAction>
             {!FINAL_STATUSES.includes(order.status) && (
               <button
                 type="button"
@@ -874,7 +1219,7 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
               className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-gray-700 hover:bg-purple-50 hover:text-purple-700 cursor-pointer transition-colors"
             >
               <Truck className="h-3.5 w-3.5 text-gray-400" />
-              {hasCourier ? "Shipment Details" : "Send to Courier"}
+              {hasCourier ? "Shipment Details" : "Send to Steadfast"}
             </button>
 
             {isUnpaidSsl && (
@@ -949,3 +1294,4 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
     </div>
   );
 }
+

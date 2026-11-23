@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import {
   MockSteadfastProvider,
@@ -10,6 +10,8 @@ import {
 } from "../src/server/courier/courier-mode";
 import { getCourierAdapter } from "../src/server/courier/index";
 import { steadfastAdapter } from "../src/server/courier/steadfast";
+import { SHIPMENT_STATUSES } from "../src/server/courier/steadfast-utils";
+import { Shipment } from "../src/models/Shipment";
 
 test("MockSteadfastProvider: Local development defaults to mock mode with zero HTTP requests", () => {
   const provider = new MockSteadfastProvider();
@@ -252,17 +254,20 @@ test("Security Rule 8: Prevents switching existing live shipments into mock mode
 test("Security Rule 1, 2, 3: Missing live config fails safely and defaults to mock", () => {
   const originalCourierMode = process.env.COURIER_MODE;
   const originalLiveBooking = process.env.STEADFAST_LIVE_BOOKING_ENABLED;
+  const originalForceLive = process.env.FORCE_LIVE_COURIER_TEST;
 
   try {
     // 1. Unset env defaults to mock
     delete process.env.COURIER_MODE;
     delete process.env.STEADFAST_LIVE_BOOKING_ENABLED;
+    delete process.env.FORCE_LIVE_COURIER_TEST;
     const config1 = getCourierModeConfig();
     assert.equal(config1.mode, "mock");
     assert.equal(config1.isMock, true);
     assert.equal(config1.isLive, false);
 
     // 2. COURIER_MODE=live without STEADFAST_LIVE_BOOKING_ENABLED=true fails safely
+    process.env.FORCE_LIVE_COURIER_TEST = "true";
     process.env.COURIER_MODE = "live";
     process.env.STEADFAST_LIVE_BOOKING_ENABLED = "false";
     const config2 = getCourierModeConfig();
@@ -275,6 +280,9 @@ test("Security Rule 1, 2, 3: Missing live config fails safely and defaults to mo
 
     if (originalLiveBooking !== undefined) process.env.STEADFAST_LIVE_BOOKING_ENABLED = originalLiveBooking;
     else delete process.env.STEADFAST_LIVE_BOOKING_ENABLED;
+
+    if (originalForceLive !== undefined) process.env.FORCE_LIVE_COURIER_TEST = originalForceLive;
+    else delete process.env.FORCE_LIVE_COURIER_TEST;
   }
 });
 
@@ -393,3 +401,16 @@ test("Check 4: Simulated balance and mock shipments are decoupled from real fina
     assert.equal(mockBooking.raw.mode, "mock");
   }
 });
+
+test("Shipment schema accepts every canonical courier status (regression: unknown caused 500)", () => {
+  const statusPath = Shipment.schema.path("status") as unknown as { enumValues?: string[] };
+  const enumValues = statusPath.enumValues || [];
+  for (const status of SHIPMENT_STATUSES) {
+    assert.ok(
+      enumValues.includes(status),
+      `Shipment.status enum must include "${status}" - missing values make bookings fail with a 500`
+    );
+  }
+  assert.ok(enumValues.includes("unknown"));
+});
+

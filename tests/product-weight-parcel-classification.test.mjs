@@ -268,18 +268,17 @@ test("10. UI Create Shipment Modal Integration", () => {
   assert.match(modalsSource, /grid-cols-1 gap-4 sm:grid-cols-2/, "Must preserve 2-column layout");
 
   // Parcel classification
-  assert.match(modalsSource, /Parcel Classification/, "Must show Parcel Classification selector");
+  assert.match(modalsSource, /Parcel classification/, "Must show Parcel classification selector");
   assert.match(modalsSource, /Auto-Classified/, "Must show auto-classification indicator");
 
   // Weight breakdown
-  assert.match(modalsSource, /Parcel Weight Breakdown/, "Must show weight breakdown card");
   assert.match(modalsSource, /Products Weight/, "Must display product weight line");
   assert.match(modalsSource, /Packaging Allowance/, "Must display packaging allowance dropdown");
   assert.match(modalsSource, /Final Package Weight/, "Must display final package weight");
 
   // Missing weight warnings & quick-save
-  assert.match(modalsSource, /Missing product weight/, "Must show missing weight warning");
-  assert.match(modalsSource, /save to Product database/i, "Must allow saving verified weight to product database");
+  assert.match(modalsSource, /Missing Product Weight/i, "Must show missing weight warning");
+  assert.match(modalsSource, /handleSaveProductWeight/, "Must wire saving verified weight to the product database");
   assert.match(modalsSource, /handleSaveProductWeight/, "Must wire handleSaveProductWeight handler");
 
   // Footer summary

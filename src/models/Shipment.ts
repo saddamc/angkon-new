@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
-import type { ShipmentStatus } from "@/server/courier/steadfast-utils";
+import { SHIPMENT_STATUSES, type ShipmentStatus } from "@/server/courier/steadfast-utils";
 
 /**
  * One consignment per courier provider per order.
@@ -73,20 +73,7 @@ const ShipmentSchema = new Schema<IShipment>(
     confirmedAt: { type: Date, default: null },
     status: {
       type: String,
-      enum: [
-        "created",
-        "pending",
-        "picked_up",
-        "in_transit",
-        "out_for_delivery",
-        "delivered",
-        "partial_delivered",
-        "cancelled",
-        "hold",
-        "in_review",
-        "returned",
-        "failed",
-      ],
+      enum: SHIPMENT_STATUSES,
       default: "pending",
       index: true,
     },

@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, MessageSquarePlus, Undo2 } from "lucide-react";
+import { ArrowRight, RefreshCw, MessageSquarePlus, Undo2 } from "lucide-react";
 
 interface PaymentActionsProps {
   attemptId: string;
   status: string;
   expectedAmount: number;
   currency?: string;
+  provider?: string;
+  orderNumber?: string;
 }
 
 const REFUNDABLE = new Set(["succeeded", "paid", "partially_refunded"]);
@@ -19,6 +22,8 @@ export function PaymentActions({
   status,
   expectedAmount,
   currency = "BDT",
+  provider = "sslcommerz",
+  orderNumber,
 }: PaymentActionsProps) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -29,6 +34,8 @@ export function PaymentActions({
 
   const [refundAmount, setRefundAmount] = useState(String(expectedAmount));
   const [refundReason, setRefundReason] = useState("");
+
+  const isGateway = provider === "sslcommerz";
 
   const run = async (
     key: string,
@@ -65,17 +72,19 @@ export function PaymentActions({
         <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
           Admin Actions
         </h2>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="text-xs"
-          disabled={busy === "reconcile"}
-          onClick={() => run("reconcile", `/api/payments/${attemptId}/reconcile`, undefined, "Reconciliation completed.")}
-        >
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          {busy === "reconcile" ? "Reconciling..." : "Reconcile now"}
-        </Button>
+        {isGateway && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs"
+            disabled={busy === "reconcile"}
+            onClick={() => run("reconcile", `/api/payments/${attemptId}/reconcile`, undefined, "Reconciliation completed.")}
+          >
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+            {busy === "reconcile" ? "Reconciling..." : "Reconcile now"}
+          </Button>
+        )}
       </div>
 
       {message && (
@@ -133,7 +142,7 @@ export function PaymentActions({
         </Button>
       </div>
 
-      {REFUNDABLE.has(status) && (
+      {REFUNDABLE.has(status) && isGateway && (
         <div className="space-y-2 border-t border-neutral-100 dark:border-neutral-800 pt-3">
           <label className="text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
             <Undo2 className="w-3.5 h-3.5" />
@@ -179,6 +188,27 @@ export function PaymentActions({
             A refund is a separate financial operation. The payment stays successful until
             the gateway confirms the refund.
           </p>
+        </div>
+      )}
+
+      {REFUNDABLE.has(status) && !isGateway && (
+        <div className="space-y-2 border-t border-neutral-100 pt-3 dark:border-neutral-800">
+          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+            Manual payment — refund offline
+          </p>
+          <p className="text-[11px] leading-relaxed text-neutral-500">
+            This amount was recorded by an administrator, so it cannot be refunded through
+            SSLCOMMERZ. Record the refund from the order so the paid balance and COD update.
+          </p>
+          {orderNumber && (
+            <Link
+              href={`/admin/orders/${orderNumber}`}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:underline dark:text-emerald-400"
+            >
+              Open order #{orderNumber}
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          )}
         </div>
       )}
     </div>

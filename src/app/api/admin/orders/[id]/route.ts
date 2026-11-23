@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
+import { Shipment } from "@/models/Shipment";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
 import { requireAdminSessionCore } from "@/server/admin-auth";
 import { commitStockForOrder, releaseStockForOrder } from "@/server/stock";
@@ -13,6 +14,7 @@ import {
   getAllowedNextStatuses,
   normalizeOrderStatus,
 } from "@/server/orders/workflow";
+import { isOnlinePaymentMethod } from "@/lib/payment-methods";
 
 const ORDER_STATUSES = new Set([
   "pending",
@@ -137,6 +139,44 @@ export async function PATCH(
         );
       }
 
+      // A payment can be recorded after a COD parcel was booked. The order's
+      // balance then changes, but a submitted consignment keeps its original
+      // collect amount. Never let staff mark that mismatched parcel shipped.
+      if (
+        ["ready_to_ship", "shipped"].includes(nextStatusNormalized) &&
+        nextStatusNormalized !== currentStatusNormalized
+      ) {
+        const activeShipment = await Shipment.findOne({
+          orderId: beforeOrder._id,
+          status: {
+            $nin: ["cancelled", "failed", "returned", "delivered", "partial_delivered"],
+          },
+        })
+          .select("status consignmentId trackingCode codAmount provider")
+          .sort({ createdAt: -1 })
+          .lean();
+        const orderForShippingFinancials =
+          body.paymentStatus === "paid"
+            ? { ...beforeOrder.toObject(), paymentStatus: "paid", paidAmount: beforeOrder.total }
+            : beforeOrder;
+        const currentCollectible =
+          computeOrderFinancials(orderForShippingFinancials).codAmountToCollect;
+        const courierCollectible = Math.max(0, Number(activeShipment?.codAmount) || 0);
+
+        if (activeShipment && courierCollectible > currentCollectible + 0.009) {
+          return NextResponse.json(
+            {
+              error: `Do not mark this order Ready to Ship or Shipped: courier consignment ${activeShipment.consignmentId || activeShipment.trackingCode || ""} is set to collect ৳${courierCollectible.toLocaleString("en-BD")}, but the current order balance is ৳${currentCollectible.toLocaleString("en-BD")}. Cancel the consignment in the courier portal and rebook it with the correct collection amount.`,
+              code: "COURIER_COD_PAYMENT_MISMATCH",
+              courierCodAmount: courierCollectible,
+              currentCollectibleAmount: currentCollectible,
+              consignmentId: activeShipment.consignmentId || null,
+            },
+            { status: 409 }
+          );
+        }
+      }
+
       if (
         nextStatusNormalized !== currentStatusNormalized &&
         !canTransitionOrderStatus(currentStatusNormalized, nextStatusNormalized)
@@ -202,6 +242,39 @@ export async function PATCH(
             { status: 409 }
           );
         }
+
+        // Never orphan a live consignment: the parcel must be cancelled (or
+        // confirmed cancelled at the courier portal) before cancelling the order.
+        const activeConsignment = await Shipment.findOne({
+          orderId: beforeOrder._id,
+          status: {
+            $nin: ["cancelled", "failed", "returned", "delivered", "partial_delivered"],
+          },
+        })
+          .select("status consignmentId trackingCode")
+          .lean();
+
+        if (activeConsignment) {
+          // Steadfast reports "unknown" for consignments removed in the
+          // merchant portal — give the admin the exact way out instead of a
+          // generic "still active" dead end.
+          if (String(activeConsignment.status) === "unknown") {
+            return NextResponse.json(
+              {
+                error: `Consignment ${activeConsignment.consignmentId || activeConsignment.trackingCode || ""} reported an unknown courier status — this commonly means the parcel was cancelled in the Steadfast portal. Open the order's status modal or courier tab and use "Mark Consignment Cancelled (portal)", then cancel the order.`,
+                code: "CONSIGNMENT_STATUS_UNKNOWN",
+              },
+              { status: 409 }
+            );
+          }
+          return NextResponse.json(
+            {
+              error: `Consignment ${activeConsignment.consignmentId || activeConsignment.trackingCode || ""} is still active. Cancel it from the Shipment tab first, then cancel the order.`,
+              code: "ACTIVE_CONSIGNMENT_EXISTS",
+            },
+            { status: 409 }
+          );
+        }
       }
 
       // Check shipped condition: cannot jump from pending/on-hold directly to shipped
@@ -228,7 +301,7 @@ export async function PATCH(
       // Rule: Online gateway orders must not be marked fully paid blindly without gateway/manual transaction proof.
       if (
         body.paymentStatus === "paid" &&
-        beforeOrder.paymentMethod === "sslcommerz" &&
+        isOnlinePaymentMethod(beforeOrder.paymentMethod) &&
         beforeOrder.paymentStatus !== "paid" &&
         !body.confirmOfflineCollection
       ) {

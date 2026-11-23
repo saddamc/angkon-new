@@ -104,8 +104,8 @@ export class OrderPaymentRepository {
       },
       {
         $set: {
-          paymentStatus: "failed",
-          failedAt: now,
+          paymentStatus: args.status,
+          failedAt: args.status === "failed" ? now : null,
           expectedCodAmount: 0,
           codSettlementStatus: "none",
           orderStatus: nextOrderStatus,

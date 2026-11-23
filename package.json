@@ -1,7 +1,7 @@
 {
   "name": "angkon",
   "version": "1.0.0",
-  "description": "ANGKON — Authentic Ethnic Luxury Apparel E-Commerce Store",
+  "description": "ANGKON â€” Authentic Ethnic Luxury Apparel E-Commerce Store",
   "private": true,
   "imports": {
     "@/*": "./src/*"
@@ -16,10 +16,16 @@
     "typecheck": "tsc --noEmit",
     "verify:environment-isolation": "npx tsx scripts/verify-environment-isolation.mjs",
     "verify:atlas-credentials": "npx tsx scripts/verify-atlas-credentials.mjs",
-    "test:isolation": "npx tsx --test tests/environment-isolation.test.mjs",
+    "verify:vps": "node scripts/verify-vps-readiness.mjs",
+    "test:unit": "npx tsx --test tests/sliding-window-rate-limit.test.ts tests/cart-quantity-limits.test.ts tests/color-name-management.test.mjs tests/product-weight-parcel-classification.test.mjs tests/product-html-sanitization.test.mjs tests/json-ld-escaping.test.mjs",
+    "test:contracts": "npx tsx --test tests/admin-order-create.test.mjs tests/steadfast-status-reconciliation.test.ts tests/courier-cancellation-lifecycle.test.mjs tests/order-cancellation-governance.test.mjs tests/meta-marketing-schema.test.mjs tests/dataset-config.test.mjs tests/courier-sync-config.test.mjs tests/admin-orders-courier-status.test.mjs",
+    "test:payments": "npx tsx --test tests/payments/*.test.ts tests/payments-refund-safety.test.mjs tests/payments-enterprise-hardening.test.mjs tests/payment-and-order-hardening.test.mjs",
+    "test:integration": "npx tsx --test tests/orders-payment-courier-workflow.test.ts tests/steadfast-modes.test.ts tests/steadfast-modal-weight-booking.test.ts tests/steadfast-integration.test.mjs tests/multi-courier.test.mjs tests/order-lifecycle-recovery.test.mjs tests/courier-automation.test.mjs",
+    "test:regression": "node --test tests/*.test.mjs",
+    "test:all": "npm run test:unit && npm run test:contracts && npm run test:payments && npm run test:integration && npm run test:regression",
+    "test:isolation": "npx tsx --test tests/environment-isolation.test.ts",
     "test:atlas-credentials": "node --test tests/atlas-credential-verification.test.mjs",
-    "test:payments": "npx tsx --test tests/payments/*.test.ts",
-    "test:rate-limit": "npx tsx --test tests/sliding-window-rate-limit.test.mjs",
+    "test:rate-limit": "npx tsx --test tests/sliding-window-rate-limit.test.ts",
     "test:functional": "npx tsx scripts/execute-functional-and-order-tests.mjs",
     "probe:integrations": "node scripts/sandbox/probe-integrations.mjs",
     "test:e2e": "playwright test",
@@ -72,3 +78,4 @@
     "uuid": "^11.1.1"
   }
 }
+

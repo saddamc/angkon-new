@@ -7,7 +7,7 @@ import {
   RESET_TOKEN_TTL_MS,
   VERIFY_TOKEN_TTL_MS,
   generateOneTimeToken,
-  getSiteUrl,
+  getEmailSiteUrl,
   hashToken,
 } from "@/server/auth";
 import { sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email/account-emails";
@@ -38,7 +38,7 @@ export function canSendVerification(user: IUser): boolean {
  */
 export async function issueVerificationEmail(
   user: IUser,
-  request: NextRequest,
+  _request: NextRequest,
   reason: "register" | "checkout" | "resend",
   orderNumber?: string,
 ) {
@@ -48,19 +48,19 @@ export async function issueVerificationEmail(
   user.lastVerificationSentAt = new Date();
   await user.save();
 
-  const verifyUrl = `${getSiteUrl(request)}/api/auth/verify?token=${encodeURIComponent(raw)}`;
+  const verifyUrl = `${getEmailSiteUrl()}/api/auth/verify?token=${encodeURIComponent(raw)}`;
   return sendVerificationEmail({ to: user.email, name: user.name, verifyUrl, reason, orderNumber });
 }
 
 /** Create a password-reset token (1 hour, single use) and email the link. */
-export async function issuePasswordResetEmail(user: IUser, request: NextRequest) {
+export async function issuePasswordResetEmail(user: IUser, _request: NextRequest) {
   const { raw, hash } = generateOneTimeToken();
   user.resetTokenHash = hash;
   user.resetTokenExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
   user.lastResetSentAt = new Date();
   await user.save();
 
-  const resetUrl = `${getSiteUrl(request)}/my-account/reset-password?token=${encodeURIComponent(raw)}`;
+  const resetUrl = `${getEmailSiteUrl()}/my-account/reset-password?token=${encodeURIComponent(raw)}`;
   return sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl });
 }
 

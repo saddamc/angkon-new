@@ -144,7 +144,8 @@ export default async function AdminPaymentsPage({ searchParams }: AdminPaymentsP
             Payment Operations
           </h1>
           <p className="text-sm text-neutral-500">
-            Manage SSLCOMMERZ gateway transactions, reconciliations, and review flags.
+            Manage SSLCOMMERZ gateway transactions, reconciliation, review flags and manually
+            recorded payments.
           </p>
         </div>
 
@@ -154,6 +155,17 @@ export default async function AdminPaymentsPage({ searchParams }: AdminPaymentsP
             Run Reconciliation Job
           </Button>
         </form>
+      </div>
+
+      {/* Manual-entry explainer */}
+      <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-amber-800">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>
+          <strong>Manual</strong> rows are recorded by an administrator (bKash, Nagad, bank
+          transfer, cash) and are <strong>not</strong> SSLCOMMERZ gateway transactions. Only
+          SSLCOMMERZ rows carry a verified <code className="rounded bg-amber-100 px-1">val_id</code>{" "}
+          from the gateway.
+        </span>
       </div>
 
       {/* KPI Cards */}
@@ -363,7 +375,7 @@ export default async function AdminPaymentsPage({ searchParams }: AdminPaymentsP
                         </Link>
                       </td>
                       <td className="py-3 px-4 font-semibold text-neutral-900 dark:text-neutral-100">
-                        {formatCurrency(attempt.expectedAmount, attempt.currency)}
+                        {formatCurrency(attempt.expectedAmount ?? attempt.amount, attempt.currency)}
                       </td>
                       <td className="py-3 px-4">
                         <span
@@ -381,9 +393,33 @@ export default async function AdminPaymentsPage({ searchParams }: AdminPaymentsP
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="uppercase text-[11px] font-medium">
-                          {attempt.cardBrand || attempt.cardType || "SSLCOMMERZ"}
-                        </span>
+                        {attempt.provider === "manual" ? (
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                              Manual
+                            </span>
+                            {attempt.cardType && (
+                              <span className="text-[10px] uppercase text-neutral-500">
+                                {attempt.cardType}
+                              </span>
+                            )}
+                          </div>
+                        ) : attempt.provider === "cod" ? (
+                          <span className="text-[10px] font-bold uppercase text-neutral-600">
+                            Cash on Delivery
+                          </span>
+                        ) : (
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-purple-700 dark:text-purple-400">
+                              SSLCOMMERZ
+                            </span>
+                            {(attempt.cardBrand || attempt.cardType) && (
+                              <span className="text-[10px] uppercase text-neutral-500">
+                                {attempt.cardBrand || attempt.cardType}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3 px-4 text-neutral-500 whitespace-nowrap">
                         {formatPaymentDate(attempt.initiatedAt || attempt.createdAt)}

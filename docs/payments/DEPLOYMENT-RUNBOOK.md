@@ -31,7 +31,8 @@ Ensure these variables are configured in the production environment (e.g. Vercel
 # SSLCOMMERZ Live Credentials
 SSLCOMMERZ_STORE_ID=angkon_live_store
 SSLCOMMERZ_STORE_PASSWORD=super_secret_live_password
-SSLCOMMERZ_IS_SANDBOX=false
+SSLCOMMERZ_IS_LIVE=true
+SSLCOMMERZ_MODE=live
 
 # Canonical App URL
 NEXT_PUBLIC_APP_URL=https://angkon.com.bd
@@ -78,6 +79,6 @@ Verify that the following indexes are active in the MongoDB Atlas console:
 ## 5. Rollback Plan
 
 If unexpected gateway behavior occurs in production:
-1. Revert `SSLCOMMERZ_IS_SANDBOX=true` to immediately redirect test orders to sandbox.
+1. Revert to `SSLCOMMERZ_MODE=sandbox` (and `SSLCOMMERZ_IS_LIVE=false`) to immediately redirect test orders to sandbox.
 2. In Admin Portal → Settings, disable online payments temporarily; the store will automatically default to Cash on Delivery (COD) without disrupting customer checkout.
 3. Review `/admin/payments` and structured security logs for gateway error codes.

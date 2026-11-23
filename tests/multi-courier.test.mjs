@@ -155,20 +155,17 @@ test("shipment modal & courier settings: multi-provider cards and footer non-wra
   const modalSource = read("src/app/admin/orders/_components/orders-modals.tsx");
   const settingsSource = read("src/app/admin/settings/courier-settings.tsx");
 
-  // Modal has 3 provider cards
+  // Booking modal is Steadfast-only; upcoming providers live in courier settings
   assert.ok(modalSource.includes("Steadfast"), "Modal must show Steadfast");
-  assert.ok(modalSource.includes("Pathao"), "Modal must show Pathao");
-  assert.ok(modalSource.includes("RedX"), "Modal must show RedX");
-  assert.ok(modalSource.includes("Setup Required"), "Modal must show RedX Setup Required badge");
+  assert.ok(settingsSource.includes("Pathao"), "Courier settings must list Pathao");
+  assert.ok(settingsSource.includes("RedX"), "Courier settings must list RedX");
 
-  // Modal has 7 defined sections
-  assert.ok(modalSource.includes("1. Select Courier Provider"));
-  assert.ok(modalSource.includes("Parcel Classification"));
-  assert.ok(modalSource.includes("Parcel Weight Breakdown"));
-  assert.ok(modalSource.includes("Payment & Collection"));
-  assert.ok(modalSource.includes("Deliver to:"));
-  assert.ok(modalSource.includes("Courier Note (Optional)"));
-  assert.ok(modalSource.includes("7. Booking Summary Review"));
+  // Booking form sections
+  assert.ok(modalSource.includes("Parcel classification"));
+  assert.ok(modalSource.includes("Products Weight"));
+  assert.ok(modalSource.includes("Packaging Allowance"));
+  assert.ok(modalSource.includes("Final Package Weight"));
+  assert.ok(modalSource.includes("Booking Time & Last Sync"));
 
   // Modal footer single-line non-wrapping layout
   assert.ok(modalSource.includes("whitespace-nowrap"));

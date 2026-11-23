@@ -2,27 +2,59 @@
  * Pure Steadfast helpers — no imports, so they can be unit-tested directly.
  */
 
-export type ShipmentStatus =
-  | "not_booked"
-  | "booking_pending"
-  | "booking_failed"
-  | "booked"
-  | "pickup_pending"
-  | "picked_up"
-  | "in_transit"
-  | "out_for_delivery"
-  | "delivered"
-  | "delivery_failed"
-  | "return_initiated"
-  | "returned"
-  | "cancelled"
-  | "unknown"
-  | "created"
-  | "pending"
-  | "partial_delivered"
-  | "hold"
-  | "in_review"
-  | "failed";
+/**
+ * Every canonical courier/shipment status. Kept as a runtime const so model
+ * enums and UI labels can never drift from the type.
+ */
+export const SHIPMENT_STATUSES = [
+  "not_booked",
+  "booking_pending",
+  "booking_failed",
+  "booked",
+  "pickup_pending",
+  "picked_up",
+  "in_transit",
+  "out_for_delivery",
+  "delivered",
+  "partial_delivered",
+  "delivery_failed",
+  "return_initiated",
+  "returned",
+  "cancelled",
+  "unknown",
+  "created",
+  "pending",
+  "hold",
+  "in_review",
+  "failed",
+] as const;
+
+export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number];
+
+/**
+ * Every status a live consignment can still advance FROM. The bulk admin sync
+ * and the cron courier-sync both scan exactly this list, so it must include
+ * `booked` / `pickup_pending` / `picked_up` — a freshly booked live parcel sits
+ * at `booked` (Steadfast "created") and would otherwise never be polled until
+ * a webhook or manual refresh moved it. Terminal/booking-local statuses
+ * (`delivered`, `returned`, `cancelled`, `failed`, `not_booked`,
+ * `booking_pending`, `booking_failed`) are excluded on purpose.
+ */
+export const ACTIVE_SHIPMENT_STATUSES: ShipmentStatus[] = [
+  "created",
+  "pending",
+  "booked",
+  "pickup_pending",
+  "picked_up",
+  "in_transit",
+  "out_for_delivery",
+  "partial_delivered",
+  "delivery_failed",
+  "return_initiated",
+  "hold",
+  "in_review",
+  "unknown",
+];
 
 export const BD_PHONE_REGEX = /^01[3-9]\d{8}$/;
 
@@ -56,12 +88,15 @@ export function mapSteadfastStatus(raw: unknown): ShipmentStatus {
 
   switch (status) {
     case "delivered":
+    case "delivered_approval_pending":
       return "delivered";
     case "partial_delivered":
+    case "partial_delivered_approval_pending":
       return "partial_delivered";
     case "cancelled":
     case "canceled":
     case "cancel":
+    case "cancelled_approval_pending":
       return "cancelled";
     case "hold":
     case "on_hold":
@@ -70,6 +105,11 @@ export function mapSteadfastStatus(raw: unknown): ShipmentStatus {
       return "delivery_failed";
     case "in_review":
       return "in_review";
+    // Steadfast's status API returns literal "in_review" for ACTIVE
+    // consignments and "unknown" for consignments REMOVED in the merchant
+    // portal (verified live). Coercing unknown→in_review hid portal
+    // cancellations, so unknown must stay indeterminate — the admin UI
+    // surfaces it as "Check Courier" with a portal-cancellation action.
     case "picked_up":
     case "picked":
     case "pickup":
@@ -150,9 +190,14 @@ export interface TransitionEvaluation {
   idempotent?: boolean;
 }
 
+export interface TransitionOptions {
+  isCourierVerifiedSync?: boolean;
+}
+
 export function evaluateShipmentTransition(
   currentStatus: ShipmentStatus,
-  targetStatus: ShipmentStatus
+  targetStatus: ShipmentStatus,
+  options?: TransitionOptions
 ): TransitionEvaluation {
   const normCurrent = normalizeShipmentState(currentStatus);
   const normTarget = normalizeShipmentState(targetStatus);
@@ -169,8 +214,41 @@ export function evaluateShipmentTransition(
     };
   }
 
-  // 2. Terminal cancelled state: cannot transition to any other status
+  // 2. Cancellation handling:
+  // If target is cancelled: Allowed from any pre-delivery status
+  if (normTarget === "cancelled") {
+    if (normCurrent === "delivered" || normCurrent === "partial_delivered" || normCurrent === "returned") {
+      return {
+        allowed: false,
+        reason: `Cannot cancel a shipment that is already ${normCurrent}.`,
+      };
+    }
+    return {
+      allowed: true,
+      reason: "courier_cancelled",
+    };
+  }
+
+  // If current is cancelled: cannot transition UNLESS verified by courier sync reconciliation
   if (normCurrent === "cancelled") {
+    if (
+      options?.isCourierVerifiedSync &&
+      [
+        "in_review",
+        "booked",
+        "pickup_pending",
+        "picked_up",
+        "in_transit",
+        "out_for_delivery",
+        "delivered",
+        "partial_delivered",
+      ].includes(normTarget)
+    ) {
+      return {
+        allowed: true,
+        reason: "courier_sync_reconciliation_from_cancelled",
+      };
+    }
     return {
       allowed: false,
       reason: `Cannot transition from terminal cancelled state to "${targetStatus}".`,

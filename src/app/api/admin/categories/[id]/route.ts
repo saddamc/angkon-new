@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
@@ -13,6 +14,11 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { id } = await params;
     if (!id) return NextResponse.json({ message: "ID required" }, { status: 400 });

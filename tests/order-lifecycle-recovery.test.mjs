@@ -89,7 +89,22 @@ test("1. Separate Lifecycles: Order, Payment, Shipment, and Courier Settlement m
   assert.match(orderModelSource, /codSettlementStatus:\s*\{/, "Order schema must define codSettlementStatus");
 
   const shipmentModelSource = read("src/models/Shipment.ts");
-  assert.match(shipmentModelSource, /picked_up/, "Shipment schema must include picked_up enum");
+  assert.match(
+    shipmentModelSource,
+    /SHIPMENT_STATUSES/,
+    "Shipment schema must use the canonical SHIPMENT_STATUSES enum"
+  );
+  const canonicalStatusSource = read("src/server/courier/steadfast-utils.ts");
+  assert.match(
+    canonicalStatusSource,
+    /picked_up/,
+    "Canonical shipment statuses must include picked_up"
+  );
+  assert.match(
+    canonicalStatusSource,
+    /"unknown"/,
+    "Canonical shipment statuses must include unknown (provider fallback)"
+  );
 });
 
 // ── 2. AUTOMATED COURIER STATUS SYNCHRONIZATION ──────────────────────────────

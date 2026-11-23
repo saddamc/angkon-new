@@ -2,7 +2,7 @@
 
 ## 1. SSLCOMMERZ Sandbox Testing Environment
 
-When `SSLCOMMERZ_IS_SANDBOX=true`, ANGKON connects to the official SSLCOMMERZ Sandbox (`https://sandbox.sslcommerz.com`).
+When `SSLCOMMERZ_MODE=sandbox` (or `SSLCOMMERZ_IS_LIVE=false`), ANGKON connects to the official SSLCOMMERZ Sandbox (`https://sandbox.sslcommerz.com`).
 
 ### Official Sandbox Test Cards
 

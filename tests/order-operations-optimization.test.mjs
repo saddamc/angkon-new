@@ -79,8 +79,13 @@ test("Payment Clarity: order channel, payment method and status separation", () 
   );
   assert.match(
     rowSource,
-    /SSLCOMMERZ/,
-    "Row must display SSLCOMMERZ gateway method badge distinctly from COD"
+    /getPaymentMethodBadge/,
+    "Row must badge the gateway channel distinctly from COD via the shared payment-method helper"
+  );
+  assert.match(
+    rowSource,
+    /isOnlinePaymentMethod/,
+    "Row must treat every SSLCOMMERZ channel (sslcommerz/cards/bkash/nagad) as an online order — not just the generic one"
   );
 
   const kpiBarSource = read("src/app/admin/orders/_components/orders-kpi-bar.tsx");

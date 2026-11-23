@@ -117,6 +117,16 @@ export async function POST(
       orderStatus: eligibility.targetOrderStatus,
       paymentStatus: eligibility.targetPaymentStatus,
       shipmentBookingState: "not_booked",
+      // Clear the order's courier summary so a cancelled consignment is not
+      // mistaken for an active one. Consignment history stays in `shipments`
+      // and re-booking creates a new parcel with a new Shipment record.
+      shipmentStatus: "not_booked",
+      consignmentId: "",
+      trackingCode: "",
+      trackingUrl: null,
+      providerStatus: "",
+      courierBookingError: null,
+      courierConfirmedAt: null,
       stockReservedAt: now,
       stockReleasedAt: null,
       stockCommittedAt: null,

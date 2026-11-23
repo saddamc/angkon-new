@@ -1,6 +1,7 @@
 import type { IOrder } from "@/models/Order";
 import { InitiatePaymentService } from "./services/initiate-payment";
 import { PaymentError } from "./payment-errors";
+import { isOnlinePaymentMethod, normalizePaymentMethod } from "@/lib/payment-methods";
 
 /**
  * Backward-compatible adapter used by the order-creation route.
@@ -21,8 +22,8 @@ export async function initiateSslcommerzForOrder(
   order: IOrder,
   appBaseUrl: string
 ): Promise<InitiateResult> {
-  const method = String(order.paymentMethod || "").toLowerCase().trim();
-  const isOnline = method !== "cod" && (method === "sslcommerz" || method === "bkash" || method === "nagad" || method === "cards" || method === "online");
+  const method = normalizePaymentMethod(order.paymentMethod);
+  const isOnline = isOnlinePaymentMethod(method);
   if (!isOnline) {
     return { ok: true, gatewayUrl: null };
   }

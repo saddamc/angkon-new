@@ -207,7 +207,8 @@ export function CartDrawer({ open, onClose }: Props) {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1, item.color)}
-                            className="p-1 text-white hover:text-[#f3cb87] cursor-pointer"
+                            disabled={item.quantity >= 99}
+                            className="p-1 text-white hover:text-[#f3cb87] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                             aria-label="Increase quantity"
                           >
                             <Plus className="h-3 w-3" />

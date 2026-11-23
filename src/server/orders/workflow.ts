@@ -59,8 +59,9 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
 export const SHIPMENT_STATUS_LABELS: Record<string, string> = {
   none: "Not Booked",
   not_booked: "Not Booked",
-  booking_in_progress: "Booking Pending",
-  pending: "Booking Pending",
+  booking_in_progress: "Booking in Progress",
+  pending: "Awaiting Pickup",
+  pickup_pending: "Awaiting Pickup",
   booked: "Booked",
   created: "Booked",
   picked_up: "Picked Up",
@@ -71,7 +72,7 @@ export const SHIPMENT_STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
   returned: "Returned",
   hold: "On Hold",
-  in_review: "In Review",
+  in_review: "Awaiting Pickup (In Review)",
   failed: "Booking Failed",
 };
 
@@ -256,6 +257,10 @@ export const COURIER_BOOKING_ELIGIBLE_ORDER_STATUSES = [
 
 export function checkCourierBookingEligibility(args: {
   orderStatus?: string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  paidAmount?: number | null;
+  total?: number | null;
   shipmentStatus?: string | null;
   shipmentBookingState?: string | null;
   consignmentId?: string | null;
@@ -264,6 +269,8 @@ export function checkCourierBookingEligibility(args: {
   const orderStatus = normalizeOrderStatus(args.orderStatus);
   const bookingState = String(args.shipmentBookingState || "not_booked").toLowerCase();
   const shipmentStatus = String(args.shipmentStatus || "none").toLowerCase();
+  const paymentMethod = String(args.paymentMethod || "").trim().toLowerCase();
+  const paymentStatus = String(args.paymentStatus || "").trim().toLowerCase();
 
   // Rule 1: Cancelled orders cannot be booked
   if (orderStatus === "cancelled" || orderStatus === "refunded") {
@@ -273,6 +280,37 @@ export function checkCourierBookingEligibility(args: {
       status: 400,
       reason: "Cancelled or refunded orders cannot be booked with a courier.",
     };
+  }
+
+  // Rule 1b: Refunded payments cannot be booked
+  if (paymentStatus === "refunded" || paymentStatus === "refund_pending") {
+    return {
+      ok: false,
+      code: "PAYMENT_REFUNDED",
+      status: 400,
+      reason: "Refunded orders cannot be booked with a courier.",
+    };
+  }
+
+  // Payment Eligibility Rules (Section 4):
+  // Online payment pending or failed blocks courier booking
+  if (paymentMethod && paymentMethod !== "cod") {
+    if (paymentStatus === "pending" || paymentStatus === "unpaid" || paymentStatus === "advance_pending") {
+      return {
+        ok: false,
+        code: "ONLINE_PAYMENT_PENDING",
+        status: 409,
+        reason: "Online payment is pending verification. Booking is blocked until payment is confirmed or switched to COD.",
+      };
+    }
+    if (paymentStatus === "failed" || paymentStatus === "cancelled") {
+      return {
+        ok: false,
+        code: "ONLINE_PAYMENT_FAILED",
+        status: 409,
+        reason: "Online payment failed or was cancelled. Booking is blocked until payment succeeds or order is switched to COD.",
+      };
+    }
   }
 
   // Rule 2: Unconfirmed orders cannot be booked

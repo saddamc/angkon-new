@@ -1,3 +1,7 @@
+'use client';
+
+import { normalizeKnownCloudinaryProductUrl } from "./cloudinary-tawakkal-assets";
+
 // Custom Next.js image loader — routes remote (WordPress) images through the
 // free wsrv.nl image CDN, which resizes + converts to WebP on the fly.
 //
@@ -17,24 +21,25 @@ interface LoaderArgs {
 }
 
 export default function imageLoader({ src, width, quality }: LoaderArgs): string {
+  const normalizedSrc = normalizeKnownCloudinaryProductUrl(src);
   const q = quality ?? 75;
 
   // Only proxy publicly reachable remote images through the CDN.
-  const isRemote = /^https?:\/\//i.test(src);
-  const isLocalhost = /localhost|127\.0\.0\.1|192\.168\.|10\.\d+\./.test(src);
+  const isRemote = /^https?:\/\//i.test(normalizedSrc);
+  const isLocalhost = /localhost|127\.0\.0\.1|192\.168\.|10\.\d+\./.test(normalizedSrc);
 
   // Cloudinary images: use native Cloudinary on-the-fly resizing and auto-format (WebP/AVIF)
-  if (src.includes("res.cloudinary.com")) {
+  if (normalizedSrc.includes("res.cloudinary.com")) {
     const safeWidth = Math.min(width, 1600);
-    if (!src.includes("/w_") && src.includes("/upload/")) {
-      return src.replace("/upload/", `/upload/w_${safeWidth},q_${q},f_auto/`);
+    if (!normalizedSrc.includes("/w_") && normalizedSrc.includes("/upload/")) {
+      return normalizedSrc.replace("/upload/", `/upload/w_${safeWidth},q_${q},f_auto/`);
     }
-    return src.replace(/\/w_\d+/, `/w_${safeWidth}`);
+    return normalizedSrc.replace(/\/w_\d+/, `/w_${safeWidth}`);
   }
 
   if (isRemote && !isLocalhost) {
     // wsrv.nl expects the target URL without its own protocol prefix.
-    const target = src.replace(/^https?:\/\//i, "");
+    const target = normalizedSrc.replace(/^https?:\/\//i, "");
     // Cap width at 1080 to prevent requesting massive 4K (3840px) upscales that take 1.8s+ to process
     const safeWidth = Math.min(width, 1080);
     return `https://wsrv.nl/?url=${encodeURIComponent(target)}&w=${safeWidth}&q=${q}&output=webp`;
@@ -43,6 +48,6 @@ export default function imageLoader({ src, width, quality }: LoaderArgs): string
   // Local/public or dev-network image — served directly, but the width must
   // still be reflected in the URL or Next.js can't confirm the loader
   // actually resizes per-width and logs a "missing loader width" warning.
-  const separator = src.includes("?") ? "&" : "?";
-  return `${src}${separator}w=${width}`;
+  const separator = normalizedSrc.includes("?") ? "&" : "?";
+  return `${normalizedSrc}${separator}w=${width}`;
 }

@@ -59,7 +59,7 @@ async function executeReconcile(req: NextRequest) {
     const stats = await runAllPaymentJobs();
     securityLog("payment.reconciliation_run", { actor, stats: JSON.stringify(stats) });
     return NextResponse.json(
-      { ok: true, stats, executedAt: new Date().toISOString() },
+      { ok: true, stats, ...stats, executedAt: new Date().toISOString() },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

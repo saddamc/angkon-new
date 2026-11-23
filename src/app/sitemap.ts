@@ -118,13 +118,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Populated Core Brand Category (High Priority)
   addEntry("/product-category/women", { changeFrequency: "weekly", priority: 0.8 });
 
-  // Institutional, Showroom, and Policy Pages
+  // Institutional, Showroom, and Policy Pages (Canonical URLs only)
   addEntry("/about", { changeFrequency: "monthly", priority: 0.6 });
   addEntry("/policies", { changeFrequency: "monthly", priority: 0.5 });
   addEntry("/contact", { changeFrequency: "monthly", priority: 0.5 });
-  addEntry("/delivery-timing", { changeFrequency: "monthly", priority: 0.5 });
-  addEntry("/refund-and-exchange-policies", { changeFrequency: "monthly", priority: 0.5 });
-  addEntry("/privacy", { changeFrequency: "monthly", priority: 0.5 });
+  addEntry("/delivery-time", { changeFrequency: "monthly", priority: 0.5 });
+  addEntry("/return-refund-policy", { changeFrequency: "monthly", priority: 0.5 });
+  addEntry("/privacy-policy", { changeFrequency: "monthly", priority: 0.5 });
   addEntry("/terms", { changeFrequency: "monthly", priority: 0.5 });
 
   // 2. Fetch products & categories in parallel

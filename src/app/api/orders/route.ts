@@ -12,6 +12,11 @@ import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/r
 import { getAllDbProducts } from "@/lib/db/products";
 import { isOnlinePaymentAvailableForEnvironment } from "@/server/sslcommerz";
 import { initiateSslcommerzForOrder } from "@/server/payments/initiate";
+import {
+  COD_PAYMENT_METHOD,
+  isOnlinePaymentMethod,
+  normalizePaymentMethod,
+} from "@/lib/payment-methods";
 import { nextOrderNumber } from "@/server/order-number";
 import { readIdempotencyKey } from "@/server/idempotency";
 import {
@@ -170,9 +175,10 @@ export async function POST(request: NextRequest) {
     }
 
     const idempotencyKey = readIdempotencyKey(request);
-    const rawMethod = String(paymentMethod || "cod").toLowerCase().trim();
-    const isOnlineMethod = rawMethod === "sslcommerz" || rawMethod === "bkash" || rawMethod === "nagad" || rawMethod === "cards" || rawMethod === "online";
-    const normalizedPaymentMethod = isOnlineMethod ? rawMethod : "cod";
+    const isOnlineMethod = isOnlinePaymentMethod(paymentMethod);
+    const normalizedPaymentMethod = isOnlineMethod
+      ? normalizePaymentMethod(paymentMethod)
+      : COD_PAYMENT_METHOD;
 
     // Never create an online order that cannot reach a gateway. The previous
     // behaviour silently treated a missing gateway as a successful order.

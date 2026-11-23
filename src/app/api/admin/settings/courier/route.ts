@@ -32,7 +32,13 @@ export async function GET(request: NextRequest) {
         settings,
         providers: courierService.getProviderStatuses(settings),
         webhooks: {
-          steadfast: Boolean((process.env.STEADFAST_WEBHOOK_SECRET || "").trim()),
+          // The webhook route accepts STEADFAST_WEBHOOK_TOKEN or
+          // STEADFAST_WEBHOOK_SECRET — the indicator must match both.
+          steadfast: Boolean(
+            (
+              process.env.STEADFAST_WEBHOOK_TOKEN || process.env.STEADFAST_WEBHOOK_SECRET || ""
+            ).trim()
+          ),
           pathao: false,
           redx: false,
         },

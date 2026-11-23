@@ -39,6 +39,21 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Canonical Storefront & Policy redirects (Permanent 308)
+      { source: "/cart-2", destination: "/cart", permanent: true },
+      { source: "/checkout-2", destination: "/checkout", permanent: true },
+      { source: "/my-account-2", destination: "/my-account", permanent: true },
+      { source: "/policies-2", destination: "/policies", permanent: true },
+      { source: "/privacy-policy-2", destination: "/privacy-policy", permanent: true },
+      { source: "/privacy", destination: "/privacy-policy", permanent: true },
+      { source: "/contact-us", destination: "/contact", permanent: true },
+      { source: "/delivery-timing", destination: "/delivery-time", permanent: true },
+      { source: "/terms-conditions", destination: "/terms", permanent: true },
+      { source: "/returns", destination: "/return-refund-policy", permanent: true },
+      { source: "/refund-and-exchange-policies", destination: "/return-refund-policy", permanent: true },
+      { source: "/on-sale", destination: "/sale", permanent: true },
+      { source: "/admin/courier", destination: "/admin/couriers", permanent: true },
+
       { source: "/men", destination: "/product-category/men", permanent: false },
       { source: "/men/:subcategory", destination: "/product-category/men/:subcategory", permanent: false },
       { source: "/category/:slug", destination: "/product-category/:slug", permanent: true },

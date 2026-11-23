@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
@@ -18,7 +19,12 @@ const hasOwnFee = {
 };
 
 // GET — how many products carry their own delivery fee (and which)
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     await connectToDatabase();
     const products = await Product.find(hasOwnFee).select("id name slug meta_data").lean();
@@ -46,7 +52,12 @@ export async function GET() {
 }
 
 // POST — clear every product-specific delivery fee so the store-wide rates apply
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     await connectToDatabase();
     // timestamps:false keeps "last updated" (and therefore storefront ordering) unchanged.

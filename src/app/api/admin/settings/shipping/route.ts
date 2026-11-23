@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { revalidateStorefront } from "@/lib/catalog-sync";
@@ -13,12 +14,22 @@ const FIELDS = [
 
 const MAX_AMOUNT = 1_000_000;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   const settings = await getShippingSettings();
   return NextResponse.json(settings, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = (await request.json()) as Record<string, unknown>;
 

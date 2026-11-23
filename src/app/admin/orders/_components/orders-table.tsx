@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { OrderRow } from "./order-row";
+import { ORDER_TABLE_GRID, ORDER_TABLE_MIN_WIDTH } from "./order-table-grid";
 import type { AdminOrdersHookReturn } from "../_hooks/use-admin-orders";
 
 interface OrdersTableProps {
@@ -15,6 +16,8 @@ export function OrdersTable({ state }: OrdersTableProps) {
     selectedOrderIds,
     toggleSelectAllVisible,
     page,
+    perPage,
+    handlePerPageChange,
     totalPages,
     totalCount,
     goToPage,
@@ -25,53 +28,90 @@ export function OrdersTable({ state }: OrdersTableProps) {
     filteredOrders.every((o) => selectedOrderIds.includes(String(o.id)));
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-xs">
-      {/* Desktop Table Header */}
-      <div className="hidden lg:grid grid-cols-[28px_minmax(130px,1.15fr)_minmax(150px,1.2fr)_minmax(170px,1.3fr)_100px_130px_90px_110px_90px] gap-2.5 px-5 py-3.5 bg-stone-50/80 text-[10.5px] font-bold uppercase tracking-wider text-gray-500 border-b border-stone-200/80 items-center">
-        <input
-          type="checkbox"
-          aria-label="Select all visible orders"
-          checked={allSelected}
-          onChange={toggleSelectAllVisible}
-          className="h-3.5 w-3.5 rounded border-purple-300 accent-purple-600 cursor-pointer"
-        />
-        <span>Order # & Date</span>
-        <span>Customer</span>
-        <span>Products</span>
-        <span>Payment</span>
-        <span>Shipment</span>
-        <span>Total</span>
-        <span>Status</span>
-        <span className="text-right">Actions</span>
+    <div className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-xs">
+      {/* Horizontally scrollable area keeps every column readable on smaller
+          desktops instead of letting dense cells overlap each other. */}
+      <div className="overflow-x-auto">
+        <div className={ORDER_TABLE_MIN_WIDTH}>
+          {/* Desktop Table Header */}
+          <div
+            className={`hidden lg:grid ${ORDER_TABLE_GRID} items-center gap-3 border-b border-stone-200/80 bg-stone-50/80 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-500`}
+          >
+            <input
+              type="checkbox"
+              aria-label="Select all visible orders"
+              checked={allSelected}
+              onChange={toggleSelectAllVisible}
+              className="h-3.5 w-3.5 cursor-pointer rounded border-purple-300 accent-purple-600"
+            />
+            <span>Order</span>
+            <span>Customer</span>
+            <span>Items</span>
+            <span>Payment</span>
+            <span>Courier</span>
+            <span>Total</span>
+            <span>Status</span>
+            <span className="text-right">Actions</span>
+          </div>
+
+          {loading ? (
+            <div className="space-y-1.5 p-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-16 animate-pulse rounded-xl bg-purple-50/40" />
+              ))}
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <p className="py-24 text-center text-sm text-gray-400">
+              No orders match your current filters.
+            </p>
+          ) : (
+            <div className="divide-y divide-stone-200/70">
+              {filteredOrders.map((order, idx) => (
+                <OrderRow
+                  key={order.id}
+                  order={order}
+                  idx={(page - 1) * perPage + idx}
+                  state={state}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-1.5 p-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-16 rounded-xl bg-purple-50/40 animate-pulse" />
-          ))}
-        </div>
-      ) : filteredOrders.length === 0 ? (
-        <p className="text-center py-24 text-gray-400 text-sm">
-          No orders match your current filters.
-        </p>
-      ) : (
-        <div className="divide-y divide-stone-100">
-          {filteredOrders.map((order, idx) => (
-            <OrderRow key={order.id} order={order} idx={(page - 1) * 25 + idx} state={state} />
-          ))}
-        </div>
-      )}
-
       {/* Pagination Footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-200/80 bg-white px-5 py-3">
-        <p className="text-[12px] text-gray-500">
-          Showing{" "}
-          <strong className="text-gray-900 font-bold">
-            {totalCount === 0 ? 0 : (page - 1) * 25 + 1} - {Math.min(page * 25, totalCount)}
-          </strong>{" "}
-          of <strong className="text-gray-900 font-bold">{totalCount.toLocaleString("en-BD")}</strong> orders
-        </p>
+      <div className="flex flex-col gap-2 border-t border-stone-200/80 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11.5px] text-gray-500">
+          <p>
+            Showing{" "}
+            <strong className="font-bold text-gray-900">
+              {totalCount === 0 ? 0 : (page - 1) * perPage + 1} -{" "}
+              {Math.min(page * perPage, totalCount)}
+            </strong>{" "}
+            of{" "}
+            <strong className="font-bold text-gray-900">
+              {totalCount.toLocaleString("en-BD")}
+            </strong>{" "}
+            orders
+          </p>
+          <span className="hidden h-3 w-px bg-stone-200 sm:block" aria-hidden />
+          <label className="flex items-center gap-1.5">
+            Rows per page
+            <select
+              value={perPage}
+              onChange={(e) => handlePerPageChange(Number(e.target.value))}
+              disabled={loading}
+              className="rounded-lg border border-gray-200 bg-white px-1.5 py-1 text-[11px] font-semibold text-gray-700 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100 disabled:opacity-50"
+              aria-label="Rows per page"
+            >
+              {[10, 25, 50, 100].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         <div className="flex items-center gap-1">
           <button

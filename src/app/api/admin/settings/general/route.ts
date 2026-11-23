@@ -1,13 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { getOrderNotificationEmails } from "@/lib/email/resend";
 
-// GET /api/admin/settings/general — read-only view of the email setup taken from the
-// server environment (ADMIN_EMAIL / EMAIL_FROM). Auth is enforced by src/proxy.ts.
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   return NextResponse.json(
     {
       orderEmails: getOrderNotificationEmails(),
-      senderEmail: (process.env.EMAIL_FROM || "ANGKON <noreply@angkon.net>").trim(),
+      senderEmail: (process.env.EMAIL_FROM || "ANGKON Orders <orders@angkon.net>").trim(),
       emailServiceConfigured: Boolean(process.env.RESEND_API_KEY),
     },
     { headers: { "Cache-Control": "no-store" } },

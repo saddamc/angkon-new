@@ -207,7 +207,7 @@ export default function AdminOrderDetailsPage({
         onReconcileSslcommerz={async (orderNumber) => {
           setBusy(true);
           try {
-            const res = await authFetch("/api/payment/sslcommerz/reconcile", {
+            const res = await authFetch("/api/payments/reconcile", {
               method: "POST",
               body: JSON.stringify({ orderNumber }),
             });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
@@ -16,6 +17,11 @@ import {
  * Category Folder: ANGKON / CATEGORIES / [PARENT_CATEGORY] / <CATEGORY_NAME_OR_SLUG>
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   if (
     !process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY ||
@@ -159,6 +165,11 @@ export async function POST(request: NextRequest) {
  * Permanently destroys image(s) or folder in Cloudinary by public_id, URL, items array, or folder path.
  */
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   if (
     !process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY ||

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 
@@ -8,7 +9,12 @@ const DEFAULT_PROMO = {
   link: "",
 };
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     await connectToDatabase();
     const setting = await Settings.findOne({ key: "promo" }).lean();
@@ -23,6 +29,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { enabled, image, link } = await request.json();
     const promo = {

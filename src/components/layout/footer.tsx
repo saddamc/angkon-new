@@ -94,7 +94,7 @@ const CLIENT_CARE_LINKS = [
   { label: "Warranty & Quality Policy", href: "/warranty-policy" },
   { label: "Privacy & Data Protection", href: "/privacy-policy" },
   { label: "Terms & Conditions", href: "/terms" },
-  { label: "Contact Us", href: "/contact-us" },
+  { label: "Contact Us", href: "/contact" },
   { label: "About ANGKON", href: "/about" },
 ];
 

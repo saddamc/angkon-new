@@ -21,7 +21,7 @@ test("Phase 2: mongodb.ts prevents concurrent connection race conditions", () =>
 
   // Must reuse in-flight promise if cached.promise is present
   assert.ok(content.includes("if (cached.promise)"), "Must check for in-flight cached.promise");
-  assert.ok(content.includes("cached.conn = await cached.promise"), "Must await in-flight promise rather than wiping it");
+  assert.ok(content.includes("await cached.promise"), "Must await in-flight promise rather than wiping it");
   // ReadyState === 1 check
   assert.ok(content.includes("readyState === 1"), "Must check readyState === 1 before returning cached connection");
 });

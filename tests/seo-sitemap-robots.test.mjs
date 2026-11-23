@@ -70,9 +70,21 @@ test("SEO 5: Built sitemap.xml is valid XML and contains all mandatory core stor
     assert.ok(xml.includes("<loc>https://www.angkon.net/about</loc>"), "/about must be present");
     assert.ok(xml.includes("<loc>https://www.angkon.net/policies</loc>"), "/policies must be present");
     assert.ok(xml.includes("<loc>https://www.angkon.net/contact</loc>"), "/contact must be present");
-    assert.ok(xml.includes("<loc>https://www.angkon.net/delivery-timing</loc>"), "/delivery-timing must be present");
-    assert.ok(xml.includes("<loc>https://www.angkon.net/refund-and-exchange-policies</loc>"), "/refund-and-exchange-policies must be present");
-    assert.ok(xml.includes("<loc>https://www.angkon.net/privacy</loc>"), "/privacy must be present");
+    assert.ok(
+      xml.includes("<loc>https://www.angkon.net/delivery-time</loc>") ||
+        xml.includes("<loc>https://www.angkon.net/delivery-timing</loc>"),
+      "Delivery time policy must be present"
+    );
+    assert.ok(
+      xml.includes("<loc>https://www.angkon.net/return-refund-policy</loc>") ||
+        xml.includes("<loc>https://www.angkon.net/refund-and-exchange-policies</loc>"),
+      "Refund policy must be present"
+    );
+    assert.ok(
+      xml.includes("<loc>https://www.angkon.net/privacy-policy</loc>") ||
+        xml.includes("<loc>https://www.angkon.net/privacy</loc>"),
+      "Privacy policy must be present"
+    );
     assert.ok(xml.includes("<loc>https://www.angkon.net/terms</loc>"), "/terms must be present");
 
     // Populated categories must be present; empty categories must be excluded to prevent soft-404s

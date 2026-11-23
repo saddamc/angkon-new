@@ -2,6 +2,7 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { getCatalogVersion } from "@/lib/catalog-version";
+import { normalizeTawakkalWadaImageReference } from "@/lib/cloudinary-tawakkal-assets";
 import type { WooProduct, WooCategory } from "@/types/product";
 import REAL_PRODUCTS from "@/data/real-products.json";
 
@@ -111,12 +112,15 @@ function toWooProduct(doc: any): WooProduct {
     sizes: resolvedSizes,
     colors: resolvedColors,
     images: Array.isArray(doc.images)
-      ? doc.images.map((img: { id?: number; src: string; name?: string; alt?: string }) => ({
-          id: img.id || 0,
-          src: img.src,
-          name: img.name || "",
-          alt: img.alt || doc.name || "",
-        }))
+      ? doc.images.map((img: { id?: number; src: string; public_id?: string; name?: string; alt?: string }) => {
+          const normalizedImage = normalizeTawakkalWadaImageReference(String(doc.slug || ""), img);
+          return {
+            id: img.id || 0,
+            src: normalizedImage.src,
+            name: img.name || "",
+            alt: img.alt || doc.name || "",
+          };
+        })
       : [],
     categories: Array.isArray(doc.categories)
       ? doc.categories.map((c: { id: number; name: string; slug: string; parent?: number }) => ({

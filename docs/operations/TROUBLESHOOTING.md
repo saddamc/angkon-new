@@ -16,10 +16,10 @@
 ## 2. Common Issues & Remediations
 
 ### Issue A: SSLCOMMERZ Session Fails (`STORE_ID_NOT_FOUND` or 401)
-* **Cause:** Whitespace in `SSLCOMMERZ_STORE_ID` or mismatched `SSLCOMMERZ_IS_SANDBOX` flag.
+* **Cause:** Whitespace in `SSLCOMMERZ_STORE_ID` or a mismatched mode flag (`SSLCOMMERZ_MODE` / `SSLCOMMERZ_IS_LIVE`).
 * **Fix:**
   - Verify credentials directly in merchant portal.
-  - Set `SSLCOMMERZ_IS_SANDBOX=false` for live stores, `true` for sandbox.
+  - Set `SSLCOMMERZ_MODE=live` + `SSLCOMMERZ_IS_LIVE=true` for live stores, `SSLCOMMERZ_MODE=sandbox` for sandbox.
 
 ### Issue B: Steadfast Returns HTTP 401 (Unauthorized)
 * **Cause:** Incorrect API headers, trailing whitespace in keys, or using portal login passwords instead of API keys.

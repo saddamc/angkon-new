@@ -54,13 +54,30 @@ export class PaymentRefundRepository {
     return await PaymentRefund.find({ orderNumber: orderNumber.trim() }).sort({ createdAt: -1 });
   }
 
-  public static async getTotalRefundedForPayment(paymentId: string | Types.ObjectId): Promise<number> {
+  /**
+   * Sum of refund amounts that count against the refundable balance.
+   *
+   * By default only committed refunds (processing at the gateway / succeeded at
+   * the bank) are counted. Pass `includeInitiated` to also count freshly
+   * created `initiated` rows — this is what makes the balance reservation in
+   * `ProcessRefundService.initiateRefund` atomic: the new refund doc is part of
+   * the sum before the amount is validated, so two concurrent refunds can never
+   * both claim the same balance.
+   */
+  public static async getTotalRefundedForPayment(
+    paymentId: string | Types.ObjectId,
+    options?: { includeInitiated?: boolean }
+  ): Promise<number> {
     await connectToDatabase();
+    const statuses: RefundStatus[] = options?.includeInitiated
+      ? ["initiated", "processing", "succeeded"]
+      : ["processing", "succeeded"];
+
     const result = await PaymentRefund.aggregate([
       {
         $match: {
           paymentId: typeof paymentId === "string" ? new Types.ObjectId(paymentId) : paymentId,
-          status: { $in: ["processing", "succeeded"] },
+          status: { $in: statuses },
         },
       },
       {

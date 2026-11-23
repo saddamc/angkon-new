@@ -122,10 +122,7 @@ test("orders: idempotent creation and no fake success on DB failure", () => {
 
 test("orders: no gateway session means no success screen", () => {
   assert.ok(checkoutHook.includes('"Idempotency-Key"'));
-  assert.ok(
-    checkoutHook.includes("paymentMethod === \"sslcommerz\" && !result.gatewayUrl"),
-    "online orders must require a gateway URL"
-  );
+  assert.ok(checkoutHook.includes("isOnlineActive && !result.gatewayUrl"));
 });
 
 test("admin orders: authorize inside the route handlers", () => {

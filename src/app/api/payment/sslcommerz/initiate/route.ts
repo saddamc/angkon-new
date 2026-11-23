@@ -12,6 +12,10 @@ import { PaymentError } from "@/server/payments/payment-errors";
 export const dynamic = "force-dynamic";
 
 /**
+ * @deprecated Legacy payment initiation endpoint.
+ * Canonical endpoint: /api/payments/sslcommerz/initiate
+ * Maintained strictly for backward compatibility with pending customer sessions.
+ *
  * POST /api/payment/sslcommerz/initiate
  *
  * Safe payment initiation and retry endpoint.

@@ -36,10 +36,13 @@ export async function applyCourierStatus(
   shipment: IShipment,
   status: ShipmentStatus,
   raw?: Record<string, unknown>,
-  rawStatus?: string
+  rawStatus?: string,
+  options?: { isCourierVerifiedSync?: boolean }
 ): Promise<ApplyCourierStatusResult> {
   const now = new Date();
-  const evaluation = evaluateShipmentTransition(shipment.status, status);
+  const evaluation = evaluateShipmentTransition(shipment.status, status, {
+    isCourierVerifiedSync: options?.isCourierVerifiedSync ?? true,
+  });
 
   // ── Handle Rejected Transitions ──────────────────────────────────────────
   if (!evaluation.allowed) {
@@ -123,21 +126,29 @@ export async function applyCourierStatus(
       : null,
   };
 
+  const order = await Order.findById(shipment.orderId);
+  if (!order) return { changed: true, reason: evaluation.reason };
+
   if (status === "cancelled") {
     orderUpdate.shipmentBookingState = "cancelled";
+    if (order.paymentStatus !== "paid") {
+      orderUpdate.codSettlementStatus = "none";
+    }
   } else if (status === "failed" || status === "booking_failed") {
     orderUpdate.shipmentBookingState = "booking_failed";
   } else if (shipment.consignmentId || shipment.trackingCode) {
     orderUpdate.shipmentBookingState = "booked";
   }
 
-  const order = await Order.findById(shipment.orderId);
-  if (!order) return { changed: true, reason: evaluation.reason };
-
   let nextOrderStatus: string | null = null;
   const currentOrderStatus = String(order.orderStatus || "pending");
 
-  if (isDeliveredStatus(status)) {
+  if (status === "cancelled") {
+    if (currentOrderStatus === "shipped") {
+      nextOrderStatus = "ready_to_ship";
+      orderUpdate.orderStatus = "ready_to_ship";
+    }
+  } else if (isDeliveredStatus(status)) {
     if (
       ["pending", "confirmed", "processing", "ready_to_ship", "shipped", "on-hold"].includes(
         currentOrderStatus
@@ -178,6 +189,7 @@ export async function applyCourierStatus(
       orderUpdate.orderStatus = "shipped";
     }
   } else if (
+    status === "in_review" ||
     status === "booked" ||
     status === "pickup_pending" ||
     status === "created" ||

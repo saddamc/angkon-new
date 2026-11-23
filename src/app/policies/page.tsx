@@ -24,7 +24,7 @@ export default function PoliciesPage() {
     {
       title: "Refund and Exchange Policy",
       subtitle: "Terms for local orders · 48-hour exchange window & defect coverage",
-      href: "/refund-and-exchange-policies",
+      href: "/return-refund-policy",
       icon: RotateCcw,
       badge: "7-Day Refund SLA",
     },

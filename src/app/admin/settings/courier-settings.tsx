@@ -525,12 +525,6 @@ export function CourierSettings() {
           onChange={(v) => setSettings((s) => ({ ...s, codEnabled: v }))}
         />
         <ToggleRow
-          label="Auto-advance order status to Shipped after courier booking"
-          desc="Moves Confirmed / Processing / Ready-to-Ship orders to Shipped immediately upon consignment creation."
-          checked={settings.autoAdvanceToShipped}
-          onChange={(v) => setSettings((s) => ({ ...s, autoAdvanceToShipped: v }))}
-        />
-        <ToggleRow
           label="Protect against unpaid online orders (Recommended: OFF)"
           desc="Keep OFF to require an explicit audited COD override before booking unpaid SSLCOMMERZ orders."
           checked={settings.allowUnpaidOnlineShipment}
@@ -542,6 +536,12 @@ export function CourierSettings() {
           checked={settings.autoBookOnConfirm}
           onChange={(v) => setSettings((s) => ({ ...s, autoBookOnConfirm: v }))}
         />
+        <div className="rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[11.5px] leading-relaxed text-stone-600">
+          <strong className="text-stone-800">Order status flow:</strong> booking a consignment moves
+          the order to <em>Ready to Ship</em> — never directly to <em>Shipped</em>. The
+          <em> Shipped</em> status is set automatically when the courier physically picks up the
+          parcel (via tracking sync or webhook), so the storefront always reflects real dispatch.
+        </div>
       </div>
 
       {/* Sanitized Error Logs */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -17,7 +17,6 @@ import {
   Package,
   PackageCheck,
   Phone,
-  Printer,
   RefreshCw,
   RotateCcw,
   ShieldCheck,
@@ -42,7 +41,7 @@ import {
 } from "@/server/orders/workflow";
 import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/tracking";
 import { CourierLogo } from "@/components/admin/courier-logo";
-import { printCourierLabel } from "./print-label";
+import { CourierPrintAction } from "./courier-print-action";
 import { WhatsAppIcon } from "./whatsapp-icon";
 import {
   buildWhatsAppUrl,
@@ -50,6 +49,171 @@ import {
 } from "@/server/whatsapp/whatsapp-templates";
 import { ProductThumbnail } from "./product-thumbnail";
 import { OrderActivityView } from "./order-activity-view";
+import { OrderCancellationModal } from "./order-cancellation-modal";
+import type { ShipmentRecord } from "../_types/orders.types";
+
+const PROVIDERS_WITHOUT_API_CANCEL = new Set(["steadfast"]);
+
+const IN_TRANSIT_STATUSES = new Set(["in_transit", "out_for_delivery", "picked_up"]);
+const TERMINAL_STATUSES = new Set([
+  "cancelled",
+  "returned",
+  "failed",
+  "delivered",
+  "partial_delivered",
+]);
+
+interface ShipmentActionButtonsProps {
+  shipment: ShipmentRecord;
+  orderStub: WCOrder;
+  busy?: boolean;
+  onRefreshShipment?: (shipmentId: string) => Promise<boolean>;
+  onCancelShipment: (
+    orderStub: WCOrder,
+    reason?: string,
+    options?: { confirmExternalCancellation?: boolean; shipmentId?: string }
+  ) => Promise<boolean>;
+}
+
+function ShipmentActionButtons({
+  shipment,
+  orderStub,
+  busy,
+  onRefreshShipment,
+  onCancelShipment,
+}: ShipmentActionButtonsProps) {
+  const [mode, setMode] = useState<null | "api" | "portal">(null);
+  const status = shipment.status;
+  const isTerminal = TERMINAL_STATUSES.has(status);
+  const isInTransit = IN_TRANSIT_STATUSES.has(status);
+  const isMock = Boolean(
+    shipment.isMock || shipment.mode === "mock" || shipment.consignmentId?.startsWith("MOCK-")
+  );
+  const needsPortalCancel = !isMock && PROVIDERS_WITHOUT_API_CANCEL.has(shipment.provider);
+
+  if (isTerminal) return null;
+
+  if (isInTransit) {
+    return (
+      <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+        <AlertTriangle className="h-3 w-3 text-amber-600" />
+        Parcel is in transit. Cancel / recall via courier hub.
+      </div>
+    );
+  }
+
+  if (mode === "api") {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2 py-1">
+        <span className="text-[10.5px] font-semibold text-rose-800">
+          {isMock ? "Cancel this simulated consignment?" : "Cancel the real parcel at the courier?"}
+        </span>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setMode(null);
+            await onCancelShipment(orderStub, "Admin cancelled shipment", {
+              shipmentId: shipment.id,
+            });
+          }}
+          className="rounded-md bg-rose-600 px-2 py-0.5 text-[10.5px] font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+        >
+          Yes, cancel
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode(null)}
+          className="rounded-md border border-rose-200 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-rose-700 hover:bg-rose-100"
+        >
+          Keep
+        </button>
+      </div>
+    );
+  }
+
+  if (mode === "portal") {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1">
+        <span className="text-[10.5px] font-semibold text-amber-900">
+          Cancelled #{shipment.consignmentId || shipment.trackingCode} in the Steadfast portal?
+        </span>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setMode(null);
+            await onCancelShipment(
+              orderStub,
+              "Marked cancelled after Steadfast portal cancellation",
+              { confirmExternalCancellation: true, shipmentId: shipment.id }
+            );
+          }}
+          className="rounded-md bg-amber-600 px-2 py-0.5 text-[10.5px] font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+        >
+          Yes, mark cancelled
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode(null)}
+          className="rounded-md border border-amber-200 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-amber-800 hover:bg-amber-100"
+        >
+          Keep
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {onRefreshShipment && (
+        <button
+          type="button"
+          disabled={busy || !(shipment.consignmentId || shipment.trackingCode)}
+          onClick={() => void onRefreshShipment(shipment.id)}
+          title={
+            shipment.consignmentId || shipment.trackingCode
+              ? "Pull the latest courier status"
+              : "No consignment yet — retry the booking first."
+          }
+          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <RefreshCw className={`h-3 w-3 ${busy ? "animate-spin" : ""}`} />
+          Sync Status
+        </button>
+      )}
+      <CourierPrintAction
+        order={orderStub}
+        shipment={shipment}
+        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
+        iconClassName="h-3 w-3"
+      >
+        Print Label
+      </CourierPrintAction>
+      {needsPortalCancel ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setMode("portal")}
+          title="Use this only after cancelling the parcel in the Steadfast portal"
+          className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40 cursor-pointer"
+        >
+          Mark cancelled (portal)
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          title="Cancel consignment with courier before pickup"
+          onClick={() => setMode("api")}
+          className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          Cancel Consignment
+        </button>
+      )}
+    </div>
+  );
+}
 
 export interface OrderDetailsContentProps {
   data: OrderDetailsPayload;
@@ -59,7 +223,11 @@ export interface OrderDetailsContentProps {
   onReopenOrder?: (reason: string) => Promise<boolean>;
   onOpenShipment: (orderStub: WCOrder) => void;
   onRefreshShipment: (shipmentId: string) => Promise<boolean>;
-  onCancelShipment: (orderStub: WCOrder, reason?: string) => Promise<boolean>;
+  onCancelShipment: (
+    orderStub: WCOrder,
+    reason?: string,
+    options?: { confirmExternalCancellation?: boolean; shipmentId?: string }
+  ) => Promise<boolean>;
   onReconcileSslcommerz: (orderNumber: string) => Promise<boolean>;
   onAddNote: (text: string) => Promise<boolean>;
   onSaveSettlement: (payload: {
@@ -264,31 +432,83 @@ export function OrderDetailsContent({
   }, [moreMenuOpen, actionsMenuOpen]);
 
   const [actionBusy, setActionBusy] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<{
-    status: "cancelled" | "returned";
-    title: string;
-    message: string;
-  } | null>(null);
-  const [confirmReason, setConfirmReason] = useState("");
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
 
-  // Settlement form
+  const requestOrderCancellation = useCallback(() => {
+    setCancelModalOpen(true);
+  }, []);
+
+  const handleConfirmOrderCancellation = useCallback(
+    async (reason: string) => {
+      setActionBusy(true);
+      try {
+        const success = await onStatusTransition("cancelled", reason);
+        return Boolean(success);
+      } finally {
+        setActionBusy(false);
+      }
+    },
+    [onStatusTransition]
+  );
+  const activeShipment = shipments.find(
+    (s) => !["cancelled", "returned", "failed"].includes(s.status)
+  );
+
+  const isMockConsignment = Boolean(
+    order.courierIsMock ||
+    order.consignmentId?.startsWith("MOCK-") ||
+    activeShipment?.isMock ||
+    activeShipment?.consignmentId?.startsWith("MOCK-")
+  );
+  const hasConsignment = Boolean(order.consignmentId || activeShipment?.consignmentId);
+  const effectiveShipmentStatus = order.shipmentStatus || (activeShipment ? activeShipment.status : "none");
+
+  // Refund modal states & financial safeguard
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [refundAmountInput, setRefundAmountInput] = useState("");
+  const [refundRefInput, setRefundRefInput] = useState("");
+  const [refundNoteInput, setRefundNoteInput] = useState("");
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+
+  // Financial calculations: Max Refundable = Captured - Refunded
+  const capturedAmount = fin.advancePaidAmount || (order.paymentStatus === "paid" ? order.total : 0);
+  const refundedAmount = payments.reduce((acc, p) => acc + (Number(p.refundedAmount) || 0), 0);
+  const maxRefundable = Math.max(0, capturedAmount - refundedAmount);
+  const gatewayPayment = payments.find(
+    (p) =>
+      String(p.provider).toLowerCase() === "sslcommerz" &&
+      ["paid", "succeeded", "valid", "validated"].includes(String(p.status).toLowerCase())
+  );
+
+  // Settlement form — courier charge defaults to verified fee, never hardcoded 100
   const [collectedInput, setCollectedInput] = useState(
     String(fin.collectedCodAmount || fin.expectedCodAmount || 0)
   );
   const [settledInput, setSettledInput] = useState(String(fin.settledCodAmount || 0));
-  const [chargeInput, setChargeInput] = useState(String(fin.courierCharge || 0));
+  const [chargeInput, setChargeInput] = useState(
+    String(fin.courierCharge || order.shippingFee || 0)
+  );
   const [settlementNote, setSettlementNote] = useState(order.settlementNote || "");
 
-  // Manual advance / refund form
-  const [payFormOpen, setPayFormOpen] = useState<"advance" | "refund" | null>(null);
+  const collectedNum = Number(collectedInput) || 0;
+  const settledNum = Number(settledInput) || 0;
+  const chargeNum = Number(chargeInput) || 0;
+  const expectedRemittance = Math.max(0, collectedNum - chargeNum);
+  const settlementDifference = Math.round((settledNum - expectedRemittance) * 100) / 100;
+  const settlementInvalid =
+    collectedNum < 0 ||
+    settledNum < 0 ||
+    chargeNum < 0 ||
+    settledNum > collectedNum + 0.01;
+  const settlementNeedsNote =
+    Math.abs(settlementDifference) > 0.01 && settlementNote.trim().length < 3;
+
+  // Manual offline payment form (only allowed when outstanding > 0)
+  const [payFormOpen, setPayFormOpen] = useState<"advance" | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("bkash");
   const [payRef, setPayRef] = useState("");
   const [payNote, setPayNote] = useState("");
-
-  const activeShipment = shipments.find(
-    (s) => !["cancelled", "returned", "failed"].includes(s.status)
-  );
 
   const runTransition = async (status: string, reason?: string) => {
     setActionBusy(true);
@@ -326,7 +546,7 @@ export function OrderDetailsContent({
   const waMessage = generateWhatsAppMessage(wcLikeOrder);
   const waUrl = buildWhatsAppUrl(custPhone, waMessage);
 
-  // Stepper calculations
+  // Stepper calculations — 6-step business lifecycle
   const steps = [
     { key: "placed", label: "Placed", sub: formatDateTime(order.createdAt) },
     { key: "confirmed", label: "Confirmed", sub: order.orderStatus !== "pending" ? "Verified" : "—" },
@@ -338,9 +558,16 @@ export function OrderDetailsContent({
         : "—",
     },
     {
+      key: "ready_to_ship",
+      label: "Ready to Ship",
+      sub: ["ready_to_ship", "shipped", "delivered", "completed"].includes(order.orderStatus)
+        ? "Packed & ready"
+        : "—",
+    },
+    {
       key: "shipped",
       label: "Shipped",
-      sub: ["shipped", "delivered", "completed"].includes(order.orderStatus) ? "In delivery" : "—",
+      sub: ["shipped", "delivered", "completed"].includes(order.orderStatus) ? "In transit" : "—",
     },
     {
       key: "delivered",
@@ -357,10 +584,10 @@ export function OrderDetailsContent({
       failed: 1,
       confirmed: 2,
       processing: 3,
-      ready_to_ship: 3,
-      shipped: 4,
-      delivered: 5,
-      completed: 5,
+      ready_to_ship: 4,
+      shipped: 5,
+      delivered: 6,
+      completed: 6,
       cancelled: 0,
       returned: 0,
     };
@@ -368,8 +595,9 @@ export function OrderDetailsContent({
       placed: 1,
       confirmed: 2,
       processing: 3,
-      shipped: 4,
-      delivered: 5,
+      ready_to_ship: 4,
+      shipped: 5,
+      delivered: 6,
     };
     const currentRank = statusRanks[status] || 1;
     const thisStepRank = stepRanks[key] || 1;
@@ -381,51 +609,40 @@ export function OrderDetailsContent({
   const getProgressPercent = () => {
     const status = order.orderStatus;
     if (status === "pending") return 10;
-    if (status === "confirmed") return 30;
-    if (status === "processing" || status === "ready_to_ship") return 55;
-    if (status === "shipped") return 80;
+    if (status === "confirmed") return 28;
+    if (status === "processing") return 46;
+    if (status === "ready_to_ship") return 65;
+    if (status === "shipped") return 84;
     if (status === "delivered" || status === "completed") return 100;
     return 10;
   };
 
-  // Reusable sub-card renderers
-  const renderConfirmBanner = () => {
-    if (!confirmAction) return null;
-    return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 space-y-3">
-        <p className="text-[13px] font-bold text-rose-900">{confirmAction.title}</p>
-        <p className="text-[12px] text-gray-700">{confirmAction.message}</p>
-        <input
-          type="text"
-          value={confirmReason}
-          onChange={(e) => setConfirmReason(e.target.value)}
-          placeholder="Reason for audit log (optional)..."
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[12px] outline-none focus:border-rose-400"
-        />
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={actionBusy}
-            onClick={async () => {
-              const target = confirmAction.status;
-              setConfirmAction(null);
-              await runTransition(target, confirmReason || undefined);
-            }}
-            className="rounded-lg bg-rose-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-rose-700 cursor-pointer shadow-xs"
-          >
-            Confirm {confirmAction.status}
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmAction(null)}
-            className="rounded-lg bg-white border border-gray-200 px-4 py-2 text-[12px] font-medium text-gray-700 hover:bg-gray-100 cursor-pointer"
-          >
-            Keep Order
-          </button>
-        </div>
-      </div>
-    );
-  };
+  const renderCancellationModal = () => (
+    <OrderCancellationModal
+      isOpen={cancelModalOpen}
+      onClose={() => setCancelModalOpen(false)}
+      orderNumber={order.orderNumber}
+      customerName={order.customer?.fullName}
+      orderTotal={Number(order.total || 0)}
+      paymentMethod={order.paymentMethod || "cod"}
+      paymentStatus={order.paymentStatus || "pending"}
+      advancePaidAmount={Number(fin.advancePaidAmount || 0)}
+      isPrepaidVerified={Boolean(fin.isPrepaidVerified)}
+      courierProvider={order.courier || activeShipment?.provider}
+      courierStatus={activeShipment?.status || order.shipmentStatus}
+      consignmentId={activeShipment?.consignmentId || order.consignmentId}
+      hasActiveShipment={Boolean(
+        activeShipment &&
+          !["cancelled", "failed", "returned"].includes(String(activeShipment.status)) &&
+          (activeShipment.consignmentId || order.consignmentId)
+      )}
+      isShipmentInTransit={Boolean(
+        activeShipment &&
+          ["in_transit", "out_for_delivery", "picked_up"].includes(String(activeShipment.status))
+      )}
+      onConfirmCancel={handleConfirmOrderCancellation}
+    />
+  );
 
   const renderLifecycleBadgesStrip = () => (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 rounded-2xl border border-stone-200/90 bg-white p-3 shadow-xs">
@@ -465,16 +682,23 @@ export function OrderDetailsContent({
           Shipment {order.courier ? `(${getCourierLabel(order.courier)})` : ""}
         </span>
         <span
-          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${getShipmentStatusBadge(
-            order.shipmentStatus || (activeShipment ? activeShipment.status : "none"),
-            order.shipmentBookingState
-          )}`}
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${
+            isMockConsignment
+              ? "bg-amber-50 text-amber-800 border-amber-200"
+              : getShipmentStatusBadge(
+                  effectiveShipmentStatus,
+                  order.shipmentBookingState
+                )
+          }`}
         >
           <Truck className="h-3 w-3" />
-          {SHIPMENT_STATUS_LABELS[order.shipmentStatus || ""] ||
-            (activeShipment
-              ? SHIPMENT_STATUS_LABELS[activeShipment.status] || activeShipment.status
-              : "Not Booked")}
+          {isMockConsignment
+            ? "Booked [TEST]"
+            : hasConsignment
+            ? SHIPMENT_STATUS_LABELS[effectiveShipmentStatus] || "Booked"
+            : order.shipmentBookingState === "booking_in_progress"
+            ? "Booking in Progress"
+            : "Not Booked"}
         </span>
       </div>
 
@@ -485,11 +709,13 @@ export function OrderDetailsContent({
         </span>
         <span
           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold capitalize w-fit ${settlementBadgeClass(
-            fin.codSettlementStatus
+            fin.expectedCodAmount === 0 ? "none" : fin.codSettlementStatus
           )}`}
         >
           <Banknote className="h-3 w-3" />
-          {COURIER_SETTLEMENT_LABELS[fin.codSettlementStatus] || fin.codSettlementStatus}
+          {fin.expectedCodAmount === 0
+            ? "Not Applicable"
+            : COURIER_SETTLEMENT_LABELS[fin.codSettlementStatus] || fin.codSettlementStatus}
         </span>
       </div>
     </div>
@@ -498,8 +724,9 @@ export function OrderDetailsContent({
   const renderUpdateStatusModal = () => {
     if (!updateStatusModalOpen) return null;
 
+    const forwardStatuses = allowed.filter((s) => s !== "cancelled");
+
     const isExceptional =
-      targetStatusToUpdate === "cancelled" ||
       targetStatusToUpdate === "returned" ||
       targetStatusToUpdate === "refunded";
 
@@ -537,13 +764,13 @@ export function OrderDetailsContent({
 
           <div className="space-y-1.5">
             <label className="text-[11.5px] font-bold text-gray-700">Select Target Status</label>
-            {allowed.length === 0 ? (
+            {forwardStatuses.length === 0 ? (
               <p className="text-[12px] text-gray-500 rounded-lg bg-stone-50 p-3 border border-stone-200">
                 No further forward status transitions available from &ldquo;{order.orderStatus}&rdquo;.
               </p>
             ) : (
               <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                {allowed.map((st) => (
+                {forwardStatuses.map((st) => (
                   <button
                     key={st}
                     type="button"
@@ -767,6 +994,154 @@ export function OrderDetailsContent({
     );
   };
 
+  const renderRefundModal = () => {
+    if (!refundModalOpen) return null;
+
+    const amt = Number(refundAmountInput);
+    const validAmount = !isNaN(amt) && amt > 0 && amt <= maxRefundable;
+    const validReason = refundNoteInput.trim().length >= 3;
+    const canSubmit = validAmount && validReason && !refundSubmitting;
+
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-rose-600" />
+              <div>
+                <h3 className="text-[14px] font-bold text-gray-900">Request Payment Refund</h3>
+                <p className="text-[11px] text-gray-500">Order #{order.orderNumber}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRefundModalOpen(false)}
+              className="rounded-lg p-1 text-gray-400 hover:bg-stone-100 hover:text-gray-600 cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Refund Financial Guardrails */}
+          <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 text-[11.5px]">
+            <div>
+              <p className="text-[10px] uppercase font-bold text-gray-400">Captured</p>
+              <p className="font-bold text-gray-900">{formatBDT(capturedAmount)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-gray-400">Refunded</p>
+              <p className="font-bold text-rose-700">{formatBDT(refundedAmount)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-gray-400">Max Refundable</p>
+              <p className="font-bold text-emerald-700">{formatBDT(maxRefundable)}</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-[12px]">
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                Refund Amount (BDT) <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-400 font-bold">৳</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={maxRefundable}
+                  value={refundAmountInput}
+                  onChange={(e) => setRefundAmountInput(e.target.value)}
+                  placeholder={`Max: ${maxRefundable}`}
+                  className="w-full rounded-xl border border-stone-200 bg-white py-1.5 pl-8 pr-3 text-[12px] outline-none focus:border-rose-500"
+                />
+              </div>
+              {amt > maxRefundable && (
+                <p className="text-[10.5px] text-rose-600 mt-1 font-medium">
+                  Amount exceeds maximum refundable balance ({formatBDT(maxRefundable)}).
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                Gateway Reference / Bank TXN ID
+              </label>
+              <input
+                type="text"
+                value={refundRefInput}
+                onChange={(e) => setRefundRefInput(e.target.value)}
+                placeholder="e.g. SSLCOMMERZ Refund Ref, bKash TXN ID"
+                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] outline-none focus:border-rose-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                Refund Reason / Audit Note <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={2}
+                value={refundNoteInput}
+                onChange={(e) => setRefundNoteInput(e.target.value)}
+                placeholder="Document the customer request or verification reason..."
+                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] outline-none focus:border-rose-500 resize-none"
+              />
+              {refundNoteInput.trim().length > 0 && refundNoteInput.trim().length < 3 && (
+                <p className="text-[10.5px] text-rose-600 mt-0.5">Minimum 3 characters required.</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[11px] text-amber-800">
+              ℹ️ Refund records an immutable audit ledger entry. It does not cancel shipment consignments.
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-stone-100 pt-3">
+            <button
+              type="button"
+              disabled={refundSubmitting}
+              onClick={() => setRefundModalOpen(false)}
+              className="rounded-xl border border-stone-200 px-3.5 py-2 text-[12px] font-semibold text-gray-600 hover:bg-stone-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={!canSubmit}
+              onClick={async () => {
+                setRefundSubmitting(true);
+                try {
+                  const ok = await onRecordPayment({
+                    action: "refund",
+                    amount: amt,
+                    reference: refundRefInput.trim(),
+                    note: refundNoteInput.trim(),
+                  });
+                  if (ok) {
+                    setRefundModalOpen(false);
+                    setRefundAmountInput("");
+                    setRefundRefInput("");
+                    setRefundNoteInput("");
+                  }
+                } finally {
+                  setRefundSubmitting(false);
+                }
+              }}
+              className="rounded-xl bg-rose-600 px-4 py-2 text-[12.5px] font-bold text-white shadow-xs hover:bg-rose-700 disabled:opacity-40 cursor-pointer transition flex items-center gap-1.5"
+            >
+              {refundSubmitting ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3.5 w-3.5" />
+              )}
+              <span>Submit Refund</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderOrderProgressStepper = () => (
     <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs overflow-hidden">
       <div className="flex items-center gap-2 mb-4">
@@ -882,10 +1257,10 @@ export function OrderDetailsContent({
 
   const renderProductsListCard = () => (
     <div className="rounded-2xl border border-stone-200/90 bg-white overflow-hidden shadow-xs">
-      <div className="border-b border-stone-100 bg-stone-50/70 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+      <div className="border-b border-stone-200/80 bg-stone-50/70 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500">
         Products ({order.items.length})
       </div>
-      <div className="divide-y divide-stone-100">
+      <div className="divide-y divide-stone-200/60">
         {order.items.map((item, i) => (
           <div key={`${item.productId}-${i}`} className="flex items-center justify-between gap-3 px-4 py-3 text-[12.5px]">
             <div className="flex items-center gap-3 min-w-0">
@@ -916,11 +1291,48 @@ export function OrderDetailsContent({
 
   const renderPaymentManagementCard = () => (
     <div className="space-y-4">
+      {/* Financial Health Summary Banner */}
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-4 shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+          <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+            <CreditCard className="h-3.5 w-3.5 text-purple-600" />
+            Payment Summary
+          </h3>
+          <span
+            className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold uppercase ${getPaymentStatusBadge(
+              order.paymentStatus
+            )}`}
+          >
+            {PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
+          <div className="rounded-xl bg-stone-50 p-2.5 border border-stone-100">
+            <p className="text-[10px] uppercase font-bold text-gray-400">Order Total</p>
+            <p className="font-bold text-gray-900 mt-0.5">{formatBDT(order.total)}</p>
+          </div>
+          <div className="rounded-xl bg-emerald-50/70 p-2.5 border border-emerald-100">
+            <p className="text-[10px] uppercase font-bold text-emerald-700">Captured / Paid</p>
+            <p className="font-bold text-emerald-800 mt-0.5">{formatBDT(capturedAmount)}</p>
+          </div>
+          <div className="rounded-xl bg-purple-50/70 p-2.5 border border-purple-100">
+            <p className="text-[10px] uppercase font-bold text-purple-700">Outstanding (COD)</p>
+            <p className="font-bold text-purple-800 mt-0.5">{formatBDT(fin.outstandingAmount)}</p>
+          </div>
+          <div className="rounded-xl bg-rose-50/70 p-2.5 border border-rose-100">
+            <p className="text-[10px] uppercase font-bold text-rose-700">Total Refunded</p>
+            <p className="font-bold text-rose-800 mt-0.5">{formatBDT(refundedAmount)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Actions & Transactions Card */}
       <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
-            <CreditCard className="h-3.5 w-3.5 text-purple-600" />
-            Payment Management
+            <ShieldCheck className="h-3.5 w-3.5 text-purple-600" />
+            Payment Gateways & Ledger
           </h3>
           <div className="flex flex-wrap items-center gap-1.5">
             {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" && (
@@ -948,53 +1360,77 @@ export function OrderDetailsContent({
                 )}
               </>
             )}
-            <button
-              type="button"
-              onClick={() => setPayFormOpen((v) => (v === "advance" ? null : "advance"))}
-              className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
-            >
-              + Record Payment
-            </button>
-            {fin.advancePaidAmount > 0 && (
+
+            {/* Offline manual payment only visible when balance is outstanding */}
+            {fin.outstandingAmount > 0 && (
               <button
                 type="button"
-                onClick={() => setPayFormOpen((v) => (v === "refund" ? null : "refund"))}
-                className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+                onClick={() => setPayFormOpen((v) => (v === "advance" ? null : "advance"))}
+                className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
               >
-                Record Refund
+                + Record Offline Payment
               </button>
             )}
+
+            {/* Refund trigger: gateway payments refund through SSLCOMMERZ, offline
+                payments are recorded locally. */}
+            {capturedAmount > 0 &&
+              (gatewayPayment ? (
+                <Link
+                  href={`/admin/payments/${gatewayPayment.id}`}
+                  className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100"
+                  title="Refunds for SSLCOMMERZ payments are issued from the transaction page"
+                >
+                  Refund via SSLCOMMERZ →
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled={maxRefundable <= 0}
+                  onClick={() => {
+                    setRefundAmountInput(String(maxRefundable));
+                    setRefundRefInput("");
+                    setRefundNoteInput("");
+                    setRefundModalOpen(true);
+                  }}
+                  title={
+                    maxRefundable > 0
+                      ? `Max refundable balance: ${formatBDT(maxRefundable)}`
+                      : "No refundable balance remains on this order."
+                  }
+                  className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Record Offline Refund
+                </button>
+              ))}
           </div>
         </div>
 
-        {payFormOpen && (
+        {payFormOpen === "advance" && fin.outstandingAmount > 0 && (
           <div className="rounded-xl border border-purple-200 bg-purple-50/40 p-3 space-y-2">
             <p className="text-[11.5px] font-bold text-purple-900">
-              {payFormOpen === "refund"
-                ? "Record Refund Entry"
-                : "Record Verified Advance / Manual Payment"}
+              Record Offline / Advance Payment (Outstanding: {formatBDT(fin.outstandingAmount)})
             </p>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="number"
                 min={1}
+                max={fin.outstandingAmount}
                 placeholder="Amount (BDT)"
                 value={payAmount}
                 onChange={(e) => setPayAmount(e.target.value)}
                 className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
               />
-              {payFormOpen === "advance" && (
-                <select
-                  value={payMethod}
-                  onChange={(e) => setPayMethod(e.target.value)}
-                  className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
-                >
-                  <option value="bkash">bKash Advance</option>
-                  <option value="nagad">Nagad Advance</option>
-                  <option value="bank">Bank Transfer</option>
-                  <option value="cash">Cash Advance</option>
-                </select>
-              )}
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
+              >
+                <option value="bkash">bKash Manual / Agent</option>
+                <option value="nagad">Nagad Manual</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="cash">Cash Handover</option>
+              </select>
               <input
                 type="text"
                 placeholder="Reference / TXN ID"
@@ -1004,7 +1440,7 @@ export function OrderDetailsContent({
               />
               <input
                 type="text"
-                placeholder="Note"
+                placeholder="Note / Verification details"
                 value={payNote}
                 onChange={(e) => setPayNote(e.target.value)}
                 className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[12px]"
@@ -1016,7 +1452,7 @@ export function OrderDetailsContent({
                 disabled={!Number(payAmount) || Number(payAmount) <= 0}
                 onClick={async () => {
                   const ok = await onRecordPayment({
-                    action: payFormOpen,
+                    action: "advance",
                     amount: Number(payAmount),
                     method: payMethod,
                     reference: payRef,
@@ -1031,7 +1467,7 @@ export function OrderDetailsContent({
                 }}
                 className="rounded-lg bg-purple-600 px-3 py-1.5 text-[11.5px] font-bold text-white disabled:opacity-50 cursor-pointer"
               >
-                Save {payFormOpen === "refund" ? "Refund" : "Payment"}
+                Save Payment Receipt
               </button>
               <button
                 type="button"
@@ -1045,7 +1481,7 @@ export function OrderDetailsContent({
         )}
 
         {payments.length === 0 ? (
-          <p className="text-[12px] text-gray-400">
+          <p className="text-[12px] text-gray-400 py-2">
             No payment gateway attempts recorded yet.
           </p>
         ) : (
@@ -1084,43 +1520,32 @@ export function OrderDetailsContent({
   const renderShipmentCard = () => (
     <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+        <div className="flex items-center gap-2">
           <Truck className="h-3.5 w-3.5 text-purple-600" />
-          Consignment & Dispatch History
-        </h3>
-        {activeShipment && (
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void onRefreshShipment(activeShipment.id)}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
-            >
-              <RefreshCw className={`h-3 w-3 ${busy ? "animate-spin" : ""}`} />
-              Sync Status
-            </button>
-            {!["delivered", "partial_delivered", "returned"].includes(activeShipment.status) && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void onCancelShipment(orderStub, "Admin cancelled shipment")}
-                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100 cursor-pointer"
-              >
-                Cancel Consignment
-              </button>
-            )}
-          </div>
-        )}
+          <h3 className="text-[12px] font-bold uppercase tracking-wider text-gray-500">
+            Consignment & Dispatch History
+          </h3>
+          {isMockConsignment && (
+            <span className="rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-[9.5px] font-extrabold uppercase text-amber-800">
+              TEST / SIMULATED
+            </span>
+          )}
+        </div>
       </div>
 
       {shipments.length === 0 ? (
-        <p className="text-[12px] text-gray-400">
+        <p className="text-[12px] text-gray-400 py-2">
           No courier consignments created yet for this order.
         </p>
       ) : (
         <div className="space-y-2.5">
           {shipments.map((s) => {
             const trackUrl = getCourierTrackingUrl(s.provider, s.trackingCode, s.consignmentId);
+            const isMockShipment = Boolean(
+              s.isMock ||
+              s.mode === "mock" ||
+              s.consignmentId?.startsWith("MOCK-")
+            );
             return (
               <div
                 key={s.id}
@@ -1130,6 +1555,11 @@ export function OrderDetailsContent({
                   <div className="flex flex-wrap items-center gap-2">
                     <CourierLogo provider={s.provider} size="sm" className="shadow-2xs" />
                     <span className="font-bold text-gray-900">{getCourierLabel(s.provider)}</span>
+                    {isMockShipment && (
+                      <span className="rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-800">
+                        SIMULATED
+                      </span>
+                    )}
                     <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-700">
                       {s.status.replace(/_/g, " ")}
                     </span>
@@ -1144,6 +1574,12 @@ export function OrderDetailsContent({
                       </span>
                     )}
                   </div>
+                  {String(s.status).toLowerCase() === "cancelled" && !isMockShipment && (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-800">
+                      Steadfast has no API cancellation — confirm this parcel is cancelled in the
+                      Steadfast portal.
+                    </p>
+                  )}
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-gray-900">{formatBDT(s.codAmount)} COD</span>
                     {trackUrl && (
@@ -1159,17 +1595,30 @@ export function OrderDetailsContent({
                     )}
                   </div>
                 </div>
+                <ShipmentActionButtons
+                  shipment={s}
+                  orderStub={orderStub}
+                  busy={busy}
+                  onRefreshShipment={onRefreshShipment}
+                  onCancelShipment={onCancelShipment}
+                />
                 {(s.events?.length ?? 0) > 0 && (
                   <ul className="space-y-1 border-t border-stone-200/70 pt-2 text-[11px] text-slate-600">
-                    {(s.events || []).slice(-5).map((ev, idx) => (
-                      <li key={idx} className="flex justify-between gap-2">
-                        <span className="capitalize">
-                          {ev.status.replace(/_/g, " ")}
-                          {ev.note ? ` — ${ev.note}` : ""}
-                        </span>
-                        <span className="text-slate-400 shrink-0">{formatDateTime(ev.at)}</span>
-                      </li>
-                    ))}
+                    {(s.events || []).slice(-5).map((ev, idx) => {
+                      let displayNote = ev.note || "";
+                      if (isMockShipment && displayNote.toLowerCase().includes("accepted by steadfast")) {
+                        displayNote = "[SIMULATED] Mock development consignment created.";
+                      }
+                      return (
+                        <li key={idx} className="flex justify-between gap-2">
+                          <span className="capitalize">
+                            {ev.status.replace(/_/g, " ")}
+                            {displayNote ? ` — ${displayNote}` : ""}
+                          </span>
+                          <span className="text-slate-400 shrink-0">{formatDateTime(ev.at)}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -1189,226 +1638,432 @@ export function OrderDetailsContent({
         </h3>
         <span
           className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${settlementBadgeClass(
-            fin.codSettlementStatus
+            fin.expectedCodAmount === 0 ? "none" : fin.codSettlementStatus
           )}`}
         >
-          {fin.codSettlementStatus}
+          {fin.expectedCodAmount === 0 ? "Not Applicable" : fin.codSettlementStatus}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-[11.5px]">
-        <div>
-          <p className="text-[10px] uppercase text-slate-400">Expected COD</p>
-          <p className="font-bold text-slate-900">{formatBDT(fin.expectedCodAmount)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase text-slate-400">Collected</p>
-          <p className="font-bold text-blue-700">{formatBDT(fin.collectedCodAmount)}</p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase text-slate-400">Settled to Bank</p>
-          <p className="font-bold text-emerald-700">{formatBDT(fin.settledCodAmount)}</p>
-        </div>
-      </div>
-
-      <div className="space-y-2 rounded-xl border border-stone-200 p-3 text-[12px]">
-        <p className="text-[11.5px] font-bold text-gray-700">Update Settlement Details</p>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <label className="text-[10.5px] text-gray-500">Courier Collected (৳)</label>
-            <input
-              type="number"
-              min={0}
-              value={collectedInput}
-              onChange={(e) => setCollectedInput(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
-            />
+      {fin.expectedCodAmount === 0 ? (
+        /* Clean Notice for 100% Online Paid Orders */
+        <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 space-y-1.5">
+          <div className="flex items-center gap-2 text-stone-800 font-bold text-[12.5px]">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <span>Not applicable — customer paid online</span>
           </div>
-          <div>
-            <label className="text-[10.5px] text-gray-500">Bank Settled (৳)</label>
-            <input
-              type="number"
-              min={0}
-              value={settledInput}
-              onChange={(e) => setSettledInput(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
-            />
-          </div>
-          <div>
-            <label className="text-[10.5px] text-gray-500">Courier Fee (৳)</label>
-            <input
-              type="number"
-              min={0}
-              value={chargeInput}
-              onChange={(e) => setChargeInput(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
-            />
-          </div>
+          <p className="text-[12px] text-stone-600">
+            This order was paid online in full ({formatBDT(order.paidAmount || order.total)}). No cash collection or remittance is expected from the courier partner.
+          </p>
         </div>
-        <input
-          type="text"
-          value={settlementNote}
-          onChange={(e) => setSettlementNote(e.target.value)}
-          placeholder="Bank payout ref / settlement note..."
-          className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-[12px]"
-        />
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-gray-400">
-            {order.settledAt ? `Settled: ${formatDateTime(order.settledAt)}` : "Not yet settled"}
-          </span>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              void onSaveSettlement({
-                collectedCodAmount: Number(collectedInput) || 0,
-                courierCharge: Number(chargeInput) || 0,
-                settledCodAmount: Number(settledInput) || 0,
-                settlementNote,
-                markSettled: true,
-              })
-            }
-            className="rounded-lg bg-purple-600 px-3.5 py-1.5 text-[11.5px] font-bold text-white hover:bg-purple-700 cursor-pointer shadow-xs"
-          >
-            Reconcile Settlement
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Right sidebar renderers for Full Page View
-  const renderAvailableNextActionsCard = () => (
-    <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3.5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-bold text-gray-900 tracking-tight">Available Next Actions</h3>
-        <span className="text-[11px] font-medium text-gray-500">
-          Status: <strong className="capitalize text-gray-800">{order.orderStatus.replace(/_/g, " ")}</strong>
-        </span>
-      </div>
-
-      <div className="space-y-2">
-        {/* If Cancelled: Show Governed Reopen Recovery Action */}
-        {order.orderStatus === "cancelled" && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 space-y-2.5">
-            <div className="flex items-center gap-1.5 text-emerald-900 font-bold text-[12.5px]">
-              <RotateCcw className="h-4 w-4 text-emerald-600" />
-              <span>Cancelled Order Recovery</span>
+      ) : (
+        /* Actual COD Settlement Panel */
+        <>
+          <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-[11.5px]">
+            <div>
+              <p className="text-[10px] uppercase text-slate-400">Expected COD</p>
+              <p className="font-bold text-slate-900">{formatBDT(fin.expectedCodAmount)}</p>
             </div>
-            <p className="text-[11.5px] text-gray-600">
-              {order.reopenEligibility?.summary ||
-                "This order was cancelled. Eligible cancelled orders can be recovered without creating automatic courier bookings or payments."}
-            </p>
-            {order.reopenEligibility?.eligible === false && (
-              <p className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
-                ⚠️ Reopen locked: {order.reopenEligibility.reason}
+            <div>
+              <p className="text-[10px] uppercase text-slate-400">Collected</p>
+              <p className="font-bold text-blue-700">{formatBDT(fin.collectedCodAmount)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-slate-400">Settled to Bank</p>
+              <p className="font-bold text-emerald-700">{formatBDT(fin.settledCodAmount)}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5 rounded-xl border border-stone-200 p-3 text-[12px]">
+            <p className="text-[11.5px] font-bold text-gray-700">Update Settlement Details</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-[10.5px] text-gray-500">Courier Collected (৳)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={collectedInput}
+                  onChange={(e) => setCollectedInput(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
+                />
+              </div>
+              <div>
+                <label className="text-[10.5px] text-gray-500">Bank Settled (৳)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={settledInput}
+                  onChange={(e) => setSettledInput(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
+                />
+              </div>
+              <div>
+                <label className="text-[10.5px] text-gray-500">Courier Fee (৳)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={chargeInput}
+                  onChange={(e) => setChargeInput(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-2 py-1 text-[12px]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1 rounded-lg bg-stone-50 p-2 text-[11px] text-gray-600">
+              <div className="flex items-center justify-between">
+                <span>Expected net remittance</span>
+                <strong className="font-mono text-gray-900">{formatBDT(expectedRemittance)}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Bank settled</span>
+                <strong className="font-mono text-gray-900">{formatBDT(settledNum)}</strong>
+              </div>
+              <div
+                className={`flex items-center justify-between border-t border-stone-200 pt-1 font-bold ${
+                  Math.abs(settlementDifference) <= 0.01 ? "text-emerald-700" : "text-amber-700"
+                }`}
+              >
+                <span>{settlementDifference >= 0 ? "Surplus" : "Shortfall"}</span>
+                <span className="font-mono">{formatBDT(Math.abs(settlementDifference))}</span>
+              </div>
+            </div>
+
+            {settlementInvalid && (
+              <p className="text-[10.5px] font-semibold text-rose-600">
+                Settled amount cannot exceed the collected COD amount.
               </p>
             )}
-            <button
-              type="button"
-              disabled={busy || actionBusy || order.reopenEligibility?.eligible === false || !onReopenOrder}
-              onClick={() => {
-                setReopenReason("");
-                setReopenModalOpen(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-[12.5px] font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-40 transition cursor-pointer"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Reopen Cancelled Order
-            </button>
+            {!settlementInvalid && settlementNeedsNote && (
+              <p className="text-[10.5px] font-semibold text-amber-700">
+                A note is required when the settlement differs from the expected remittance.
+              </p>
+            )}
+
+            <input
+              type="text"
+              value={settlementNote}
+              onChange={(e) => setSettlementNote(e.target.value)}
+              placeholder="Bank payout ref / settlement note..."
+              className="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-[12px]"
+            />
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <span className="text-[11px] text-gray-400">
+                {order.settledAt ? `Settled: ${formatDateTime(order.settledAt)}` : "Not yet settled"}
+              </span>
+              <button
+                type="button"
+                disabled={busy || settlementInvalid || settlementNeedsNote}
+                title={
+                  settlementInvalid
+                    ? "Settled amount cannot exceed the collected COD amount."
+                    : settlementNeedsNote
+                    ? "Add a note explaining the difference."
+                    : "Save the courier settlement reconciliation"
+                }
+                onClick={() =>
+                  void onSaveSettlement({
+                    collectedCodAmount: collectedNum,
+                    courierCharge: chargeNum,
+                    settledCodAmount: settledNum,
+                    settlementNote,
+                    markSettled: true,
+                  })
+                }
+                className="rounded-lg bg-purple-600 px-3.5 py-1.5 text-[11.5px] font-bold text-white hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+              >
+                Reconcile Settlement
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* Update Status Action Dialog Trigger */}
-        {allowed.length > 0 && (
-          <button
-            type="button"
-            disabled={busy || actionBusy}
-            onClick={() => {
-              setTargetStatusToUpdate(allowed[0] || "");
-              setUpdateStatusReason("");
-              setUpdateStatusModalOpen(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-50 border border-purple-200 py-2.5 text-[12.5px] font-bold text-purple-700 hover:bg-purple-100 transition cursor-pointer"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Update Order Status...
-          </button>
-        )}
-
-        {allowed.includes("confirmed") && (
-          <button
-            type="button"
-            disabled={busy || actionBusy}
-            onClick={() => void runTransition("confirmed", "Order confirmed by admin")}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-sky-50 border border-sky-200 py-2 text-[12px] font-bold text-sky-800 hover:bg-sky-100 transition cursor-pointer"
-          >
-            <Check className="h-4 w-4" />
-            Confirm Order Directly
-          </button>
-        )}
-
-        {allowed.includes("processing") && (
-          <button
-            type="button"
-            disabled={busy || actionBusy}
-            onClick={() => void runTransition("processing", "Processing & packing started")}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-50 border border-blue-200 py-2 text-[12px] font-bold text-blue-800 hover:bg-blue-100 transition cursor-pointer"
-          >
-            <PackageCheck className="h-4 w-4" />
-            Start Processing
-          </button>
-        )}
-
-        {allowed.includes("ready_to_ship") && (
-          <button
-            type="button"
-            disabled={busy || actionBusy}
-            onClick={() => void runTransition("ready_to_ship", "Marked Ready to Ship")}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-50 border border-purple-200 py-2 text-[12px] font-bold text-purple-800 hover:bg-purple-100 transition cursor-pointer"
-          >
-            <Package className="h-4 w-4" />
-            Mark Ready to Ship
-          </button>
-        )}
-
-        <button
-          type="button"
-          disabled={busy || actionBusy || (!order.bookingEligibility.ok && !activeShipment)}
-          onClick={() => onOpenShipment(orderStub)}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer"
-        >
-          <Truck className="h-4 w-4" />
-          {activeShipment ? "View Shipment / Consignment" : "Create Steadfast Shipment"}
-        </button>
-
-        {allowed.includes("cancelled") && (
-          <button
-            type="button"
-            disabled={busy || actionBusy || (activeShipment && ["in_transit", "out_for_delivery", "picked_up"].includes(activeShipment.status))}
-            onClick={() => {
-              setConfirmReason("");
-              setConfirmAction({
-                status: "cancelled",
-                title: "Cancel Order?",
-                message: "Cancelled orders are locked and can only be restored via governed Reopen Order.",
-              });
-            }}
-            className="w-full flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50/60 py-2 text-[12px] font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-40 transition cursor-pointer"
-          >
-            <XCircle className="h-4 w-4" />
-            Cancel Order
-          </button>
-        )}
-      </div>
-
-      {!order.bookingEligibility.ok && !activeShipment && (
-        <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
-          {order.bookingEligibility.reason || "Order must be confirmed before courier booking"}
-        </p>
+        </>
       )}
     </div>
   );
+
+  // Right sidebar renderers for Full Page View — Single Context-Sensitive Primary Action
+  const renderAvailableNextActionsCard = () => {
+    const status = order.orderStatus;
+
+    // Cancellation guardrails
+    const isParcelWithCourier = Boolean(
+      activeShipment &&
+      ["in_transit", "out_for_delivery", "picked_up"].includes(activeShipment.status)
+    );
+    const isDelivered = status === "delivered" || status === "completed" || activeShipment?.status === "delivered";
+    const isBookingInProgress = order.shipmentBookingState === "booking_in_progress";
+
+    const hasActiveConsignment = Boolean(
+      activeShipment &&
+        !["cancelled", "returned", "failed"].includes(String(activeShipment.status)) &&
+        (activeShipment.consignmentId || order.consignmentId)
+    );
+
+    const cancelBlockedReason = isParcelWithCourier
+      ? "Parcel is in transit with courier. Use courier recall/return request."
+      : isDelivered
+      ? "Delivered order must use customer return/refund workflow."
+      : hasActiveConsignment
+      ? "An active consignment exists. Cancel it from the Shipment tab first, then cancel the order."
+      : isBookingInProgress
+      ? "Reconcile pending courier booking before cancelling."
+      : null;
+
+    const trackUrl = getCourierTrackingUrl(
+      order.courier || activeShipment?.provider || "steadfast",
+      order.trackingCode || activeShipment?.trackingCode,
+      order.consignmentId || activeShipment?.consignmentId
+    );
+
+    return (
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3.5">
+        <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+          <h3 className="text-[13px] font-bold text-gray-900 tracking-tight">Available Next Actions</h3>
+          <span className="text-[11px] font-medium text-gray-500">
+            Status: <strong className="capitalize text-gray-800">{order.orderStatus.replace(/_/g, " ")}</strong>
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {/* 1. NEW PENDING ORDER */}
+          {status === "pending" && (
+            <>
+              {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={busy || actionBusy}
+                    onClick={() => void onReconcileSslcommerz(order.orderNumber)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 transition cursor-pointer"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Verify Payment
+                  </button>
+                  {onCodFallback && (
+                    <button
+                      type="button"
+                      disabled={busy || actionBusy}
+                      onClick={onCodFallback}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 py-2 text-[12px] font-bold text-amber-900 hover:bg-amber-100 disabled:opacity-50 transition cursor-pointer"
+                    >
+                      <Banknote className="h-4 w-4 text-amber-700" />
+                      Switch to COD
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || actionBusy}
+                  onClick={() => void runTransition("confirmed", "Order confirmed by admin")}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer"
+                >
+                  <Check className="h-4 w-4" />
+                  Confirm Order
+                </button>
+              )}
+            </>
+          )}
+
+          {/* 2. CONFIRMED ORDER */}
+          {status === "confirmed" && (
+            <button
+              type="button"
+              disabled={busy || actionBusy}
+              onClick={() => void runTransition("processing", "Processing & packing started")}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 transition cursor-pointer"
+            >
+              <Package className="h-4 w-4" />
+              Start Processing
+            </button>
+          )}
+
+          {/* 3. PROCESSING ORDER */}
+          {status === "processing" && (
+            <button
+              type="button"
+              disabled={busy || actionBusy}
+              onClick={() => void runTransition("ready_to_ship", "Order packed and marked Ready to Ship")}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer"
+            >
+              <PackageCheck className="h-4 w-4" />
+              Mark Ready to Ship
+            </button>
+          )}
+
+          {/* 4. READY TO SHIP ORDER */}
+          {status === "ready_to_ship" && (
+            <>
+              {isBookingInProgress ? (
+                <button
+                  type="button"
+                  disabled={busy || actionBusy}
+                  onClick={() => {
+                    if (activeShipment?.id) {
+                      void onRefreshShipment(activeShipment.id);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-amber-200 hover:bg-amber-700 disabled:opacity-50 transition cursor-pointer"
+                >
+                  <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
+                  Check Booking Status
+                </button>
+              ) : hasConsignment ? (
+                <div className="space-y-2">
+                  {trackUrl ? (
+                    <a
+                      href={trackUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 transition"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      View Tracking {isMockConsignment ? "(TEST)" : ""}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("shipment")}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 transition cursor-pointer"
+                    >
+                      <Truck className="h-4 w-4" />
+                      View Shipment Details
+                    </button>
+                  )}
+                  <CourierPrintAction
+                    order={orderStub}
+                    shipment={activeShipment}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-2 text-[12px] font-semibold text-gray-700 hover:bg-stone-50 transition cursor-pointer shadow-2xs"
+                  >
+                    Print Shipping Label
+                  </CourierPrintAction>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={busy || actionBusy || !order.bookingEligibility.ok}
+                    onClick={() => onOpenShipment(orderStub)}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-purple-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 transition cursor-pointer"
+                  >
+                    <Truck className="h-4 w-4" />
+                    Book Steadfast
+                  </button>
+                  {!order.bookingEligibility.ok && (
+                    <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                      {order.bookingEligibility.reason || "Order not eligible for courier booking"}
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 5. SHIPPED ORDER */}
+          {status === "shipped" && (
+            <div className="space-y-2">
+              {trackUrl ? (
+                <a
+                  href={trackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Tracking
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("shipment")}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 transition cursor-pointer"
+                >
+                  <Truck className="h-4 w-4" />
+                  View Tracking
+                </button>
+              )}
+              <CourierPrintAction
+                order={orderStub}
+                shipment={activeShipment}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white py-2 text-[12px] font-semibold text-gray-700 hover:bg-stone-50 transition cursor-pointer shadow-2xs"
+              >
+                Print Shipping Label
+              </CourierPrintAction>
+            </div>
+          )}
+
+          {/* 6. DELIVERED ORDER */}
+          {(status === "delivered" || status === "completed") && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("shipment")}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-[12.5px] font-bold text-white shadow-md shadow-emerald-200 hover:bg-emerald-700 transition cursor-pointer"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              View Delivery Details
+            </button>
+          )}
+
+          {/* 7. CANCELLED ORDER RECOVERY */}
+          {status === "cancelled" && onReopenOrder && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 space-y-2.5">
+              <div className="flex items-center gap-1.5 text-emerald-900 font-bold text-[12.5px]">
+                <RotateCcw className="h-4 w-4 text-emerald-600" />
+                <span>Cancelled Order Recovery</span>
+              </div>
+              <p className="text-[11.5px] text-gray-600">
+                {order.reopenEligibility?.summary ||
+                  "This order was cancelled. Restoring it requires a documented reason and does not create automated courier bookings."}
+              </p>
+              {order.reopenEligibility?.eligible === false && (
+                <p className="text-[11px] font-medium text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">
+                  ⚠️ Reopen locked: {order.reopenEligibility.reason}
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={busy || actionBusy || order.reopenEligibility?.eligible === false}
+                onClick={() => {
+                  setReopenReason("");
+                  setReopenModalOpen(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-[12.5px] font-bold text-white shadow-xs hover:bg-emerald-700 disabled:opacity-40 transition cursor-pointer"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reopen Cancelled Order
+              </button>
+            </div>
+          )}
+
+          {/* Governed Order Cancellation with Strict Rules */}
+          {allowed.includes("cancelled") && status !== "cancelled" && (
+            <div className="pt-2 border-t border-stone-100">
+              {cancelBlockedReason ? (
+                <div className="rounded-xl border border-amber-200/90 bg-amber-50/80 p-3 text-[11.5px] text-amber-900">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Cancellation Blocked</p>
+                      <p className="text-[11px] text-amber-800 mt-0.5">{cancelBlockedReason}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || actionBusy}
+                  onClick={requestOrderCancellation}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50/60 py-2.5 text-[12px] font-bold text-rose-700 hover:bg-rose-100 hover:border-rose-300 disabled:opacity-40 transition cursor-pointer shadow-2xs"
+                >
+                  <XCircle className="h-4 w-4 text-rose-600" />
+                  Cancel Order
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderOrderFinancialsSidebarCard = () => (
     <div className="rounded-2xl border border-stone-200/90 bg-white p-5 shadow-xs space-y-3.5">
@@ -1613,7 +2268,9 @@ export function OrderDetailsContent({
     return (
       <div className="flex h-full flex-col bg-[#f8f9fc]">
         {renderUpdateStatusModal()}
+        {renderCancellationModal()}
         {renderReopenModal()}
+        {renderRefundModal()}
 
         {/* Top Slide-Over Header */}
         <div className="sticky top-0 z-20 flex items-center justify-between border-b border-stone-200/90 bg-white px-6 py-3.5 shadow-2xs">
@@ -1707,17 +2364,14 @@ export function OrderDetailsContent({
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActionsMenuOpen(false);
-                      printCourierLabel(orderStub, activeShipment);
-                    }}
+                  <CourierPrintAction
+                    order={orderStub}
+                    shipment={activeShipment}
+                    onClick={() => setActionsMenuOpen(false)}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
                   >
-                    <Printer className="h-3.5 w-3.5 text-gray-400" />
                     Print Packing Slip
-                  </button>
+                  </CourierPrintAction>
 
                   <button
                     type="button"
@@ -1730,44 +2384,17 @@ export function OrderDetailsContent({
                     <Copy className="h-3.5 w-3.5 text-gray-400" />
                     Copy Order #
                   </button>
-
-                  {allowed.includes("cancelled") && (
-                    <button
-                      type="button"
-                      disabled={Boolean(
-                        activeShipment &&
-                          ["in_transit", "out_for_delivery", "picked_up"].includes(
-                            activeShipment.status
-                          )
-                      )}
-                      onClick={() => {
-                        setActionsMenuOpen(false);
-                        setConfirmReason("");
-                        setConfirmAction({
-                          status: "cancelled",
-                          title: "Cancel Order?",
-                          message:
-                            "Cancelled orders are locked and can only be restored via governed Reopen Order.",
-                        });
-                      }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-50 cursor-pointer border-t border-stone-100 disabled:opacity-40"
-                    >
-                      <XCircle className="h-3.5 w-3.5 text-rose-500" />
-                      Cancel Order
-                    </button>
-                  )}
                 </div>
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => printCourierLabel(orderStub, activeShipment)}
+            <CourierPrintAction
+              order={orderStub}
+              shipment={activeShipment}
               className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-700 hover:bg-stone-50 cursor-pointer shadow-2xs"
             >
-              <Printer className="h-3.5 w-3.5 text-gray-500" />
               <span>Print</span>
-            </button>
+            </CourierPrintAction>
 
             {/* More Dropdown */}
             <div className="relative" ref={moreMenuRef}>
@@ -1801,31 +2428,6 @@ export function OrderDetailsContent({
                       <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
                       Open Dedicated Page
                     </Link>
-                  )}
-                  {allowed.includes("cancelled") && (
-                    <button
-                      type="button"
-                      disabled={Boolean(
-                        activeShipment &&
-                          ["in_transit", "out_for_delivery", "picked_up"].includes(
-                            activeShipment.status
-                          )
-                      )}
-                      onClick={() => {
-                        setMoreMenuOpen(false);
-                        setConfirmReason("");
-                        setConfirmAction({
-                          status: "cancelled",
-                          title: "Cancel Order?",
-                          message:
-                            "Cancelled orders are locked and can only be restored via governed Reopen Order.",
-                        });
-                      }}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40"
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      Cancel Order
-                    </button>
                   )}
                 </div>
               )}
@@ -1867,8 +2469,6 @@ export function OrderDetailsContent({
 
         {/* Tab Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {confirmAction && renderConfirmBanner()}
-
           {activeTab === "overview" && (
             <div className="space-y-4">
               {renderLifecycleBadgesStrip()}
@@ -1916,30 +2516,6 @@ export function OrderDetailsContent({
               <RotateCcw className="h-3.5 w-3.5" />
               Reopen Order
             </button>
-          ) : allowed.includes("cancelled") ? (
-            <button
-              type="button"
-              disabled={
-                busy ||
-                actionBusy ||
-                Boolean(
-                  activeShipment &&
-                    ["in_transit", "out_for_delivery", "picked_up"].includes(activeShipment.status)
-                )
-              }
-              onClick={() => {
-                setConfirmReason("");
-                setConfirmAction({
-                  status: "cancelled",
-                  title: "Cancel Order?",
-                  message:
-                    "Cancelled orders are locked and can only be restored via governed Reopen Order.",
-                });
-              }}
-              className="rounded-xl border border-stone-300 bg-white px-4 py-2 text-[12px] font-semibold text-stone-700 hover:bg-stone-50 cursor-pointer disabled:opacity-40"
-            >
-              Cancel Order
-            </button>
           ) : (
             <div />
           )}
@@ -1956,52 +2532,92 @@ export function OrderDetailsContent({
                 }}
                 className="rounded-xl border border-stone-200 bg-stone-100 px-3.5 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-200 cursor-pointer"
               >
-                Update Status
+                Update Status...
               </button>
             )}
 
-            {allowed.includes("confirmed") && (
-              <button
-                type="button"
-                disabled={busy || actionBusy}
-                onClick={() => void runTransition("confirmed", "Order confirmed by admin")}
-                className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-[12px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
-              >
-                Confirm Order
-              </button>
+            {order.orderStatus === "pending" && (
+              <>
+                {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" ? (
+                  <button
+                    type="button"
+                    disabled={busy || actionBusy}
+                    onClick={() => void onReconcileSslcommerz(order.orderNumber)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    Verify Payment
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy || actionBusy}
+                    onClick={() => void runTransition("confirmed", "Order confirmed by admin")}
+                    className="rounded-xl bg-purple-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-purple-700 cursor-pointer shadow-xs"
+                  >
+                    Confirm Order
+                  </button>
+                )}
+              </>
             )}
 
-            {allowed.includes("processing") && (
+            {order.orderStatus === "confirmed" && (
               <button
                 type="button"
                 disabled={busy || actionBusy}
                 onClick={() => void runTransition("processing", "Processing & packing started")}
-                className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-[12px] font-bold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-blue-700 cursor-pointer shadow-xs"
               >
                 Start Processing
               </button>
             )}
 
-            {allowed.includes("ready_to_ship") && (
+            {order.orderStatus === "processing" && (
               <button
                 type="button"
                 disabled={busy || actionBusy}
                 onClick={() => void runTransition("ready_to_ship", "Marked Ready to Ship")}
-                className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-[12px] font-bold text-purple-700 hover:bg-purple-100 cursor-pointer"
+                className="rounded-xl bg-purple-600 px-4 py-2 text-[12px] font-bold text-white hover:bg-purple-700 cursor-pointer shadow-xs"
               >
                 Mark Ready to Ship
               </button>
             )}
 
-            <button
-              type="button"
-              disabled={busy || actionBusy || (!order.bookingEligibility.ok && !activeShipment)}
-              onClick={() => onOpenShipment(orderStub)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-5 py-2 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 cursor-pointer transition"
-            >
-              <Truck className="h-4 w-4" />
-              {activeShipment ? "View Shipment" : "Create Shipment"}
-            </button>
+            {order.orderStatus === "ready_to_ship" && (
+              <>
+                {hasConsignment ? (
+                  <button
+                    type="button"
+                    onClick={() => onOpenShipment(orderStub)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-5 py-2 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 cursor-pointer transition"
+                  >
+                    <Truck className="h-4 w-4" />
+                    View Shipment
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy || actionBusy || !order.bookingEligibility.ok}
+                    onClick={() => onOpenShipment(orderStub)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-5 py-2 text-[12.5px] font-bold text-white shadow-md shadow-purple-200 hover:bg-purple-700 disabled:opacity-50 cursor-pointer transition"
+                  >
+                    <Truck className="h-4 w-4" />
+                    Book Steadfast
+                  </button>
+                )}
+              </>
+            )}
+
+            {(order.orderStatus === "shipped" || order.orderStatus === "delivered" || order.orderStatus === "completed") && (
+              <button
+                type="button"
+                onClick={() => onOpenShipment(orderStub)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-[12.5px] font-bold text-white shadow-md shadow-indigo-200 hover:bg-indigo-700 cursor-pointer transition"
+              >
+                <Truck className="h-4 w-4" />
+                View Tracking
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -2015,7 +2631,9 @@ export function OrderDetailsContent({
   return (
     <div className="space-y-6">
       {renderUpdateStatusModal()}
+      {renderCancellationModal()}
       {renderReopenModal()}
+      {renderRefundModal()}
 
       {/* Full-Page Top Header matching Section 3 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/90 pb-5">
@@ -2124,17 +2742,14 @@ export function OrderDetailsContent({
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActionsMenuOpen(false);
-                    printCourierLabel(orderStub, activeShipment);
-                  }}
+                <CourierPrintAction
+                  order={orderStub}
+                  shipment={activeShipment}
+                  onClick={() => setActionsMenuOpen(false)}
                   className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
                 >
-                  <Printer className="h-3.5 w-3.5 text-gray-400" />
                   Print Packing Slip
-                </button>
+                </CourierPrintAction>
 
                 <button
                   type="button"
@@ -2147,44 +2762,17 @@ export function OrderDetailsContent({
                   <Copy className="h-3.5 w-3.5 text-gray-400" />
                   Copy Order #
                 </button>
-
-                {allowed.includes("cancelled") && (
-                  <button
-                    type="button"
-                    disabled={Boolean(
-                      activeShipment &&
-                        ["in_transit", "out_for_delivery", "picked_up"].includes(
-                          activeShipment.status
-                        )
-                    )}
-                    onClick={() => {
-                      setActionsMenuOpen(false);
-                      setConfirmReason("");
-                      setConfirmAction({
-                        status: "cancelled",
-                        title: "Cancel Order?",
-                        message:
-                          "Cancelled orders are locked and can only be restored via governed Reopen Order.",
-                      });
-                    }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-600 hover:bg-rose-50 cursor-pointer border-t border-stone-100 disabled:opacity-40"
-                  >
-                    <XCircle className="h-3.5 w-3.5 text-rose-500" />
-                    Cancel Order
-                  </button>
-                )}
               </div>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => printCourierLabel(orderStub, activeShipment)}
+          <CourierPrintAction
+            order={orderStub}
+            shipment={activeShipment}
             className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-[12.5px] font-semibold text-gray-700 hover:bg-stone-50 hover:text-purple-700 transition shadow-2xs cursor-pointer"
           >
-            <Printer className="h-4 w-4 text-gray-500" />
             <span>Print Slip</span>
-          </button>
+          </CourierPrintAction>
 
           {/* More Actions Dropdown */}
           <div className="relative" ref={moreMenuRef}>
@@ -2210,31 +2798,6 @@ export function OrderDetailsContent({
                   <Copy className="h-3.5 w-3.5 text-gray-400" />
                   Copy Order #
                 </button>
-                {allowed.includes("cancelled") && (
-                  <button
-                    type="button"
-                    disabled={Boolean(
-                      activeShipment &&
-                        ["in_transit", "out_for_delivery", "picked_up"].includes(
-                          activeShipment.status
-                        )
-                    )}
-                    onClick={() => {
-                      setMoreMenuOpen(false);
-                      setConfirmReason("");
-                      setConfirmAction({
-                        status: "cancelled",
-                        title: "Cancel Order?",
-                        message:
-                          "Cancelled orders are locked and can only be restored via governed Reopen Order.",
-                      });
-                    }}
-                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40"
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                    Cancel Order
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -2268,8 +2831,6 @@ export function OrderDetailsContent({
               );
             })}
           </div>
-
-          {confirmAction && renderConfirmBanner()}
 
           {/* TAB 1: OVERVIEW */}
           {activeTab === "overview" && (

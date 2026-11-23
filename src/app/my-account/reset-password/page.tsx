@@ -60,7 +60,11 @@ export default function ResetPasswordPage() {
         setError(data.error || "Couldn't set the password.");
         return;
       }
-      router.replace("/my-account");
+      if (data.user?.role === "admin" || data.user?.role === "superadmin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/my-account");
+      }
     } catch {
       setError("Network error. Please try again.");
     } finally {

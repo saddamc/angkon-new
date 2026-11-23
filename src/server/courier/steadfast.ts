@@ -104,11 +104,25 @@ export function normaliseSteadfastCreate(payload: unknown): NormalisedCreatedShi
     return null;
   };
   const rawStatus = read(["status", "delivery_status", "deliveryStatus"]);
+  const consignmentId = read(["consignment_id", "consignmentId", "cid"]);
+  const trackingCode = read(["tracking_code", "trackingCode", "tracking_id"]);
+  const mappedStatus = mapSteadfastStatus(rawStatus);
+
+  // Steadfast's create_order echoes a numeric HTTP-like `status` (e.g. 200),
+  // which the mapper reports as "unknown". A create that returned a
+  // consignment id IS a booked consignment — its first real courier status
+  // arrives with the first status sync. Never report a fresh booking as
+  // "unknown" (that status is reserved for removed/indeterminate parcels).
+  const status: ShipmentStatus =
+    mappedStatus === "unknown" && (consignmentId || trackingCode)
+      ? "booked"
+      : mappedStatus;
+
   return {
-    consignmentId: read(["consignment_id", "consignmentId", "cid"]),
-    trackingCode: read(["tracking_code", "trackingCode", "tracking_id"]),
+    consignmentId,
+    trackingCode,
     rawStatus,
-    status: mapSteadfastStatus(rawStatus),
+    status,
     deliveryCharge: (() => {
       for (const candidate of list) {
         const value = readNumber(candidate, ["delivery_charge", "deliveryCharge"]);

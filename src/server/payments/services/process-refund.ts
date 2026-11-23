@@ -50,12 +50,16 @@ export class ProcessRefundService {
         ? attempt.expectedAmount
         : attempt.amount || 0;
 
-    const alreadyRefunded = await PaymentRefundRepository.getTotalRefundedForPayment(attempt._id);
-    const availableToRefund = expectedAmount - alreadyRefunded;
-
-    if (input.amount <= 0 || input.amount > availableToRefund + 0.01) {
+    // Fast pre-check (fail early without creating anything). "initiated"
+    // refunds count here because they already hold a balance reservation.
+    const alreadyRefundedPre = await PaymentRefundRepository.getTotalRefundedForPayment(attempt._id, {
+      includeInitiated: true,
+    });
+    if (input.amount <= 0 || input.amount > expectedAmount - alreadyRefundedPre + 0.01) {
       throw new PaymentError(
-        `Requested refund amount ৳${input.amount} exceeds available refundable balance of ৳${availableToRefund.toFixed(2)}.`,
+        `Requested refund amount ৳${input.amount} exceeds available refundable balance of ৳${(
+          expectedAmount - alreadyRefundedPre
+        ).toFixed(2)}.`,
         "REFUND_AMOUNT_EXCEEDED",
         400
       );
@@ -63,7 +67,11 @@ export class ProcessRefundService {
 
     const refundId = `REF-${attempt.orderNumber}-${Date.now().toString(36).toUpperCase()}`;
 
-    // 1. Create durable refund record in 'initiated' state
+    // 1. Reserve the balance BEFORE validating it: the durable `initiated`
+    //    refund record is created first, and `initiated` rows count toward the
+    //    refundable balance. Two concurrent admins can therefore never both
+    //    pass the check below — whichever reservation pushes the sum over the
+    //    balance is rolled back to `failed` and its reservation released.
     const refundDoc = await PaymentRefundRepository.createRefund({
       refundId,
       paymentId: attempt._id,
@@ -77,6 +85,26 @@ export class ProcessRefundService {
       reason: input.reason,
       requestedBy: input.requestedBy,
     });
+
+    // Authoritative post-reservation check: the sum now includes this refund
+    // and every other concurrent reservation that landed before the read.
+    const alreadyRefunded = await PaymentRefundRepository.getTotalRefundedForPayment(attempt._id, {
+      includeInitiated: true,
+    });
+    if (alreadyRefunded > expectedAmount + 0.01) {
+      // A concurrent refund won the balance — release this reservation.
+      await PaymentRefundRepository.updateStatus(refundDoc._id, "failed", {
+        failureReason:
+          "Concurrent refund request exceeded the available refundable balance — reservation released.",
+      });
+      throw new PaymentError(
+        `Requested refund amount ৳${input.amount} exceeds available refundable balance of ৳${(
+          expectedAmount - alreadyRefunded + input.amount
+        ).toFixed(2)}.`,
+        "REFUND_AMOUNT_EXCEEDED",
+        400
+      );
+    }
 
     await PaymentEventRepository.recordEvent({
       attemptId: attempt._id,

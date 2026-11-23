@@ -20,11 +20,12 @@ import type {
   ToastData,
   OrderParcelWeightSummaryUI,
   PackagingPresetUI,
+  CreateOrderPayload,
 } from "../_types/orders.types";
 import { getCourierLabel } from "@/server/courier/tracking";
 
 const REFRESH_INTERVAL = 30_000;
-const PER_PAGE = 25;
+const DEFAULT_PER_PAGE = 25;
 
 const DEFAULT_SUMMARY: OrdersSummaryStats = {
   totalOrders: 0,
@@ -62,12 +63,20 @@ export function useAdminOrders() {
   const [paymentFilter, setPaymentFilter] = useState<string>("any");
   const [shipmentFilter, setShipmentFilter] = useState<string>("any");
   const [courierFilter, setCourierFilter] = useState<string>("any");
+  // Show every order by default — including QA/test orders — so the panel always
+  // matches the database. The toggle lets an admin hide QA data explicitly.
+  const [showTestOrders, setShowTestOrders] = useState<boolean>(true);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState<number>(1);
+  const [perPage, setPerPage] = useState<number>(DEFAULT_PER_PAGE);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
+
+  // Manual order creation (Phase 1)
+  const [createOrderModalOpen, setCreateOrderModalOpen] = useState(false);
+  const [creatingOrder, setCreatingOrder] = useState(false);
 
   const [serverStatusCounts, setServerStatusCounts] = useState<Record<string, number> | null>(null);
   const [summary, setSummary] = useState<OrdersSummaryStats>(DEFAULT_SUMMARY);
@@ -120,6 +129,7 @@ export function useAdminOrders() {
   const [shipmentError, setShipmentError] = useState<string | null>(null);
   const [shipmentBusy, setShipmentBusy] = useState(false);
   const [syncingShipments, setSyncingShipments] = useState(false);
+  const [lastCourierSyncAt, setLastCourierSyncAt] = useState<string | null>(null);
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkModalOpen, setBulkModalOpen] = useState(false);
   const [codFallbackModal, setCodFallbackModal] = useState<WCOrder | null>(null);
@@ -140,13 +150,18 @@ export function useAdminOrders() {
       !detailsOrderNumber &&
       !bulkModalOpen &&
       !codFallbackModal &&
-      !whatsappModal
+      !whatsappModal &&
+      !createOrderModalOpen
     ) {
       return;
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (createOrderModalOpen) {
+        setCreateOrderModalOpen(false);
+        return;
+      }
       if (whatsappModal) {
         setWhatsappModal(null);
         return;
@@ -200,6 +215,7 @@ export function useAdminOrders() {
     bulkModalOpen,
     codFallbackModal,
     whatsappModal,
+    createOrderModalOpen,
   ]);
 
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
@@ -264,7 +280,7 @@ export function useAdminOrders() {
       perPage?: number;
     }) => {
       const params = new URLSearchParams();
-      params.set("per_page", String(overrides?.perPage ?? PER_PAGE));
+      params.set("per_page", String(overrides?.perPage ?? perPage));
       params.set("page", String(overrides?.targetPage ?? page));
 
       const s = overrides?.status ?? filterStatus;
@@ -282,10 +298,11 @@ export function useAdminOrders() {
       if (df) params.set("date_from", df);
       if (dt) params.set("date_to", dt);
       if (q.trim()) params.set("search", q.trim());
+      if (showTestOrders) params.set("show_test_orders", "true");
 
       return params;
     },
-    [page, filterStatus, courierFilter, paymentFilter, shipmentFilter, dateFrom, dateTo, searchQuery]
+    [page, perPage, filterStatus, courierFilter, paymentFilter, shipmentFilter, dateFrom, dateTo, searchQuery, showTestOrders]
   );
 
   const load = useCallback(
@@ -294,7 +311,14 @@ export function useAdminOrders() {
       showSpinner = !cachedOrdersAll,
       courier = courierFilter,
       targetPage = page,
-      extra?: { payment?: string; shipment?: string; from?: string; to?: string; search?: string }
+      extra?: {
+        payment?: string;
+        shipment?: string;
+        from?: string;
+        to?: string;
+        search?: string;
+        perPage?: number;
+      }
     ) => {
       if (showSpinner) setLoading(true);
       try {
@@ -307,6 +331,7 @@ export function useAdminOrders() {
           from: extra?.from,
           to: extra?.to,
           search: extra?.search,
+          perPage: extra?.perPage,
         });
         const res = await authFetch(`/api/admin/orders?${params.toString()}`);
         if (res.ok) {
@@ -354,6 +379,17 @@ export function useAdminOrders() {
     void loadCourierOverview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync state dynamically when URL status changes (e.g., clicking top navbar pending orders bell)
+  const statusFromUrl = searchParams.get("status") ?? "any";
+  useEffect(() => {
+    if (statusFromUrl !== filterStatus) {
+      setFilterStatus(statusFromUrl);
+      setPage(1);
+      void load(statusFromUrl, true, courierFilter, 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFromUrl]);
 
   // Debounced server-side search trigger when typing search query
   useEffect(() => {
@@ -675,7 +711,7 @@ export function useAdminOrders() {
     async (orderNumber: string, orderId?: string | number) => {
       setUpdating(orderId ?? orderNumber);
       try {
-        const res = await authFetch("/api/payment/sslcommerz/reconcile", {
+        const res = await authFetch("/api/payments/reconcile", {
           method: "POST",
           body: JSON.stringify({ orderNumber }),
         });
@@ -733,6 +769,11 @@ export function useAdminOrders() {
         setShipmentBookingState(data.shipmentBookingState || "not_booked");
         if (data.courierOperatingMode) {
           setCourierOperatingMode(data.courierOperatingMode);
+        }
+        if (typeof data.isTestOrder === "boolean") {
+          setShipmentModal((prev) =>
+            prev ? { ...prev, isTestOrder: data.isTestOrder } : null
+          );
         }
       } catch {
         setShipmentError("Network error while loading shipment history.");
@@ -820,14 +861,22 @@ export function useAdminOrders() {
   );
 
   const cancelShipment = useCallback(
-    async (order: WCOrder, reason?: string) => {
+    async (
+      order: WCOrder,
+      reason?: string,
+      options?: { confirmExternalCancellation?: boolean; shipmentId?: string }
+    ) => {
       setShipmentBusy(true);
       setShipmentError(null);
       setShipmentBookingState("cancellation_pending");
       try {
         const res = await authFetch(`/api/admin/orders/${order.id}/shipment`, {
           method: "DELETE",
-          body: JSON.stringify({ reason }),
+          body: JSON.stringify({
+            reason,
+            confirmExternalCancellation: options?.confirmExternalCancellation === true,
+            shipmentId: options?.shipmentId,
+          }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.ok === false) {
@@ -930,6 +979,7 @@ export function useAdminOrders() {
           data.failed > 0 ? "error" : "success"
         );
       }
+      setLastCourierSyncAt(new Date().toISOString());
       await load(filterStatus, false);
       void loadCourierOverview();
       return true;
@@ -1034,7 +1084,7 @@ export function useAdminOrders() {
   );
 
   const refreshShipment = useCallback(
-    async (shipmentId: string) => {
+    async (shipmentId: string, refreshOpenModal = true) => {
       setShipmentBusy(true);
       setShipmentError(null);
       try {
@@ -1048,7 +1098,7 @@ export function useAdminOrders() {
           return false;
         }
         showToast(`Courier status: ${data.shipment?.status || "updated"}`, "success");
-        if (shipmentModal) await fetchShipments(shipmentModal);
+        if (refreshOpenModal && shipmentModal) await fetchShipments(shipmentModal);
         if (detailsOrderNumber) void fetchOrderDetails(detailsOrderNumber);
         await load(filterStatus, false);
         return true;
@@ -1075,6 +1125,15 @@ export function useAdminOrders() {
   const handleFilterChange = (status: string) => {
     setFilterStatus(status);
     setPage(1);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (status === "any") {
+        url.searchParams.delete("status");
+      } else {
+        url.searchParams.set("status", status);
+      }
+      window.history.pushState(null, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ""));
+    }
     void load(status, true, courierFilter, 1);
   };
 
@@ -1112,6 +1171,11 @@ export function useAdminOrders() {
     setDateTo("");
     setSearchQuery("");
     setPage(1);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("status");
+      window.history.pushState(null, "", url.pathname + (url.searchParams.toString() ? `?${url.searchParams.toString()}` : ""));
+    }
     void load("any", true, "any", 1, {
       payment: "any",
       shipment: "any",
@@ -1126,6 +1190,46 @@ export function useAdminOrders() {
     setPage(safePage);
     void load(filterStatus, true, courierFilter, safePage);
   };
+
+  const handlePerPageChange = (value: number) => {
+    const safe = [10, 25, 50, 100].includes(value) ? value : DEFAULT_PER_PAGE;
+    setPerPage(safe);
+    setPage(1);
+    void load(filterStatus, true, courierFilter, 1, { perPage: safe });
+  };
+
+  /**
+   * Create a manual (phone/admin) order. The server resolves catalog prices and
+   * reserves stock; the modal only supplies customer, products and payment mode.
+   */
+  const createManualOrder = useCallback(
+    async (payload: CreateOrderPayload): Promise<{ orderNumber: string } | null> => {
+      setCreatingOrder(true);
+      try {
+        const res = await authFetch("/api/admin/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          showToast(data?.error || "The order could not be created", "error");
+          return null;
+        }
+        const orderNumber = String(data?.order?.orderNumber || "");
+        showToast(orderNumber ? `Order ${orderNumber} created` : "Order created", "success");
+        setCreateOrderModalOpen(false);
+        await load("any", true, "any", 1, { perPage });
+        return orderNumber ? { orderNumber } : null;
+      } catch {
+        showToast("Connection error while creating the order", "error");
+        return null;
+      } finally {
+        setCreatingOrder(false);
+      }
+    },
+    [authFetch, showToast, load, perPage]
+  );
 
   const exportOrdersCsv = () => {
     const params = buildFilterQuery();
@@ -1176,6 +1280,8 @@ export function useAdminOrders() {
     dateFrom,
     dateTo,
     page,
+    perPage,
+    handlePerPageChange,
     totalPages,
     totalCount,
     summary,
@@ -1235,6 +1341,7 @@ export function useAdminOrders() {
     shipmentError,
     shipmentBusy,
     syncingShipments,
+    lastCourierSyncAt,
     bulkSending,
     bulkModalOpen,
     setBulkModalOpen,
@@ -1257,9 +1364,15 @@ export function useAdminOrders() {
     refreshShipment,
     syncActiveShipments,
     bulkSendToCourier,
+    showTestOrders,
+    setShowTestOrders,
     toast,
     setToast,
     load,
+    createOrderModalOpen,
+    setCreateOrderModalOpen,
+    creatingOrder,
+    createManualOrder,
     handleStatusChange,
     reopenOrder,
     handleTogglePayment,

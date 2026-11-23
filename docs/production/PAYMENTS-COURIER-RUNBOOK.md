@@ -47,7 +47,7 @@ ADMIN_EMAIL=…
 
 # New in this work
 NEXT_PUBLIC_SITE_URL=https://angkon.net  # used for gateway return URLs
-CRON_SECRET=<unique random string>       # required for Vercel Cron
+CRON_SECRET=<unique random string>       # required for VPS cron/systemd timers
 META_TOKEN_ENCRYPTION_KEY=<random>       # recommended dedicated key
 
 # SSLCOMMERZ (sandbox first)
@@ -84,10 +84,10 @@ PATHAO_CITY_ID=
 PATHAO_ZONE_ID=
 ```
 
-Vercel Cron automatically sends `Authorization: Bearer <CRON_SECRET>` when
-`CRON_SECRET` is configured. The reconciliation routes accept that bearer token
-or an administrator session; if neither is present the request is rejected
-(fail closed).
+On a VPS, the scheduler (systemd timer or cron) must send
+`Authorization: Bearer <CRON_SECRET>` when `CRON_SECRET` is configured. The
+reconciliation routes accept that bearer token or an administrator session; if
+neither is present the request is rejected (fail closed).
 
 ---
 
@@ -178,7 +178,7 @@ quantity — the API returns `409` before creating an order.
 
 ## 7. Go-live checklist
 
-- [ ] `JWT_SECRET`, `CRON_SECRET`, `META_TOKEN_ENCRYPTION_KEY` set in Vercel
+- [ ] `JWT_SECRET`, `CRON_SECRET`, `META_TOKEN_ENCRYPTION_KEY` set in the VPS environment
 - [ ] `RATE_LIMIT_HMAC_SECRET` set (or deliberately reuse `JWT_SECRET`)
 - [ ] SSLCOMMERZ **live** pair (`SSLCOMMERZ_LIVE_STORE_*`) + `SSLCOMMERZ_IS_LIVE=true`
 - [ ] No sandbox store ID in live mode (and no live store in sandbox mode)
@@ -204,7 +204,7 @@ quantity — the API returns `409` before creating an order.
 ## 9. Credential rotation
 
 1. Rotate the provider key in SSLCOMMERZ / Steadfast.
-2. Update the Vercel env var; redeploy.
+2. Update the VPS env file; restart the service.
 3. Rotate `JWT_SECRET` only with a planned logout (all sessions invalidate).
 4. Meta token encryption: set `META_TOKEN_ENCRYPTION_KEY`, run
    `/api/admin/meta/security/migrate-tokens`, then remove legacy rotation keys
@@ -255,8 +255,8 @@ signature/secret.
 
 - Stock is product-level; per-size/colour stock is not modelled.
 - Pathao requires a city/zone mapping before creating a consignment.
-- Vercel Hobby allows two daily crons; shipment sync relies on the webhook and
-  the admin **Refresh status** button.
+- VPS scheduled jobs must be configured explicitly; shipment sync also relies
+  on the webhook and the admin **Refresh status** button.
 - Webhooks are optional; refresh/reconciliation cover the same state.
 - Rate-limit windows use the server clock. Keep NTP enabled; a multi-region
   deployment should treat the limit as approximate at window boundaries.
@@ -282,7 +282,7 @@ signature/secret.
 
 ## 13. Cloudflare / WAF (if used)
 
-- Keep the Vercel deployment as the origin; do not expose it directly.
+- Keep the VPS behind Nginx/Cloudflare; do not expose the Node process directly.
 - Add a WAF rate-limit rule for `POST /api/auth/login`, `/api/admin/login`,
   `/api/payment/sslcommerz/initiate` (e.g. 30 req/min per IP) as a second layer.
 - **Do not** rate-limit `/api/payment/sslcommerz/ipn` or `/api/webhooks/*` at the

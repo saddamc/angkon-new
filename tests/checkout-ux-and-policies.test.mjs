@@ -12,6 +12,8 @@ const checkoutHook = read("src/app/checkout/_hooks/use-checkout-flow.ts");
 const deliveryStep = read("src/app/checkout/_components/delivery-details-step.tsx");
 const reviewStep = read("src/app/checkout/_components/order-review-step.tsx");
 const paymentStep = read("src/app/checkout/_components/payment-method-step.tsx");
+const paymentSelector = read("src/app/checkout/_components/payment-delivery-methods-card.tsx");
+const checkoutOrderSummary = read("src/app/checkout/_components/startech-order-summary.tsx");
 const stepIndicator = read("src/app/checkout/_components/checkout-step-indicator.tsx");
 const summarySidebar = read("src/app/checkout/_components/order-summary-sidebar.tsx");
 const returnPolicyPage = read("src/app/return-refund-policy/page.tsx");
@@ -51,10 +53,25 @@ test("checkout: step 2 review displays complete order breakdown with edit trigge
   assert.match(reviewStep, /Confirm Details &amp; Continue|Confirm Details & Continue/i);
 });
 
-test("checkout: step 3 presents separate COD and SSLCOMMERZ payment actions", () => {
-  assert.match(paymentStep, /Place COD Order/i);
-  assert.match(paymentStep, /Pay Securely Now/i);
-  assert.match(paymentStep, /onBackToReview/);
+test("checkout: presents COD or one generic online choice, then delegates channels to SSLCOMMERZ", () => {
+  assert.match(checkoutPage, /PaymentDeliveryMethodsCard/);
+  assert.match(paymentSelector, /Cash on Delivery/);
+  assert.match(paymentSelector, /Online payment/);
+  assert.match(paymentSelector, /value="cod"/);
+  assert.match(paymentSelector, /value="sslcommerz"/);
+  assert.match(paymentSelector, /Available methods may include mobile wallets, cards, and supported mobile or internet banking/);
+  assert.doesNotMatch(paymentSelector, /bKash Direct|Nagad Direct|Other Online Banking/);
+  assert.match(checkoutOrderSummary, /Continue to secure payment/);
+  assert.match(checkoutHook, /paymentMethod: activePaymentMethod/);
+});
+
+test("checkout: online card preserves SSLCOMMERZ hosted channel selection", () => {
+  const initiatePayment = read("src/server/payments/services/initiate-payment.ts");
+  assert.match(initiatePayment, /const channel = \(input\.paymentChannel/);
+  assert.match(initiatePayment, /if \(channel === "bkash"\)/);
+  assert.match(initiatePayment, /multiCardName,/);
+  assert.match(paymentSelector, /redirected to SSLCOMMERZ/);
+  assert.doesNotMatch(initiatePayment, /channel === "sslcommerz"/);
 });
 
 test("checkout: shipping fee calculation waives delivery fee when threshold reached", () => {
@@ -143,7 +160,7 @@ test("policies: footer links include all canonical customer care policy pages", 
   assert.match(footer, /href: "\/warranty-policy"/);
   assert.match(footer, /href: "\/privacy-policy"/);
   assert.match(footer, /href: "\/terms"/);
-  assert.match(footer, /href: "\/contact-us"/);
+  assert.match(footer, /href: "\/contact"/);
   assert.match(footer, /href: "\/delivery-time"/);
 });
 

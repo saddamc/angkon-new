@@ -64,6 +64,8 @@ export interface IPayment extends Document {
   provider: PaymentProvider;
   status: PaymentStatus;
   amount: number;
+  /** Original order/attempt amount. `amount` is the amount actually moved. */
+  expectedAmount?: number | null;
   currency: string;
   /** SSLCommerz `tran_id` — equal to the order number, unique per payment. */
   tranId: string;
@@ -132,6 +134,7 @@ const PaymentSchema = new Schema<IPayment>(
       index: true,
     },
     amount: { type: Number, required: true, min: 0 },
+    expectedAmount: { type: Number, default: null, min: 0 },
     currency: { type: String, default: "BDT" },
     tranId: { type: String, required: true, unique: true },
     valId: { type: String },

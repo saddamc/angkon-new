@@ -25,6 +25,7 @@ export const useCartStore = create<CartState>()(
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       addItem: (item) => {
+        const MAX_QTY = 99;
         const itemColor = (item.color || "").trim().toLowerCase();
         const itemSize = (item.size || "").trim();
         const existing = get().items.find(
@@ -40,7 +41,7 @@ export const useCartStore = create<CartState>()(
               cartItem.productId === item.productId &&
               (cartItem.size || "").trim() === itemSize &&
               (cartItem.color || "").trim().toLowerCase() === itemColor
-                ? { ...cartItem, ...item, quantity: cartItem.quantity + item.quantity }
+                ? { ...cartItem, ...item, quantity: Math.min(MAX_QTY, cartItem.quantity + item.quantity) }
                 : cartItem,
             ),
             isOpen: true,
@@ -48,7 +49,7 @@ export const useCartStore = create<CartState>()(
           return;
         }
 
-        set((state) => ({ items: [...state.items, item], isOpen: true }));
+        set((state) => ({ items: [...state.items, { ...item, quantity: Math.min(MAX_QTY, Math.max(1, item.quantity)) }], isOpen: true }));
       },
       removeItem: (productId, size, color) => {
         const targetColor = color !== undefined ? color.trim().toLowerCase() : undefined;
@@ -63,7 +64,7 @@ export const useCartStore = create<CartState>()(
         }));
       },
       updateQuantity: (productId, size, quantity, color) => {
-        const safeQuantity = Math.max(1, quantity);
+        const safeQuantity = Math.min(99, Math.max(1, quantity));
         const targetColor = color !== undefined ? color.trim().toLowerCase() : undefined;
         const targetSize = size !== undefined ? size.trim() : undefined;
         set((state) => ({

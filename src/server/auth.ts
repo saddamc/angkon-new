@@ -208,3 +208,33 @@ export function getSiteUrl(request?: NextRequest): string {
   }
   return "https://angkon.net";
 }
+
+/**
+ * Stable, sender-domain-aligned base URL for links placed in email.
+ *
+ * Do not use a request's raw Host header for email links: local development
+ * would put localhost URLs into real mail, and arbitrary hosts can create
+ * misleading verification links. ANGKON sends from angkon.net, so email CTAs
+ * always resolve to its canonical apex host. EMAIL_SITE_URL may explicitly
+ * configure that same verified domain (including its www alias).
+ */
+export function getEmailSiteUrl(): string {
+  const configured = process.env.EMAIL_SITE_URL?.trim();
+  if (configured) {
+    try {
+      const url = new URL(configured);
+      const host = url.hostname.toLowerCase();
+      if (
+        url.protocol === "https:" &&
+        (host === "angkon.net" || host === "www.angkon.net") &&
+        !url.username &&
+        !url.password
+      ) {
+        return "https://angkon.net";
+      }
+    } catch {
+      // Invalid email URL configuration falls through to the verified default.
+    }
+  }
+  return "https://angkon.net";
+}

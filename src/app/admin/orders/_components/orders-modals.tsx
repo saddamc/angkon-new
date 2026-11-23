@@ -13,7 +13,6 @@ import {
   CreditCard,
   RefreshCw,
   Truck,
-  Printer,
   ExternalLink,
   Package,
   Wallet,
@@ -25,8 +24,10 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { CourierLogo } from "@/components/admin/courier-logo";
+import { CourierPrintAction } from "./courier-print-action";
 import {
   STATUS_OPTIONS,
+  MANUAL_ORDER_STATUS_OPTIONS,
   FINAL_STATUSES,
   formatBDT,
   type ApiCourierKey,
@@ -38,7 +39,6 @@ import {
   getCourierLabel,
   getCourierTrackingUrl,
 } from "@/server/courier/tracking";
-import { printCourierLabel } from "./print-label";
 import { BulkShipmentModal } from "./bulk-shipment-modal";
 import { WhatsAppModal } from "./whatsapp-modal";
 import {
@@ -164,6 +164,7 @@ export function OrdersModals({ state }: OrdersModalsProps) {
   const [recName, setRecName] = useState("");
   const [recPhone, setRecPhone] = useState("");
   const [recAddress, setRecAddress] = useState("");
+  const [recDistrict, setRecDistrict] = useState("");
   const [allowCodFallback, setAllowCodFallback] = useState(false);
   const [confirmLiveBooking, setConfirmLiveBooking] = useState(false);
   const [manualEstimateReason, setManualEstimateReason] = useState("");
@@ -171,20 +172,32 @@ export function OrdersModals({ state }: OrdersModalsProps) {
   const [showCancelPrompt, setShowCancelPrompt] = useState(false);
   const [showWeightOverride, setShowWeightOverride] = useState(false);
   const [showMissingWeightEditor, setShowMissingWeightEditor] = useState(false);
+  const [cancelReasonText, setCancelReasonText] = useState("");
+  // Status-modal: which order's "Mark Consignment Cancelled (portal)" flow is
+  // currently awaiting the second confirmation click.
+  const [portalCancelConfirmFor, setPortalCancelConfirmFor] = useState<string | null>(null);
 
   useEffect(() => {
     if (!shipmentModal) return;
     setConfirmLiveBooking(false);
     setRecName(
-      [shipmentModal.billing?.first_name, shipmentModal.billing?.last_name]
-        .filter(Boolean)
-        .join(" ")
+      shipmentModal.customer?.fullName ||
+        [shipmentModal.billing?.first_name, shipmentModal.billing?.last_name]
+          .filter(Boolean)
+          .join(" ") ||
+        ""
     );
-    setRecPhone(shipmentModal.billing?.phone || "");
+    setRecPhone(shipmentModal.customer?.phone || shipmentModal.billing?.phone || "");
     setRecAddress(
-      [shipmentModal.billing?.address_1, shipmentModal.billing?.city]
-        .filter(Boolean)
-        .join(", ")
+      shipmentModal.customer?.address ||
+        shipmentModal.billing?.address_1 ||
+        ""
+    );
+    setRecDistrict(
+      shipmentModal.customer?.district ||
+        shipmentModal.customer?.city ||
+        shipmentModal.billing?.city ||
+        "Dhaka"
     );
     setEditingRecipient(false);
     setAllowCodFallback(false);
@@ -284,7 +297,85 @@ export function OrdersModals({ state }: OrdersModalsProps) {
     (shipmentPaymentStatus === "paid" ? 0 : outstandingNum);
 
   const normalizedPhone = normalizeBdPhone(recPhone);
-  const recipientValid = Boolean(normalizedPhone) && recAddress.trim().length >= 10;
+  const isPhoneValid = Boolean(normalizedPhone);
+  const isNameValid = recName.trim().length >= 2;
+  const isAddressValid = recAddress.trim().length >= 5;
+  const recipientValid = isPhoneValid && isNameValid && isAddressValid;
+
+  const isTestOrder = Boolean(
+    shipmentModal?.isTestOrder ||
+      (shipmentModal &&
+        (() => {
+          const num = (shipmentModal.number || shipmentModal.id || "").toString().toUpperCase();
+          if (
+            num.startsWith("TEST") ||
+            num.startsWith("MOCK") ||
+            num.startsWith("DEV") ||
+            num.startsWith("SANDBOX") ||
+            num.startsWith("QA") ||
+            num.includes("TEST") ||
+            num.includes("MOCK") ||
+            num.includes("SANDBOX") ||
+            num.includes("QA-")
+          ) {
+            return true;
+          }
+          const name = (
+            recName ||
+            shipmentModal.billing?.first_name ||
+            shipmentModal.customer?.fullName ||
+            ""
+          ).toLowerCase();
+          if (
+            name.includes("test customer") ||
+            name.includes("qa customer") ||
+            name.includes("qa test") ||
+            name.includes("mock customer") ||
+            name.includes("dummy") ||
+            name.includes("sandbox") ||
+            name.includes("synthetic")
+          ) {
+            return true;
+          }
+          const email = (
+            shipmentModal.billing?.email ||
+            shipmentModal.customer?.email ||
+            ""
+          ).toLowerCase();
+          if (
+            email.includes("@test.") ||
+            email.includes("@example.com") ||
+            email.includes("sandbox") ||
+            email.startsWith("test@") ||
+            email.startsWith("mock@") ||
+            email.startsWith("qa@") ||
+            email.includes("qa-")
+          ) {
+            return true;
+          }
+          const phone = (
+            recPhone ||
+            shipmentModal.billing?.phone ||
+            shipmentModal.customer?.phone ||
+            ""
+          ).replace(/[^0-9]/g, "");
+          if (
+            phone === "01700000000" ||
+            phone === "01800000000" ||
+            phone === "01900000000" ||
+            phone === "01300000000" ||
+            phone === "01500000000" ||
+            phone === "01600000000"
+          ) {
+            return true;
+          }
+          return false;
+        })())
+  );
+
+  const isLiveMode = courierOperatingMode === "live";
+  const isWeightBlockedForLive = isLiveMode && hasMissingWeight && !isManuallyEdited;
+  const isManualOverrideInvalid = isManuallyEdited && (finalPackageWeightNum <= 0 || !manualEstimateReason.trim());
 
   return (
     <>
@@ -337,14 +428,118 @@ export function OrdersModals({ state }: OrdersModalsProps) {
               </button>
             </div>
 
+            {statusModal.shipmentCodMismatch && (
+              <div
+                role="alert"
+                className="mx-6 mt-4 rounded-xl border border-rose-300 bg-rose-50 p-3.5 text-xs text-rose-950"
+              >
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+                  <div>
+                    <p className="font-bold">Stop — courier COD does not match payment</p>
+                    <p className="mt-1 leading-relaxed text-rose-800">
+                      This order is paid, but the active consignment still says to collect{" "}
+                      <strong>৳{Number(statusModal.shipmentCodAmount || 0).toLocaleString("en-BD")}</strong>
+                      {" "}from the customer. Do not dispatch it. Cancel this consignment in the courier portal,
+                      then rebook; this integration cannot change COD on an existing booking.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Smart Courier & Shipment Status Context (Phase 8) */}
             {(() => {
               const isSteadfastApiManaged =
                 statusModal.courier === "steadfast" &&
                 Boolean(statusModal.consignmentId || statusModal.trackingCode) &&
                 !["cancelled", "failed", "booking_failed"].includes(statusModal.shipmentStatus || "");
+              const isUnknownCourierStatus = statusModal.shipmentStatus === "unknown";
               const isBookingFailed =
                 statusModal.shipmentStatus === "booking_failed" || Boolean(statusModal.courierBookingError);
+
+              // Steadfast reports "unknown" for consignments removed in the
+              // merchant portal. That must never render as a healthy
+              // "Managed by Steadfast" booking — guide the admin instead.
+              if (isSteadfastApiManaged && isUnknownCourierStatus) {
+                const confirmPending =
+                  portalCancelConfirmFor === String(statusModal.id || statusModal.number);
+                return (
+                  <div className="mx-6 mt-4 p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-xs text-amber-900">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold">Courier Status Unknown — Verify at Steadfast</p>
+                        <p className="mt-1 text-amber-800 leading-relaxed text-[11.5px]">
+                          Consignment: <strong className="font-mono">#{statusModal.consignmentId || statusModal.trackingCode}</strong>
+                          {" "}did not return a recognizable status. This commonly happens after the
+                          parcel was <strong>cancelled in the Steadfast portal</strong>. If you
+                          cancelled it there, mark the consignment cancelled below — then order
+                          statuses (including Cancelled) unlock normally.
+                        </p>
+                        <div className="mt-2.5 flex flex-wrap items-center gap-3 pt-1 border-t border-amber-200">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const cid =
+                                statusModal.consignmentId ||
+                                statusModal.trackingCode ||
+                                String(statusModal.number || statusModal.id);
+                              await fetch(`/api/admin/shipments/${encodeURIComponent(cid)}/refresh`, {
+                                method: "POST",
+                              });
+                              void state.load();
+                              setStatusModal(null);
+                              setPortalCancelConfirmFor(null);
+                            }}
+                            className="inline-flex items-center gap-1 font-bold text-amber-900 hover:underline cursor-pointer"
+                          >
+                            <RefreshCw className="h-3 w-3" /> Sync Courier Status
+                          </button>
+                          {confirmPending ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  setPortalCancelConfirmFor(null);
+                                  await state.cancelShipment(
+                                    statusModal,
+                                    "Marked cancelled after Steadfast portal cancellation",
+                                    { confirmExternalCancellation: true }
+                                  );
+                                  void state.load();
+                                  setStatusModal(null);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-md bg-amber-600 px-2 py-1 font-bold text-white hover:bg-amber-700 cursor-pointer"
+                              >
+                                Yes, mark cancelled
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPortalCancelConfirmFor(null)}
+                                className="rounded-md border border-amber-300 bg-white px-2 py-1 font-semibold text-amber-900 hover:bg-amber-100 cursor-pointer"
+                              >
+                                Keep
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPortalCancelConfirmFor(String(statusModal.id || statusModal.number))
+                              }
+                              className="inline-flex items-center gap-1 font-bold text-amber-900 hover:underline cursor-pointer"
+                              title="Use this only after cancelling the parcel in the Steadfast portal"
+                            >
+                              <XCircle className="h-3 w-3" /> Mark Consignment Cancelled (portal)
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
               if (isSteadfastApiManaged) {
                 const trackUrl = getCourierTrackingUrl(
@@ -437,16 +632,19 @@ export function OrdersModals({ state }: OrdersModalsProps) {
               aria-label="Order status"
               className="max-h-[60vh] space-y-1.5 overflow-y-auto px-6 py-5"
             >
-              {STATUS_OPTIONS.map((s) => {
+              {MANUAL_ORDER_STATUS_OPTIONS.map((s) => {
                 const isSteadfastApiManaged =
                   statusModal.courier === "steadfast" &&
                   Boolean(statusModal.consignmentId || statusModal.trackingCode) &&
                   !["cancelled", "failed", "booking_failed"].includes(statusModal.shipmentStatus || "");
                 const isCourierLocked =
                   isSteadfastApiManaged && (s.key === "shipped" || s.key === "delivered");
+                const isCodMismatchLocked =
+                  Boolean(statusModal.shipmentCodMismatch) &&
+                  ["ready_to_ship", "shipped"].includes(s.key);
                 const isCurrent = statusModal.status === s.key;
                 const isSelected = selectedStatus === s.key;
-                const isDisabled = isCurrent || isCourierLocked;
+                const isDisabled = isCurrent || isCourierLocked || isCodMismatchLocked;
 
                 return (
                   <button
@@ -456,14 +654,14 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                     aria-checked={isCurrent || isSelected}
                     disabled={isDisabled}
                     onClick={() => {
-                      if (!isCourierLocked) setSelectedStatus(s.key);
+                      if (!isCourierLocked && !isCodMismatchLocked) setSelectedStatus(s.key);
                     }}
                     className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 ${
                       isDisabled ? "cursor-default" : "cursor-pointer"
                     } ${
                       isCurrent
                         ? "border-slate-200 bg-slate-50"
-                        : isCourierLocked
+                        : isDisabled
                           ? "border-slate-200 bg-slate-50/50 opacity-60"
                           : isSelected
                             ? "border-purple-400 bg-purple-50/60 ring-1 ring-purple-200"
@@ -485,15 +683,21 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                         {s.label}
                       </span>
                       <span className="mt-0.5 block truncate text-[11.5px] text-slate-500">
-                        {isCourierLocked
-                          ? "Automatically controlled by Steadfast API tracking status"
-                          : s.desc}
+                        {isCodMismatchLocked
+                          ? `Blocked: courier would collect ৳${Number(statusModal.shipmentCodAmount || 0).toLocaleString("en-BD")}; cancel and rebook first.`
+                          : isCourierLocked
+                            ? "Automatically controlled by Steadfast API tracking status"
+                            : s.desc}
                       </span>
                     </span>
 
                     {isCurrent ? (
                       <span className="shrink-0 rounded-full bg-slate-200/70 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.06em] text-slate-500">
                         Current
+                      </span>
+                    ) : isCodMismatchLocked ? (
+                      <span className="shrink-0 rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-700">
+                        COD mismatch
                       </span>
                     ) : isCourierLocked ? (
                       <span className="shrink-0 rounded-full bg-purple-100/70 border border-purple-200 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-purple-700">
@@ -526,7 +730,13 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                 Cancel
               </button>
               <button
-                disabled={!selectedStatus || selectedStatus === statusModal.status || updating === statusModal.id}
+                disabled={
+                  !selectedStatus ||
+                  selectedStatus === statusModal.status ||
+                  (Boolean(statusModal.shipmentCodMismatch) &&
+                    ["ready_to_ship", "shipped"].includes(selectedStatus)) ||
+                  updating === statusModal.id
+                }
                 onClick={async () => {
                   if (!selectedStatus) return;
 
@@ -883,12 +1093,26 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3
-                    id="shipment-modal-title"
-                    className="text-[16px] font-bold text-gray-900"
-                  >
-                    {/* Courier shipment */ hasActiveApiShipment ? "Shipment Details" : "Create Shipment"}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3
+                      id="shipment-modal-title"
+                      className="text-[16px] font-bold text-gray-900"
+                    >
+                      {hasActiveApiShipment ? "Shipment Details" : "Create Steadfast shipment"}
+                    </h3>
+                    <span className="rounded-full bg-purple-100 text-purple-700 px-2 py-0.5 text-[10px] font-bold">
+                      Steadfast
+                    </span>
+                    {isLiveMode ? (
+                      <span className="rounded-full bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 text-[10px] font-bold">
+                        LIVE MODE
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 text-[10px] font-bold">
+                        MOCK MODE
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[12px] font-medium text-gray-400">
                     Order #{shipmentModal.number || shipmentModal.id}
                   </p>
@@ -1038,23 +1262,30 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                         <div className="flex flex-wrap items-center gap-2 pt-1">
                           <button
                             type="button"
-                            disabled={shipmentBusy}
+                            disabled={
+                              shipmentBusy ||
+                              !(activeShipment.consignmentId || activeShipment.trackingCode)
+                            }
                             onClick={() => void refreshShipment(activeShipment.id)}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-[11.5px] font-bold text-white shadow-sm hover:bg-purple-700 disabled:opacity-50 cursor-pointer"
+                            title={
+                              activeShipment.consignmentId || activeShipment.trackingCode
+                                ? "Pull the latest delivery status from the courier"
+                                : "No consignment yet — retry the booking first."
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-2 text-[11.5px] font-bold text-white shadow-sm hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                           >
                             <RefreshCw
                               className={`h-3.5 w-3.5 ${shipmentBusy ? "animate-spin" : ""}`}
                             />
                             Refresh status
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => printCourierLabel(shipmentModal, activeShipment)}
+                          <CourierPrintAction
+                            order={shipmentModal}
+                            shipment={activeShipment}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[11.5px] font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer"
                           >
-                            <Printer className="h-3.5 w-3.5" />
                             Print label
-                          </button>
+                          </CourierPrintAction>
                           {(() => {
                             const url = getCourierTrackingUrl(
                               activeShipment.provider,
@@ -1162,63 +1393,36 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                         </div>
                       )}
 
-                      {/* Book via courier API & Save delivery info */}
-                      {/* ── 1. Select Courier Provider ────────────────── */}
-                      <div>
-                        <p className="text-[12.5px] font-bold text-gray-900 mb-2.5">
-                          Courier provider
-                        </p>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          {/* Steadfast Card (Selected / Active) */}
-                          <div
-                            onClick={() => setApiProvider("steadfast")}
-                            className={`relative flex flex-col justify-between rounded-2xl border p-3.5 cursor-pointer transition-all duration-150 ${
-                              apiProvider === "steadfast"
-                                ? "border-purple-600 bg-purple-50/25 ring-1 ring-purple-600/30 shadow-xs"
-                                : "border-gray-200 bg-white hover:border-purple-200 hover:bg-stone-50/50"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <CourierLogo provider="steadfast" size="sm" className="shadow-2xs" />
+                      {/* ── 1. Active Courier Provider & Operating Mode Indicator ── */}
+                      <div className="rounded-2xl border border-purple-100 bg-purple-50/30 p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <CourierLogo provider="steadfast" size="sm" className="shadow-2xs" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[13.5px] font-bold text-gray-900 leading-tight">Steadfast Courier</span>
                               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9.5px] font-bold text-emerald-700 border border-emerald-200">
-                                Active
+                                Active & Connected
                               </span>
                             </div>
-                            <div className="mt-3">
-                              <p className="text-[13.5px] font-bold text-gray-900 leading-tight">Steadfast</p>
-                              <p className="text-[11px] font-medium text-gray-500 mt-0.5">
-                                {apiProvider === "steadfast" ? "Selected" : "Nationwide delivery"}
-                              </p>
-                            </div>
+                            <p className="text-[11px] font-medium text-gray-500 mt-0.5">
+                              Automated nationwide door-to-door delivery with COD reconciliation
+                            </p>
                           </div>
+                        </div>
 
-                          {/* Pathao Card (Disabled, Coming Soon) */}
-                          <div className="relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50/60 p-3.5 opacity-80 cursor-not-allowed">
-                            <div className="flex items-center justify-between gap-2">
-                              <CourierLogo provider="pathao" size="sm" className="shadow-2xs" />
-                              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[9.5px] font-bold text-purple-700 border border-purple-100">
-                                Coming Soon
-                              </span>
-                            </div>
-                            <div className="mt-3">
-                              <p className="text-[13.5px] font-bold text-gray-700 leading-tight">Pathao</p>
-                              <p className="text-[11px] font-medium text-gray-400 mt-0.5">Coming soon</p>
-                            </div>
-                          </div>
-
-                          {/* RedX Card (Disabled, Setup Required) */}
-                          <div className="relative flex flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50/60 p-3.5 opacity-80 cursor-not-allowed">
-                            <div className="flex items-center justify-between gap-2">
-                              <CourierLogo provider="redx" size="sm" className="shadow-2xs" />
-                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9.5px] font-bold text-amber-700 border border-amber-200">
-                                Setup Required
-                              </span>
-                            </div>
-                            <div className="mt-3">
-                              <p className="text-[13.5px] font-bold text-gray-700 leading-tight">RedX</p>
-                              <p className="text-[11px] font-medium text-gray-400 mt-0.5">Setup required</p>
-                            </div>
-                          </div>
+                        {/* Operating Mode Indicator Badge */}
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          {isLiveMode ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800 border border-amber-300">
+                              <span className="h-2 w-2 rounded-full bg-amber-500" />
+                              LIVE COURIER MODE
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold text-blue-800 border border-blue-200">
+                              <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                              TEST / MOCK MODE
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -1227,7 +1431,6 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                         {/* Column 1: Parcel Details */}
                         <div className="space-y-3">
                           <p className="text-[12.5px] font-bold text-gray-900">
-                            {/* Parcel details */}
                             Parcel details
                           </p>
 
@@ -1236,15 +1439,14 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                             <div className="flex items-center justify-between">
                               <label className="text-[11px] font-semibold text-gray-700">
                                 Parcel classification
-                                {/* Parcel Classification */}
                               </label>
                               <span
                                 className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
                                   isParcelTypeOverridden
-                                    ? "bg-amber-100 text-amber-800"
+                                    ? "bg-amber-100 text-amber-800 border border-amber-200"
                                     : shipmentWeightData?.isMixedCategory
-                                    ? "bg-indigo-100 text-indigo-800"
-                                    : "bg-purple-100 text-purple-800"
+                                    ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
+                                    : "bg-purple-100 text-purple-800 border border-purple-200"
                                 }`}
                               >
                                 {isParcelTypeOverridden
@@ -1275,10 +1477,21 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               <span className="text-[12px] font-bold text-gray-900 flex items-center gap-1.5">
                                 <Scale className="h-3.5 w-3.5 text-purple-600" />
                                 Package weight
-                                {/* Parcel Weight Breakdown */}
                               </span>
-                              <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-stone-600 border border-stone-200">
-                                {isWeightOptionalForProvider ? "Optional (Steadfast)" : "Optional"}
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                                  hasMissingWeight && !isManuallyEdited
+                                    ? "bg-rose-100 text-rose-800 border-rose-200"
+                                    : isManuallyEdited
+                                    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                                    : "bg-indigo-100 text-indigo-800 border-indigo-200"
+                                }`}
+                              >
+                                {hasMissingWeight && !isManuallyEdited
+                                  ? "MISSING WEIGHT"
+                                  : isManuallyEdited
+                                  ? "MEASURED"
+                                  : "ESTIMATED"}
                               </span>
                             </div>
 
@@ -1287,8 +1500,10 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               <span className="text-gray-600 font-medium">
                                 Products Weight
                               </span>
-                              <span className="font-bold text-gray-900">
-                                {productWeightKg > 0 ? `${productWeightKg.toFixed(2)} kg` : "Not provided"}
+                              <span className={`font-bold tabular-nums ${hasMissingWeight ? "text-rose-600" : "text-gray-900"}`}>
+                                {hasMissingWeight
+                                  ? `Incomplete (${shipmentWeightData?.missingProductCount || 1} missing)`
+                                  : `${productWeightKg.toFixed(2)} kg`}
                               </span>
                             </div>
 
@@ -1318,17 +1533,17 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                                     Final Package Weight
                                   </label>
                                   <span className="text-[10.5px] text-gray-500 block mt-0.5">
-                                    {isWeightOptionalForProvider && isZeroWeight && !isManuallyEdited
-                                      ? "Weight can be added later."
+                                    {hasMissingWeight && !isManuallyEdited
+                                      ? "Missing product weight in catalog"
                                       : isManuallyEdited
-                                      ? "Admin manual override"
+                                      ? "Supervisor verified measured weight"
                                       : `Auto: ${productWeightKg.toFixed(2)} + ${selectedPackaging.weightKg.toFixed(2)} kg`}
                                   </span>
                                 </div>
                                 <div className="flex flex-col items-end">
-                                  <span className="text-[13px] font-black text-gray-900 tabular-nums">
-                                    {isWeightOptionalForProvider && isZeroWeight && !isManuallyEdited
-                                      ? "Not calculated"
+                                  <span className={`text-[13px] font-black tabular-nums ${hasMissingWeight && !isManuallyEdited ? "text-rose-600" : "text-gray-900"}`}>
+                                    {hasMissingWeight && !isManuallyEdited
+                                      ? "Weight Required"
                                       : `${finalPackageWeightNum.toFixed(2)} kg`}
                                   </span>
                                   <button
@@ -1345,7 +1560,7 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               {showWeightOverride && (
                                 <div className="mt-2.5 rounded-xl border border-purple-100 bg-white p-2.5 space-y-2">
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="text-[11px] font-medium text-gray-700">Custom weight:</span>
+                                    <span className="text-[11px] font-medium text-gray-700">Measured weight (scale):</span>
                                     <div className="flex items-center gap-1.5">
                                       <input
                                         type="number"
@@ -1370,39 +1585,36 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                                       ↺ Reset to auto-calculated ({autoCalculatedTotalKg.toFixed(2)} kg)
                                     </button>
                                   )}
-                                  {(isManuallyEdited || (hasMissingWeight && isWeightRequiredForProvider)) && (
-                                    <div className="space-y-1">
-                                      <label className="text-[10.5px] font-semibold text-gray-700 block">
-                                        Reason for Manual Estimate {isWeightRequiredForProvider && <span className="text-rose-600">*</span>}
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={manualEstimateReason}
-                                        onChange={(e) => setManualEstimateReason(e.target.value)}
-                                        placeholder={
-                                          isWeightRequiredForProvider
-                                            ? "e.g., Weigh-scale verified by dispatch supervisor"
-                                            : "Internal note for weight override (optional)"
-                                        }
-                                        className="h-7 w-full rounded-md border border-gray-200 px-2 text-[11px] outline-none focus:border-purple-500"
-                                      />
-                                    </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[10.5px] font-semibold text-gray-700 block">
+                                      Reason for Measured Override <span className="text-rose-600">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={manualEstimateReason}
+                                      onChange={(e) => setManualEstimateReason(e.target.value)}
+                                      placeholder="e.g., Weigh-scale verified by dispatch supervisor"
+                                      className="h-7 w-full rounded-md border border-gray-200 px-2 text-[11px] outline-none focus:border-purple-500"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Missing Weight Alert Banner */}
+                              {hasMissingWeight && !isManuallyEdited && (
+                                <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] text-rose-900 space-y-1">
+                                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                                    <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
+                                    <span>Missing Product Weight ({shipmentWeightData?.missingProductCount || 1} item)</span>
+                                  </div>
+                                  <p className="text-rose-700">
+                                    {shipmentWeightData?.missingProducts?.map((p) => p.name).join(", ")} has no configured weight in catalog.
+                                  </p>
+                                  {isLiveMode && (
+                                    <p className="font-semibold text-rose-800">
+                                      Automatic live booking is blocked until weight is entered or supervisor-verified measured weight is provided.
+                                    </p>
                                   )}
-                                </div>
-                              )}
-
-                              {/* Pathao Zero Weight Error Warning */}
-                              {isZeroWeight && isWeightRequiredForProvider && (
-                                <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] text-rose-700 font-medium">
-                                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-600" />
-                                  <span>Final package weight cannot be 0.00 kg for Pathao. Please enter or estimate verified weight.</span>
-                                </div>
-                              )}
-
-                              {/* Steadfast Non-Blocking Note */}
-                              {isZeroWeight && isWeightOptionalForProvider && (
-                                <div className="mt-2 text-[10.5px] text-gray-400">
-                                  Steadfast does not require weight.
                                 </div>
                               )}
                             </div>
@@ -1416,10 +1628,8 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                                   className="flex items-center gap-1 text-[11.5px] font-bold text-purple-600 hover:text-purple-700 cursor-pointer"
                                 >
                                   <span>
-                                    {showMissingWeightEditor ? "− Hide product weights" : "+ Add product weight (optional)"}
+                                    {showMissingWeightEditor ? "− Hide product weights" : "+ Configure weights in catalog"}
                                   </span>
-                                  <span className="hidden">Missing product weight</span>
-                                  <span className="hidden">save to Product database</span>
                                 </button>
 
                                 {showMissingWeightEditor && (
@@ -1505,7 +1715,6 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                           <div className="space-y-1">
                             <label className="text-[11px] font-semibold text-gray-700 block">
                               Courier note
-                              {/* Courier Note (Optional) */}
                             </label>
                             <input
                               type="text"
@@ -1532,11 +1741,25 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               </span>
                             </div>
                             <div className="flex justify-between text-gray-600">
-                              <span className="font-medium">Paid amount</span>
-                              <span className="font-bold text-gray-900 tabular-nums">
+                              <span className="font-medium">Payment method</span>
+                              <span className="font-bold text-gray-900 uppercase">
+                                {shipmentModal?.paymentMethod || "COD"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-gray-600">
+                              <span className="font-medium">Advance received</span>
+                              <span className="font-bold text-emerald-700 tabular-nums">
                                 ৳{formatBDT(advancePaidNum).replace("৳", "").trim()}
                               </span>
                             </div>
+                            {Number(shipmentModal?.shipping_total || 0) > 0 && (
+                              <div className="flex justify-between text-gray-600">
+                                <span className="font-medium">Delivery charge</span>
+                                <span className="font-bold text-gray-900 tabular-nums">
+                                  ৳{formatBDT(Number(shipmentModal?.shipping_total || 0)).replace("৳", "").trim()}
+                                </span>
+                              </div>
+                            )}
 
                             {/* Green COD Highlighted Card */}
                             <div className="rounded-xl bg-emerald-50 border border-emerald-200/80 p-3 space-y-0.5">
@@ -1545,6 +1768,13 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               </span>
                               <span className="text-[22px] font-black text-emerald-700 tabular-nums block leading-tight">
                                 ৳{formatBDT(shipmentCod).replace("৳", "").trim()}
+                              </span>
+                              <span className="text-[10.5px] text-emerald-700 font-medium block">
+                                {shipmentCod === 0
+                                  ? "Paid in full online — ৳0 cash to collect"
+                                  : advancePaidNum > 0
+                                  ? `Collecting remaining unpaid balance`
+                                  : "Collecting full order amount upon delivery"}
                               </span>
                             </div>
                           </div>
@@ -1555,7 +1785,7 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               Recipient
                             </p>
 
-                            <div className="rounded-2xl border border-gray-200 bg-white p-3.5 text-[12px] text-gray-700 space-y-1">
+                            <div className="rounded-2xl border border-gray-200 bg-white p-3.5 text-[12px] text-gray-700 space-y-1.5">
                               <div className="flex items-center justify-between font-bold text-gray-900">
                                 <span className="truncate">Deliver to: {recName || "Guest"}</span>
                                 <button
@@ -1568,32 +1798,64 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                               </div>
                               {editingRecipient ? (
                                 <div className="mt-2 space-y-2">
-                                  <input
-                                    type="text"
-                                    value={recName}
-                                    onChange={(e) => setRecName(e.target.value)}
-                                    placeholder="Recipient Name"
-                                    className="h-[36px] w-full rounded-lg border border-gray-200 px-3 text-[12px] outline-none focus:border-purple-500"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={recPhone}
-                                    onChange={(e) => setRecPhone(e.target.value)}
-                                    placeholder="01XXXXXXXXX"
-                                    className="h-[36px] w-full rounded-lg border border-gray-200 px-3 font-mono text-[12px] outline-none focus:border-purple-500"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={recAddress}
-                                    onChange={(e) => setRecAddress(e.target.value)}
-                                    placeholder="Delivery Address"
-                                    className="h-[36px] w-full rounded-lg border border-gray-200 px-3 text-[12px] outline-none focus:border-purple-500"
-                                  />
+                                  <div>
+                                    <input
+                                      type="text"
+                                      value={recName}
+                                      onChange={(e) => setRecName(e.target.value)}
+                                      placeholder="Recipient Name"
+                                      className="h-[36px] w-full rounded-lg border border-gray-200 px-3 text-[12px] outline-none focus:border-purple-500"
+                                    />
+                                    {!isNameValid && recName.trim().length > 0 && (
+                                      <p className="text-[10px] text-rose-600 font-semibold mt-0.5">
+                                        Name must be at least 2 characters.
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="text"
+                                      value={recPhone}
+                                      onChange={(e) => setRecPhone(e.target.value)}
+                                      placeholder="01XXXXXXXXX"
+                                      className="h-[36px] w-full rounded-lg border border-gray-200 px-3 font-mono text-[12px] outline-none focus:border-purple-500"
+                                    />
+                                    {!isPhoneValid && recPhone.trim().length > 0 && (
+                                      <p className="text-[10px] text-rose-600 font-semibold mt-0.5">
+                                        Enter a valid 11-digit Bangladeshi mobile number (e.g. 017XXXXXXXX).
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="text"
+                                      value={recAddress}
+                                      onChange={(e) => setRecAddress(e.target.value)}
+                                      placeholder="Delivery Address"
+                                      className="h-[36px] w-full rounded-lg border border-gray-200 px-3 text-[12px] outline-none focus:border-purple-500"
+                                    />
+                                    {!isAddressValid && recAddress.trim().length > 0 && (
+                                      <p className="text-[10px] text-rose-600 font-semibold mt-0.5">
+                                        Delivery address must be at least 5 characters.
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="text"
+                                      value={recDistrict}
+                                      onChange={(e) => setRecDistrict(e.target.value)}
+                                      placeholder="District / City (e.g. Dhaka)"
+                                      className="h-[36px] w-full rounded-lg border border-gray-200 px-3 text-[12px] outline-none focus:border-purple-500"
+                                    />
+                                  </div>
                                 </div>
                               ) : (
                                 <>
                                   <p className="font-mono text-gray-600 font-medium">{recPhone}</p>
-                                  <p className="text-gray-500 line-clamp-2 leading-relaxed">{recAddress}</p>
+                                  <p className="text-gray-500 line-clamp-2 leading-relaxed">
+                                    {recAddress}{recDistrict ? `, ${recDistrict}` : ""}
+                                  </p>
                                 </>
                               )}
                             </div>
@@ -1623,56 +1885,97 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                         </div>
                       )}
 
-                      {/* Mode 1 (Mock) vs Mode 2 (Live) Mode Indicator and Safety Confirmation */}
+                      {/* Safety Safeguards: Test Order Block vs Genuine Live vs Mock Mode */}
                       {!hasActiveApiShipment && (
-                        courierOperatingMode === "live" ? (
-                          <div className="rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-[11.5px] text-amber-900 space-y-2">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                              <div>
-                                <p className="font-bold text-amber-950 uppercase tracking-wider text-[10.5px]">
-                                  ⚠️ Live Courier Mode Active
-                                </p>
-                                <p className="mt-0.5">
-                                  Creating this booking will register a <strong>REAL parcel</strong> at Steadfast Courier and schedule <strong>physical pickup</strong>.
-                                </p>
+                        isLiveMode ? (
+                          isTestOrder ? (
+                            <div className="rounded-2xl border border-rose-300 bg-rose-50 p-3.5 text-[12px] text-rose-950 space-y-2">
+                              <div className="flex items-start gap-2.5">
+                                <div className="p-1 rounded-lg bg-rose-100 text-rose-700 shrink-0 mt-0.5">
+                                  <AlertTriangle className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <p className="font-black text-rose-950 uppercase tracking-wider text-[11px]">
+                                    🚫 Live Booking Blocked: Test / QA Order Detected
+                                  </p>
+                                  <p className="text-rose-800 mt-1 leading-relaxed">
+                                    This order (<strong>#{shipmentModal.number || shipmentModal.id}</strong> — <strong>{recName}</strong>) is identified as a test/synthetic record. Creating live courier consignments with Steadfast for test orders is prohibited to prevent accidental physical courier dispatch and unnecessary delivery charges.
+                                  </p>
+                                  <p className="text-rose-700 mt-1 font-medium text-[11px]">
+                                    To test courier booking with this order, switch Courier Mode to <strong>Mock</strong> in Courier Settings, or test with a genuine customer order.
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                            <label className="flex items-center gap-2 font-bold text-amber-950 cursor-pointer pt-0.5">
-                              <input
-                                type="checkbox"
-                                checked={confirmLiveBooking}
-                                onChange={(e) => setConfirmLiveBooking(e.target.checked)}
-                                className="h-4 w-4 rounded accent-amber-600 cursor-pointer"
-                              />
-                              I confirm this is a real customer order ready for physical Steadfast pickup.
-                            </label>
-                          </div>
+                          ) : (
+                            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 text-[12px] text-amber-950 space-y-2">
+                              <div className="flex items-start gap-2.5">
+                                <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                                <div>
+                                  <p className="font-bold text-amber-950 uppercase tracking-wider text-[11px]">
+                                    ⚠️ Caution: Live Courier Mode Active
+                                  </p>
+                                  <p className="text-amber-900 mt-0.5 leading-relaxed">
+                                    You are about to book a LIVE parcel with Steadfast Courier. An actual consignment will be created in the courier system and physical pickup will be scheduled.
+                                  </p>
+                                </div>
+                              </div>
+                              <label className="flex items-center gap-2.5 font-bold text-amber-950 cursor-pointer pt-1 border-t border-amber-200/60 mt-1">
+                                <input
+                                  type="checkbox"
+                                  checked={confirmLiveBooking}
+                                  onChange={(e) => setConfirmLiveBooking(e.target.checked)}
+                                  className="h-4 w-4 rounded accent-amber-600 cursor-pointer"
+                                />
+                                <span>I confirm this is a real customer order ready for physical Steadfast pickup.</span>
+                              </label>
+                            </div>
+                          )
                         ) : (
-                          <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-[11.5px] text-blue-900 flex items-center justify-between">
+                          <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-3 text-[12px] text-blue-900 flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="flex h-2 w-2 rounded-full bg-blue-600 animate-pulse shrink-0" />
                               <span>
-                                <strong>🧪 Mock / Development Mode:</strong> Simulated courier booking. Zero real parcels or external API calls will be created.
+                                <strong>Development Mode:</strong> Mock consignment will be simulated. No real courier booking or physical pickup will be made.
                               </span>
                             </div>
-                            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-700">
+                            <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase text-blue-800 border border-blue-200">
                               Simulated
                             </span>
                           </div>
                         )
                       )}
 
-                      {/* Above-Footer Bar: Steadfast · ৳1,330 COD and Ready to book */}
+                      {/* Reopened orders keep their cancelled consignment history */}
+                      {shipments.some(
+                        (s) => String(s.status).toLowerCase() === "cancelled"
+                      ) && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-900">
+                          A previous consignment for this order was <strong>cancelled</strong>.
+                          Booking now creates a <strong>new parcel</strong> at Steadfast — the old
+                          consignment stays in history and cannot be reactivated.
+                        </div>
+                      )}
+
+                      {/* Above-Footer Summary Review */}
                       {!hasActiveApiShipment && (
                         <div className="flex items-center justify-between px-1 pt-1 text-[12px]">
-                          {/* 7. Booking Summary Review */}
-                          <span className="font-medium text-gray-600 capitalize">
-                            {getCourierLabel(apiProvider)} · ৳{formatBDT(shipmentCod).replace("৳", "").trim()} COD
+                          <span className="font-semibold text-gray-700">
+                            Steadfast Courier · ৳{formatBDT(shipmentCod).replace("৳", "").trim()} COD
                           </span>
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
-                            Ready to book
-                          </span>
+                          {isLiveMode && isTestOrder ? (
+                            <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
+                              Live booking blocked
+                            </span>
+                          ) : isLiveMode && hasMissingWeight && !isManuallyEdited ? (
+                            <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
+                              Weight required
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                              Ready to book
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1706,25 +2009,27 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                     !selectedProviderConfigured ||
                     shipmentBusy ||
                     !recipientValid ||
-                    isWeightInvalidForProvider ||
+                    isWeightBlockedForLive ||
+                    isManualOverrideInvalid ||
                     (shipmentEligibility !== null && !shipmentEligibility.ok) ||
                     (requiresCodOverride && !allowCodFallback) ||
-                    (courierOperatingMode === "live" && !confirmLiveBooking)
+                    (isLiveMode && isTestOrder) ||
+                    (isLiveMode && !confirmLiveBooking)
                   }
                   onClick={() =>
-                    void createShipment(shipmentModal, shipmentNote, apiProvider, {
+                    void createShipment(shipmentModal, shipmentNote, "steadfast", {
                       recipient: editingRecipient
-                        ? { fullName: recName, phone: recPhone, address: recAddress }
+                        ? { fullName: recName, phone: recPhone, address: recAddress, city: recDistrict, district: recDistrict }
                         : undefined,
                       allowCodFallback: allowCodFallback || undefined,
-                      confirmLiveBooking: courierOperatingMode === "live" ? confirmLiveBooking : undefined,
+                      confirmLiveBooking: isLiveMode ? confirmLiveBooking : undefined,
                       providerMeta: {
                         parcelType,
                         packageWeight: finalPackageWeightNum,
                         packagingType: selectedPackagingId,
-                        weightEstimated: isManuallyEdited || hasMissingWeight,
+                        weightEstimated: !isManuallyEdited,
                         manualEstimateReason:
-                          isManuallyEdited || hasMissingWeight
+                          isManuallyEdited
                             ? manualEstimateReason.trim()
                             : undefined,
                         itemDescription:
@@ -1746,11 +2051,17 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                   ) : (
                     <Truck className="h-4 w-4" />
                   )}
-                  {apiProvider === "steadfast"
-                    ? "Create Steadfast shipment"
-                    : apiProvider === "pathao"
-                    ? "Pathao Unavailable"
-                    : "RedX Setup Required"}
+                  {shipmentBusy
+                    ? "Booking Steadfast..."
+                    : isLiveMode && isTestOrder
+                    ? "Live Booking Blocked (Test Order)"
+                    : isWeightBlockedForLive
+                    ? "Resolve Missing Weight First"
+                    : isLiveMode && !confirmLiveBooking
+                    ? "Check Confirmation Below"
+                    : isLiveMode
+                    ? "Confirm & Book Steadfast (Live)"
+                    : "Confirm & Book Steadfast"}
                 </button>
               )}
             </div>
@@ -1848,25 +2159,52 @@ export function OrdersModals({ state }: OrdersModalsProps) {
                   : "Cancelled and refunded orders are locked and cannot be changed afterwards."}
               </div>
 
+              {!warningIsRevert && warningModal.status === "cancelled" && (
+                <div className="mt-4 text-left space-y-1">
+                  <label className="block text-[11px] font-bold text-gray-700">
+                    Cancellation Reason <span className="text-rose-600">* (Mandatory)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={cancelReasonText}
+                    onChange={(e) => setCancelReasonText(e.target.value)}
+                    placeholder="State reason for customer request or operational cancellation..."
+                    className="w-full rounded-xl border border-gray-300 p-2 text-[12px] outline-none focus:border-rose-500 resize-none"
+                  />
+                  {cancelReasonText.trim().length > 0 && cancelReasonText.trim().length < 3 && (
+                    <p className="text-[10px] text-rose-600 font-medium">Minimum 3 characters required.</p>
+                  )}
+                </div>
+              )}
+
               <div className="mt-5 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setWarningModal(null)}
+                  onClick={() => {
+                    setWarningModal(null);
+                    setCancelReasonText("");
+                  }}
                   className="flex-1 rounded-xl bg-slate-100 px-4 py-3 text-[13px] font-medium text-slate-600 transition hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/50 cursor-pointer"
                 >
                   Go back
                 </button>
                 <button
                   type="button"
-                  disabled={updating === warningModal.orderId}
+                  disabled={
+                    updating === warningModal.orderId ||
+                    (!warningIsRevert && warningModal.status === "cancelled" && cancelReasonText.trim().length < 3)
+                  }
                   onClick={async () => {
                     const ok =
                       warningModal.kind === "revert-payment"
                         ? await handleStatusChange(warningModal.orderId, warningModal.status, {
                             revertPayment: true,
                           })
-                        : await handleStatusChange(warningModal.orderId, warningModal.status);
+                        : await handleStatusChange(warningModal.orderId, warningModal.status, {
+                            reason: cancelReasonText.trim() || undefined,
+                          });
                     setWarningModal(null);
+                    setCancelReasonText("");
                     if (ok) {
                       setStatusModal(null);
                       setSelectedStatus(null);

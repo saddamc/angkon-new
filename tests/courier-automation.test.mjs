@@ -13,6 +13,7 @@ const orderTypes = read("src/app/admin/orders/_types/orders.types.ts");
 const ordersHook = read("src/app/admin/orders/_hooks/use-admin-orders.ts");
 const orderRow = read("src/app/admin/orders/_components/order-row.tsx");
 const ordersSearch = read("src/app/admin/orders/_components/orders-search-bar.tsx");
+const ordersHeader = read("src/app/admin/orders/_components/orders-header.tsx");
 const ordersModals = read("src/app/admin/orders/_components/orders-modals.tsx");
 
 test("steadfast webhook supports Bearer token alongside HMAC signature and query token", () => {
@@ -46,9 +47,11 @@ test("admin orders API and UI expose courier tracking, shipped tab, bulk send, a
   assert.ok(ordersHook.includes("bulkSendToCourier"));
   assert.ok(ordersHook.includes("syncActiveShipments"));
   assert.ok(ordersHook.includes("saveManualDelivery"));
-  assert.ok(orderRow.includes("Send to Courier"));
+  assert.ok(orderRow.includes("Send to Steadfast"));
   assert.ok(ordersSearch.includes("Send to Steadfast"));
-  assert.ok(ordersSearch.includes("Sync Courier"));
-  assert.ok(ordersModals.includes("Book via courier API"));
-  assert.ok(ordersModals.includes("Save delivery info"));
+  // Courier sync lives once in the page header, not duplicated in the toolbar.
+  assert.ok(ordersHeader.includes("Sync Status"));
+  assert.ok(ordersHeader.includes("lastCourierSyncAt"));
+  assert.ok(ordersModals.includes("Confirm & Book Steadfast"));
+  assert.ok(ordersModals.includes("Booking Time & Last Sync"));
 });

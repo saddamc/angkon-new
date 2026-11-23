@@ -4,19 +4,9 @@ import { Shipment } from "@/models/Shipment";
 import { requireAdminSessionCore } from "@/server/admin-auth";
 import { getCourierAdapter, courierService } from "@/server/courier";
 import { applyCourierStatus } from "@/server/courier/sync";
-import type { ShipmentStatus } from "@/server/courier/steadfast-utils";
+import { ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/steadfast-utils";
 
 export const dynamic = "force-dynamic";
-
-const ACTIVE_SHIPMENT_STATUSES: ShipmentStatus[] = [
-  "created",
-  "pending",
-  "in_transit",
-  "out_for_delivery",
-  "partial_delivered",
-  "hold",
-  "in_review",
-];
 
 /** POST — pull latest courier status for all active shipments. */
 export async function POST(request: NextRequest) {
@@ -28,15 +18,23 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
     const activeShipments = await Shipment.find({
-      status: { $in: ACTIVE_SHIPMENT_STATUSES },
       $or: [
-        { consignmentId: { $exists: true, $nin: ["", null] } },
-        { trackingCode: { $exists: true, $nin: ["", null] } },
+        { status: { $in: [...ACTIVE_SHIPMENT_STATUSES, "unknown"] } },
+        { status: "cancelled", createdAt: { $gte: sevenDaysAgo } },
+      ],
+      $and: [
+        {
+          $or: [
+            { consignmentId: { $exists: true, $nin: ["", null] } },
+            { trackingCode: { $exists: true, $nin: ["", null] } },
+          ],
+        },
       ],
     })
       .sort({ lastSyncedAt: 1, createdAt: 1 })
-      .limit(25);
+      .limit(30);
 
     let synced = 0;
     let changed = 0;

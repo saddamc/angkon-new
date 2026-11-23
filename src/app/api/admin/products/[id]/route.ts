@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import {
@@ -21,9 +22,14 @@ const localCategory = (id: number) => (REAL_CATEGORIES as any[]).find((rc) => rc
 
 // GET /api/admin/products/[id] — single product by numeric ID or slug from MongoDB (with fallback)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { id } = await params;
     const decoded = decodeURIComponent(id);
@@ -78,6 +84,11 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { id } = await params;
     const decoded = decodeURIComponent(id);
@@ -336,9 +347,14 @@ export async function PUT(
 
 // DELETE /api/admin/products/[id] — delete product from MongoDB Atlas
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const { id } = await params;
     const numericId = parseInt(id, 10);

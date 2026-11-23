@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const isConfigured = steadfastAdapter.isConfigured();
     const [steadfastBalance, diagnostics] = await Promise.all([
-      isConfigured
+      isConfigured && !modeConfig.isMock
         ? steadfastAdapter.getBalance().catch((err: unknown) => ({
             ok: false as const,
             error: {
@@ -35,10 +35,12 @@ export async function GET(request: NextRequest) {
             },
           }))
         : Promise.resolve({
-            ok: false as const,
-            error: {
-              code: "not-configured" as const,
-              message: "Steadfast credentials are not configured",
+          ok: false as const,
+          error: {
+              code: modeConfig.isMock ? ("mock-mode" as const) : ("not-configured" as const),
+              message: modeConfig.isMock
+                ? "Live Steadfast balance is unavailable in mock mode"
+                : "Steadfast credentials are not configured",
             },
           }),
       courierService.getDiagnostics().catch(() => ({
@@ -88,7 +90,13 @@ export async function GET(request: NextRequest) {
         },
         settings,
         webhooks: {
-          steadfast: Boolean((process.env.STEADFAST_WEBHOOK_SECRET || "").trim()),
+          // The webhook route accepts STEADFAST_WEBHOOK_TOKEN or
+          // STEADFAST_WEBHOOK_SECRET — the indicator must match both.
+          steadfast: Boolean(
+            (
+              process.env.STEADFAST_WEBHOOK_TOKEN || process.env.STEADFAST_WEBHOOK_SECRET || ""
+            ).trim()
+          ),
           pathao: false,
         },
         balances: {

@@ -12,7 +12,7 @@ Create or edit your local `.env` file:
 # SSLCOMMERZ Sandbox Credentials
 SSLCOMMERZ_STORE_ID=testbox
 SSLCOMMERZ_STORE_PASSWORD=qwerty
-SSLCOMMERZ_IS_SANDBOX=true
+SSLCOMMERZ_MODE=sandbox
 
 # Public Base URL (Required for Gateway Callbacks & IPN)
 # When running locally, set this to your ngrok or Cloudflare tunnel URL:

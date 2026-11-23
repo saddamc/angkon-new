@@ -4,7 +4,7 @@ import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/r
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { verifyPassword } from "@/server/auth";
-import { RateLimit } from "@/models/RateLimit";
+import { RateLimitBucket } from "@/models/RateLimitBucket";
 import { getJwtSecret } from "@/lib/env";
 
 /** Constant-time string comparison to prevent timing side-channel attacks */
@@ -72,12 +72,28 @@ export async function GET(request: NextRequest) {
   if (!payload) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
-  return NextResponse.json({
-    authenticated: true,
-    user: payload.sub,
-    name: payload.name,
-    role: payload.role || "admin",
-  });
+
+  // A suspended account must lose access immediately, even with a live token.
+  try {
+    await connectToDatabase();
+    const identifier = String(payload.sub || "").trim();
+    const account = await User.findOne({
+      $or: [{ email: identifier.toLowerCase() }, { name: identifier }],
+    })
+      .select("name role isActive")
+      .lean();
+    if (!account || account.isActive === false) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+    return NextResponse.json({
+      authenticated: true,
+      user: payload.sub,
+      name: account.name || payload.name,
+      role: account.role || payload.role || "admin",
+    });
+  } catch {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
 }
 
 // POST /api/admin/login — authenticate
@@ -88,9 +104,12 @@ export async function POST(request: NextRequest) {
       failClosed: true,
     });
     if (!limit.allowed) {
+      const minutes = Math.max(1, Math.ceil(limit.retryAfterSeconds / 60));
       return createRateLimitResponse(
         limit,
-        "Too many admin login attempts from this network. Please wait 15 minutes before trying again."
+        `Too many admin login attempts from this network. Please try again in ${minutes} minute${
+          minutes === 1 ? "" : "s"
+        }.`
       );
     }
 
@@ -125,6 +144,17 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        if (dbUser.isActive === false) {
+          await new Promise((r) => setTimeout(r, 400));
+          return NextResponse.json(
+            {
+              error:
+                "This administrator account is suspended. Contact a super administrator to restore access.",
+            },
+            { status: 403 }
+          );
+        }
+
         if (dbUser.password && verifyPassword(inputPassword, dbUser.password)) {
           authenticatedAdmin = {
             sub: dbUser.email || dbUser.name,
@@ -142,9 +172,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Reset failed rate limit counter on successful authentication
+    // Reset failed rate limit counters on successful authentication. The
+    // limiter keys include the window start, so exact current/previous buckets
+    // must be removed; the old un-suffixed delete never matched.
     try {
-      await RateLimit.deleteOne({ key: `admin-login:ip:${ip}` });
+      const windowMs = 15 * 60 * 1000;
+      const currentWindowStart = Math.floor(Date.now() / windowMs) * windowMs;
+      const hashedIp = hashIp(ip);
+      await RateLimitBucket.deleteMany({
+        key: {
+          $in: [
+            `admin-login:ip:${hashedIp}:${currentWindowStart}`,
+            `admin-login:ip:${hashedIp}:${currentWindowStart - windowMs}`,
+          ],
+        },
+      });
     } catch {
       // ignore
     }

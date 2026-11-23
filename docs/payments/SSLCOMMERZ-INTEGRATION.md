@@ -12,7 +12,7 @@ Credentials must be configured in environment variables and are **strictly serve
 |---|---|---|
 | `SSLCOMMERZ_STORE_ID` | String | Store ID provided by SSLCOMMERZ |
 | `SSLCOMMERZ_STORE_PASSWORD` | String | Store Password provided by SSLCOMMERZ |
-| `SSLCOMMERZ_IS_SANDBOX` | Boolean | `true` for sandbox (`sandbox.sslcommerz.com`), `false` for live (`securepay.sslcommerz.com`) |
+| `SSLCOMMERZ_MODE` | String | `sandbox` for sandbox (`sandbox.sslcommerz.com`), `live` for live (`securepay.sslcommerz.com`) — or `SSLCOMMERZ_IS_LIVE=true` |
 | `NEXT_PUBLIC_APP_URL` | URL | Base URL used to formulate callback and IPN URLs |
 
 ---

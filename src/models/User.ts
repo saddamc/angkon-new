@@ -17,6 +17,8 @@ export interface IUser extends Document {
   password: string;
   phone: string;
   role: "customer" | "admin" | "superadmin";
+  /** Suspended accounts keep their data but cannot sign in. */
+  isActive?: boolean;
   addresses: IUserAddress[];
   emailVerified: boolean;
   emailVerifiedAt?: Date | null;
@@ -61,6 +63,7 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, default: "" },
     phone: { type: String, default: "", trim: true },
     role: { type: String, enum: ["customer", "admin", "superadmin"], default: "customer" },
+    isActive: { type: Boolean, default: true, index: true },
     addresses: { type: [UserAddressSchema], default: [] },
     emailVerified: { type: Boolean, default: false, index: true },
     emailVerifiedAt: { type: Date, default: null },

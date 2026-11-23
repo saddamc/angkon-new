@@ -6,6 +6,10 @@ import { ProcessIpnService } from "@/server/payments/services/process-ipn";
 export const dynamic = "force-dynamic";
 
 /**
+ * @deprecated Legacy IPN route.
+ * Canonical endpoint: /api/payments/sslcommerz/ipn
+ * Maintained strictly for backward compatibility with active SSLCOMMERZ gateway registrations.
+ *
  * SSLCOMMERZ IPN (legacy path).
  *
  * Durable inbox persistence, deduplication and validator-confirmed settlement

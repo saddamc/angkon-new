@@ -3,7 +3,7 @@
 ## 1. Staging Purpose & Isolation
 The staging environment mirrors production while using sandbox external gateways:
 * **Database:** Dedicated staging MongoDB database (`angkon_staging`), never production.
-* **SSLCOMMERZ:** `SSLCOMMERZ_IS_SANDBOX=true`.
+* **SSLCOMMERZ:** `SSLCOMMERZ_MODE=sandbox` (live mode stays off).
 * **Courier:** `COURIER_MODE=mock` (or staging Steadfast test credentials if authorized).
 * **Base URL:** Staging domain (e.g. `https://staging.angkon.com`).
 
@@ -16,9 +16,11 @@ The staging environment mirrors production while using sandbox external gateways
    git checkout -b staging
    git push origin staging
    ```
-2. **Vercel Staging Environment:**
-   * Configure environment variables in the Vercel Staging project.
-   * Ensure `CRON_SECRET` matches your test automation runner.
+2. **VPS Staging Environment:**
+   * Deploy a separate VPS release using the VPS runbook.
+   * Use the staging env file with `APP_ENVIRONMENT=preview` or `staging`.
+   * Ensure `CRON_SECRET` matches the staging scheduler.
+   * Never point staging at the production database or live courier credentials.
 3. **Automated Verification:**
    * Run the integration probe against the staging domain:
      ```powershell

@@ -10,6 +10,9 @@ import { ProcessCancellationService } from "@/server/payments/services/process-c
 export const dynamic = "force-dynamic";
 
 /**
+ * @deprecated Legacy unified callback route.
+ * Canonical endpoints: /api/payments/sslcommerz/success, /api/payments/sslcommerz/fail, /api/payments/sslcommerz/cancel
+ *
  * SSLCOMMERZ return URL handler (legacy path).
  *
  * Kept for sessions created before the centralized module was introduced.

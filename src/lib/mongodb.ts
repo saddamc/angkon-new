@@ -4,6 +4,7 @@ import {
   validateDatabaseConnection,
   getAppEnvironment,
 } from "../server/env/app-environment";
+import { isSrvResolutionError } from "./mongodb-dns";
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
 
@@ -19,17 +20,16 @@ if (!MONGODB_URI) {
  * happens. Leave it unset on Vercel unless a specific resolver is required.
  */
 const DNS_OVERRIDE = process.env.MONGODB_DNS_SERVERS?.trim();
-if (DNS_OVERRIDE) {
-  const servers = DNS_OVERRIDE.split(/[,;]/)
-    .map((server) => server.trim())
-    .filter(Boolean);
-  if (servers.length > 0) {
-    try {
-      dns.setServers(servers);
-      console.info(`[MongoDB] DNS override active: ${servers.join(", ")}`);
-    } catch (error) {
-      console.warn("[MongoDB] Could not apply MONGODB_DNS_SERVERS:", error);
-    }
+const DNS_OVERRIDE_SERVERS = DNS_OVERRIDE
+  ? DNS_OVERRIDE.split(/[,;]/).map((server) => server.trim()).filter(Boolean)
+  : [];
+const SYSTEM_DNS_SERVERS = dns.getServers();
+if (DNS_OVERRIDE_SERVERS.length > 0) {
+  try {
+    dns.setServers(DNS_OVERRIDE_SERVERS);
+    console.info(`[MongoDB] DNS override active: ${DNS_OVERRIDE_SERVERS.join(", ")}`);
+  } catch (error) {
+    console.warn("[MongoDB] Could not apply MONGODB_DNS_SERVERS:", error);
   }
 }
 
@@ -91,6 +91,63 @@ if (!global.mongooseCache) {
 
 let lastFailureTime = 0;
 const FAILURE_COOLDOWN_MS = 1000;
+
+/**
+ * Connects with Mongoose. If the configured DNS resolver refuses the SRV
+ * lookup, retry once with the operating-system resolver before failing. This
+ * keeps local development usable when a public resolver is unreachable while
+ * still preferring the explicitly configured resolver.
+ */
+async function connectMongoose(uri: string, opts: mongoose.ConnectOptions) {
+  try {
+    return await mongoose.connect(uri, opts);
+  } catch (error) {
+    if (
+      !uri.startsWith("mongodb+srv://") ||
+      !DNS_OVERRIDE ||
+      !isSrvResolutionError(error)
+    ) {
+      throw error;
+    }
+
+    const fallbackServers =
+      SYSTEM_DNS_SERVERS.length > 0 ? SYSTEM_DNS_SERVERS : ["1.1.1.1", "8.8.8.8"];
+
+    console.warn(
+      "[MongoDB] SRV resolution failed with configured DNS; retrying with the system resolver."
+    );
+    try {
+      dns.setServers(fallbackServers);
+    } catch {
+      // If the resolver cannot be changed, surface the original error.
+      throw error;
+    }
+
+    try {
+      return await mongoose.connect(uri, opts);
+    } finally {
+      // DNS servers are process-global. Restore the configured override after
+      // this one-shot fallback; otherwise one transient failure permanently
+      // switches every later Mongo connection to a broken system resolver.
+      if (DNS_OVERRIDE_SERVERS.length > 0) {
+        try {
+          dns.setServers(DNS_OVERRIDE_SERVERS);
+        } catch (restoreError) {
+          console.warn("[MongoDB] Could not restore MONGODB_DNS_SERVERS:", restoreError);
+        }
+      }
+    }
+  }
+}
+
+function assertDatabaseReady(m: typeof mongoose): typeof mongoose {
+  if (m.connection.readyState !== 1) {
+    throw new Error(
+      `MONGODB_CONNECTION_NOT_READY (readyState=${m.connection.readyState})`
+    );
+  }
+  return m;
+}
 
 // Controlled pool settings tuned for Vercel Serverless & Atlas Free (M0)
 const DEFAULT_MAX_POOL_SIZE = 5;
@@ -157,7 +214,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   // 2. If connection promise is actively in-flight, await and reuse it (prevents concurrent initialization races)
   if (cached.promise) {
     try {
-      cached.conn = await cached.promise;
+      cached.conn = assertDatabaseReady(await cached.promise);
       return cached.conn;
     } catch {
       // If previous promise rejected, reset to allow fresh reconnection attempt
@@ -195,14 +252,15 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     connectTimeoutMS,
   };
 
-  cached.promise = mongoose.connect(uri, opts).then((m) => {
+  cached.promise = connectMongoose(uri, opts).then((m) => {
+    assertDatabaseReady(m);
     cached.telemetry.lastConnectedAt = new Date().toISOString();
     attachTelemetryListeners(m);
     return m;
   });
 
   try {
-    cached.conn = await cached.promise;
+    cached.conn = assertDatabaseReady(await cached.promise);
     lastFailureTime = 0;
     return cached.conn;
   } catch (err) {

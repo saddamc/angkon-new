@@ -168,15 +168,14 @@ export function StarTechOrderSummary({
                   <div className="flex items-center rounded-lg border border-[#E1B76F]/30 bg-[#220406] overflow-hidden">
                     <button
                       type="button"
+                      disabled={item.quantity <= 1}
                       onClick={() => {
                         if (item.quantity > 1) {
                           onUpdateQuantity?.(item.productId, item.size, item.quantity - 1, item.color);
-                        } else {
-                          onRemoveItem?.(item.productId, item.size, item.color);
                         }
                       }}
-                      className="h-7 w-7 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition cursor-pointer"
-                      title={item.quantity === 1 ? "Remove item" : "Reduce quantity"}
+                      className="h-7 w-7 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
+                      title="Reduce quantity"
                     >
                       <Minus className="h-3 w-3" />
                     </button>
@@ -185,10 +184,13 @@ export function StarTechOrderSummary({
                     </span>
                     <button
                       type="button"
+                      disabled={item.quantity >= 99}
                       onClick={() => {
-                        onUpdateQuantity?.(item.productId, item.size, item.quantity + 1, item.color);
+                        if (item.quantity < 99) {
+                          onUpdateQuantity?.(item.productId, item.size, item.quantity + 1, item.color);
+                        }
                       }}
-                      className="h-7 w-7 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                      className="h-7 w-7 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-30"
                       title="Increase quantity"
                     >
                       <Plus className="h-3 w-3" />
@@ -396,7 +398,7 @@ export function StarTechOrderSummary({
         ) : paymentMethod === "sslcommerz" ? (
           <span className="flex items-center gap-2">
             <Lock className="h-4 w-4 text-[#E1B76F]" />
-            Pay Securely Now · {formatPrice(finalTotal)}
+            Continue to secure payment · {formatPrice(finalTotal)}
           </span>
         ) : (
           <span>Confirm COD Order · {formatPrice(finalTotal)}</span>

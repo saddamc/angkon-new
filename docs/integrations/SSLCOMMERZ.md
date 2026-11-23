@@ -1,41 +1,29 @@
-# SSLCOMMERZ Integration Guide — ANGKON
+# SSLCOMMERZ Integration Guide
 
-## 1. Overview
-ANGKON integrates with the **SSLCOMMERZ Hosted Payment Gateway** supporting:
-* Visa, Mastercard, American Express, UnionPay.
-* Mobile Financial Services (bKash, Nagad, Rocket, Upay).
-* Internet Banking (Citytouch, BRAC Bank, Islami Bank).
-
----
-
-## 2. Environment Configuration
-
-```bash
-# Gateway Credentials
-SSLCOMMERZ_STORE_ID="angkon_store_id"
-SSLCOMMERZ_STORE_PASSWORD="angkon_store_password"
-SSLCOMMERZ_IS_SANDBOX="false" # Set true for development testing
-
-# Official API Base URLs
-# Sandbox: https://sandbox.sslcommerz.com
-# Live:    https://securepay.sslcommerz.com
-```
+> [!IMPORTANT]
+> **Consolidated Authoritative Documentation:**
+> All technical specifications, gateway endpoints, security invariants, callback handling, and environment rules for SSLCOMMERZ are maintained in the authoritative document:
+> **[`docs/payments/SSLCOMMERZ-INTEGRATION.md`](../payments/SSLCOMMERZ-INTEGRATION.md)**
 
 ---
 
-## 3. Endpoints & Server Operations
+## Quick Reference & Direct Links
 
-| Endpoint | Gateway Route | Purpose |
-|---|---|---|
-| Session Initiation | `POST /gwprocess/v4/api.php` | Initializes hosted gateway session, generates `sessionkey` |
-| Transaction Validation | `GET /validator/api/validationserverAPI.php` | Direct server-to-server validation using `val_id` |
-| Merchant Query | `GET /validator/api/merchantTransIDvalidationAPI.php` | Safe recovery query by merchant `tran_id` |
-| Refund Initiation | `GET /validator/api/merchantTransIDvalidationAPI.php` | Submits refund requests via merchant portal |
+| Topic | Authoritative Document |
+|---|---|
+| **Gateway Integration & Configuration** | [`docs/payments/SSLCOMMERZ-INTEGRATION.md`](../payments/SSLCOMMERZ-INTEGRATION.md) |
+| **Payment Lifecycle & 16 Scenarios** | [`docs/payments/PAYMENT-LIFECYCLE.md`](../payments/PAYMENT-LIFECYCLE.md) |
+| **Payment State Machine & Transitions** | [`docs/payments/PAYMENT-STATE-MACHINE.md`](../payments/PAYMENT-STATE-MACHINE.md) |
+| **Deployment & Production Runbook** | [`docs/payments/DEPLOYMENT-RUNBOOK.md`](../payments/DEPLOYMENT-RUNBOOK.md) |
 
 ---
 
-## 4. Security & Idempotency Rules
+## Gateway Endpoints Summary
 
-1. **Server Validation Mandate:** Browser redirects to `/api/payment/sslcommerz/callback` only trigger backend verification; they never finalize payments without calling `/validator/api/validationserverAPI.php`.
-2. **Duplicate IPN Handling:** Every IPN payload is fingerprinted using SHA-256 in `PaymentWebhook`. Second deliveries with the same fingerprint return HTTP 200 immediately without repeating stock deduction or order updates.
-3. **No-Downgrade Invariant:** Once an attempt reaches status `succeeded`, incoming failed or cancelled callbacks are discarded.
+- **Live Base URL:** `https://securepay.sslcommerz.com`
+- **Sandbox Base URL:** `https://sandbox.sslcommerz.com`
+- **Session Initiation:** `POST /gwprocess/v4/api.php`
+- **Validation Server API:** `GET /validator/api/validationserverAPI.php`
+- **Merchant Query API:** `GET /validator/api/merchantTransIDvalidationAPI.php`
+
+For complete implementation details, validation flows, and IPN deduplication logic, refer to the [SSLCOMMERZ Integration Guide](../payments/SSLCOMMERZ-INTEGRATION.md).

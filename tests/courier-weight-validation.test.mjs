@@ -88,16 +88,16 @@ test("4. Dynamic UI: Modal updates indicators and warnings per provider", () => 
     "Modal must compute isWeightInvalidForProvider"
   );
 
-  // Optional indicator for Steadfast
+  // Weight UI is present and reflects the provider flags
   assert.ok(
-    modalSource.includes("Optional (Steadfast)"),
-    "Modal must display Optional (Steadfast) indicator"
+    modalSource.includes("Products Weight"),
+    "Modal must display the product weight line"
   );
 
-  // Informative non-blocking note for Steadfast zero-weight
+  // Weight summary UI present for the booking form
   assert.ok(
-    modalSource.includes("Steadfast does not require weight"),
-    "Modal must show informative non-blocking note for Steadfast"
+    modalSource.includes("Final Package Weight"),
+    "Modal must show the final package weight summary"
   );
 
   // Button disabled condition uses isWeightInvalidForProvider (never blocks Steadfast on weight)

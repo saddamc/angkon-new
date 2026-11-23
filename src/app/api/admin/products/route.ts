@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
@@ -20,6 +21,11 @@ const localCategory = (id: number) => (REAL_CATEGORIES as any[]).find((rc) => rc
 
 // GET /api/admin/products — list all products from MongoDB Atlas
 export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") ?? "1", 10);
   const perPage = parseInt(searchParams.get("per_page") ?? "20", 10);
@@ -79,6 +85,11 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/products — create product in MongoDB Atlas
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     await connectToDatabase();
@@ -259,6 +270,11 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/admin/products — bulk delete products
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   try {
     const body = await request.json();
     const ids: number[] = Array.isArray(body?.ids) ? body.ids.map(Number).filter(Boolean) : [];

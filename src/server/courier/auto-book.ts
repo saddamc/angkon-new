@@ -1,4 +1,5 @@
 import type { IOrder } from "@/models/Order";
+import { Shipment } from "@/models/Shipment";
 import { courierService } from "./courier-service";
 import { getCourierSettings } from "./settings";
 
@@ -19,6 +20,13 @@ export async function tryAutoBookOnConfirm(order: IOrder): Promise<{
     return { attempted: false, booked: false };
   }
   if (order.consignmentId || order.trackingCode) {
+    return { attempted: false, booked: false };
+  }
+
+  // Never auto-book a reopened/cancelled order: a previous consignment (even a
+  // cancelled one) means a human must explicitly confirm a new parcel.
+  const priorShipment = await Shipment.findOne({ orderId: order._id }).select("_id").lean();
+  if (priorShipment) {
     return { attempted: false, booked: false };
   }
 

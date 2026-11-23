@@ -165,17 +165,17 @@ export function OrderActivityView({
     }
   };
 
-  // Filter counts
+  // Filter counts matching actual timeline events
   const counts = useMemo(() => {
     const total = timeline.length;
-    let notesCount = (order.adminNotes || []).length;
+    let notesCount = 0;
     let statusCount = 0;
     let paymentCount = 0;
     let shipmentCount = 0;
     let auditCount = 0;
 
     for (const ev of timeline) {
-      if (ev.category === "note") notesCount = Math.max(notesCount, 1);
+      if (ev.category === "note") notesCount++;
       else if (ev.category === "order") statusCount++;
       else if (ev.category === "payment") paymentCount++;
       else if (ev.category === "shipment") shipmentCount++;
@@ -183,7 +183,7 @@ export function OrderActivityView({
     }
 
     return { total, notesCount, statusCount, paymentCount, shipmentCount, auditCount };
-  }, [timeline, order.adminNotes]);
+  }, [timeline]);
 
   // Filtered timeline items
   const filteredEvents = useMemo(() => {
@@ -516,7 +516,7 @@ export function OrderActivityView({
               }`}
             >
               <Truck className="h-3 w-3" />
-              Courier ({counts.shipmentCount})
+              Shipment ({counts.shipmentCount})
             </button>
             <button
               type="button"
@@ -675,8 +675,14 @@ export function OrderActivityView({
                           {ev.category}
                         </span>
 
+                        {(Boolean(meta?.isMock) || ev.title.includes("[SIMULATED")) && (
+                          <span className="rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-amber-800">
+                            TEST / SIMULATED
+                          </span>
+                        )}
+
                         <h4 className="text-[12.5px] font-bold text-stone-900 capitalize">
-                          {ev.title}
+                          {ev.title.replace(/\[SIMULATED \/ TEST\]\s*/i, "").replace(/\[SIMULATED\]\s*/i, "")}
                         </h4>
 
                         {isReopen && (

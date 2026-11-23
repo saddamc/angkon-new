@@ -6,7 +6,7 @@ import { ThankYouOrderTracker } from "@/components/analytics/thankyou-order-trac
 
 export const metadata: Metadata = {
   title: "Thank You for Shopping With Us — ANGKON",
-  description: "Your order details and delivery timeline for nationwide Cash on Delivery dispatch.",
+  description: "Your order details and delivery timeline for nationwide Cash on Delivery and online-paid orders.",
 };
 
 const DELIVERY_TIMES = [
@@ -108,7 +108,7 @@ export default function ThankYouPage() {
             </Link>
 
             <Link
-              href="/refund-and-exchange-policies"
+              href="/return-refund-policy"
               className="rounded-xl border border-[#6e101c] bg-[#530911] p-4 hover:border-[#E1B76F] transition group"
             >
               <h3 className="font-bold text-sm text-white group-hover:text-white transition">

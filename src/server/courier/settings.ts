@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
+import { DEFAULT_TENANT_ID } from "@/server/tenant";
 import {
   DEFAULT_COURIER_SETTINGS,
   normalizeCourierSettings,
@@ -24,7 +25,14 @@ export async function getCourierSettings(): Promise<CourierSettings> {
 
   try {
     await connectToDatabase();
-    const doc = await Settings.findOne({ key: COURIER_SETTINGS_KEY }).lean();
+    const doc = await Settings.findOne({
+      key: COURIER_SETTINGS_KEY,
+      // The PUT writes { tenantId: auth.tenantId, key: "courier" } and every
+      // authenticated admin defaults to DEFAULT_TENANT_ID, so reads must scope
+      // by the same tenant — an unscoped findOne could return an arbitrary
+      // tenant's document once a second tenant exists.
+      tenantId: DEFAULT_TENANT_ID,
+    }).lean();
     const normalized = normalizeCourierSettings(doc?.value);
     cachedCourierSettings = {
       data: normalized,

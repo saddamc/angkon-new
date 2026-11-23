@@ -79,7 +79,7 @@ export function getOrderActionCategory(order: WCOrder): OrderActionCategory | nu
   // Category 4: Orders Ready to Ship (Confirmed/Processing without active courier booking)
   if (
     ["confirmed", "processing", "ready_to_ship"].includes(order.status) &&
-    !hasConsignment &&
+    (!hasConsignment || shipmentBookingState === "cancelled") &&
     shipmentBookingState !== "booked" &&
     shipmentBookingState !== "booking_in_progress"
   ) {
@@ -87,7 +87,10 @@ export function getOrderActionCategory(order: WCOrder): OrderActionCategory | nu
       category: "ready_to_ship",
       label: "Ready to Ship",
       badgeTone: "bg-blue-100 text-blue-900 border-blue-300",
-      reason: "Order is verified and ready for courier dispatch.",
+      reason:
+        shipmentBookingState === "cancelled"
+          ? "Previous courier consignment was cancelled. Ready for re-booking."
+          : "Order is verified and ready for courier dispatch.",
       recommendedAction: "Create Steadfast shipment consignment",
       actionKind: "book_shipment",
     };
@@ -95,8 +98,9 @@ export function getOrderActionCategory(order: WCOrder): OrderActionCategory | nu
 
   // Category 5: Delivery Exceptions (Returned or partial delivered)
   if (
-    ["partial_delivered", "returned", "cancelled"].includes(shipmentStatus) ||
-    order.status === "returned"
+    !isFinal &&
+    (["partial_delivered", "returned", "delivery_failed", "hold"].includes(shipmentStatus) ||
+      order.status === "returned")
   ) {
     return {
       category: "delivery_exception",

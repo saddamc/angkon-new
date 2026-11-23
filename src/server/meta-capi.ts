@@ -5,6 +5,7 @@ import { getPixelSettings, DEFAULT_TENANT_ID } from "./pixel-settings";
 import { normalizeMetaContentId, normalizeMetaContentIds } from "@/lib/meta-product-id";
 import { sanitizeClientIp, extractClientIp, isValidIp, isPublicIp } from "./client-ip";
 import { getAppEnvironment } from "@/server/env/app-environment";
+import { isTransientDatabaseError } from "@/lib/mongodb-dns";
 
 export { extractClientIp, sanitizeClientIp, isValidIp, isPublicIp };
 
@@ -707,7 +708,9 @@ export async function recoverStaleProcessingJobs(tenantId = DEFAULT_TENANT_ID): 
 
     return result.modifiedCount || 0;
   } catch (err) {
-    console.warn("[Meta Queue] Stale lease recovery error:", err);
+    if (!isTransientDatabaseError(err)) {
+      console.warn("[Meta Queue] Stale lease recovery error:", err);
+    }
     return 0;
   }
 }
@@ -955,7 +958,11 @@ export async function drainMetaCapiQueue(
       recoveredStale,
     };
   } catch (queueErr) {
-    console.error("[Meta Queue] Queue drain error:", queueErr);
+    // A DNS/cooldown outage is transient; the worker will retry on its next
+    // pass. Do not emit an error line on every 60-second retry.
+    if (!isTransientDatabaseError(queueErr)) {
+      console.error("[Meta Queue] Queue drain error:", queueErr);
+    }
     return {
       processed: 0,
       accepted: 0,

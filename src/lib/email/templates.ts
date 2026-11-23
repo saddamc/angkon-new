@@ -1,3 +1,5 @@
+import { isOnlinePaymentMethod } from "@/lib/payment-methods";
+
 export interface EmailOrderItem {
   productId: number;
   slug?: string;
@@ -37,10 +39,9 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
     (order.customer.district || "").trim().toLowerCase() === "dhaka" ||
     (order.customer.district || "").trim().toLowerCase() === "dhaka city";
   const deliveryTime = isInsideDhaka ? "24–48 Hours" : "3–5 Business Days";
-  const paymentTitle =
-    order.paymentMethod === "sslcommerz" || order.paymentMethod === "online"
-      ? "Online Payment"
-      : "Cash on Delivery (COD)";
+  const paymentTitle = isOnlinePaymentMethod(order.paymentMethod)
+    ? "Online Payment"
+    : "Cash on Delivery (COD)";
 
   const itemsHtml = order.items
     .map(

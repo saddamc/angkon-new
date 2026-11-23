@@ -121,14 +121,15 @@ export function isLocalTestOrder(
 
   const num = (orderNumber || "").toUpperCase();
   if (
-    num.startsWith("TEST-") ||
-    num.startsWith("MOCK-") ||
-    num.startsWith("DEV-") ||
-    num.startsWith("SANDBOX-") ||
-    num.startsWith("ANG-TEST-") ||
+    num.startsWith("TEST") ||
+    num.startsWith("MOCK") ||
+    num.startsWith("DEV") ||
+    num.startsWith("SANDBOX") ||
+    num.startsWith("QA") ||
     num.includes("TEST") ||
     num.includes("MOCK") ||
-    num.includes("SANDBOX")
+    num.includes("SANDBOX") ||
+    num.includes("QA-")
   ) {
     return true;
   }
@@ -152,13 +153,23 @@ export function isLocalTestOrder(
     email.includes("@example.com") ||
     email.includes("sandbox") ||
     email.startsWith("test@") ||
-    email.startsWith("mock@")
+    email.startsWith("mock@") ||
+    email.startsWith("qa@") ||
+    email.includes("qa-")
   ) {
     return true;
   }
 
   const name = (customer?.fullName || "").toLowerCase();
-  if (name.includes("test customer") || name.includes("mock customer") || name.includes("sandbox")) {
+  if (
+    name.includes("test customer") ||
+    name.includes("qa customer") ||
+    name.includes("qa test") ||
+    name.includes("mock customer") ||
+    name.includes("dummy") ||
+    name.includes("sandbox") ||
+    name.includes("synthetic")
+  ) {
     return true;
   }
 

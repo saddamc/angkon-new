@@ -58,7 +58,12 @@ export async function POST(
 
     if (!shipment.consignmentId && !shipment.trackingCode) {
       return NextResponse.json(
-        { error: "This shipment has no consignment or tracking code yet." },
+        {
+          ok: false,
+          code: "no-consignment",
+          error:
+            "This shipment has no consignment or tracking code yet — retry the booking first.",
+        },
         { status: 409 }
       );
     }

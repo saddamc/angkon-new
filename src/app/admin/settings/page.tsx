@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
 import {
@@ -16,6 +17,7 @@ import {
   ShoppingCart,
   Activity,
   ExternalLink,
+  Lock,
 } from "lucide-react";
 import { PromoSettings } from "./promo-settings";
 import { ShippingSettings } from "./shipping-settings";
@@ -29,6 +31,9 @@ const inputClass =
 
 export default function AdminSettingsPage() {
   const { logout } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState("general");
   const [role, setRole] = useState<string>("admin");
   const [roleLoaded, setRoleLoaded] = useState(false);
@@ -47,17 +52,39 @@ export default function AdminSettingsPage() {
 
   const isSuperAdmin = role === "superadmin";
 
+  const SUPERADMIN_TABS = ["courier", "checkout"];
+  const ALL_TABS = [
+    "general",
+    "notifications",
+    "shipping",
+    "courier",
+    "checkout",
+    "pixel",
+    "appearance",
+    "security",
+  ];
+
+  // Deep links (?tab=...) must actually switch tabs, including client-side
+  // navigation between settings links. Restricted tabs show an explicit
+  // access panel instead of silently falling back to General.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const param = new URLSearchParams(window.location.search).get("tab");
-    if (param) {
-      if (param === "courier" && roleLoaded && !isSuperAdmin) {
-        setActiveTab("general");
-      } else {
-        setActiveTab(param);
-      }
+    if (!roleLoaded || !requestedTab) return;
+    if (!ALL_TABS.includes(requestedTab)) {
+      setActiveTab("general");
+      return;
     }
-  }, [roleLoaded, isSuperAdmin]);
+    if (SUPERADMIN_TABS.includes(requestedTab) && !isSuperAdmin) {
+      setActiveTab("restricted");
+      return;
+    }
+    setActiveTab(requestedTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab, roleLoaded, isSuperAdmin]);
+
+  const selectTab = (key: string) => {
+    setActiveTab(key);
+    router.replace(`/admin/settings?tab=${key}`, { scroll: false });
+  };
   const [mail, setMail] = useState<{ orderEmails: string[]; senderEmail: string; emailServiceConfigured: boolean } | null>(null);
 
   useEffect(() => {
@@ -79,7 +106,7 @@ export default function AdminSettingsPage() {
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "shipping", label: "Shipping", icon: Truck },
     ...(isSuperAdmin ? [{ key: "courier", label: "Courier & Dispatch", icon: Truck }] : []),
-    { key: "checkout", label: "Checkout", icon: ShoppingCart },
+    ...(isSuperAdmin ? [{ key: "checkout", label: "Payments & Checkout", icon: ShoppingCart }] : []),
     ...(isDevMode ? [{ key: "pixel", label: "Meta Pixel", icon: Activity }] : []),
     { key: "appearance", label: "Appearance", icon: Palette },
     { key: "security", label: "Security", icon: Shield },
@@ -104,7 +131,7 @@ export default function AdminSettingsPage() {
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => selectTab(tab.key)}
                 className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium transition-all duration-200 cursor-pointer ${
                   activeTab === tab.key
                     ? "bg-purple-600 text-white shadow-md shadow-purple-200"
@@ -218,9 +245,34 @@ export default function AdminSettingsPage() {
 
           {activeTab === "shipping" && <ShippingSettings />}
 
+          {activeTab === "restricted" && (
+            <div className="flex flex-col items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-amber-700 shadow-xs">
+                <Lock className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-[15px] font-bold text-amber-900">
+                  Super administrator access required
+                </h2>
+                <p className="mt-1 max-w-lg text-[12px] leading-relaxed text-amber-800">
+                  Courier dispatch and payment (SSLCOMMERZ) settings are restricted to super
+                  administrators. Ask a super administrator to update these settings, or sign in
+                  with a super administrator account.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => selectTab("general")}
+                className="rounded-xl border border-amber-300 bg-white px-3.5 py-1.5 text-[11.5px] font-bold text-amber-900 hover:bg-amber-100"
+              >
+                Back to General
+              </button>
+            </div>
+          )}
+
           {activeTab === "courier" && isSuperAdmin && <CourierSettings />}
 
-          {activeTab === "checkout" && <CheckoutSettings />}
+          {activeTab === "checkout" && isSuperAdmin && <CheckoutSettings />}
 
           {activeTab === "pixel" && (
             <div className="space-y-6">

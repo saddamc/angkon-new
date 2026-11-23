@@ -1,4 +1,5 @@
 import { drainMetaCapiQueue } from "./meta-capi";
+import { isTransientDatabaseError } from "@/lib/mongodb-dns";
 import { DEFAULT_TENANT_ID } from "./tenant";
 
 const WORKER_INTERVAL_MS = 60 * 1000; // 60 seconds
@@ -22,7 +23,9 @@ export async function runMetaQueueDrainPass(tenantId = DEFAULT_TENANT_ID): Promi
       );
     }
   } catch (err) {
-    console.warn("[Meta Queue Worker] Error during scheduled queue drain pass:", err);
+    if (!isTransientDatabaseError(err)) {
+      console.warn("[Meta Queue Worker] Error during scheduled queue drain pass:", err);
+    }
   } finally {
     isWorkerRunning = false;
   }

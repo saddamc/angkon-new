@@ -12,6 +12,7 @@ interface SendEmailParams {
   subject: string;
   html: string;
   from?: string;
+  replyTo?: string | string[];
 }
 
 export async function sendEmail({
@@ -19,6 +20,7 @@ export async function sendEmail({
   subject,
   html,
   from,
+  replyTo,
 }: SendEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   const appEnv = getAppEnvironment();
 
@@ -50,7 +52,10 @@ export async function sendEmail({
     return { success: false, error: "Missing RESEND_API_KEY" };
   }
 
-  const sender = from || process.env.EMAIL_FROM || "ANGKON <noreply@angkon.net>";
+  // Use a human-replyable address by default. A no-reply sender reduces trust
+  // and prevents customers from replying when they need order support.
+  const sender = from || process.env.EMAIL_FROM || "ANGKON Orders <orders@angkon.net>";
+  const configuredReplyTo = replyTo || process.env.EMAIL_REPLY_TO?.trim() || undefined;
 
   try {
     const res = await fetch(RESEND_API_URL, {
@@ -64,6 +69,7 @@ export async function sendEmail({
         to: recipients.map((r) => r.trim()).filter(Boolean),
         subject: emailSubject,
         html,
+        ...(configuredReplyTo ? { reply_to: configuredReplyTo } : {}),
       }),
       signal: AbortSignal.timeout(10000), // 10 second safety timeout
     });

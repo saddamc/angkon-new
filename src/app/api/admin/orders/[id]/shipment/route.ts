@@ -7,6 +7,7 @@ import { Shipment } from "@/models/Shipment";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
 import { requireAdminSessionCore } from "@/server/admin-auth";
 import { courierService, getCourierModeConfig } from "@/server/courier";
+import { isLocalTestOrder } from "@/server/courier/courier-mode";
 import { serializeShipment } from "@/server/courier/serialize";
 import { getCourierSettings } from "@/server/courier/settings";
 import {
@@ -60,6 +61,10 @@ export async function GET(
     const financials = computeOrderFinancials(order);
     const eligibility = checkCourierBookingEligibility({
       orderStatus: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      paidAmount: order.paidAmount,
+      total: order.total,
       shipmentStatus: order.shipmentStatus,
       shipmentBookingState: order.shipmentBookingState,
       consignmentId: order.consignmentId,
@@ -97,10 +102,13 @@ export async function GET(
 
     const courierModeConfig = getCourierModeConfig();
 
+    const isTest = Boolean(order.isTestOrder || isLocalTestOrder(order.orderNumber, order.customer, order));
+
     return NextResponse.json(
       {
         orderNumber: order.orderNumber,
         orderStatus: order.orderStatus,
+        isTestOrder: isTest,
         configured: anyConfigured,
         courierOperatingMode: courierModeConfig.mode,
         isMockMode: courierModeConfig.isMock,
@@ -239,11 +247,13 @@ export async function DELETE(
 
     const result = await courierService.cancelShipment({
       orderIdOrNumber: id,
+      shipmentId: typeof body.shipmentId === "string" ? body.shipmentId : undefined,
       reason: typeof body.reason === "string" ? body.reason : undefined,
       actor: auth.user || "admin",
       tenantId: auth.tenantId,
       ip: clientIp(request),
       userAgent: request.headers.get("user-agent") || "",
+      confirmExternalCancellation: body.confirmExternalCancellation === true,
     });
 
     if (!result.ok) {

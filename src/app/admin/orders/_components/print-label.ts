@@ -43,6 +43,33 @@ export function printCourierLabel(order: WCOrder, shipment?: ShipmentRecord | nu
     [order.billing?.address_1, order.billing?.city].filter(Boolean).join(", ") ||
     "—";
   const isPaid = (order.payment_status || order.paymentStatus) === "paid";
+  const currentCollectible = Math.max(
+    0,
+    Number(
+      order.outstandingAmount ??
+        (isPaid ? 0 : Number(order.total) - Number(order.paidAmount || 0))
+    ) || 0
+  );
+  const shipmentIsActive =
+    shipment &&
+    !["cancelled", "failed", "returned", "delivered", "partial_delivered"].includes(
+      String(shipment.status || "").toLowerCase()
+    );
+  const bookedCodAmount = shipment?.codAmount ?? order.shipmentCodAmount;
+  const courierCodMismatch =
+    Boolean(order.shipmentCodMismatch) ||
+    (Boolean(shipmentIsActive) &&
+      bookedCodAmount !== null &&
+      bookedCodAmount !== undefined &&
+      Number(bookedCodAmount) > currentCollectible + 0.009);
+
+  if (courierCodMismatch) {
+    window.alert(
+      `Label blocked: this courier consignment is set to collect ৳${Number(bookedCodAmount || 0).toLocaleString("en-BD")}, but the order currently has only ৳${currentCollectible.toLocaleString("en-BD")} due. Do not dispatch it. Cancel the consignment in the courier portal and rebook it with the correct COD amount.`
+    );
+    return;
+  }
+
   const cod = shipment ? shipment.codAmount : isPaid ? 0 : Math.round(Number(order.total) || 0);
   const paymentChannel = (order.paymentMethod || "COD").toUpperCase();
 

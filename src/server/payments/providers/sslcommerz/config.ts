@@ -1,3 +1,5 @@
+import { getSslcommerzCredentials } from "@/server/sslcommerz";
+
 export interface SslcommerzConfig {
   storeId: string;
   storePasswd: string;
@@ -10,36 +12,29 @@ export interface SslcommerzConfig {
   timeoutMs: number;
 }
 
+/**
+ * Gateway HTTP configuration.
+ *
+ * Mode + credential selection is owned exclusively by
+ * `getSslcommerzCredentials()` in `src/server/sslcommerz.ts` (the same module
+ * behind `isSslcommerzLive()` / `isSslcommerzLiveReady()`), so the checkout
+ * gating, the production sandbox hard-block, and every gateway HTTP call can
+ * never disagree about which store is in use. This module only adds the
+ * transport details (URLs, timeout).
+ */
 export function getSslcommerzConfig(): SslcommerzConfig {
-  const isLive =
-    process.env.SSLCOMMERZ_IS_LIVE?.trim().toLowerCase() === "true" ||
-    process.env.SSLCOMMERZ_MODE?.trim().toLowerCase() === "live";
-
-  // Scoped credentials win; the legacy pair stays as a backward-compatible
-  // fallback so existing deployments keep working through the migration.
-  const scopedId = isLive
-    ? process.env.SSLCOMMERZ_LIVE_STORE_ID?.trim()
-    : process.env.SSLCOMMERZ_SANDBOX_STORE_ID?.trim();
-  const scopedPasswd = isLive
-    ? process.env.SSLCOMMERZ_LIVE_STORE_PASSWORD?.trim()
-    : process.env.SSLCOMMERZ_SANDBOX_STORE_PASSWORD?.trim();
-
-  const storeId = scopedId || process.env.SSLCOMMERZ_STORE_ID?.trim() || "";
-  const storePasswd =
-    scopedPasswd || process.env.SSLCOMMERZ_STORE_PASSWORD?.trim() || "";
-
-  const isSandbox = !isLive;
-  const isConfigured = Boolean(storeId && storePasswd);
+  const credentials = getSslcommerzCredentials();
+  const isSandbox = credentials.mode === "sandbox";
 
   const baseUrl = isSandbox
     ? "https://sandbox.sslcommerz.com"
     : "https://securepay.sslcommerz.com";
 
   return {
-    storeId,
-    storePasswd,
+    storeId: credentials.storeId,
+    storePasswd: credentials.storePassword,
     isSandbox,
-    isConfigured,
+    isConfigured: credentials.configured,
     baseUrl,
     sessionUrl: `${baseUrl}/gwprocess/v4/api.php`,
     validationUrl: `${baseUrl}/validator/api/validationserverAPI.php`,

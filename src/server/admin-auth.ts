@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodeCrypto from "crypto";
+import { connectToDatabase } from "@/lib/mongodb";
+import { User } from "@/models/User";
 import {
   extractRequestedTenantId,
   validateTenantAccess,
@@ -34,6 +36,40 @@ export interface VerifiedAdminToken {
   role?: string;
   authorizedTenants?: string[];
   defaultTenant?: string;
+}
+
+/**
+ * Issues a signed admin session token. Kept next to `verifyAdminToken` so the
+ * signing format can never drift from the verification logic.
+ */
+export function createAdminToken(payload: {
+  sub: string;
+  name: string;
+  role: string;
+  authorizedTenants?: string[];
+  defaultTenant?: string;
+  ttlSeconds?: number;
+}): string {
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64");
+  const body = Buffer.from(
+    JSON.stringify({
+      sub: payload.sub,
+      name: payload.name,
+      role: payload.role,
+      authorizedTenants: payload.authorizedTenants?.length
+        ? payload.authorizedTenants
+        : [DEFAULT_TENANT_ID],
+      defaultTenant: payload.defaultTenant || DEFAULT_TENANT_ID,
+      iat: now,
+      exp: now + (payload.ttlSeconds ?? 60 * 60 * 8),
+    })
+  ).toString("base64");
+  const signature = nodeCrypto
+    .createHmac("sha256", getJwtSecret())
+    .update(`${header}.${body}`)
+    .digest("base64");
+  return `${header}.${body}.${signature}`;
 }
 
 /**
@@ -173,13 +209,49 @@ export async function requireAdminSessionCore(
     };
   }
 
-  return {
-    authorized: true,
-    user: tokenVerification.user,
-    role: tokenVerification.role,
-    tenantId: tenantValidation.activeTenantId,
-    authorizedTenants,
-  };
+  // 4. Account status check — a suspended or deleted admin loses access now,
+  // even if their signed cookie has not expired. The database role is also
+  // authoritative so a demotion takes effect immediately.
+  try {
+    await connectToDatabase();
+    const identifier = String(tokenVerification.user || "").trim();
+    const account = await User.findOne({
+      $or: [{ email: identifier.toLowerCase() }, { name: identifier }],
+    })
+      .select("isActive role")
+      .lean();
+
+    if (!account || account.isActive === false) {
+      return {
+        authorized: false,
+        tenantId: tenantValidation.activeTenantId,
+        authorizedTenants,
+        response: NextResponse.json(
+          { error: "This administrator account is suspended or unavailable." },
+          { status: 401 }
+        ),
+      };
+    }
+
+    return {
+      authorized: true,
+      user: tokenVerification.user,
+      role: account.role || tokenVerification.role,
+      tenantId: tenantValidation.activeTenantId,
+      authorizedTenants,
+    };
+  } catch {
+    // Fail closed: if account status cannot be verified, deny access.
+    return {
+      authorized: false,
+      tenantId: tenantValidation.activeTenantId,
+      authorizedTenants,
+      response: NextResponse.json(
+        { error: "Could not verify administrator status. Please retry." },
+        { status: 503 }
+      ),
+    };
+  }
 }
 
 /**

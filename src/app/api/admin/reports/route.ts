@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
@@ -6,6 +7,11 @@ import { isLocalTestOrder } from "@/server/courier";
 
 // GET /api/admin/reports — fetch reports data from MongoDB Atlas
 export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   const { searchParams } = new URL(request.url);
   const period = searchParams.get("period") ?? "month";
 

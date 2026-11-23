@@ -11,7 +11,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) {
+    return auth.response;
+  }
+
   const settings = await getPolicySettings();
   return NextResponse.json(settings, { headers: { "Cache-Control": "no-store" } });
 }

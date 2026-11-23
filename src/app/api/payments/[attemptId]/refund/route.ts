@@ -4,6 +4,7 @@ import { ProcessRefundService } from "@/server/payments/services/process-refund"
 import { PaymentRefundRepository } from "@/server/payments/repositories/payment-refund.repository";
 import { PaymentError } from "@/server/payments/payment-errors";
 import { isValidObjectId } from "@/server/payments/utils/object-id";
+import { clientIp, createRateLimitResponse, hashIp, rateLimit } from "@/server/rate-limit";
 
 export async function POST(
   req: NextRequest,
@@ -12,6 +13,20 @@ export async function POST(
   const auth = await requireAdminSessionCore(req);
   if (!auth.authorized || auth.response) {
     return auth.response || NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Refund is a money-moving admin action — cap it per admin IP so a
+  // hijacked/compromised session cannot hammer the gateway refund API.
+  const refundLimit = await rateLimit(
+    `payment_refund:${hashIp(clientIp(req))}`,
+    10,
+    60
+  );
+  if (!refundLimit.allowed) {
+    return createRateLimitResponse(
+      refundLimit,
+      "Too many refund requests. Please wait a moment before retrying."
+    );
   }
 
   const { attemptId } = await params;

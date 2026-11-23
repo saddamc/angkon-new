@@ -55,9 +55,15 @@ export interface WCOrder {
   } | null;
   shipmentStatus?: string;
   shipmentBookingState?: string;
+  /** COD amount currently stored on the latest active courier consignment. */
+  shipmentCodAmount?: number | null;
+  /** True when the active courier consignment would collect more than the order's current balance. */
+  shipmentCodMismatch?: boolean;
   trackingCode?: string;
   consignmentId?: string;
   date_created: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
   total: string;
   subtotal?: number;
   discount?: number;
@@ -72,6 +78,15 @@ export interface WCOrder {
   discrepancyAmount?: number;
   codSettlementStatus?: "none" | "expected" | "collected" | "settled" | "discrepancy" | string;
   payment_method_title?: string;
+  customer?: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    district?: string;
+    postalCode?: string;
+  };
   billing: {
     first_name: string;
     last_name?: string;
@@ -101,6 +116,38 @@ export interface OrdersSummaryStats {
   discrepancyCount: number;
   paymentIssuesCount?: number;
   needsActionCount?: number;
+  readyToBookCount?: number;
+  inTransitCount?: number;
+  trends?: {
+    total7d: number;
+    totalPrev7d: number;
+    delivered7d: number;
+    deliveredPrev7d: number;
+  };
+}
+
+/** Manual order payload sent from the admin "Create Order" modal. */
+export interface CreateOrderPayload {
+  customer: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    address: string;
+    city: string;
+    district?: string;
+    postalCode?: string;
+  };
+  items: {
+    productId: number;
+    slug?: string;
+    quantity: number;
+    size?: string;
+    color?: string;
+  }[];
+  paymentMethod: "cod" | "manual_paid";
+  shippingFee?: number;
+  discount?: number;
+  notes?: string;
 }
 
 export interface StatusFilterItem {
@@ -140,6 +187,13 @@ export const STATUS_OPTIONS: StatusOptionItem[] = [
   { key: "cancelled", label: "Cancelled", icon: XCircle, color: "red", desc: "Order cancelled (locked)" },
   { key: "returned", label: "Returned", icon: RotateCcw, color: "gray", desc: "Returned by courier / customer" },
   { key: "failed", label: "Failed", icon: AlertTriangle, color: "red", desc: "Checkout or payment failed" },
+];
+
+export const MANUAL_ORDER_STATUS_OPTIONS: StatusOptionItem[] = [
+  { key: "pending", label: "Pending", icon: Clock, color: "amber", desc: "Awaiting admin confirmation" },
+  { key: "confirmed", label: "Confirmed", icon: CheckCircle2, color: "sky", desc: "Order verified with customer" },
+  { key: "processing", label: "Processing", icon: Package, color: "blue", desc: "Picking & packing items" },
+  { key: "ready_to_ship", label: "Ready to Ship", icon: PackageCheck, color: "violet", desc: "Packed and ready for courier pickup" },
 ];
 
 export const STATUS_BADGE: Record<string, string> = {
@@ -252,6 +306,8 @@ export interface ShipmentRecord {
   id: string;
   provider: string;
   status: string;
+  mode?: "mock" | "live";
+  isMock?: boolean;
   consignmentId?: string | null;
   trackingCode?: string | null;
   codAmount: number;
@@ -277,6 +333,9 @@ export interface CourierProviderStatus {
   supported?: boolean;
   disabledReason?: string | null;
   label?: string;
+  isMock?: boolean;
+  mode?: "mock" | "live";
+  simulated?: boolean;
 }
 
 export interface CourierProvidersState {
@@ -395,8 +454,10 @@ export interface OrderDetailsPayload {
     promoCode?: string;
     shippingFee: number;
     total: number;
+    paidAmount?: number;
     notes?: string;
     courier?: string;
+    courierIsMock?: boolean;
     consignmentId?: string;
     trackingCode?: string;
     shipmentStatus?: string;

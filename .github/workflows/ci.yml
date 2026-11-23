@@ -54,8 +54,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Unit, contract and security tests
+      - name: Unit, contract and security tests (no app imports)
         run: node --test tests/*.test.mjs
+
+      - name: App-import and payment workflow tests
+        run: npx tsx --test tests/*.test.ts tests/payments/*.test.ts
 
       - name: Seed the CI database
         run: npm run seed:mongo

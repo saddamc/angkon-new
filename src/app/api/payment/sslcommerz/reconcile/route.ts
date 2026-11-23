@@ -19,6 +19,9 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
+ * @deprecated Legacy order-specific reconciliation trigger.
+ * Canonical endpoint: /api/payments/reconcile
+ *
  * Legacy reconciliation trigger, kept for the order dashboard and the existing
  * Vercel cron entry. It delegates to the same job suite as
  * `/api/payments/reconcile` so there is only one reconciliation implementation.

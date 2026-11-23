@@ -10,7 +10,7 @@
 | `NEXT_PUBLIC_BASE_URL` | Yes | `http://localhost:3001` | Public origin URL for redirects and webhooks |
 | `SSLCOMMERZ_STORE_ID` | Yes | — | Store ID from SSLCOMMERZ Merchant Portal |
 | `SSLCOMMERZ_STORE_PASSWORD` | Yes | — | Store Password from SSLCOMMERZ Merchant Portal |
-| `SSLCOMMERZ_IS_SANDBOX` | Yes | `true` | `true` for sandbox testing, `false` for live production |
+| `SSLCOMMERZ_MODE` | Yes | `sandbox` | `sandbox` for sandbox testing, `live` for live production (or `SSLCOMMERZ_IS_LIVE=true`) |
 | `COURIER_MODE` | No | `mock` | `mock` for local development, `live` for production |
 | `STEADFAST_LIVE_BOOKING_ENABLED`| No | `false`| Must be `true` to enable real Steadfast parcel creation |
 | `STEADFAST_BASE_URL` | No | `https://portal.packzy.com/api/v1` | Base URL for Steadfast API |

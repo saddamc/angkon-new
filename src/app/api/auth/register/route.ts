@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
     const existing = await User.findOne({ email });
     if (existing) {
       // An account created automatically at checkout has no password yet —
-      // point the customer to the email link instead of "already exists".
+      // point the customer to the email code instead of "already exists".
       const message = existing.password
-        ? "An account with this email already exists. Please sign in."
-        : "We already created an account for this email with your order. Check your inbox for the verification link, or use “Forgot password” to set a password.";
+        ? "An account with this email already exists. Please sign in — or use “Sign in with a code” if you don't remember the password."
+        : "We already created an account for this email with your order. Use “Sign in with a code” on this page (no password needed) to get in and set a password.";
       return NextResponse.json({ error: message }, { status: 409 });
     }
 
@@ -60,16 +60,22 @@ export async function POST(request: NextRequest) {
     });
 
     // Send the verification email directly before responding to guarantee delivery in serverless lambdas.
+    let emailSent = true;
     try {
       const emailResult = await issueVerificationEmail(user, request, "register");
       if (!emailResult.success) {
+        emailSent = false;
         console.warn("Registration verification email warning:", emailResult.error);
       }
     } catch (emailErr) {
+      emailSent = false;
       console.warn("Registration verification email failed to dispatch:", emailErr);
     }
 
-    const response = NextResponse.json({ ok: true, user: publicUser(user) }, { status: 201 });
+    const response = NextResponse.json(
+      { ok: true, user: publicUser(user), emailSent },
+      { status: 201 }
+    );
     setSessionCookie(response, { id: String(user._id), email: user.email, name: user.name, role: user.role });
     return response;
   } catch (error) {

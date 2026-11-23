@@ -106,22 +106,33 @@ export function parseMongoUri(rawUri: string): ParsedMongoUri {
     throw new Error("MongoDB connection URI is empty or not defined.");
   }
 
-  if (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://")) {
+  const protocolMatch = uri.match(/^(mongodb(?:\+srv)?):\/\//);
+  if (!protocolMatch) {
     throw new Error("Invalid MongoDB connection URI protocol. Must start with mongodb:// or mongodb+srv://");
   }
+  const protocol = `${protocolMatch[1]}:`;
 
   try {
-    const parsed = new URL(uri);
-    const databaseName = parsed.pathname.replace(/^\/+/, "").split("/")[0].split("?")[0].trim();
+    const afterProto = uri.slice(protocolMatch[0].length);
+    // Find path boundary (first slash after protocol)
+    const pathIdx = afterProto.indexOf("/");
+    const beforeSlash = pathIdx !== -1 ? afterProto.slice(0, pathIdx) : afterProto;
+    const afterSlash = pathIdx !== -1 ? afterProto.slice(pathIdx + 1) : "";
+
+    const atIdx = beforeSlash.lastIndexOf("@");
+    const hostsPart = atIdx !== -1 ? beforeSlash.slice(atIdx + 1) : beforeSlash;
+    const pathAndQuery = afterSlash.split("?")[0];
+    const databaseName = pathAndQuery.split("/")[0].trim();
+
     if (!databaseName) {
       throw new Error("MongoDB connection URI does not specify a target database in its pathname.");
     }
 
-    const sanitizedUri = `${parsed.protocol}//${parsed.host}/${databaseName}`;
+    const sanitizedUri = `${protocol}//${hostsPart}/${databaseName}`;
 
     return {
-      protocol: parsed.protocol,
-      host: parsed.host,
+      protocol,
+      host: hostsPart,
       databaseName,
       sanitizedUri,
     };

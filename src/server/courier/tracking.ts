@@ -28,8 +28,10 @@ export const COURIER_PROVIDER_LIST: CourierProviderDescriptor[] = [
     shortLabel: "Steadfast",
     supported: true,
     requiresLocationPicker: null,
-    trackingUrl: (trackingCode) =>
-      trackingCode ? `https://steadfast.com.bd/t/${encodeURIComponent(trackingCode)}` : null,
+    trackingUrl: (trackingCode, consignmentId) => {
+      const code = trackingCode || consignmentId;
+      return code ? `https://steadfast.com.bd/t/${encodeURIComponent(code)}` : null;
+    },
   },
   {
     id: "pathao",
@@ -67,8 +69,10 @@ const LEGACY_TRACKING_BUILDERS: Record<
 > = {
   steadfast: {
     label: "Steadfast Courier",
-    trackingUrl: (trackingCode) =>
-      trackingCode ? `https://steadfast.com.bd/t/${encodeURIComponent(trackingCode)}` : null,
+    trackingUrl: (trackingCode, consignmentId) => {
+      const code = trackingCode || consignmentId;
+      return code ? `https://steadfast.com.bd/t/${encodeURIComponent(code)}` : null;
+    },
   },
   pathao: {
     label: "Pathao Courier",

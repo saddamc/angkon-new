@@ -169,6 +169,7 @@ export interface IOrder extends Document {
   courierConfirmedByAdminId?: string | null;
   courierConfirmedAt?: Date | null;
   isTestOrder?: boolean;
+  isArchived?: boolean;
   courier?: string;
   courierName?: string;
   courierBookingError?: string | null;
@@ -277,7 +278,10 @@ const OrderSchema = new Schema<IOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ["cod", "sslcommerz", "bkash", "nagad", "online"],
+      // "cards" is the storefront's card channel (Visa/Mastercard/Amex/DBBL
+      // via SSLCOMMERZ). It must be persistable — rejecting it made every
+      // card checkout fail at Order.create with a ValidationError.
+      enum: ["cod", "sslcommerz", "bkash", "nagad", "online", "cards"],
       default: "cod",
       index: true,
     },
@@ -364,6 +368,7 @@ const OrderSchema = new Schema<IOrder>(
     courierConfirmedByAdminId: { type: String, default: null },
     courierConfirmedAt: { type: Date, default: null },
     isTestOrder: { type: Boolean, default: false, index: true },
+    isArchived: { type: Boolean, default: false, index: true },
     courier: { type: String, default: "" },
     courierName: { type: String, default: "" },
     courierBookingError: { type: String, default: null },

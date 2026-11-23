@@ -14,7 +14,7 @@ import { mockSteadfastProvider } from "./mock-steadfast";
 import { getCourierModeConfig, isLocalTestOrder, type CourierMode } from "./courier-mode";
 import { pathaoAdapter } from "./pathao";
 import { redxAdapter } from "./redx";
-import { buildRecipientAddress, normalizeBdPhone } from "./steadfast-utils";
+import { buildRecipientAddress, normalizeBdPhone, SHIPMENT_STATUSES } from "./steadfast-utils";
 import { serializeShipment } from "./serialize";
 import { getCourierSettings } from "./settings";
 import {
@@ -280,6 +280,10 @@ export class CourierService {
 
     const eligibility = checkCourierBookingEligibility({
       orderStatus: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      paidAmount: order.paidAmount,
+      total: order.total,
       shipmentStatus: order.shipmentStatus,
       shipmentBookingState: order.shipmentBookingState,
       consignmentId: order.consignmentId,
@@ -494,6 +498,27 @@ export class CourierService {
       };
     }
 
+    // One active consignment per order. Reopening a cancelled order must never
+    // silently produce a second live parcel at the courier.
+    const existingActiveShipment = await Shipment.findOne({
+      orderId: order._id,
+      status: {
+        $nin: ["cancelled", "failed", "returned", "delivered", "partial_delivered"],
+      },
+    })
+      .select("status consignmentId trackingCode")
+      .lean();
+    if (existingActiveShipment) {
+      return {
+        ok: false,
+        status: 409,
+        code: "ACTIVE_SHIPMENT_EXISTS",
+        error: `Consignment ${
+          existingActiveShipment.consignmentId || existingActiveShipment.trackingCode || ""
+        } is already active for this order. Cancel it before booking a new one.`,
+      };
+    }
+
     // Rule 7 & 8: Atomically claim booking_in_progress on Order before external call.
     // A stale in-progress lock older than 45s (e.g. from an aborted lambda) is safe to reclaim.
     const staleLockCutoff = new Date(Date.now() - 45_000);
@@ -524,7 +549,14 @@ export class CourierService {
         : settings.defaultParcelNote || ""
     ).slice(0, 200);
 
-    const idempotencyKey = `${order.orderNumber}:${provider}`;
+    // Booking epoch: failed retries reuse the same key, while a cancelled
+    // consignment increments the epoch so the new parcel gets its own record.
+    const priorCancelledBookings = await Shipment.countDocuments({
+      orderId: order._id,
+      provider,
+      status: "cancelled",
+    });
+    const idempotencyKey = `${order.orderNumber}:${provider}:${priorCancelledBookings + 1}`;
     let shipment: IShipment;
 
     try {
@@ -686,20 +718,62 @@ export class CourierService {
       };
     }
 
-    shipment.status = result.status;
-    shipment.consignmentId = result.consignmentId;
-    shipment.trackingCode = result.trackingCode;
-    shipment.providerShipmentId = result.consignmentId || result.trackingCode;
-    shipment.deliveryCharge = result.deliveryCharge;
-    shipment.rawResponse = result.raw;
-    shipment.lastSyncedAt = new Date();
-    shipment.error = null;
-    shipment.events.push({
-      status: result.status,
-      at: new Date(),
-      note: `Consignment accepted by ${getCourierLabel(provider)}.`,
-    });
-    await shipment.save();
+    // Defensive: a provider adapter must never be able to write a status the
+    // schema rejects (historically "unknown" did exactly that and produced 500s).
+    const persistedStatus = (SHIPMENT_STATUSES as readonly string[]).includes(result.status)
+      ? result.status
+      : "unknown";
+
+    try {
+      shipment.status = persistedStatus;
+      shipment.consignmentId = result.consignmentId;
+      shipment.trackingCode = result.trackingCode;
+      shipment.providerShipmentId = result.consignmentId || result.trackingCode;
+      shipment.deliveryCharge = result.deliveryCharge;
+      shipment.rawResponse = result.raw;
+      shipment.lastSyncedAt = new Date();
+      shipment.error = null;
+      const isMockBooking = Boolean(shipment.isMock || shipment.mode === "mock");
+      shipment.events.push({
+        status: persistedStatus,
+        at: new Date(),
+        note: isMockBooking
+          ? `[SIMULATED / TEST] Mock development consignment created for ${getCourierLabel(provider)}.`
+          : `Consignment accepted by ${getCourierLabel(provider)}.`,
+      });
+      await shipment.save();
+    } catch (persistError) {
+      // The provider may have created a real consignment, so do not pretend the
+      // booking succeeded — but always release the order lock for a safe retry.
+      console.error("Courier booking persistence error:", persistError);
+      await Shipment.updateOne(
+        { _id: shipment._id },
+        {
+          $set: {
+            status: "failed",
+            error: "The courier response could not be saved. Check the courier portal before retrying.",
+          },
+        }
+      ).catch(() => {});
+      await Order.updateOne(
+        { _id: order._id, shipmentBookingState: "booking_in_progress" },
+        {
+          $set: {
+            shipmentBookingState: "booking_failed",
+            shipmentStatus: "booking_failed",
+            courierBookingError:
+              "The courier response could not be saved. Check the courier portal before retrying.",
+          },
+        }
+      ).catch(() => {});
+      return {
+        ok: false,
+        status: 502,
+        code: "upstream",
+        error:
+          "The courier response could not be saved. Check the courier portal before retrying.",
+      };
+    }
 
     const now = new Date();
     const prevOrderStatus = normalizeOrderStatus(order.orderStatus);
@@ -832,11 +906,15 @@ export class CourierService {
 
   async cancelShipment(args: {
     orderIdOrNumber: string;
+    /** Cancel a specific shipment record (e.g. when duplicate active consignments exist). */
+    shipmentId?: string;
     reason?: string;
     actor: string;
     tenantId: string;
     ip: string;
     userAgent: string;
+    /** Set only after the admin has cancelled the parcel in the courier portal. */
+    confirmExternalCancellation?: boolean;
   }): Promise<
     | { ok: true; shipment: ReturnType<typeof serializeShipment>; shipmentBookingState: string }
     | { ok: false; status: number; code: string; error: string }
@@ -846,10 +924,17 @@ export class CourierService {
       return { ok: false, status: 404, code: "NOT_FOUND", error: "Order not found" };
     }
 
-    const shipment = await Shipment.findOne({
+    const shipmentFilter: Record<string, unknown> = {
       orderId: order._id,
       status: { $nin: ["cancelled", "delivered", "partial_delivered", "returned"] },
-    }).sort({ createdAt: -1 });
+    };
+    if (
+      args.shipmentId &&
+      mongoose.Types.ObjectId.isValid(args.shipmentId)
+    ) {
+      shipmentFilter._id = new mongoose.Types.ObjectId(args.shipmentId);
+    }
+    const shipment = await Shipment.findOne(shipmentFilter).sort({ createdAt: -1 });
 
     if (!shipment) {
       return {
@@ -900,6 +985,36 @@ export class CourierService {
           error: cancelRes.error?.message || cancelRes.message,
         };
       }
+    } else if (isLive && !args.confirmExternalCancellation) {
+      // This provider (e.g. Steadfast) has no public cancellation API. Marking
+      // the consignment cancelled locally while the parcel still exists at the
+      // courier creates a dangerous mismatch, so require portal cancellation
+      // plus an explicit admin confirmation instead.
+      const portalMessage =
+        `${getCourierLabel(shipment.provider)} has no API cancellation. ` +
+        `Cancel consignment ${shipment.consignmentId || shipment.trackingCode || ""} in the ` +
+        `${getCourierLabel(shipment.provider)} portal, then confirm "Mark cancelled" here.`;
+      await Order.updateOne(
+        { _id: order._id },
+        { $set: { shipmentBookingState: "booked" } }
+      );
+      await this.logEvent({
+        provider: shipment.provider,
+        action: "cancel",
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        consignmentId: shipment.consignmentId || "",
+        ok: false,
+        message: portalMessage,
+        errorCode: "COURIER_CANCEL_REQUIRES_PORTAL",
+        actor: args.actor,
+      });
+      return {
+        ok: false,
+        status: 409,
+        code: "COURIER_CANCEL_REQUIRES_PORTAL",
+        error: portalMessage,
+      };
     }
 
     const now = new Date();

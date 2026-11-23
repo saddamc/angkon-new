@@ -48,11 +48,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Accounts created automatically at checkout have no password until the
-    // customer sets one via the verification or reset email.
+    // customer sets one. They can still get in instantly with an email code.
     if (!user.password) {
       return NextResponse.json(
         {
-          error: "This account was created with your order and doesn't have a password yet. Use “Forgot password” to set one.",
+          error: "This account was created with your order and doesn't have a password yet. Use “Sign in with a code” (no password needed), or “Forgot password” to set one.",
           code: "NO_PASSWORD",
         },
         { status: 401 },

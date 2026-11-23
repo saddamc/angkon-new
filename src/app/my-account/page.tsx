@@ -3,7 +3,10 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { createPortal } from "react-dom";
+import { requestEmailCode } from "@/components/checkout/email-verify-dialog";
 import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/tracking";
+import { getPaymentMethodLabel, isOnlinePaymentMethod } from "@/lib/payment-methods";
 import {
   AlertTriangle,
   ArrowRight,
@@ -189,10 +192,20 @@ function InvoiceModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto">
+  // Portal the modal to <body>: the print stylesheet can then print exactly
+  // this sheet and nothing else — the page behind it takes no print space,
+  // so the printout is never padded with blank pages.
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      id="angkon-invoice-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md overflow-y-auto"
+    >
       {/* Modal Card */}
-      <div className="relative w-full max-w-3xl rounded-2xl bg-[#220407] border border-[#E1B76F]/40 shadow-2xl overflow-hidden my-auto">
+      <div
+        id="angkon-invoice-card"
+        className="relative w-full max-w-3xl rounded-2xl bg-[#220407] border border-[#E1B76F]/40 shadow-2xl overflow-hidden my-auto"
+      >
         {/* Modal Top Control Bar (Hidden on print) */}
         <div className="flex items-center justify-between px-6 py-4 bg-[#2f060c] border-b border-[#E1B76F]/30 no-print">
           <div className="flex items-center gap-2">
@@ -275,11 +288,7 @@ function InvoiceModal({
               <p className="text-xs text-stone-300 mt-1">
                 <span className="text-stone-400">Payment Method:</span>{" "}
                 <span className="font-semibold text-white">
-                  {order.paymentMethod === "sslcommerz" || order.paymentMethod === "online"
-                    ? "SSLCOMMERZ Online Gateway"
-                    : order.paymentMethod === "cod"
-                    ? "Cash on Delivery"
-                    : order.paymentMethod.toUpperCase()}
+                  {getPaymentMethodLabel(order.paymentMethod)}
                 </span>
               </p>
               <p className="text-xs text-stone-300 mt-1">
@@ -384,7 +393,8 @@ function InvoiceModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -398,6 +408,15 @@ export default function MyAccountPage() {
   const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "security">("orders");
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<OrderSummary | null>(null);
 
+  // Print isolation: while the invoice modal is open, tag <body> so the
+  // print stylesheet prints ONLY the invoice sheet (everything else on the
+  // account page is display:none in print and takes no paper space).
+  useEffect(() => {
+    if (selectedInvoiceOrder) document.body.classList.add("invoice-print-mode");
+    else document.body.classList.remove("invoice-print-mode");
+    return () => document.body.classList.remove("invoice-print-mode");
+  }, [selectedInvoiceOrder]);
+
   // The verification link redirects here with ?verify=success|invalid|error.
   const [notice, setNotice] = useState<Notice>(() => {
     if (typeof window === "undefined") return null;
@@ -407,7 +426,7 @@ export default function MyAccountPage() {
 
   // Signed-out forms
   const [mode, setMode] = useState<"auth" | "forgot">("auth");
-  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const [authTab, setAuthTab] = useState<"login" | "register" | "code">("login");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [regName, setRegName] = useState("");
@@ -495,6 +514,16 @@ export default function MyAccountPage() {
       }
       setRegPass("");
       await loadSession();
+      // Be honest when the verification email could not be dispatched — the
+      // account exists, so the banner's Resend button is the recovery path.
+      if (data.emailSent === false) {
+        setNotice({
+          text:
+            "Your account is ready, but we couldn't send the verification email right now. Use the “Verify with code” button above to confirm your address instantly.",
+          type: "error",
+        });
+        return;
+      }
       setNotice({ text: `Welcome to ANGKON! We sent a verification link to ${data.user?.email ?? regEmail}.`, type: "success" });
     });
   };
@@ -519,6 +548,126 @@ export default function MyAccountPage() {
         type: ok ? "success" : "error",
       });
     });
+
+  // ── Verify by code: the same 6-digit codes checkout emails, usable
+  // directly from My Account so a customer holding a code isn't stuck
+  // waiting for a verification link. */
+  const [codeFormOpen, setCodeFormOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [codeResendAfter, setCodeResendAfter] = useState(0);
+
+  useEffect(() => {
+    if (codeResendAfter <= 0) return;
+    const timer = setTimeout(() => setCodeResendAfter((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [codeResendAfter]);
+
+  const sendVerificationCode = async () => {
+    if (!user) return;
+    setCodeSending(true);
+    setCodeError(null);
+    const result = await requestEmailCode(user.email, user.name);
+    setCodeSending(false);
+    if (!result.ok) {
+      setCodeError(result.error);
+      return;
+    }
+    setCodeResendAfter(result.resendAfter);
+  };
+
+  const openCodeVerification = () => {
+    setCodeFormOpen(true);
+    setCodeInput("");
+    setCodeError(null);
+    void sendVerificationCode();
+  };
+
+  const handleVerifyCode = async (value: string) => {
+    if (!user) return;
+    setCodeBusy(true);
+    setCodeError(null);
+    try {
+      const { ok, data } = await postJson("/api/auth/email-code/verify", {
+        email: user.email,
+        code: value,
+        name: user.name,
+      });
+      if (!ok) {
+        setCodeError(data.error || "That code didn't work. Please try again.");
+        setCodeInput("");
+        return;
+      }
+      setCodeFormOpen(false);
+      await loadSession();
+      setNotice({ text: "Your email is verified. Thank you!", type: "success" });
+    } catch {
+      setCodeError("Network error. Please check your connection and try again.");
+    } finally {
+      setCodeBusy(false);
+    }
+  };
+
+  // ── Password-less sign-in with a code. Essential for accounts created at
+  // checkout (they have no password yet) and for anyone who can't sign in:
+  // the code proves the mailbox, marks the account verified, and signs in.
+  const [signInCode, setSignInCode] = useState("");
+  const [signInCodeSent, setSignInCodeSent] = useState(false);
+  const [signInCodeBusy, setSignInCodeBusy] = useState(false);
+  const [signInCodeError, setSignInCodeError] = useState<string | null>(null);
+  const [signInResendAfter, setSignInResendAfter] = useState(0);
+
+  useEffect(() => {
+    if (signInResendAfter <= 0) return;
+    const timer = setTimeout(() => setSignInResendAfter((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [signInResendAfter]);
+
+  const sendSignInCode = async () => {
+    const email = loginEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSignInCodeError("Enter your email address first.");
+      return;
+    }
+    setSignInCodeBusy(true);
+    setSignInCodeError(null);
+    const result = await requestEmailCode(email);
+    setSignInCodeBusy(false);
+    if (!result.ok) {
+      setSignInCodeError(result.error);
+      return;
+    }
+    setSignInCodeSent(true);
+    setSignInResendAfter(result.resendAfter);
+  };
+
+  const handleCodeSignIn = async (value: string) => {
+    const email = loginEmail.trim().toLowerCase();
+    setSignInCodeBusy(true);
+    setSignInCodeError(null);
+    try {
+      const { ok, data } = await postJson("/api/auth/email-code/verify", { email, code: value });
+      if (!ok) {
+        setSignInCodeError(data.error || "That code didn't work. Please try again.");
+        setSignInCode("");
+        return;
+      }
+      await loadSession();
+      setAuthTab("login");
+      setSignInCodeSent(false);
+      setSignInCode("");
+      setNotice({
+        text: "Signed in with a code. Set a password on your account so you can sign in faster next time.",
+        type: "success",
+      });
+    } catch {
+      setSignInCodeError("Network error. Please check your connection and try again.");
+    } finally {
+      setSignInCodeBusy(false);
+    }
+  };
 
   const handleSetPassword = (e: React.FormEvent) => {
     e.preventDefault();
@@ -581,38 +730,63 @@ export default function MyAccountPage() {
         {/* Global Print Stylesheet for Invoices */}
         <style jsx global>{`
           @media print {
-            body * {
-              visibility: hidden !important;
+            @page {
+              size: A4;
+              margin: 12mm;
             }
-            #angkon-printable-invoice,
-            #angkon-printable-invoice * {
-              visibility: visible !important;
+
+            /* While the invoice modal is open, print EXACTLY the invoice.
+               Everything else is display:none — hidden content takes no
+               space, so the printout spans only the pages the invoice
+               itself needs (visibility:hidden kept layout and produced
+               many blank pages). */
+            body.invoice-print-mode > *:not(#angkon-invoice-backdrop) {
+              display: none !important;
             }
-            #angkon-printable-invoice {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
+            body.invoice-print-mode #angkon-invoice-backdrop {
+              position: static !important;
+              display: block !important;
+              background: none !important;
+              backdrop-filter: none !important;
+              padding: 0 !important;
               margin: 0 !important;
-              padding: 24px !important;
+              overflow: visible !important;
+            }
+            body.invoice-print-mode #angkon-invoice-card {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              max-width: none !important;
+              margin: 0 !important;
+              border: none !important;
+              border-radius: 0 !important;
+              box-shadow: none !important;
+              background: #ffffff !important;
+              overflow: visible !important;
+            }
+            body.invoice-print-mode #angkon-printable-invoice {
+              position: static !important;
+              display: block !important;
+              width: 100% !important;
+              max-height: none !important;
+              overflow: visible !important;
+              margin: 0 !important;
+              padding: 0 !important;
               background: #ffffff !important;
               color: #111827 !important;
               border: none !important;
               box-shadow: none !important;
             }
-            #angkon-printable-invoice table th {
-              color: #4b5563 !important;
-              border-color: #e5e7eb !important;
+            body.invoice-print-mode #angkon-printable-invoice .overflow-x-auto {
+              overflow: visible !important;
             }
-            #angkon-printable-invoice table td {
-              color: #111827 !important;
-              border-color: #f3f4f6 !important;
+            body.invoice-print-mode #angkon-printable-invoice tr {
+              break-inside: avoid;
             }
-            #angkon-printable-invoice h1,
-            #angkon-printable-invoice h2,
-            #angkon-printable-invoice h3,
-            #angkon-printable-invoice strong,
-            #angkon-printable-invoice span.text-white {
+
+            /* Dark-screen palette → print-safe equivalents. Every utility used
+               inside the sheet maps to a legible ink color on white paper. */
+            #angkon-printable-invoice .text-white {
               color: #111827 !important;
             }
             #angkon-printable-invoice .text-stone-200,
@@ -623,9 +797,31 @@ export default function MyAccountPage() {
             #angkon-printable-invoice .text-\\[\\#E1B76F\\] {
               color: #92400e !important;
             }
+            #angkon-printable-invoice .text-green-400 {
+              color: #15803d !important;
+            }
+            #angkon-printable-invoice .text-amber-400 {
+              color: #b45309 !important;
+            }
+            #angkon-printable-invoice table th {
+              color: #4b5563 !important;
+              border-color: #e5e7eb !important;
+            }
+            #angkon-printable-invoice table td {
+              color: #111827 !important;
+              border-color: #f3f4f6 !important;
+            }
+            #angkon-printable-invoice tbody tr {
+              border-color: #f3f4f6 !important;
+            }
             #angkon-printable-invoice .border-\\[\\#530911\\] {
               border-color: #e5e7eb !important;
             }
+            #angkon-printable-invoice .bg-\\[\\#33070d\\],
+            #angkon-printable-invoice .bg-\\[\\#3b050b\\] {
+              background-color: #faf6f1 !important;
+            }
+
             .no-print {
               display: none !important;
             }
@@ -637,25 +833,115 @@ export default function MyAccountPage() {
 
           {/* Email verification reminder banner */}
           {!user.emailVerified && (
-            <div className="flex flex-col gap-4 rounded-2xl border border-amber-500/40 bg-[#34070e] p-5 sm:flex-row sm:items-center sm:justify-between shadow-xl">
-              <div className="flex gap-3.5">
-                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
-                <div>
-                  <p className="text-sm font-bold text-white">Email Verification Required</p>
-                  <p className="mt-1 text-xs text-stone-300 leading-relaxed">
-                    We sent a verification link to <strong className="text-white font-mono">{user.email}</strong>.
-                    Verifying enables seamless invoice downloads, password recovery, and order synchronization.
-                  </p>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-4 rounded-2xl border border-amber-500/40 bg-[#34070e] p-5 sm:flex-row sm:items-center sm:justify-between shadow-xl">
+                <div className="flex gap-3.5">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" />
+                  <div>
+                    <p className="text-sm font-bold text-white">Email Verification Required</p>
+                    <p className="mt-1 text-xs text-stone-300 leading-relaxed">
+                      Verify <strong className="text-white font-mono">{user.email}</strong> to unlock invoice
+                      downloads, password recovery, and order synchronization. Use a 6-digit code (fastest) or a
+                      verification link.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-shrink-0 flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={openCodeVerification}
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#E1B76F] px-4 py-2.5 text-xs font-bold uppercase text-[#240407] transition hover:bg-[#edd19b] disabled:opacity-50 cursor-pointer shadow-md"
+                  >
+                    <ShieldCheck className="h-4 w-4" /> Verify with code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={submitting}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/50 bg-[#530911] px-4 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#240407] disabled:opacity-50 cursor-pointer shadow-md"
+                  >
+                    <MailCheck className="h-4 w-4" /> Send link
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={submitting}
-                className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-xl border border-[#E1B76F]/50 bg-[#530911] px-5 py-2.5 text-xs font-bold uppercase text-white transition hover:bg-[#E1B76F] hover:text-[#240407] disabled:opacity-50 cursor-pointer shadow-md"
-              >
-                <MailCheck className="h-4 w-4" /> Resend verification link
-              </button>
+
+              {/* Inline 6-digit code verification */}
+              {codeFormOpen && (
+                <div className="rounded-2xl border border-[#E1B76F]/40 bg-[#2a050a] p-5 shadow-xl">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex gap-3.5">
+                      <ShieldCheck className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#E1B76F]" />
+                      <div>
+                        <p className="text-sm font-bold text-white">Enter your 6-digit code</p>
+                        <p className="mt-1 text-xs text-stone-400 leading-relaxed">
+                          {codeResendAfter > 0 || codeSending
+                            ? codeSending
+                              ? "Sending a fresh code…"
+                              : `A code is on its way to ${user.email}. It expires in 10 minutes.`
+                            : `Enter the code we emailed to ${user.email}. It expires in 10 minutes.`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        maxLength={6}
+                        value={codeInput}
+                        disabled={codeBusy}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+                          setCodeInput(digits);
+                          setCodeError(null);
+                          if (digits.length === 6) void handleVerifyCode(digits);
+                        }}
+                        placeholder="••••••"
+                        aria-label="6-digit verification code"
+                        className="w-40 rounded-xl border border-[#E1B76F]/40 bg-[#1c0307] px-3.5 py-2.5 text-center font-mono text-xl tracking-[0.45em] text-white placeholder:text-stone-600 focus:border-[#E1B76F] focus:outline-none disabled:opacity-50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void handleVerifyCode(codeInput)}
+                        disabled={codeBusy || codeInput.length !== 6}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#E1B76F] px-4 py-2.5 text-xs font-bold uppercase text-[#240407] transition hover:bg-[#edd19b] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        {codeBusy ? "Verifying…" : "Verify"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[#E1B76F]/15 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => void sendVerificationCode()}
+                      disabled={codeSending || codeResendAfter > 0}
+                      className="text-xs font-bold text-[#E1B76F] hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {codeResendAfter > 0
+                        ? `Resend code in ${codeResendAfter}s`
+                        : codeSending
+                          ? "Sending…"
+                          : "Resend code"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCodeFormOpen(false);
+                        setCodeError(null);
+                        setCodeInput("");
+                      }}
+                      className="text-xs font-semibold text-stone-400 hover:text-white cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    {codeError && (
+                      <p className="text-xs font-semibold text-rose-300">{codeError}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -864,7 +1150,7 @@ export default function MyAccountPage() {
                                   day: "numeric",
                                 })}
                               </span>
-                              {ord.paymentMethod === "sslcommerz" || ord.paymentMethod === "online" ? (
+                              {isOnlinePaymentMethod(ord.paymentMethod) ? (
                                 <span className="rounded-full bg-[#3d0710] border border-[#E1B76F]/30 px-2.5 py-0.5 text-[10px] font-bold uppercase text-[#E1B76F]">
                                   SSLCOMMERZ Online
                                 </span>
@@ -1114,14 +1400,28 @@ export default function MyAccountPage() {
                         <ShieldCheck className="h-3.5 w-3.5" /> Verified
                       </span>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={handleResend}
-                        disabled={submitting}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#E1B76F]/40 bg-[#3a060f] px-3.5 py-1.5 text-xs font-bold text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#240407] transition cursor-pointer"
-                      >
-                        <MailCheck className="h-3.5 w-3.5" /> Resend verification link
-                      </button>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveTab("security");
+                            openCodeVerification();
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                          disabled={submitting}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#E1B76F] px-3.5 py-1.5 text-xs font-bold uppercase text-[#240407] hover:bg-[#edd19b] transition disabled:opacity-50 cursor-pointer"
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" /> Verify with code
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleResend}
+                          disabled={submitting}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-[#E1B76F]/40 bg-[#3a060f] px-3.5 py-1.5 text-xs font-bold text-[#E1B76F] hover:bg-[#E1B76F] hover:text-[#240407] transition cursor-pointer"
+                        >
+                          <MailCheck className="h-3.5 w-3.5" /> Send link
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1213,7 +1513,7 @@ export default function MyAccountPage() {
                   setNotice(null);
                 }}
                 className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer ${
-                  authTab === "login"
+                  authTab === "login" || authTab === "code"
                     ? "bg-gradient-to-r from-[#E1B76F] to-[#edd19b] text-[#240407] shadow-md"
                     : "text-stone-300 hover:text-white"
                 }`}
@@ -1236,7 +1536,108 @@ export default function MyAccountPage() {
               </button>
             </div>
 
-            {authTab === "login" ? (
+            {authTab === "code" ? (
+              /* Password-less sign-in with a code */
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!signInCodeSent) void sendSignInCode();
+                  else if (signInCode.length === 6) void handleCodeSignIn(signInCode);
+                }}
+                className="space-y-4 animate-in fade-in duration-200"
+              >
+                <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#530911]">
+                  Sign in with a code
+                </h2>
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  No password needed. We email a 6-digit code to your address — perfect for accounts created
+                  with your order, or if you can&apos;t remember your password.
+                </p>
+                <div>
+                  <Label required>Email address</Label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => {
+                        setLoginEmail(e.target.value);
+                        setSignInCodeError(null);
+                      }}
+                      placeholder="name@example.com"
+                      autoComplete="email"
+                      className={inputClass}
+                    />
+                    <Mail className="absolute right-3 top-3.5 h-4 w-4 text-stone-400" />
+                  </div>
+                </div>
+
+                {signInCodeSent && (
+                  <div>
+                    <Label required>6-digit code</Label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      value={signInCode}
+                      disabled={signInCodeBusy}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
+                        setSignInCode(digits);
+                        setSignInCodeError(null);
+                        if (digits.length === 6) void handleCodeSignIn(digits);
+                      }}
+                      placeholder="••••••"
+                      aria-label="6-digit sign-in code"
+                      className={`${inputClass} text-center font-mono text-lg tracking-[0.4em]`}
+                    />
+                    <p className="mt-1 text-[11px] text-stone-400">
+                      Code sent to <span className="font-mono text-stone-200">{loginEmail.trim()}</span> · expires
+                      in 10 minutes
+                    </p>
+                  </div>
+                )}
+
+                {signInCodeError && (
+                  <p className="text-xs font-semibold text-rose-300">{signInCodeError}</p>
+                )}
+
+                <button type="submit" disabled={signInCodeBusy || (signInCodeSent && signInCode.length !== 6)} className={primaryButton}>
+                  {signInCodeBusy
+                    ? signInCodeSent
+                      ? "Verifying…"
+                      : "Sending…"
+                    : signInCodeSent
+                      ? "Verify & sign in"
+                      : "Email me a code"}
+                </button>
+
+                {signInCodeSent && (
+                  <button
+                    type="button"
+                    onClick={() => void sendSignInCode()}
+                    disabled={signInCodeBusy || signInResendAfter > 0}
+                    className="w-full text-xs font-bold text-[#E1B76F] hover:underline disabled:opacity-50 disabled:no-underline disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {signInResendAfter > 0 ? `Resend code in ${signInResendAfter}s` : "Resend code"}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthTab("login");
+                    setSignInCodeSent(false);
+                    setSignInCode("");
+                    setSignInCodeError(null);
+                  }}
+                  className="w-full text-xs font-bold text-stone-300 hover:text-white hover:underline cursor-pointer pt-2"
+                >
+                  ← Back to password sign-in
+                </button>
+              </form>
+            ) : authTab === "login" ? (
               /* Sign in Form */
               <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in duration-200">
                 <h2 className="font-heading text-2xl font-black uppercase text-white pb-2 border-b border-[#530911]">
@@ -1266,7 +1667,21 @@ export default function MyAccountPage() {
                     autoComplete="current-password"
                   />
                 </div>
-                <div className="flex justify-end pt-1">
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignInCodeSent(false);
+                      setSignInCode("");
+                      setSignInCodeError(null);
+                      setNotice(null);
+                      setAuthTab("code");
+                    }}
+                    className="text-xs font-bold text-[#E1B76F] hover:underline cursor-pointer"
+                    title="No password needed — we email you a 6-digit code"
+                  >
+                    Sign in with a code
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

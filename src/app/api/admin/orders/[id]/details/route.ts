@@ -137,6 +137,10 @@ export async function GET(
     const financials = computeOrderFinancials(order);
     const eligibility = checkCourierBookingEligibility({
       orderStatus: order.orderStatus,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      paidAmount: order.paidAmount,
+      total: order.total,
       shipmentStatus: order.shipmentStatus,
       shipmentBookingState: order.shipmentBookingState,
       consignmentId: order.consignmentId,
@@ -173,7 +177,7 @@ export async function GET(
       isRefunded,
     });
 
-    // Build chronological real DB timeline
+    // ── Build Chronological De-duplicated Timeline ─────────────────────────────
     const timeline: TimelineEvent[] = [];
 
     if (order.createdAt) {
@@ -234,23 +238,85 @@ export async function GET(
       });
     }
 
+    // Process shipments: group booking steps, label mock consignments, suppress duplicate consecutive polls
     for (const s of shipments) {
-      for (let i = 0; i < (s.events || []).length; i++) {
-        const ev = s.events[i];
+      const isMock = Boolean(
+        s.isMock ||
+        s.mode === "mock" ||
+        s.consignmentId?.startsWith("MOCK-") ||
+        s.trackingCode?.startsWith("MOCK-")
+      );
+      const provUpper = s.provider.toUpperCase();
+      const mockPrefix = isMock ? "[SIMULATED / TEST] " : "";
+
+      let lastStatus: string | null = null;
+      const rawEvents = s.events || [];
+
+      // If initial events are (0: pending request) and (1: created confirmation within 15s), group them
+      let startIdx = 0;
+      if (
+        rawEvents.length >= 2 &&
+        rawEvents[0]?.status === "pending" &&
+        rawEvents[1]?.status === "created" &&
+        Math.abs(new Date(rawEvents[1].at).getTime() - new Date(rawEvents[0].at).getTime()) < 15000
+      ) {
+        // Single unified booking confirmation event
+        const ev = rawEvents[1];
+        const note = isMock
+          ? `[SIMULATED] Mock consignment generated for development testing. CID: ${s.consignmentId || "—"}`
+          : `Consignment booked with ${s.provider}. CID: ${s.consignmentId || "—"}`;
+
+        timeline.push({
+          id: `ship-${String(s._id)}-booking-group`,
+          at: new Date(ev.at).toISOString(),
+          category: "shipment",
+          title: `${mockPrefix}Shipment Booked (${provUpper})`,
+          description: note,
+          actor: s.provider,
+          action: "courier.booked",
+          metadata: {
+            consignmentId: s.consignmentId,
+            trackingCode: s.trackingCode,
+            isMock,
+            status: "booked",
+            bookingRequestedAt: rawEvents[0].at,
+            bookingConfirmedAt: ev.at,
+          },
+        });
+        lastStatus = "booked";
+        startIdx = 2; // skip the raw request & response pair
+      }
+
+      for (let i = startIdx; i < rawEvents.length; i++) {
+        const ev = rawEvents[i];
         if (!ev?.at) continue;
+
+        const effectiveStatus = (ev.status || "").toLowerCase();
+        // Suppress repeated status polls reporting identical status
+        if (lastStatus && (lastStatus === effectiveStatus || (lastStatus === "booked" && effectiveStatus === "created"))) {
+          continue;
+        }
+        lastStatus = effectiveStatus;
+
+        let note = ev.note || "";
+        if (isMock && note.toLowerCase().includes("accepted by steadfast")) {
+          note = "[SIMULATED] Mock consignment simulated in development.";
+        }
+
         const formattedEv = (ev.status || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
         timeline.push({
           id: `ship-${String(s._id)}-${i}`,
           at: new Date(ev.at).toISOString(),
           category: "shipment",
-          title: `Courier (${s.provider.toUpperCase()}): ${formattedEv}`,
-          description: ev.note || (s.consignmentId ? `Consignment #${s.consignmentId}` : ""),
+          title: `${mockPrefix}Courier (${provUpper}): ${formattedEv}`,
+          description: note || (s.consignmentId ? `Consignment #${s.consignmentId}` : ""),
           actor: s.provider,
           action: `courier.${ev.status}`,
           metadata: {
             consignmentId: s.consignmentId,
             trackingCode: s.trackingCode,
             status: ev.status,
+            isMock,
             raw: ev.raw,
           },
         });
@@ -275,7 +341,6 @@ export async function GET(
       const after = (a.after as Record<string, unknown> | null) || null;
       const before = (a.before as Record<string, unknown> | null) || null;
       const aTime = new Date(a.createdAt).getTime();
-
       // Deduplicate order.status.update if corresponding status card exists within 10s
       if (a.action === "order.status.update") {
         const match = timeline.find(
@@ -291,6 +356,20 @@ export async function GET(
           match.action = a.action;
           if (a.actor && match.actor === "system") match.actor = a.actor;
           if (!match.note && after?.reason) match.note = String(after.reason);
+          continue;
+        }
+      }
+
+      // If an audit event represents shipment booking, merge audit actor/diff with existing shipment event
+      if (a.action === "order.shipment.create" || a.action === "order.shipment.booked") {
+        const shipMatch = timeline.find(
+          (t) =>
+            t.category === "shipment" &&
+            Math.abs(new Date(t.at).getTime() - aTime) < 15000
+        );
+        if (shipMatch) {
+          shipMatch.metadata = { ...shipMatch.metadata, before, after };
+          if (a.actor) shipMatch.actor = a.actor;
           continue;
         }
       }
@@ -316,6 +395,77 @@ export async function GET(
         note: (after?.reason as string) || (after?.note as string) || null,
       });
     }
+
+    // ── Final pass: collapse booking handshakes and repair mislabeled statuses ──
+    const timeOf = (iso: string) => new Date(iso).getTime();
+
+    // The booking status change already tells the whole story; absorb the
+    // courier pending/created handshake and the matching audit entry into it.
+    const bookingStatusEvent = timeline.find(
+      (t) =>
+        t.category === "order" &&
+        t.toStatus === "ready_to_ship" &&
+        /consignment/i.test(t.description || "")
+    );
+    const removeIds = new Set<string>();
+
+    if (bookingStatusEvent) {
+      const bookingTime = timeOf(bookingStatusEvent.at);
+      for (const t of timeline) {
+        if (t.id === bookingStatusEvent.id) continue;
+        const delta = Math.abs(timeOf(t.at) - bookingTime);
+        if (delta > 5 * 60 * 1000) continue;
+
+        const isHandshake =
+          t.category === "shipment" &&
+          ["courier.pending", "courier.created", "courier.booked"].includes(String(t.action));
+        const isBookingAudit =
+          t.action === "order.shipment.booked" || t.action === "order.shipment.create";
+
+        if (isHandshake || isBookingAudit) {
+          const meta = (t.metadata || {}) as Record<string, unknown>;
+          bookingStatusEvent.metadata = {
+            ...(bookingStatusEvent.metadata || {}),
+            ...(meta.consignmentId ? { consignmentId: meta.consignmentId } : {}),
+            ...(meta.trackingCode ? { trackingCode: meta.trackingCode } : {}),
+            ...(isBookingAudit ? { before: meta.before, after: meta.after } : {}),
+          };
+          if (isBookingAudit) bookingStatusEvent.action = t.action;
+          removeIds.add(t.id);
+        }
+      }
+    }
+
+    // Some courier syncs store the new raw status in the note while the event
+    // status keeps the previous value. Prefer the note's status for display.
+    for (const t of timeline) {
+      if (t.category !== "shipment") continue;
+      const match = String(t.description || "").match(/^([a-z_]+)\s*\(/i);
+      if (!match) continue;
+      const raw = match[1].toLowerCase();
+      if (!/^courier\./.test(String(t.action || ""))) continue;
+      if (String(t.action).replace("courier.", "") === raw) continue;
+      const prefix = t.title.includes(":") ? t.title.split(":")[0] : "Courier";
+      const formatted = raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+      t.title = `${prefix}: ${formatted}`;
+      t.action = `courier.${raw}`;
+    }
+
+    // Drop exact repeats produced by multiple sources within the same minute.
+    const seen = new Set<string>();
+    for (const t of timeline) {
+      if (removeIds.has(t.id)) continue;
+      const key = `${t.category}|${t.title}|${Math.floor(new Date(t.at).getTime() / 60000)}`;
+      if (seen.has(key)) {
+        removeIds.add(t.id);
+      } else {
+        seen.add(key);
+      }
+    }
+
+    const dedupedTimeline = timeline.filter((t) => !removeIds.has(t.id));
+    timeline.length = 0;
+    timeline.push(...dedupedTimeline);
 
     timeline.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 

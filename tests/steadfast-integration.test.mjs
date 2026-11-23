@@ -107,7 +107,7 @@ test("admin UI: shipment modal is wired to the row", () => {
   assert.ok(hook.includes("openShipment"));
   assert.ok(hook.includes("/api/admin/orders/${order.id}/shipment"));
   assert.ok(hook.includes("/api/admin/shipments/${shipmentId}/refresh"));
-  assert.ok(modals.includes("Courier shipment"));
+  assert.ok(modals.includes("Shipment Details"));
   assert.ok(modals.includes("Create Steadfast shipment"));
   assert.ok(modals.includes("Refresh status"));
   assert.ok(row.includes("openShipment(order)"));

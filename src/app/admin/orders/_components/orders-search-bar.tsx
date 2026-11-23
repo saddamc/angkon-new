@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Search,
   RefreshCw,
   Truck,
   X,
@@ -18,7 +17,6 @@ interface OrdersSearchBarProps {
 export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
   const {
     searchQuery,
-    setSearchQuery,
     load,
     filterStatus,
     paymentFilter,
@@ -36,8 +34,6 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
     selectedOrderIds,
     clearSelection,
     setBulkModalOpen,
-    syncActiveShipments,
-    syncingShipments,
     courierProviders,
   } = state;
 
@@ -59,18 +55,6 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
       {/* Filter Toolbar */}
       <div className="flex flex-nowrap items-center justify-between gap-2 overflow-x-auto rounded-2xl border border-stone-200/90 bg-white p-2.5 shadow-xs">
         <div className="flex flex-nowrap items-center gap-2 shrink-0">
-          {/* Search Input */}
-          <div className="relative w-48 sm:w-56 shrink-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by order #, customer name..."
-              className="w-full rounded-xl border border-gray-200 bg-white pl-8 pr-3 py-1.5 text-[12px] focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition placeholder:text-gray-400"
-            />
-          </div>
-
           {/* Date Range Picker with Calendar Icon */}
           <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-700 shrink-0">
             <Calendar className="h-3.5 w-3.5 text-gray-400 shrink-0" />
@@ -130,8 +114,8 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
             onChange={(e) => handleShipmentFilterChange(e.target.value)}
             className="rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-[12px] font-medium text-gray-700 focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition cursor-pointer shrink-0"
           >
-            <option value="any">Status: All</option>
-            <option value="none">Not Booked</option>
+            <option value="any">Shipment: All</option>
+            <option value="none">Shipment: Not Booked</option>
             <option value="created">Created</option>
             <option value="pending">Pending Pickup</option>
             <option value="in_transit">In Transit</option>
@@ -160,14 +144,23 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
         <div className="flex items-center gap-2 shrink-0 ml-2">
           <button
             type="button"
-            onClick={() => void syncActiveShipments()}
-            disabled={syncingShipments}
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50/70 px-2.5 py-1.5 text-[11.5px] font-medium text-stone-700 hover:bg-stone-100 transition disabled:opacity-50 cursor-pointer"
-            title="Sync Courier — pull latest delivery statuses"
+            onClick={() => {
+              const next = !state.showTestOrders;
+              state.setShowTestOrders(next);
+              void state.load(state.filterStatus, true);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
+              state.showTestOrders
+                ? "border-amber-300 bg-amber-50 text-amber-900"
+                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+            }`}
+            title="Toggle display of archived QA / mock test orders"
           >
-            <Truck className={`h-3 w-3 text-stone-500 ${syncingShipments ? "animate-pulse" : ""}`} />
-            {syncingShipments ? "Syncing..." : "Sync Courier"}
+            <span>{state.showTestOrders ? "Hide Test Orders" : "Show Test Orders"}</span>
           </button>
+
+          {/* Courier sync lives once, in the page header ("Sync Status"), so
+              this toolbar no longer carries a duplicate button. */}
 
           <button
             type="button"

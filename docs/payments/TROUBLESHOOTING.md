@@ -14,7 +14,7 @@ Common issues, causes, and step-by-step resolution steps for the payment subsyst
    ```env
    SSLCOMMERZ_STORE_ID=angkon_store
    SSLCOMMERZ_STORE_PASSWORD=your_store_password
-   SSLCOMMERZ_IS_SANDBOX=true
+   SSLCOMMERZ_MODE=sandbox
    ```
 3. Restart the server.
 

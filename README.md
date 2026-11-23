@@ -39,16 +39,16 @@ cp .env.example .env
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `MONGODB_URI` (or `MONGODB_URL` / `DATABASE_URL`) | Yes | MongoDB Atlas connection string. Atlas must allow your host's IPs (use `0.0.0.0/0` for Vercel). |
+| `MONGODB_URI` (or `MONGODB_URL` / `DATABASE_URL`) | Yes | MongoDB Atlas connection string. Atlas must allow the VPS public IP (never open `0.0.0.0/0` in production unless deliberately required). |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Yes | Admin panel login |
 | `JWT_SECRET` | Yes | Signs admin sessions, customer sessions and email codes. Use a long random string. |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Yes | Image uploads |
 | `RESEND_API_KEY` | Yes | Sending email |
-| `EMAIL_FROM` | Recommended | Sender, e.g. `ANGKON <noreply@angkon.net>` |
+| `EMAIL_FROM` | Recommended | Sender, e.g. `ANGKON Orders <orders@angkon.net>` |
 | `ADMIN_EMAIL` | Recommended | New-order alert recipient(s), comma-separated. No alert is sent if empty. |
 | `NEXT_PUBLIC_SITE_URL` | Recommended | Canonical site URL |
 
-On Vercel, add the same variables under **Settings → Environment Variables** (enable them for Production) and redeploy.
+For the VPS, put the production values in `/var/www/angkon/shared/.env` and follow [`docs/operations/VPS-DEPLOYMENT.md`](docs/operations/VPS-DEPLOYMENT.md). Use [`.env.production.example`](.env.production.example) as the template.
 
 ---
 

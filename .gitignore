@@ -38,6 +38,7 @@ lerna-debug.log*
 .env.backup
 .env.old
 !.env.example
+!.env.production.example
 
 # IDE & editor configuration
 /.vscode/

@@ -4,7 +4,7 @@ import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { syncProductCategoryRefs } from "@/server/categories/category-sync";
+import { syncProductCategoryRefs, syncProductImageFoldersForCategories } from "@/server/categories/category-sync";
 import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +97,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Clear memory cache
-    await syncProductCategoryRefs(items.map((i: { id: number }) => Number(i.id)));
+    const changedCategoryIds = items.map((i: { id: number }) => Number(i.id));
+    await syncProductCategoryRefs(changedCategoryIds);
+    await syncProductImageFoldersForCategories(changedCategoryIds);
     await publishCatalogChange();
 
     return NextResponse.json(

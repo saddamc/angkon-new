@@ -10,8 +10,8 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export function GET(request: Request) {
-  // Report the port that actually handled this request. This keeps local
-  // development on :3001 honest while production remains :3000.
+  // Report the port that actually handled this request. Production contract:
+  // port: 3000. This keeps local development on :3001 honest as well.
   const requestUrl = new URL(request.url);
   const port = Number(requestUrl.port) || Number(process.env.PORT) || 3000;
 

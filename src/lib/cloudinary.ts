@@ -14,6 +14,7 @@ export { cloudinary };
 export interface CloudinaryFolderOptions {
   category?: string;
   subcategory?: string;
+  ancestors?: string[];
   product?: string;
 }
 
@@ -79,31 +80,25 @@ export function buildCategoryFolderPath({
 export function buildCloudinaryFolderPath({
   category,
   subcategory,
+  ancestors,
   product,
 }: CloudinaryFolderOptions = {}): string {
   const parts: string[] = ["ANGKON"];
 
-  if (category && category.trim()) {
+  const categoryParts = ancestors?.length
+    ? ancestors
+    : [category, subcategory].filter((value): value is string => Boolean(value && value.trim()));
+
+  for (const categoryPart of categoryParts) {
+    if (!categoryPart || !categoryPart.trim()) continue;
     // Sanitize category to clean uppercase identifier e.g. "MEN", "WOMEN", "ETHNIC_WEAR"
-    const catClean = category
+    const catClean = categoryPart
       .trim()
       .toUpperCase()
       .replace(/[^A-Z0-9_\s-]/g, "")
       .replace(/[\s-]+/g, "_");
     if (catClean && catClean !== "PRODUCTS") {
       parts.push(catClean);
-    }
-  }
-
-  if (subcategory && subcategory.trim()) {
-    // Sanitize subcategory to clean uppercase identifier e.g. "AIMAN_AISHA", "GUZEL"
-    const subClean = subcategory
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9_\s-]/g, "")
-      .replace(/[\s-]+/g, "_");
-    if (subClean && !parts.includes(subClean)) {
-      parts.push(subClean);
     }
   }
 
@@ -439,18 +434,17 @@ export async function syncProductImagesToCategoryFolder({
   categories,
   productSlug,
 }: {
-  images: Array<{ id?: number | string; src: string; alt?: string; name?: string }>;
-  categories: Array<{ id?: number; name?: string; slug?: string; parent?: number }>;
+  images: Array<{ id?: number | string; src: string; public_id?: string; alt?: string; name?: string }>;
+  categories: Array<{ id?: number; name?: string; slug?: string; parent?: number; ancestors?: string[] }>;
   productSlug: string;
-}): Promise<Array<{ id?: number | string; src: string; alt?: string; name?: string }>> {
+}): Promise<Array<{ id?: number | string; src: string; public_id?: string; alt?: string; name?: string }>> {
   if (!images || !Array.isArray(images) || images.length === 0) return images;
 
-  let catSlug = "";
-  let subSlug = "";
+  let categoryAncestors: string[] = [];
 
   const subCat = categories.find((c) => c.parent && Number(c.parent) > 0);
   if (subCat) {
-    subSlug = subCat.slug || subCat.name || "";
+    const subSlug = subCat.slug || subCat.name || "";
     let parentCat = categories.find((c) => c.id === subCat.parent);
     if (!parentCat && subCat.parent) {
       try {
@@ -464,18 +458,22 @@ export async function syncProductImagesToCategoryFolder({
       }
     }
     if (parentCat) {
-      catSlug = parentCat.slug || parentCat.name || "";
+      categoryAncestors = [parentCat.slug || parentCat.name || "", subSlug];
     }
   } else if (categories.length > 0) {
-    catSlug = categories[0].slug || categories[0].name || "";
+    categoryAncestors = [categories[0].slug || categories[0].name || ""];
   }
+
+  const explicitAncestors = categories
+    .filter((category) => Array.isArray(category.ancestors) && category.ancestors.length > 0)
+    .sort((a, b) => (b.ancestors?.length || 0) - (a.ancestors?.length || 0))[0]?.ancestors;
+  if (explicitAncestors?.length) categoryAncestors = explicitAncestors;
 
   const cleanProdSlug = (productSlug || "").trim();
   if (!cleanProdSlug) return images;
 
   const targetFolder = buildCloudinaryFolderPath({
-    category: catSlug || undefined,
-    subcategory: subSlug || undefined,
+    ancestors: categoryAncestors.filter(Boolean),
     product: cleanProdSlug,
   });
 
@@ -524,6 +522,7 @@ export async function syncProductImagesToCategoryFolder({
       updatedImages.push({
         ...img,
         src: renameRes.secure_url,
+        ...(img.public_id !== undefined ? { public_id: renameRes.public_id || newPublicId } : {}),
       });
       if (oldFolder && oldFolder !== targetFolder) {
         foldersToClean.add(oldFolder);

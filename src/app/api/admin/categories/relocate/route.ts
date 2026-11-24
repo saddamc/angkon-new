@@ -2,7 +2,7 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { syncProductCategoryRefs } from "@/server/categories/category-sync";
+import { syncProductCategoryRefs, syncProductImageFoldersForCategories } from "@/server/categories/category-sync";
 import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 export async function POST(request: NextRequest) {
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     await syncProductCategoryRefs([Number(id)]);
+    await syncProductImageFoldersForCategories([Number(id)]);
     await publishCatalogChange();
 
     return NextResponse.json({ ok: true, category: updated });

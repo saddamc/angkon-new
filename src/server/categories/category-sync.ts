@@ -1,5 +1,6 @@
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
+import { syncProductImagesToCategoryFolder } from "@/lib/cloudinary";
 
 /**
  * Products store a copy of each category's name / slug / parent. When a category is renamed,
@@ -19,6 +20,75 @@ export async function syncProductCategoryRefs(categoryIds: number[]): Promise<vo
       ),
     ),
   );
+}
+
+/**
+ * Reconciles Cloudinary product folders after a category hierarchy change.
+ * Product documents intentionally keep category snapshots, so a category move
+ * must refresh those snapshots and then relocate each referenced image. The
+ * operation is best-effort per product: a Cloudinary outage never rolls back a
+ * successful category change or destroy an existing image URL.
+ */
+export async function syncProductImageFoldersForCategories(categoryIds: number[]): Promise<void> {
+  const ids = [...new Set(categoryIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+  if (ids.length === 0) return;
+
+  const allCategories = await Category.find({}).lean();
+  const categoryById = new Map(allCategories.map((category) => [category.id, category]));
+  const descendants = new Set(ids);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const category of allCategories) {
+      if (category.parent && descendants.has(category.parent) && !descendants.has(category.id)) {
+        descendants.add(category.id);
+        changed = true;
+      }
+    }
+  }
+
+  const products = await Product.find({ "categories.id": { $in: [...descendants] } })
+    .select("images categories slug")
+    .lean();
+
+  for (const product of products) {
+    if (!Array.isArray(product.images) || product.images.length === 0) continue;
+    const categories = (product.categories || [])
+      .map((ref) => categoryById.get(ref.id))
+      .filter(Boolean)
+      .map((category) => {
+        const ancestors: string[] = [];
+        const seen = new Set<number>();
+        let current = category;
+        while (current && !seen.has(current.id)) {
+          seen.add(current.id);
+          ancestors.unshift(current.slug || current.name);
+          current = current.parent ? categoryById.get(current.parent) : undefined;
+        }
+        return {
+          id: category!.id,
+          name: category!.name,
+          slug: category!.slug,
+          parent: category!.parent || 0,
+          ancestors,
+        };
+      });
+    if (categories.length === 0) continue;
+
+    try {
+      const images = await syncProductImagesToCategoryFolder({
+        images: product.images,
+        categories,
+        productSlug: product.slug,
+      });
+      await Product.updateOne(
+        { _id: product._id },
+        { $set: { categories, images } },
+      );
+    } catch (error) {
+      console.warn(`Could not reconcile Cloudinary folders for product ${product.slug}:`, error);
+    }
+  }
 }
 
 /** Remove deleted categories from every product that still lists them. */

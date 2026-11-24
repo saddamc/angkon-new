@@ -1,5 +1,6 @@
 import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
 import { getAppEnvironment } from "@/server/env/app-environment";
+import { isCloudinaryUrl } from "./cloudinary-delivery";
 
 // Initialize Cloudinary with environment variables
 cloudinary.config({
@@ -214,14 +215,22 @@ export async function uploadToCloudinary(
  */
 export function extractPublicIdFromUrl(urlOrId: string): string {
   if (!urlOrId) return "";
-  if (!urlOrId.includes("res.cloudinary.com")) {
-    return urlOrId.replace(/\.[^/.]+$/, ""); // strip extension if standalone id
-  }
-
   try {
-    const parts = urlOrId.split("/upload/");
-    if (parts.length < 2) return urlOrId;
-    let pathPart = parts[1];
+    const isUrl = /^https?:\/\//i.test(urlOrId);
+    if (isUrl && !isCloudinaryUrl(urlOrId, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
+      // Never interpret an arbitrary remote URL as a Cloudinary public_id.
+      return "";
+    }
+
+    if (!isUrl) return urlOrId.replace(/\.[^/.]+$/, "");
+
+    const parsed = new URL(urlOrId);
+    const markerIndex = parsed.pathname.search(/\/image\/upload\//i);
+    const genericMarkerIndex = markerIndex >= 0 ? markerIndex : parsed.pathname.search(/\/upload\//i);
+    if (genericMarkerIndex < 0) return "";
+
+    const marker = parsed.pathname.slice(genericMarkerIndex).replace(/^\//, "");
+    let pathPart = marker.replace(/^image\/upload\//i, "").replace(/^upload\//i, "");
 
     // If path contains ANGKON/, extract starting from ANGKON/
     const angkonIndex = pathPart.indexOf("ANGKON/");
@@ -236,7 +245,7 @@ export function extractPublicIdFromUrl(urlOrId: string): string {
     // Strip file extension (.jpg, .png, .webp, etc.)
     return pathPart.replace(/\.[^/.]+$/, "");
   } catch {
-    return urlOrId;
+    return "";
   }
 }
 
@@ -251,6 +260,9 @@ export async function deleteFromCloudinary(
   }
 
   const publicId = extractPublicIdFromUrl(publicIdOrUrl);
+  if (!publicId) {
+    throw new Error("The value is not a valid Cloudinary URL or public_id");
+  }
 
   const appEnv = getAppEnvironment();
   if (appEnv !== "production" && process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true") {
@@ -481,7 +493,11 @@ export async function syncProductImagesToCategoryFolder({
   const foldersToClean = new Set<string>();
 
   for (const img of images) {
-    if (!img?.src || typeof img.src !== "string" || !img.src.includes("res.cloudinary.com")) {
+    if (
+      !img?.src ||
+      typeof img.src !== "string" ||
+      !isCloudinaryUrl(img.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)
+    ) {
       updatedImages.push(img);
       continue;
     }

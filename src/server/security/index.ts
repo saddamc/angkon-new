@@ -1,6 +1,15 @@
 export * from "./client-ip";
 export * from "./csrf";
 export * from "./idempotency";
-export * from "./rate-limit";
+export {
+  calculateSlidingWindowCount,
+  rateLimit,
+  checkDualRateLimit,
+  hashIp,
+  createRateLimitResponse,
+  applyRateLimitHeaders,
+  type RateLimitResult,
+  type RateLimitOptions,
+} from "./rate-limit";
 export * from "./security-log";
 export * from "./token-encryption";

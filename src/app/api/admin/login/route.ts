@@ -1,6 +1,8 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import nodeCrypto from "crypto";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
+import { clientIp } from "@/server/security/client-ip";
+import { hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
+import { securityLog } from "@/server/security/security-log";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { verifyPassword } from "@/server/auth/auth";
@@ -99,21 +101,12 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/login — authenticate
 export async function POST(request: NextRequest) {
   try {
-    const ip = clientIp(request);
-    const limit = await rateLimit(`admin-login:ip:${hashIp(ip)}`, 5, 15 * 60, {
-      failClosed: true,
-    });
-    if (!limit.allowed) {
-      const minutes = Math.max(1, Math.ceil(limit.retryAfterSeconds / 60));
-      return createRateLimitResponse(
-        limit,
-        `Too many admin login attempts from this network. Please try again in ${minutes} minute${
-          minutes === 1 ? "" : "s"
-        }.`
-      );
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== "object") {
+      return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
     }
 
-    const { username, password } = await request.json();
+    const { username, password } = body as Record<string, unknown>;
 
     if (!username || !password) {
       return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
@@ -121,6 +114,62 @@ export async function POST(request: NextRequest) {
 
     const inputIdentifier = String(username).trim();
     const inputPassword = String(password);
+
+    if (!inputIdentifier || !inputPassword) {
+      return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
+    }
+
+    // ── Rate Limiting (Dual: Account + Client IP) ───────────────────────────
+    const ip = clientIp(request);
+    const hashedIp = hashIp(ip);
+    const hashedIdentifier = hashIp(inputIdentifier.toLowerCase());
+
+    const rateLimitTasks = [
+      rateLimit(`admin-login:account:${hashedIdentifier}`, 5, 15 * 60, {
+        failClosed: true,
+      }),
+    ];
+
+    if (ip !== "unknown") {
+      rateLimitTasks.push(
+        rateLimit(`admin-login:ip:${hashedIp}`, 10, 15 * 60, {
+          failClosed: true,
+        })
+      );
+    }
+
+    const [accountLimit, ipLimit] = await Promise.all(rateLimitTasks);
+    const activeLimit = !accountLimit.allowed
+      ? accountLimit
+      : ipLimit && !ipLimit.allowed
+      ? ipLimit
+      : null;
+
+    if (activeLimit) {
+      // If the rate limit store is degraded (MongoDB timeout / outage),
+      // fail closed with 503 Service Unavailable, NOT a misleading 429 rate limit error.
+      if (activeLimit.degraded) {
+        securityLog("rate_limit.degraded_fail_closed", {
+          scope: "admin_login",
+          account: hashedIdentifier,
+        });
+        return NextResponse.json(
+          {
+            error:
+              "Authentication service is temporarily unavailable. Please try again shortly.",
+          },
+          { status: 503 }
+        );
+      }
+
+      const minutes = Math.max(1, Math.ceil(activeLimit.retryAfterSeconds / 60));
+      return createRateLimitResponse(
+        activeLimit,
+        `Too many admin login attempts. Please try again in ${minutes} minute${
+          minutes === 1 ? "" : "s"
+        }.`
+      );
+    }
 
     let authenticatedAdmin: { sub: string; name: string; role: "admin" | "superadmin" } | null = null;
 
@@ -178,13 +227,19 @@ export async function POST(request: NextRequest) {
     try {
       const windowMs = 15 * 60 * 1000;
       const currentWindowStart = Math.floor(Date.now() / windowMs) * windowMs;
-      const hashedIp = hashIp(ip);
+      const bucketKeysToDelete = [
+        `admin-login:account:${hashedIdentifier}:${currentWindowStart}`,
+        `admin-login:account:${hashedIdentifier}:${currentWindowStart - windowMs}`,
+      ];
+      if (ip !== "unknown") {
+        bucketKeysToDelete.push(
+          `admin-login:ip:${hashedIp}:${currentWindowStart}`,
+          `admin-login:ip:${hashedIp}:${currentWindowStart - windowMs}`
+        );
+      }
       await RateLimitBucket.deleteMany({
         key: {
-          $in: [
-            `admin-login:ip:${hashedIp}:${currentWindowStart}`,
-            `admin-login:ip:${hashedIp}:${currentWindowStart - windowMs}`,
-          ],
+          $in: bucketKeysToDelete,
         },
       });
     } catch {

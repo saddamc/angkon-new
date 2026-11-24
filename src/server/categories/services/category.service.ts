@@ -10,6 +10,7 @@ import {
   createCloudinaryFolder,
   buildCategoryFolderPath,
 } from "@/lib/cloudinary";
+import { isCloudinaryUrl } from "@/lib/cloudinary-delivery";
 import { getAllDbCategoriesIncludingInactive, invalidateCategoriesCache } from "@/lib/db/categories";
 import { cleanCategoryInput, slugifyCategory } from "../category-input";
 import { publishCatalogChange } from "@/lib/catalog-sync";
@@ -184,7 +185,7 @@ export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = 
   const categoriesToDelete = allCategories.filter((c) => categoryIdsToDelete.includes(c.id));
 
   for (const cat of categoriesToDelete) {
-    if (cat.image?.src && cat.image.src.includes("res.cloudinary.com")) {
+    if (cat.image?.src && isCloudinaryUrl(cat.image.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
       try {
         await deleteFromCloudinary(cat.image.src);
       } catch (cloudErr) {
@@ -218,7 +219,7 @@ export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = 
         if (Array.isArray(prod.images)) {
           for (const img of prod.images) {
             const src = typeof img === "string" ? img : img?.src;
-            if (src && typeof src === "string" && src.includes("res.cloudinary.com")) {
+            if (src && typeof src === "string" && isCloudinaryUrl(src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
               imageSrcs.push(src);
               const folder = extractProductFolderFromUrl(src, productIdentifiers);
               if (folder) candidateFolders.add(folder);

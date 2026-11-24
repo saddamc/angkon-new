@@ -7,6 +7,7 @@ import {
   deleteProductCloudinaryFolder,
   buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
+import { isCloudinaryUrl } from "@/lib/cloudinary-delivery";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 import { resolveProductCategories } from "@/server/categories/category-sync";
@@ -249,7 +250,7 @@ export async function bulkDeleteAdminProducts(ids: number[]) {
     if (Array.isArray(prod.images)) {
       for (const img of prod.images) {
         const src = typeof img === "string" ? img : img?.src;
-        if (src && typeof src === "string" && src.includes("res.cloudinary.com")) {
+        if (src && typeof src === "string" && isCloudinaryUrl(src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
           imageSrcs.push(src);
           const folder = extractProductFolderFromUrl(src, productIdentifiers);
           if (folder) {

@@ -84,68 +84,22 @@ export function hashIp(ip: string): string {
   }
 }
 
-/**
- * Validates whether a candidate string is a well-formed IPv4 or IPv6 address.
- */
-function isValidIp(ip: string): boolean {
-  if (!ip || typeof ip !== "string") return false;
-  const trimmed = ip.trim();
-  // IPv4 simple pattern
-  if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
-    const octets = trimmed.split(".").map(Number);
-    return octets.every((o) => o >= 0 && o <= 255);
-  }
-  // IPv6 pattern
-  if (/^[0-9a-fA-F:]+$/.test(trimmed) && trimmed.includes(":")) {
-    return true;
-  }
-  return false;
-}
+import { clientIp as resolveCanonicalClientIp, isValidIp as validateIp } from "./client-ip";
+export { isValidIp } from "./client-ip";
 
 /**
- * Resilient, trusted client IP extraction behind reverse proxies
- * (Vercel, Cloudflare, Nginx).
+ * Resilient, canonical client IP extraction behind reverse proxies
+ * (delegates to client-ip.ts canonical resolver).
  *
  * Trust model:
- * - `cf-connecting-ip` is only trusted when `TRUST_CLOUDFLARE_IP_HEADER=true`,
- *   because any client can send that header when Cloudflare is not in front.
- * - `x-real-ip` is set by the nearest reverse proxy and is preferred next.
- * - `x-forwarded-for` is read from the RIGHTMOST hop. The leftmost value is
- *   attacker-controlled (a client can prepend a fake IP); the rightmost value
- *   is appended by the trusted proxy.
+ * - `cf-connecting-ip` is only trusted when `TRUST_CLOUDFLARE_IP_HEADER`?.trim().toLowerCase() === "true"
+ *   or when verified Cloudflare infrastructure headers are present.
+ * - For non-Cloudflare domains, reverse-proxy chain reads the rightmost verified IP from `x-forwarded-for`.
  * - Set `TRUST_PROXY_HEADERS=false` when the app is reachable directly, so
  *   forwarded headers are ignored entirely.
  */
 export function clientIp(request: NextRequest): string {
-  const trustForwarded =
-    process.env.TRUST_PROXY_HEADERS?.trim().toLowerCase() !== "false";
-
-  if (!trustForwarded) return "unknown";
-
-  const trustCloudflare =
-    process.env.TRUST_CLOUDFLARE_IP_HEADER?.trim().toLowerCase() === "true";
-
-  if (trustCloudflare) {
-    const cfIp = request.headers.get("cf-connecting-ip");
-    if (cfIp && isValidIp(cfIp)) return cfIp.trim();
-  }
-
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp && isValidIp(realIp)) return realIp.trim();
-
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const parts = forwarded.split(",").map((s) => s.trim()).filter(Boolean);
-    // Rightmost non-empty IP is the one appended by the nearest trusted reverse proxy
-    for (let i = parts.length - 1; i >= 0; i--) {
-      const candidate = parts[i];
-      if (isValidIp(candidate)) {
-        return candidate;
-      }
-    }
-  }
-
-  return "unknown";
+  return resolveCanonicalClientIp(request);
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   deleteProductCloudinaryFolder,
   buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
+import { isCloudinaryUrl } from "@/lib/cloudinary-delivery";
 import { publishCatalogChange } from "@/lib/catalog-sync";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
@@ -265,7 +266,7 @@ export async function PUT(
 
       for (const oldImg of existing.images) {
         const oldSrc = typeof oldImg === "string" ? oldImg : oldImg?.src;
-        if (oldSrc && typeof oldSrc === "string" && oldSrc.includes("res.cloudinary.com")) {
+        if (oldSrc && typeof oldSrc === "string" && isCloudinaryUrl(oldSrc, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
           const oldPub = extractPublicIdFromUrl(oldSrc);
           const oldBasename = oldPub ? oldPub.split("/").pop() : "";
 
@@ -383,7 +384,7 @@ export async function DELETE(
     if (Array.isArray(product.images)) {
       for (const img of product.images) {
         const src = typeof img === "string" ? img : img?.src;
-        if (src && typeof src === "string" && src.includes("res.cloudinary.com")) {
+        if (src && typeof src === "string" && isCloudinaryUrl(src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
           imageSrcs.push(src);
           const folder = extractProductFolderFromUrl(src, productIdentifiers);
           if (folder) {

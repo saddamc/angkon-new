@@ -5,6 +5,7 @@ import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
+import { isCloudinaryUrl } from "@/lib/cloudinary-delivery";
 import { publishCatalogChange } from "@/lib/catalog-sync";
 import { syncProductCategoryRefs } from "@/server/categories/category-sync";
 import { cleanCategoryInput } from "@/server/categories/category-input";
@@ -37,7 +38,7 @@ export async function PATCH(
     const input = cleanCategoryInput(body);
 
     // If category image changed or was cleared, delete old Cloudinary image
-    if (oldCategory.image?.src && oldCategory.image.src.includes("res.cloudinary.com")) {
+    if (oldCategory.image?.src && isCloudinaryUrl(oldCategory.image.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
       const newImgSrc = input.image?.src;
       if (!newImgSrc || newImgSrc !== oldCategory.image.src) {
         try {

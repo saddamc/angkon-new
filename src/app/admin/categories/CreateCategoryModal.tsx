@@ -135,6 +135,7 @@ export function CreateCategoryModal({
   const [imageUrl, setImageUrl] = useState("");
   const [imageAlt, setImageAlt] = useState("");
   const [imageId, setImageId] = useState<number | null>(null);
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [sortOrder, setSortOrder] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -150,12 +151,40 @@ export function CreateCategoryModal({
   const parentDropdownRef = useRef<HTMLDivElement>(null);
   const crossDropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const stagedBlobUrlsRef = useRef<Set<string>>(new Set());
 
-  // Session uploaded images tracking for automatic Cloudinary cleanup if modal is dismissed
+  // Session uploaded images tracking for automatic Cloudinary cleanup if DB save fails & modal closes
   const sessionUploadedRef = useRef<Array<{ id: number | null; url: string }>>([]);
   const isSavedRef = useRef(false);
 
+  const revokeStagedBlobs = () => {
+    stagedBlobUrlsRef.current.forEach((blobUrl) => {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        /* ignore */
+      }
+    });
+    stagedBlobUrlsRef.current.clear();
+  };
+
+  useEffect(() => {
+    const blobSet = stagedBlobUrlsRef.current;
+    return () => {
+      blobSet.forEach((blobUrl) => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          /* ignore */
+        }
+      });
+      blobSet.clear();
+    };
+  }, []);
+
   const handleClose = async () => {
+    revokeStagedBlobs();
+    setStagedFile(null);
     if (!isSavedRef.current && sessionUploadedRef.current.length > 0) {
       const toDelete = [...sessionUploadedRef.current];
       sessionUploadedRef.current = [];
@@ -174,6 +203,7 @@ export function CreateCategoryModal({
   // Sync state whenever modal opens or props change
   useEffect(() => {
     if (isOpen) {
+      revokeStagedBlobs();
       isSavedRef.current = false;
       sessionUploadedRef.current = [];
       const targetType = initialParentId ? "sub" : initialType;
@@ -186,6 +216,7 @@ export function CreateCategoryModal({
       setImageUrl("");
       setImageAlt("");
       setImageId(null);
+      setStagedFile(null);
       setIsActive(true);
       setError("");
 
@@ -214,7 +245,7 @@ export function CreateCategoryModal({
     setSortOrder(count);
   };
 
-  // Image Upload handler
+  // Stage image locally without uploading to Cloudinary until Create Category is clicked
   const uploadFile = async (file: File) => {
     if (!file) return;
     setError("");
@@ -225,44 +256,24 @@ export function CreateCategoryModal({
         throw new Error("Image exceeds 8MB. Please choose a smaller photo.");
       }
 
-      const catSlugClean = (slugify(name) || "category")
-        .toUpperCase()
-        .replace(/[^A-Z0-9_\s-]/g, "")
-        .replace(/[\s-]+/g, "_");
-      let folder = `ANGKON/CATEGORIES/${catSlugClean}`;
-      if (type === "sub" && parent) {
-        const parentCat = flat.find((c) => c.id === parent);
-        const pSlug = (parentCat?.slug || "parent")
-          .toUpperCase()
-          .replace(/[^A-Z0-9_\s-]/g, "")
-          .replace(/[\s-]+/g, "_");
-        folder = `ANGKON/CATEGORIES/${pSlug}/${catSlugClean}`;
+      if (imageUrl.startsWith("blob:") && stagedBlobUrlsRef.current.has(imageUrl)) {
+        stagedBlobUrlsRef.current.delete(imageUrl);
+        try {
+          URL.revokeObjectURL(imageUrl);
+        } catch {
+          /* ignore */
+        }
       }
 
-      const fd = new FormData();
-      fd.append("image", prepared);
-      fd.append("folder", folder);
-      fd.append("uploadType", "category");
-      fd.append("category", type === "sub" && parent ? (flat.find((c) => c.id === parent)?.slug || "parent") : catSlugClean);
-      if (type === "sub") {
-        fd.append("subcategory", catSlugClean);
-      }
-
-      const res = await authFetch("/api/admin/upload", { method: "POST", body: fd });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || `Upload failed (${res.status})`);
-      }
-      const data = await res.json();
-      setImageUrl(data.url);
-      const numericId = data.id && Number.isFinite(Number(data.id)) ? Number(data.id) : null;
-      setImageId(numericId);
-      sessionUploadedRef.current.push({ id: numericId, url: data.url });
+      const previewUrl = URL.createObjectURL(prepared);
+      stagedBlobUrlsRef.current.add(previewUrl);
+      setImageUrl(previewUrl);
+      setImageId(null);
+      setStagedFile(prepared);
       if (!imageAlt) setImageAlt(name.trim());
-      showToast("Cover image uploaded in WebP format successfully!");
     } catch (err: unknown) {
       const e = err as { message?: string } | undefined;
-      setError(e?.message || "Failed to upload image.");
+      setError(e?.message || "Failed to prepare image.");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -312,6 +323,60 @@ export function CreateCategoryModal({
 
     try {
       const finalParent = type === "main" ? 0 : Number(parent);
+      let finalImageUrl = imageUrl.startsWith("blob:") ? "" : imageUrl.trim();
+      let finalImageId = imageId && Number.isFinite(Number(imageId)) ? Number(imageId) : null;
+
+      if (stagedFile) {
+        const catSlugClean = (slugify(trimmedName) || "category")
+          .toUpperCase()
+          .replace(/[^A-Z0-9_\s-]/g, "")
+          .replace(/[\s-]+/g, "_");
+        let folder = `ANGKON/CATEGORIES/${catSlugClean}`;
+        if (type === "sub" && finalParent) {
+          const parentCat = flat.find((c) => c.id === finalParent);
+          const pSlug = (parentCat?.slug || "parent")
+            .toUpperCase()
+            .replace(/[^A-Z0-9_\s-]/g, "")
+            .replace(/[\s-]+/g, "_");
+          folder = `ANGKON/CATEGORIES/${pSlug}/${catSlugClean}`;
+        }
+
+        const fd = new FormData();
+        fd.append("image", stagedFile);
+        fd.append("folder", folder);
+        fd.append("uploadType", "category");
+        fd.append(
+          "category",
+          type === "sub" && finalParent ? (flat.find((c) => c.id === finalParent)?.slug || "parent") : catSlugClean
+        );
+        if (type === "sub") {
+          fd.append("subcategory", catSlugClean);
+        }
+
+        const uploadRes = await authFetch("/api/admin/upload", { method: "POST", body: fd });
+        if (!uploadRes.ok) {
+          const d = await uploadRes.json().catch(() => ({}));
+          throw new Error(d.error || `Image upload failed (${uploadRes.status})`);
+        }
+        const uploadData = await uploadRes.json();
+        finalImageUrl = uploadData.url || "";
+        finalImageId = uploadData.id && Number.isFinite(Number(uploadData.id)) ? Number(uploadData.id) : null;
+
+        if (imageUrl.startsWith("blob:") && stagedBlobUrlsRef.current.has(imageUrl)) {
+          stagedBlobUrlsRef.current.delete(imageUrl);
+          try {
+            URL.revokeObjectURL(imageUrl);
+          } catch {
+            /* ignore */
+          }
+        }
+        setImageUrl(finalImageUrl);
+        setImageId(finalImageId);
+        setStagedFile(null);
+        if (finalImageUrl) {
+          sessionUploadedRef.current.push({ id: finalImageId, url: finalImageUrl });
+        }
+      }
 
       const payload = {
         name: trimmedName,
@@ -319,22 +384,22 @@ export function CreateCategoryModal({
         parent: finalParent,
         linked_parents: linkedParents,
         menu_order: Math.max(0, Math.floor(Number(sortOrder) || 0)),
-        imageUrl: imageUrl.trim(),
-        imageId: imageId && Number.isFinite(Number(imageId)) ? Number(imageId) : null,
+        imageUrl: finalImageUrl,
+        imageId: finalImageId,
         imageAlt: imageAlt.trim() || trimmedName,
         icon: "",
         bgTheme: "blue",
         meta_data: [
           { key: "_is_active", value: String(isActive) },
-          { key: "ps_category_image", value: imageUrl.trim() },
-          { key: "angkon_category_image", value: imageUrl.trim() },
+          { key: "ps_category_image", value: finalImageUrl },
+          { key: "angkon_category_image", value: finalImageUrl },
           { key: "_angkon_icon", value: "" },
           { key: "_angkon_bgTheme", value: "blue" },
         ],
-        image: imageUrl.trim()
+        image: finalImageUrl
           ? {
-              id: imageId && Number.isFinite(Number(imageId)) && Number(imageId) > 0 ? Number(imageId) : Date.now(),
-              src: imageUrl.trim(),
+              id: finalImageId && finalImageId > 0 ? finalImageId : Date.now(),
+              src: finalImageUrl,
               alt: imageAlt.trim() || trimmedName,
             }
           : null,
@@ -381,6 +446,7 @@ export function CreateCategoryModal({
         setImageUrl("");
         setImageAlt("");
         setImageId(null);
+        setStagedFile(null);
         setDescription("");
         setSortOrder((prev) => prev + 1);
         setTimeout(() => nameInputRef.current?.focus(), 100);
@@ -517,13 +583,22 @@ export function CreateCategoryModal({
 
             {imageUrl ? (
               <div className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50 shadow-xs group">
-                <Image
-                  src={imageUrl}
-                  alt={imageAlt || name}
-                  width={600}
-                  height={112}
-                  className="h-24 w-full object-cover object-center"
-                />
+                {imageUrl.startsWith("blob:") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={imageUrl}
+                    alt={imageAlt || name}
+                    className="h-24 w-full object-cover object-center"
+                  />
+                ) : (
+                  <Image
+                    src={imageUrl}
+                    alt={imageAlt || name}
+                    width={600}
+                    height={112}
+                    className="h-24 w-full object-cover object-center"
+                  />
+                )}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
                   <button
                     type="button"
@@ -539,6 +614,16 @@ export function CreateCategoryModal({
                       const toDeleteId = imageId;
                       setImageUrl("");
                       setImageId(null);
+                      setStagedFile(null);
+                      if (toDeleteUrl.startsWith("blob:") && stagedBlobUrlsRef.current.has(toDeleteUrl)) {
+                        stagedBlobUrlsRef.current.delete(toDeleteUrl);
+                        try {
+                          URL.revokeObjectURL(toDeleteUrl);
+                        } catch {
+                          /* ignore */
+                        }
+                        return;
+                      }
                       if (toDeleteUrl) {
                         sessionUploadedRef.current = sessionUploadedRef.current.filter(
                           (item) => item.url !== toDeleteUrl

@@ -17,23 +17,42 @@ export interface CloudinaryFolderOptions {
   subcategory?: string;
   ancestors?: string[];
   product?: string;
+  productId?: number | string;
 }
 
 export interface CategoryFolderOptions {
   category?: string;
   subcategory?: string;
   ancestors?: string[];
+  categoryId?: number;
 }
 
 /**
- * Builds standard hierarchical Cloudinary folder path for categories:
- * ANGKON / CATEGORIES / [PARENT_CATEGORY] / <CATEGORY_NAME_OR_SLUG>
+ * Normalizes any Cloudinary folder or public_id to the single canonical `ANGKON/` root.
+ * Rejects environment-specific roots such as ANGKON_DEV, ANGKON_PREVIEW, or ANGKON_TEST.
+ */
+export function normalizeToSingleCloudinaryRoot(folderOrId: string): string {
+  const cleaned = (folderOrId || "").trim().replace(/^\/+|\/+$/g, "");
+  if (!cleaned) return "ANGKON";
+  const withoutEnvPrefix = cleaned.replace(/^ANGKON_(?:DEV|PREVIEW|TEST)(?:\/|$)/i, "ANGKON/");
+  if (withoutEnvPrefix === "ANGKON/" || withoutEnvPrefix === "ANGKON") return "ANGKON";
+  if (withoutEnvPrefix.startsWith("ANGKON/")) return withoutEnvPrefix.replace(/\/+$/, "");
+  return `ANGKON/${withoutEnvPrefix}`.replace(/\/+$/, "");
+}
+
+/**
+ * Builds standard hierarchical Cloudinary folder path for categories under the single `ANGKON/` root.
  */
 export function buildCategoryFolderPath({
   category,
   subcategory,
   ancestors = [],
+  categoryId,
 }: CategoryFolderOptions = {}): string {
+  if (categoryId && Number.isFinite(Number(categoryId)) && !category && !subcategory && ancestors.length === 0) {
+    return `ANGKON/Categories/category-${Number(categoryId)}`;
+  }
+
   const parts: string[] = ["ANGKON", "CATEGORIES"];
 
   if (ancestors && ancestors.length > 0) {
@@ -138,9 +157,15 @@ export async function uploadToCloudinary(
   options: UploadOptions = {}
 ): Promise<UploadApiResponse> {
   const appEnv = getAppEnvironment();
+  const uploadFolder = normalizeToSingleCloudinaryRoot(options.folder || "ANGKON");
+  const targetPublicId = options.publicId
+    ? normalizeToSingleCloudinaryRoot(options.publicId)
+    : undefined;
+
   if (appEnv === "test") {
+    const mockPublicId = targetPublicId || `${uploadFolder}/test_mock_${Date.now()}`;
     return {
-      public_id: options.publicId || `test_mock_${Date.now()}`,
+      public_id: mockPublicId,
       version: 1,
       format: options.format || "webp",
       resource_type: "image",
@@ -148,21 +173,9 @@ export async function uploadToCloudinary(
       bytes: 1024,
       width: 800,
       height: 800,
-      url: "https://res.cloudinary.com/mock/image/upload/mock.webp",
-      secure_url: "https://res.cloudinary.com/mock/image/upload/mock.webp",
+      url: `https://res.cloudinary.com/mock/image/upload/${mockPublicId}.webp`,
+      secure_url: `https://res.cloudinary.com/mock/image/upload/${mockPublicId}.webp`,
     } as UploadApiResponse;
-  }
-  let uploadFolder = options.folder || "ANGKON";
-  let targetPublicId = options.publicId;
-
-  // Strict non-production media isolation: ensure uploads and overwrites cannot touch production "ANGKON/" assets
-  if (appEnv !== "production") {
-    if (!uploadFolder.startsWith("DEV") && !uploadFolder.startsWith("ANGKON_DEV")) {
-      uploadFolder = `ANGKON_DEV/${uploadFolder.replace(/^ANGKON\/?/, "")}`.replace(/\/+$/, "");
-    }
-    if (targetPublicId && targetPublicId.startsWith("ANGKON/") && !targetPublicId.startsWith("ANGKON_DEV/")) {
-      targetPublicId = targetPublicId.replace(/^ANGKON\//, "ANGKON_DEV/");
-    }
   }
 
   const uploadOptions: Record<string, unknown> = {
@@ -249,23 +262,59 @@ export function extractPublicIdFromUrl(urlOrId: string): string {
   }
 }
 
+export interface DeleteCloudinaryOptions {
+  /**
+   * Set true only for explicit admin-confirmed destructive UI actions so local dev
+   * can delete unreferenced assets from the shared ANGKON/ Cloudinary library.
+   * Automated tests and unconfirmed non-prod calls remain safely mocked.
+   */
+  forceConfirmed?: boolean;
+}
+
+/**
+ * Resolves the live Cloudinary `asset_folder` for a URL or public_id in Dynamic Folder Mode.
+ * Returns null if missing or running in test environment.
+ */
+export async function getCloudinaryAssetFolder(publicIdOrUrl: string): Promise<string | null> {
+  if (!publicIdOrUrl || getAppEnvironment() === "test") return null;
+  const publicId = extractDecodedPublicId(publicIdOrUrl);
+  if (!publicId) return null;
+
+  try {
+    const resource = (await cloudinary.api.resource(publicId, {
+      resource_type: "image",
+    })) as { asset_folder?: string };
+    const folder = resource?.asset_folder?.trim().replace(/^\/+|\/+$/g, "");
+    return folder || null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Delete an image permanently from Cloudinary by public_id or full URL.
  */
 export async function deleteFromCloudinary(
-  publicIdOrUrl: string
+  publicIdOrUrl: string,
+  options: DeleteCloudinaryOptions = {}
 ): Promise<{ result: string }> {
   if (!publicIdOrUrl) {
     throw new Error("No public_id or image URL provided for deletion");
   }
 
-  const publicId = extractPublicIdFromUrl(publicIdOrUrl);
+  const publicId = extractDecodedPublicId(publicIdOrUrl);
   if (!publicId) {
     throw new Error("The value is not a valid Cloudinary URL or public_id");
   }
 
   const appEnv = getAppEnvironment();
-  if (appEnv !== "production" && process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true") {
+  const isMockedNonProd =
+    appEnv === "test" ||
+    (appEnv !== "production" &&
+      process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true" &&
+      options.forceConfirmed !== true);
+
+  if (isMockedNonProd) {
     console.info(`[Cloudinary Mock (${appEnv})] Non-production deletion of "${publicId}" safely mocked.`);
     return { result: "ok" };
   }
@@ -337,7 +386,8 @@ export function extractProductFolderFromUrl(
  * Delete an entire folder and all assets under it in Cloudinary with safety guards.
  */
 export async function deleteCloudinaryFolder(
-  folderPath: string
+  folderPath: string,
+  options: DeleteCloudinaryOptions = {}
 ): Promise<{ resourcesDeleted: number; folderDeleted: boolean }> {
   const cleanPath = (folderPath || "").trim().replace(/\/+$/, "");
   const protectedPaths = [
@@ -355,7 +405,13 @@ export async function deleteCloudinaryFolder(
   }
 
   const appEnv = getAppEnvironment();
-  if (appEnv !== "production" && process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true") {
+  const isMockedNonProd =
+    appEnv === "test" ||
+    (appEnv !== "production" &&
+      process.env.ALLOW_PROD_CLOUDINARY_MUTATIONS !== "true" &&
+      options.forceConfirmed !== true);
+
+  if (isMockedNonProd) {
     console.info(`[Cloudinary Mock (${appEnv})] Non-production folder deletion of "${cleanPath}" safely mocked.`);
     return { resourcesDeleted: 0, folderDeleted: true };
   }
@@ -398,7 +454,8 @@ export async function deleteCloudinaryFolder(
  * Safely deletes a product's dedicated Cloudinary folder and all image assets inside it.
  */
 export async function deleteProductCloudinaryFolder(
-  folderPath: string
+  folderPath: string,
+  options: DeleteCloudinaryOptions = {}
 ): Promise<{ resourcesDeleted: number; folderDeleted: boolean }> {
   const cleanPath = (folderPath || "").trim().replace(/\/+$/, "");
   const segments = cleanPath.split("/").filter(Boolean);
@@ -413,7 +470,7 @@ export async function deleteProductCloudinaryFolder(
     return { resourcesDeleted: 0, folderDeleted: false };
   }
 
-  return deleteCloudinaryFolder(cleanPath);
+  return deleteCloudinaryFolder(cleanPath, options);
 }
 
 /**
@@ -426,6 +483,9 @@ export async function createCloudinaryFolder(
   try {
     if (!folderPath || !folderPath.trim()) return { success: false, path: "" };
     const cleanPath = folderPath.trim().replace(/^\/+|\/+$/g, "");
+    if (getAppEnvironment() === "test") {
+      return { success: true, path: cleanPath };
+    }
     await cloudinary.api.create_folder(cleanPath);
     return { success: true, path: cleanPath };
   } catch (error) {
@@ -435,142 +495,237 @@ export async function createCloudinaryFolder(
   }
 }
 
+export interface MoveAssetResult {
+  moved: boolean;
+  publicId: string;
+  previousFolder?: string;
+  targetFolder: string;
+  skippedReason?: string;
+  error?: string;
+}
+
+export interface MoveAssetOptions {
+  api?: typeof cloudinary.api;
+}
+
+export interface DeleteEmptyFolderResult {
+  deletedFolders: string[];
+  skippedReason?: string;
+}
+
+export interface DeleteEmptyFolderOptions {
+  walkUp?: boolean;
+  minDepth?: number;
+  api?: typeof cloudinary.api;
+}
+
+const CORE_PROTECTED_FOLDERS = new Set([
+  "",
+  "ANGKON",
+  "ANGKON/PRODUCTS",
+  "ANGKON/CATEGORIES",
+  "ANGKON/MARKETING",
+  "ANGKON/BANNERS",
+  "ANGKON/ETHNIC_WEAR",
+  "ANGKON/WOMEN",
+  "ANGKON/MEN",
+  "ANGKON/ACCESSORIES",
+  "ANGKON/TEST",
+]);
+
+function extractDecodedPublicId(publicIdOrUrl: string): string {
+  const raw = extractPublicIdFromUrl(publicIdOrUrl);
+  if (!raw) return "";
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+function getCloudinaryErrorCode(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const errObj = error as { http_code?: number; error?: { http_code?: number } };
+  return errObj.http_code ?? errObj.error?.http_code;
+}
+
+function getCloudinaryErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    const errObj = error as { message?: string; error?: { message?: string } };
+    return errObj.error?.message || errObj.message || JSON.stringify(error);
+  }
+  return String(error);
+}
+
 /**
- * Automatically ensures all product images are located inside the matching
- * Cloudinary category folder: ANGKON / <CATEGORY> / [SUBCATEGORY] / <PRODUCT_SLUG>
- * If an image is located elsewhere (e.g. in root ANGKON/ or a previous category),
- * it renames/relocates the image in Cloudinary and updates its URL.
+ * Moves a verified Cloudinary asset to a target Media Library folder (`asset_folder`)
+ * in Dynamic Folder Mode without changing its `public_id` or delivery URL.
+ * Dev and production image URLs remain identical and zero 404s are introduced.
  */
-export async function syncProductImagesToCategoryFolder({
-  images,
-  categories,
-  productSlug,
-}: {
-  images: Array<{ id?: number | string; src: string; public_id?: string; alt?: string; name?: string }>;
-  categories: Array<{ id?: number; name?: string; slug?: string; parent?: number; ancestors?: string[] }>;
-  productSlug: string;
-}): Promise<Array<{ id?: number | string; src: string; public_id?: string; alt?: string; name?: string }>> {
-  if (!images || !Array.isArray(images) || images.length === 0) return images;
+export async function moveAssetToFolder(
+  publicIdOrUrl: string,
+  targetFolder: string,
+  options: MoveAssetOptions = {}
+): Promise<MoveAssetResult> {
+  const publicId = extractDecodedPublicId(publicIdOrUrl);
+  const normalizedTarget = normalizeToSingleCloudinaryRoot(targetFolder);
 
-  let categoryAncestors: string[] = [];
-
-  const subCat = categories.find((c) => c.parent && Number(c.parent) > 0);
-  if (subCat) {
-    const subSlug = subCat.slug || subCat.name || "";
-    let parentCat = categories.find((c) => c.id === subCat.parent);
-    if (!parentCat && subCat.parent) {
-      try {
-        const { default: CategoryModel } = await import("@/models/Category");
-        const found = await CategoryModel.findOne({ id: subCat.parent }).lean();
-        if (found) {
-          parentCat = { id: found.id, name: found.name, slug: found.slug, parent: found.parent };
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-    if (parentCat) {
-      categoryAncestors = [parentCat.slug || parentCat.name || "", subSlug];
-    }
-  } else if (categories.length > 0) {
-    categoryAncestors = [categories[0].slug || categories[0].name || ""];
+  if (!publicId) {
+    return {
+      moved: false,
+      publicId: "",
+      targetFolder: normalizedTarget,
+      skippedReason: "invalid-public-id",
+    };
   }
 
-  const explicitAncestors = categories
-    .filter((category) => Array.isArray(category.ancestors) && category.ancestors.length > 0)
-    .sort((a, b) => (b.ancestors?.length || 0) - (a.ancestors?.length || 0))[0]?.ancestors;
-  if (explicitAncestors?.length) categoryAncestors = explicitAncestors;
+  if (!options.api && getAppEnvironment() === "test") {
+    return {
+      moved: false,
+      publicId,
+      targetFolder: normalizedTarget,
+      skippedReason: "test-env-mocked",
+    };
+  }
 
-  const cleanProdSlug = (productSlug || "").trim();
-  if (!cleanProdSlug) return images;
+  const apiClient = options.api || cloudinary.api;
 
-  const targetFolder = buildCloudinaryFolderPath({
-    ancestors: categoryAncestors.filter(Boolean),
-    product: cleanProdSlug,
-  });
+  try {
+    const resource = (await apiClient.resource(publicId, {
+      resource_type: "image",
+    })) as { asset_folder?: string; public_id?: string };
 
-  const updatedImages = [];
-  const foldersToClean = new Set<string>();
+    const canonicalPublicId = resource?.public_id || publicId;
+    const previousFolder = resource?.asset_folder
+      ? resource.asset_folder.trim().replace(/^\/+|\/+$/g, "")
+      : "";
 
-  for (const img of images) {
-    if (
-      !img?.src ||
-      typeof img.src !== "string" ||
-      !isCloudinaryUrl(img.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)
-    ) {
-      updatedImages.push(img);
-      continue;
+    if (previousFolder === normalizedTarget) {
+      return {
+        moved: false,
+        publicId: canonicalPublicId,
+        previousFolder,
+        targetFolder: normalizedTarget,
+        skippedReason: "already-in-target",
+      };
     }
 
-    const currentPublicId = extractPublicIdFromUrl(img.src);
-    if (!currentPublicId) {
-      updatedImages.push(img);
-      continue;
-    }
-
-    // Already in correct folder
-    if (currentPublicId.startsWith(targetFolder + "/")) {
-      updatedImages.push(img);
-      continue;
-    }
-
-    const fileName = currentPublicId.split("/").pop();
-    if (!fileName) {
-      updatedImages.push(img);
-      continue;
-    }
-
-    const oldFolder = currentPublicId.substring(0, currentPublicId.lastIndexOf("/"));
-    const newPublicId = `${targetFolder}/${fileName}`;
     try {
-      const renameRes = await cloudinary.uploader.rename(currentPublicId, newPublicId, {
-        overwrite: true,
-        invalidate: true,
-      });
-
-      // Synchronize asset_folder in Cloudinary's dynamic Media Library so old folder is emptied
-      try {
-        await cloudinary.api.update(newPublicId, { asset_folder: targetFolder });
-      } catch (assetFolderErr) {
-        console.warn(`Could not update asset_folder for "${newPublicId}":`, assetFolderErr);
-      }
-
-      updatedImages.push({
-        ...img,
-        src: renameRes.secure_url,
-        ...(img.public_id !== undefined ? { public_id: renameRes.public_id || newPublicId } : {}),
-      });
-      if (oldFolder && oldFolder !== targetFolder) {
-        foldersToClean.add(oldFolder);
-      }
-    } catch (err: unknown) {
-      // If image doesn't exist on Cloudinary or failed to rename, preserve original img
-      const errObj = err as { message?: string } | undefined;
-      console.warn(`Could not relocate image "${currentPublicId}" to "${newPublicId}":`, errObj?.message || err);
-      updatedImages.push(img);
+      await apiClient.create_folder(normalizedTarget);
+    } catch {
+      // Ignore error when target folder already exists in Media Library
     }
+
+    await apiClient.update(canonicalPublicId, {
+      asset_folder: normalizedTarget,
+    });
+
+    return {
+      moved: true,
+      publicId: canonicalPublicId,
+      previousFolder,
+      targetFolder: normalizedTarget,
+    };
+  } catch (error) {
+    if (getCloudinaryErrorCode(error) === 404) {
+      return {
+        moved: false,
+        publicId,
+        targetFolder: normalizedTarget,
+        skippedReason: "not-found",
+      };
+    }
+
+    return {
+      moved: false,
+      publicId,
+      targetFolder: normalizedTarget,
+      error: getCloudinaryErrorMessage(error),
+    };
+  }
+}
+
+/**
+ * Deletes an empty Cloudinary folder ONLY after confirming 0 assets and 0 subfolders exist.
+ * Never deletes any asset (`delete_resources*` is never called) and protects top-level roots.
+ * Walks up empty leaf ancestors strictly deeper than depth 2 (`ANGKON/<CAT>/...`).
+ */
+export async function deleteCloudinaryFolderIfEmpty(
+  folderPath: string,
+  options: DeleteEmptyFolderOptions = {}
+): Promise<DeleteEmptyFolderResult> {
+  const { walkUp = true, minDepth = 3 } = options;
+  const cleanInitial = (folderPath || "").trim().replace(/^\/+|\/+$/g, "");
+
+  if (!cleanInitial) {
+    return { deletedFolders: [], skippedReason: "empty-path" };
   }
 
-  // Safely clean up and remove any leftover emptied old product folders
-  for (const oldF of foldersToClean) {
-    const protectedFolders = [
-      "",
-      "ANGKON",
-      "ANGKON/CATEGORIES",
-      "ANGKON/PRODUCTS",
-      "ANGKON/ETHNIC_WEAR",
-      "ANGKON/WOMEN",
-      "ANGKON/MEN",
-      "ANGKON/TEST",
-    ];
-    if (!protectedFolders.includes(oldF)) {
-      try {
-        await deleteProductCloudinaryFolder(oldF);
-      } catch (fErr) {
-        console.warn(`Could not delete old product folder "${oldF}":`, fErr);
-      }
-    }
+  if (!options.api && getAppEnvironment() === "test") {
+    return { deletedFolders: [], skippedReason: "test-env-mocked" };
   }
 
-  return updatedImages;
+  const apiClient = options.api || cloudinary.api;
+  const deletedFolders: string[] = [];
+  let current = cleanInitial;
+  let isInitial = true;
+
+  while (current) {
+    const segments = current.split("/").filter(Boolean);
+    const depthLimit = isInitial ? Math.max(2, minDepth) : Math.max(3, minDepth);
+
+    if (
+      segments[0] !== "ANGKON" ||
+      segments.length < depthLimit ||
+      CORE_PROTECTED_FOLDERS.has(current)
+    ) {
+      if (isInitial) {
+        return { deletedFolders, skippedReason: "protected-path" };
+      }
+      break;
+    }
+
+    try {
+      const [resourcesRes, subFoldersRes] = await Promise.all([
+        apiClient.resources_by_asset_folder(current, { max_results: 1 }),
+        apiClient.sub_folders(current),
+      ]);
+
+      const hasResources = (resourcesRes?.resources?.length ?? 0) > 0;
+      const hasSubFolders = (subFoldersRes?.folders?.length ?? 0) > 0;
+
+      if (hasResources || hasSubFolders) {
+        if (isInitial) {
+          return {
+            deletedFolders,
+            skippedReason: hasResources ? "folder-has-resources" : "folder-has-subfolders",
+          };
+        }
+        break;
+      }
+
+      await apiClient.delete_folder(current);
+      deletedFolders.push(current);
+    } catch (error) {
+      if (getCloudinaryErrorCode(error) === 404) {
+        if (isInitial) {
+          return { deletedFolders, skippedReason: "folder-not-found" };
+        }
+        // Already absent; continue walking parent leaf if empty
+      } else {
+        if (isInitial) {
+          return { deletedFolders, skippedReason: getCloudinaryErrorMessage(error) };
+        }
+        break;
+      }
+    }
+
+    if (!walkUp) break;
+    isInitial = false;
+    segments.pop();
+    current = segments.join("/");
+  }
+
+  return { deletedFolders };
 }

@@ -22,21 +22,15 @@ export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
   const byId = new Map<number, CategoryNode>();
   flat.forEach((category) => byId.set(category.id, { ...category, children: [] }));
 
-  // Identify categories that are linked to another parent so they are not placed as duplicate roots
-  const linkedChildIds = new Set<number>();
-  flat.forEach((category) => {
-    if (Array.isArray(category.linked_parents) && category.linked_parents.length > 0) {
-      linkedChildIds.add(category.id);
-    }
-  });
-
   const roots: CategoryNode[] = [];
   byId.forEach((node) => {
     const parentId = node.parent ?? 0;
     const parent = parentId ? byId.get(parentId) : undefined;
     if (parent) {
       parent.children.push(node);
-    } else if (!linkedChildIds.has(node.id)) {
+    } else {
+      // Categories with parent === 0 (e.g. Ethnic Wear) always appear in root main categories,
+      // even when also cross-listed under another department via linked_parents.
       roots.push(node);
     }
   });
@@ -46,7 +40,7 @@ export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
     if (Array.isArray(category.linked_parents) && category.linked_parents.length > 0) {
       category.linked_parents.forEach((linkedParentId) => {
         const targetParent = byId.get(linkedParentId);
-        if (targetParent && targetParent.id !== category.id) {
+        if (targetParent && targetParent.id !== category.id && targetParent.id !== category.parent) {
           const alreadyExists = targetParent.children.some((child) => child.id === category.id);
           if (!alreadyExists) {
             const originalNode = byId.get(category.id);
@@ -61,6 +55,21 @@ export function buildCategoryTree(flat: WooCategory[]): CategoryNode[] {
       });
     }
   });
+
+  const sortRecursive = (nodes: CategoryNode[], visited: Set<number> = new Set()) => {
+    nodes.sort(
+      (a, b) => (a.menu_order ?? 0) - (b.menu_order ?? 0) || a.name.localeCompare(b.name)
+    );
+    for (const n of nodes) {
+      if (visited.has(n.id)) continue;
+      const nextVisited = new Set(visited);
+      nextVisited.add(n.id);
+      if (Array.isArray(n.children) && n.children.length > 0) {
+        sortRecursive(n.children, nextVisited);
+      }
+    }
+  };
+  sortRecursive(roots);
 
   return roots;
 }

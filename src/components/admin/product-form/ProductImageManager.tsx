@@ -14,11 +14,12 @@ import {
   Crop,
   Check,
 } from "lucide-react";
-import type { ImageItem, PendingUpload } from "./types";
+import type { ImageItem, PendingUpload, StagedUploadState } from "./types";
 
 interface ProductImageManagerProps {
   images: ImageItem[];
   pendingUploads: PendingUpload[];
+  uploadStates?: Record<string, StagedUploadState>;
   uploading: boolean;
   maxImages?: number;
   onFilesSelected: (files: FileList | File[]) => void;
@@ -33,6 +34,7 @@ interface ProductImageManagerProps {
 export function ProductImageManager({
   images,
   pendingUploads,
+  uploadStates = {},
   uploading,
   maxImages = 12,
   onFilesSelected,
@@ -163,7 +165,7 @@ export function ProductImageManager({
       {isDragOverDropzone && (
         <div className="my-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 p-3 text-center text-[12px] font-bold text-white border border-purple-300/40 shadow-md animate-pulse flex items-center justify-center gap-2">
           <UploadCloud className="h-4 w-4 animate-bounce" />
-          <span>Drop images now to automatically convert to WebP &amp; upload!</span>
+          <span>Drop images to preview — uploads only when you save!</span>
         </div>
       )}
 
@@ -212,20 +214,25 @@ export function ProductImageManager({
           {images.map((img, i) => {
             const isBeingDragged = draggedImageIndex === i;
             const isDropTarget = dragOverImageIndex === i;
+            const uploadState = img.stagedId ? uploadStates[img.stagedId] : undefined;
             return (
               <div
-                key={`${img.wpId ?? img.src}-${i}`}
-                draggable={true}
+                key={`${img.stagedId ?? img.wpId ?? img.src}-${i}`}
+                draggable={!uploading}
                 onDragStart={(e) => handleImageDragStart(e, i)}
                 onDragOver={(e) => handleImageDragOver(e, i)}
                 onDragLeave={(e) => handleImageDragLeave(e, i)}
                 onDrop={(e) => handleImageDrop(e, i)}
                 onDragEnd={handleImageDragEnd}
                 className={`relative w-28 aspect-[3/4] rounded-xl overflow-hidden border-2 bg-[#f8f9fa] shadow-2xs group transition-all duration-150 select-none cursor-grab active:cursor-grabbing ${
-                  isBeingDragged
+                  uploadState?.phase === "error"
+                    ? "border-red-400"
+                    : isBeingDragged
                     ? "opacity-30 scale-95 ring-2 ring-purple-600 border-purple-600"
                     : isDropTarget
                     ? "ring-2 ring-purple-600 border-purple-600 scale-105 shadow-md"
+                    : img.stagedFile
+                    ? "border-amber-300 hover:border-purple-400"
                     : "border-stone-200 hover:border-purple-400"
                 }`}
               >
@@ -246,6 +253,45 @@ export function ProductImageManager({
                 >
                   {i === 0 ? "Cover" : `#${i + 1}`}
                 </span>
+
+                {/* Local staged badge (not uploaded to Cloudinary until saved) */}
+                {img.stagedFile && !uploadState && (
+                  <span className="absolute bottom-1 left-1 rounded-md bg-amber-500/90 px-1.5 py-0.5 text-[8.5px] font-bold text-white shadow-xs">
+                    Ready to save
+                  </span>
+                )}
+
+                {/* Per-image upload progress overlay during submit */}
+                {uploadState && (
+                  <div className="absolute inset-0 z-20 flex flex-col justify-end bg-gradient-to-t from-black/85 via-black/45 to-black/15 p-2">
+                    {uploadState.phase === "error" ? (
+                      <p className="text-[9px] font-bold text-red-200 leading-tight line-clamp-2">
+                        {uploadState.error || "Upload failed"}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[9px] font-bold text-white/90 truncate pr-1">
+                            {uploadState.phase === "processing" ? "Saving…" : "Uploading"}
+                          </span>
+                          <span className="text-[10px] font-black text-white tabular-nums">
+                            {uploadState.progress}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-white/25 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-[width] duration-150 ease-out ${
+                              uploadState.phase === "processing"
+                                ? "bg-purple-300 animate-pulse"
+                                : "bg-purple-500"
+                            }`}
+                            style={{ width: `${Math.max(uploadState.progress, 2)}%` }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Drag Grip Handle */}
                 <div
@@ -395,38 +441,34 @@ export function ProductImageManager({
       ) : null}
 
       {/* Batch progress */}
-      {uploading && pendingUploads.length > 0 && (
-        <div className="mt-3 rounded-xl border border-purple-100 bg-purple-50/30 px-3.5 py-2.5">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-purple-700">
-              Uploading {pendingUploads.filter((u) => u.phase !== "error").length} photo
-              {pendingUploads.filter((u) => u.phase !== "error").length !== 1 ? "s" : ""}…
-            </span>
-            <span className="text-[11px] font-black text-purple-700 tabular-nums">
-              {Math.round(
-                pendingUploads
-                  .filter((u) => u.phase !== "error")
-                  .reduce((sum, u) => sum + u.progress, 0) /
-                  Math.max(1, activePendingCount)
-              )}
-              % overall
-            </span>
+      {(() => {
+        const activeStateUploads = Object.values(uploadStates).filter((s) => s.phase !== "error");
+        const activeLegacyPending = pendingUploads.filter((u) => u.phase !== "error");
+        const activeItems = activeStateUploads.length > 0 ? activeStateUploads : activeLegacyPending;
+        if (!uploading || activeItems.length === 0) return null;
+        const pct = Math.round(
+          activeItems.reduce((sum, u) => sum + u.progress, 0) / Math.max(1, activeItems.length)
+        );
+        return (
+          <div className="mt-3 rounded-xl border border-purple-100 bg-purple-50/30 px-3.5 py-2.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-bold text-purple-700">
+                Uploading {activeItems.length} photo
+                {activeItems.length !== 1 ? "s" : ""}…
+              </span>
+              <span className="text-[11px] font-black text-purple-700 tabular-nums">
+                {pct}% overall
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-stone-200 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-[width] duration-200 ease-out"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
           </div>
-          <div className="h-2 w-full rounded-full bg-stone-200 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-[width] duration-200 ease-out"
-              style={{
-                width: `${Math.round(
-                  pendingUploads
-                    .filter((u) => u.phase !== "error")
-                    .reduce((sum, u) => sum + u.progress, 0) /
-                    Math.max(1, activePendingCount)
-                )}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       <input
         ref={fileRef}

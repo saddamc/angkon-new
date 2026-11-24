@@ -1,10 +1,10 @@
 "use client";
 
-import { Check, AlertCircle } from "lucide-react";
 import { CreateCategoryModal } from "../CreateCategoryModal";
 import { DeleteConfirmModal } from "../DeleteConfirmModal";
 import { MoveModal } from "../MoveModal";
-import { catName, subtreeList } from "../category-tree-utils";
+import { subtreeList } from "../category-tree-utils";
+import { AdminProcessingOverlay, AdminToast } from "@/components/admin/AdminToast";
 import type { CategoriesManagerHookReturn } from "../_hooks/use-categories-manager";
 
 interface CategoriesModalsProps {
@@ -14,6 +14,8 @@ interface CategoriesModalsProps {
 export function CategoriesModals({ state }: CategoriesModalsProps) {
   const {
     toast,
+    setToast,
+    processing,
     deleteCat,
     setDeleteCat,
     deleting,
@@ -32,27 +34,33 @@ export function CategoriesModals({ state }: CategoriesModalsProps) {
 
   return (
     <>
+      {processing && (
+        <AdminProcessingOverlay
+          label={processing.label}
+          detail={processing.detail}
+          blocking={processing.blocking}
+        />
+      )}
+
       {toast && (
-        <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-xl text-[14px] font-bold text-white transition-all ${
-            toast.ok ? "bg-emerald-600" : "bg-red-500"
-          }`}
-        >
-          {toast.ok ? <Check className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-          {toast.msg}
-        </div>
+        <AdminToast
+          message={toast.msg}
+          ok={toast.ok}
+          onClose={() => setToast(null)}
+        />
       )}
 
       {deleteCat && (
         <DeleteConfirmModal
           cat={deleteCat}
+          flat={flat}
           subCount={subtreeList(flat, deleteCat.id).length - 1}
           productCount={deleteCat.count || 0}
           deleting={deleting === deleteCat.id}
           onClose={() => {
             if (deleting !== deleteCat.id) setDeleteCat(null);
           }}
-          onConfirm={() => void confirmDelete()}
+          onConfirm={(opts) => void confirmDelete(opts)}
         />
       )}
 

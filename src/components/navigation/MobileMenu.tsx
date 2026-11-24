@@ -99,6 +99,11 @@ export function MobileMenu({ categoryTree, isOpen, onClose }: MobileMenuProps) {
               </Link>
             </li>
             <li>
+              <Link href="/product-category/ethnic-wear" onClick={onClose} className="block border-b border-[#E1B76F]/15 px-6 py-3.5 hover:bg-[#280504] transition">
+                Ethnic Wear
+              </Link>
+            </li>
+            <li>
               <Link href="/product-category/men" onClick={onClose} className="block border-b border-[#E1B76F]/15 px-6 py-3.5 hover:bg-[#280504] transition">
                 Men
               </Link>

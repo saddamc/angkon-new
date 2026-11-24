@@ -38,6 +38,12 @@ export function useCategoriesManager() {
     initialParentId?: number;
   } | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [processing, setProcessing] = useState<{
+    label: string;
+    detail?: string;
+    blocking?: boolean;
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -73,8 +79,12 @@ export function useCategoriesManager() {
   const collapseAll = () => setCollapsedIds(new Set(parentsWithChildrenIds(flat)));
 
   const showToast = useCallback((msg: string, ok = true) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3000);
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 3500);
   }, []);
 
   const flatRef = useRef<WCCategory[]>(flat);
@@ -181,7 +191,66 @@ export function useCategoriesManager() {
   }, [search, flat]);
 
   const handleSave = async (data: FormData & { id?: number }) => {
+    setProcessing({
+      label: data.id ? "Updating category..." : "Creating category...",
+      detail: data.stagedFile
+        ? "Uploading image & saving category"
+        : "Saving category details",
+      blocking: false,
+    });
     const parent = data.type === "main" ? 0 : data.parent;
+    let finalImageUrl = data.imageUrl || "";
+    let finalImageId =
+      data.imageId && Number.isFinite(Number(data.imageId)) ? Number(data.imageId) : null;
+    let finalImageAlt = data.imageAlt || data.name;
+    let newlyUploadedUrl: string | null = null;
+
+    if (data.stagedFile) {
+      const list = flatRef.current;
+      const catSlugClean = (data.slug.trim() || slugify(data.name) || "CATEGORY")
+        .toUpperCase()
+        .replace(/[^A-Z0-9_\s-]/g, "")
+        .replace(/[\s-]+/g, "_");
+
+      let folder = `ANGKON/CATEGORIES/${catSlugClean}`;
+      if (data.type === "sub" && parent) {
+        const ancestors = ancestorIdsOf(list, parent).reverse();
+        const ancestorSlugs = [...ancestors, parent]
+          .map((id) => list.find((c) => c.id === id)?.slug || list.find((c) => c.id === id)?.name)
+          .filter(Boolean) as string[];
+        const ancestorParts = ancestorSlugs.map((s) =>
+          s.toUpperCase().replace(/[^A-Z0-9_\s-]/g, "").replace(/[\s-]+/g, "_")
+        );
+        folder = ["ANGKON", "CATEGORIES", ...ancestorParts, catSlugClean].join("/");
+      }
+
+      const fd = new globalThis.FormData();
+      fd.append("image", data.stagedFile);
+      fd.append("folder", folder);
+      fd.append("uploadType", "category");
+      if (data.type === "sub" && parent) {
+        const parentCat = list.find((c) => c.id === parent);
+        fd.append("category", parentCat?.slug || parentCat?.name || "PARENT");
+        fd.append("subcategory", data.slug.trim() || data.name);
+      } else {
+        fd.append("category", data.slug.trim() || data.name);
+      }
+
+      const uploadRes = await authFetch("/api/admin/upload", { method: "POST", body: fd });
+      if (!uploadRes.ok) {
+        const d = await uploadRes.json().catch(() => ({}));
+        if (uploadRes.status === 413) throw new Error("The image is too large for the server. Please choose a smaller image.");
+        if (uploadRes.status === 401) throw new Error("Your admin session expired. Please log in again.");
+        if (uploadRes.status === 503) throw new Error("Image storage isn't set up on this server: add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in the hosting environment variables, then redeploy.");
+        throw new Error(d.error || `Upload failed (${uploadRes.status})`);
+      }
+      const uploadData = await uploadRes.json();
+      finalImageUrl = uploadData.url || "";
+      finalImageId = uploadData.id && Number.isFinite(Number(uploadData.id)) ? Number(uploadData.id) : null;
+      finalImageAlt = uploadData.alt || data.imageAlt || data.name;
+      newlyUploadedUrl = finalImageUrl || null;
+    }
+
     const payload = {
       name: data.name.trim(),
       slug: data.slug.trim() || slugify(data.name),
@@ -189,70 +258,82 @@ export function useCategoriesManager() {
       parent,
       linked_parents: data.linkedParents || [],
       menu_order: data.sortOrder,
-      imageUrl: data.imageUrl || "",
-      imageId: data.imageId && Number.isFinite(Number(data.imageId)) ? Number(data.imageId) : null,
-      imageAlt: data.imageAlt || data.name,
+      imageUrl: finalImageUrl,
+      imageId: finalImageId,
+      imageAlt: finalImageAlt,
       icon: data.icon || "",
       bgTheme: data.bgTheme || "blue",
       meta_data: [
         { key: "_is_active", value: String(data.isActive) },
-        { key: "ps_category_image", value: data.imageUrl || "" },
-        { key: "angkon_category_image", value: data.imageUrl || "" },
+        { key: "ps_category_image", value: finalImageUrl },
+        { key: "angkon_category_image", value: finalImageUrl },
         { key: "_angkon_icon", value: data.icon },
         { key: "_angkon_bgTheme", value: data.bgTheme },
       ],
-      image: data.imageUrl
+      image: finalImageUrl
         ? {
-            id:
-              data.imageId && Number.isFinite(Number(data.imageId)) && Number(data.imageId) > 0
-                ? Number(data.imageId)
-                : Date.now(),
-            src: data.imageUrl,
-            alt: data.imageAlt || data.name,
+            id: finalImageId && finalImageId > 0 ? finalImageId : Date.now(),
+            src: finalImageUrl,
+            alt: finalImageAlt,
           }
         : null,
     };
 
     let categoryId = data.id;
-    if (data.id) {
-      const res = await authFetch(`/api/admin/categories/${data.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || err.error || "Failed to update category");
+    try {
+      if (data.id) {
+        const res = await authFetch(`/api/admin/categories/${data.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || err.error || "Failed to update category");
+        }
+      } else {
+        const res = await authFetch("/api/admin/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.details || err.message || err.error || "Failed to create category");
+        }
+        const created = await res.json();
+        categoryId = created.id;
       }
-    } else {
-      const res = await authFetch("/api/admin/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.details || err.message || err.error || "Failed to create category");
+    } catch (saveErr) {
+      if (newlyUploadedUrl) {
+        void authFetch("/api/admin/upload", {
+          method: "DELETE",
+          body: JSON.stringify({ url: newlyUploadedUrl, id: finalImageId }),
+        }).catch(() => {});
       }
-      const created = await res.json();
-      categoryId = created.id;
+      setProcessing(null);
+      throw saveErr;
     }
 
-    if (categoryId) {
-      const relocateRes = await authFetch("/api/admin/categories/relocate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: categoryId, parent, index: data.sortOrder }),
-      });
-      if (!relocateRes.ok) throw new Error("Saved, but could not update list position");
-    }
+    try {
+      if (categoryId) {
+        const relocateRes = await authFetch("/api/admin/categories/relocate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: categoryId, parent, index: data.sortOrder }),
+        });
+        if (!relocateRes.ok) throw new Error("Saved, but could not update list position");
+      }
 
-    showToast(data.id ? "Category updated successfully!" : "Category created successfully!");
-    if (categoryId) {
-      selectedCatIdRef.current = categoryId;
-      setSelectedCatId(categoryId);
+      showToast(data.id ? "Category updated successfully!" : "Category created successfully!");
+      if (categoryId) {
+        selectedCatIdRef.current = categoryId;
+        setSelectedCatId(categoryId);
+      }
+      await load(true);
+    } finally {
+      setProcessing(null);
     }
-    await load(true);
   };
 
   const handleDelete = (e: React.MouseEvent, cat: WCCategory) => {
@@ -264,21 +345,55 @@ export function useCategoriesManager() {
     setDeleteCat(cat);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = async (
+    options: { mode: "shift" | "delete_products"; targetCategoryId?: number } = {
+      mode: "delete_products",
+    }
+  ) => {
     if (!deleteCat) return;
     setDeleting(deleteCat.id);
+    setProcessing({
+      label:
+        options.mode === "shift"
+          ? `Shifting products & deleting “${catName(deleteCat)}”...`
+          : `Deleting “${catName(deleteCat)}”...`,
+      detail: "Updating store & removing unused media",
+      blocking: true,
+    });
     try {
-      const res = await authFetch(`/api/admin/categories?id=${deleteCat.id}&delete_products=true`, {
+      const params = new URLSearchParams({
+        id: String(deleteCat.id),
+        mode: options.mode,
+        delete_cloudinary: "true",
+      });
+      if (options.mode === "shift" && options.targetCategoryId) {
+        params.set("target_category_id", String(options.targetCategoryId));
+      }
+      const res = await authFetch(`/api/admin/categories?${params.toString()}`, {
         method: "DELETE",
       });
+      if (res.status === 401) {
+        showToast("Your admin session expired. Please log in again.", false);
+        setDeleteCat(null);
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.href = "/admin";
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         showToast(data.error || data.message || "Failed to delete category", false);
         return;
       }
-      const extra = data.deletedProducts
-        ? ` and ${data.deletedProducts} product${data.deletedProducts === 1 ? "" : "s"}`
-        : "";
+      const details: string[] = [];
+      if (data.shiftedProducts) {
+        details.push(`shifted ${data.shiftedProducts} product${data.shiftedProducts === 1 ? "" : "s"}`);
+      } else if (data.deletedProducts) {
+        details.push(`removed ${data.deletedProducts} product${data.deletedProducts === 1 ? "" : "s"}`);
+      }
+      if (data.cloudinaryAssetsDeleted) {
+        details.push(`${data.cloudinaryAssetsDeleted} image${data.cloudinaryAssetsDeleted === 1 ? "" : "s"} removed`);
+      }
+      const extra = details.length > 0 ? ` (${details.join(", ")})` : "";
       showToast(`“${catName(deleteCat)}” deleted${extra}`);
       if (selectedCatIdRef.current === deleteCat.id) {
         selectedCatIdRef.current = null;
@@ -289,6 +404,7 @@ export function useCategoriesManager() {
       await load(true);
     } finally {
       setDeleting(null);
+      setProcessing(null);
     }
   };
 
@@ -407,12 +523,26 @@ export function useCategoriesManager() {
       });
     }
 
+    setProcessing({
+      label:
+        dragged.parent === newParent
+          ? `Reordering “${catName(dragged)}”...`
+          : `Moving “${catName(dragged)}”...`,
+      detail: "Updating category hierarchy",
+      blocking: false,
+    });
     try {
       const res = await authFetch("/api/admin/categories/reorder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
+      if (res.status === 401) {
+        showToast("Your admin session expired. Please log in again.", false);
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.href = "/admin";
+        return;
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Could not save the new position");
@@ -427,6 +557,8 @@ export function useCategoriesManager() {
       );
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Failed to save the move", false);
+    } finally {
+      setProcessing(null);
     }
     await load(true);
   };
@@ -499,6 +631,8 @@ export function useCategoriesManager() {
     setCreateModal,
     toast,
     setToast,
+    processing,
+    setProcessing,
     search,
     setSearch,
     filterType,

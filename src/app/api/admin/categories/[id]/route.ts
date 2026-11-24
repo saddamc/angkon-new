@@ -7,7 +7,10 @@ import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
 import { isCloudinaryUrl } from "@/lib/cloudinary-delivery";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { syncProductCategoryRefs } from "@/server/categories/category-sync";
+import {
+  syncCloudinaryAssetFoldersForCategories,
+  syncProductCategoryRefs,
+} from "@/server/categories/category-sync";
 import { cleanCategoryInput } from "@/server/categories/category-input";
 import { invalidateCategoriesCache } from "@/lib/db/categories";
 
@@ -36,18 +39,6 @@ export async function PATCH(
     }
 
     const input = cleanCategoryInput(body);
-
-    // If category image changed or was cleared, delete old Cloudinary image
-    if (oldCategory.image?.src && isCloudinaryUrl(oldCategory.image.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
-      const newImgSrc = input.image?.src;
-      if (!newImgSrc || newImgSrc !== oldCategory.image.src) {
-        try {
-          await deleteFromCloudinary(oldCategory.image.src);
-        } catch (cloudErr) {
-          console.warn("Failed to delete previous category image from Cloudinary:", cloudErr);
-        }
-      }
-    }
 
     if (input.image && (!input.image.id || input.image.id === 0)) {
       const parsedId = Number(oldCategory.image?.id);
@@ -84,6 +75,23 @@ export async function PATCH(
       { returnDocument: "after" }
     );
 
+    // Deferred cleanup: preserve previous category image until DB update succeeds and new image is verified
+    if (
+      updated &&
+      input.image !== undefined &&
+      oldCategory.image?.src &&
+      isCloudinaryUrl(oldCategory.image.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)
+    ) {
+      const newImgSrc = input.image?.src;
+      if (!newImgSrc || newImgSrc !== oldCategory.image.src) {
+        try {
+          await deleteFromCloudinary(oldCategory.image.src);
+        } catch (cloudErr) {
+          console.warn("Failed to delete previous category image from Cloudinary:", cloudErr);
+        }
+      }
+    }
+
     // Synchronize to src/data/real-categories.json
     try {
       const jsonPath = path.resolve(process.cwd(), "src/data/real-categories.json");
@@ -110,6 +118,20 @@ export async function PATCH(
       ...(input.linked_parents || []),
     ]));
     await syncProductCategoryRefs(refIds);
+
+    const parentChanged = input.parent !== undefined && input.parent !== oldCategory.parent;
+    const slugChanged = Boolean(input.slug && input.slug !== oldCategory.slug);
+    if (parentChanged || slugChanged) {
+      const previousParentById = new Map<number, number>();
+      const previousSlugById = new Map<number, string>();
+      if (parentChanged) previousParentById.set(oldCategory.id, oldCategory.parent || 0);
+      if (slugChanged && oldCategory.slug) previousSlugById.set(oldCategory.id, oldCategory.slug);
+      await syncCloudinaryAssetFoldersForCategories([oldCategory.id], {
+        previousParentById,
+        previousSlugById,
+      });
+    }
+
     invalidateCategoriesCache();
     await publishCatalogChange();
 

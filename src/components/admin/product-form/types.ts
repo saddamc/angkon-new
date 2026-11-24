@@ -1,9 +1,19 @@
 import type { MultiSectionSizeChart, SizeChartData } from "@/utils/size-chart";
 
+export interface StagedUploadState {
+  /** 0–100 while bytes are sending */
+  progress: number;
+  phase: "uploading" | "processing" | "error";
+  error?: string;
+}
+
 export interface ImageItem {
   src: string;
   alt: string;
   wpId?: number;
+  /** Local file staged in memory — uploaded to Cloudinary only when Save / Update Product is clicked. */
+  stagedFile?: File;
+  stagedId?: string;
 }
 
 export interface PendingUpload {

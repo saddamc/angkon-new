@@ -4,7 +4,7 @@ import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
 import { publishCatalogChange } from "@/lib/catalog-sync";
 import { requireAdminSessionCore } from "@/server/auth/admin-auth";
-import { syncProductImagesToCategoryFolder } from "@/lib/cloudinary";
+import { syncSingleProductAssetFolders } from "@/server/categories/category-sync";
 
 
 export async function POST(request: NextRequest) {
@@ -43,14 +43,13 @@ export async function POST(request: NextRequest) {
         });
       }
       prod.categories = filteredCategories;
-      if (Array.isArray(prod.images) && prod.images.length > 0) {
-        prod.images = (await syncProductImagesToCategoryFolder({
-          images: prod.images,
-          categories: filteredCategories,
-          productSlug: prod.slug,
-        })) as typeof prod.images;
-      }
       await prod.save();
+      await syncSingleProductAssetFolders({
+        id: prod.id,
+        slug: prod.slug,
+        categories: prod.categories,
+        images: prod.images,
+      });
       moved++;
     }
 

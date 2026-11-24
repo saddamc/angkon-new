@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { AdminToast } from "@/components/admin/AdminToast";
 import {
   X,
   Loader2,
@@ -2343,28 +2344,11 @@ export function OrdersModals({ state }: OrdersModalsProps) {
 
       {/* ── Toast Notification ────────────────────────── */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[400]">
-          <div
-            className={`flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl border ${
-              toast.type === "success"
-                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                : "bg-rose-50 border-rose-200 text-rose-800"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-            ) : (
-              <XCircle className="h-5 w-5 text-rose-600 flex-shrink-0" />
-            )}
-            <p className="text-[13px] font-medium">{toast.message}</p>
-            <button
-              onClick={() => setToast(null)}
-              className="ml-2 p-1 rounded-lg hover:bg-black/5 transition cursor-pointer"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        <AdminToast
+          message={toast.message}
+          ok={toast.type === "success"}
+          onClose={() => setToast(null)}
+        />
       )}
     </>
   );

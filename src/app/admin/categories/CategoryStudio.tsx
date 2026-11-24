@@ -86,21 +86,38 @@ export function CategoryStudio({
       Boolean(form.isActive) !== Boolean(initial.isActive) ||
       (form.imageUrl || "") !== (initial.imageUrl || "") ||
       (form.imageAlt || "") !== (initial.imageAlt || "") ||
-      (form.icon || "") !== (initial.icon || "") ||
+      form.icon !== initial.icon ||
       (form.bgTheme || "blue") !== (initial.bgTheme || "blue") ||
       form.sortOrder !== initial.sortOrder ||
+      Boolean(form.stagedFile) ||
       currLinked !== initLinked
     );
   }, [form, initial, mode]);
 
+  const stagedBlobUrlsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
-    setForm({ ...initial, linkedParents: initial.linkedParents || [] });
+    setForm({ ...initial, linkedParents: initial.linkedParents || [], stagedFile: null });
     setError("");
     setActiveTab("details");
     setAutoSlug(mode === "add" || !initial.slug);
     isSavedRef.current = false;
     sessionUploadedRef.current = [];
   }, [initial, mode]);
+
+  useEffect(() => {
+    const blobSet = stagedBlobUrlsRef.current;
+    return () => {
+      blobSet.forEach((blobUrl) => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          /* ignore */
+        }
+      });
+      blobSet.clear();
+    };
+  }, []);
 
   const filteredIcons = useMemo(() => {
     const q = iconSearch.trim().toLowerCase();
@@ -204,7 +221,15 @@ export function CategoryStudio({
   const isSavedRef = useRef(false);
 
   const handleClose = async () => {
-    // If user uploaded an image in this studio session but didn't save, clean it from Cloudinary
+    stagedBlobUrlsRef.current.forEach((blobUrl) => {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        /* ignore */
+      }
+    });
+    stagedBlobUrlsRef.current.clear();
+
     if (!isSavedRef.current && sessionUploadedRef.current.length > 0) {
       const toDelete = [...sessionUploadedRef.current];
       sessionUploadedRef.current = [];
@@ -233,6 +258,14 @@ export function CategoryStudio({
         id: initial.id,
         linkedParents: form.linkedParents || [],
       });
+      if (form.imageUrl.startsWith("blob:") && stagedBlobUrlsRef.current.has(form.imageUrl)) {
+        stagedBlobUrlsRef.current.delete(form.imageUrl);
+        try {
+          URL.revokeObjectURL(form.imageUrl);
+        } catch {
+          /* ignore */
+        }
+      }
     }
     catch (err: unknown) {
       isSavedRef.current = false;
@@ -250,105 +283,73 @@ export function CategoryStudio({
     const toDeleteId = form.imageId;
     const toDeleteUrl = form.imageUrl;
 
-    // Remove from UI form immediately
+    // Remove from UI form immediately; persisted Cloudinary assets are cleaned up
+    // only after the category update succeeds (PATCH /api/admin/categories/[id]).
     set("imageUrl", "");
     set("imageId", null);
     set("imageAlt", "");
+    set("stagedFile", null);
 
-    // Remove from session tracking if present
+    if (toDeleteUrl.startsWith("blob:") && stagedBlobUrlsRef.current.has(toDeleteUrl)) {
+      stagedBlobUrlsRef.current.delete(toDeleteUrl);
+      try {
+        URL.revokeObjectURL(toDeleteUrl);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
+    const wasInSession = sessionUploadedRef.current.some(
+      (item) => (toDeleteId && item.id === toDeleteId) || (toDeleteUrl && item.url === toDeleteUrl)
+    );
     sessionUploadedRef.current = sessionUploadedRef.current.filter(
-      (item) => (item.id && item.id === toDeleteId) || item.url === toDeleteUrl
+      (item) => !((toDeleteId && item.id === toDeleteId) || (toDeleteUrl && item.url === toDeleteUrl))
     );
 
-    // Immediately remove from Cloudinary
-    if (toDeleteId || toDeleteUrl) {
+    if (wasInSession && (toDeleteId || toDeleteUrl)) {
       try {
         await authFetch("/api/admin/upload", {
           method: "DELETE",
           body: JSON.stringify({ id: toDeleteId, url: toDeleteUrl }),
         });
       } catch (err) {
-        console.error("Failed to delete category image from Cloudinary:", err);
+        console.error("Failed to delete unsaved session category image from Cloudinary:", err);
       }
     }
   };
 
+  // Stage image locally and defer Cloudinary upload until the user submits the form
   const handleUpload = async (file: File) => {
     if (file.size > 15 * 1024 * 1024) return setError("Image is too large (15MB max).");
     if (!file.type.startsWith("image/")) return setError("Please select a valid image file.");
     setUploading(true); setError("");
-    const prevId = form.imageId;
     const prevUrl = form.imageUrl;
     try {
-      // Build hierarchical category folder path:
-      // Main Category: ANGKON / CATEGORIES / <CATEGORY>
-      // Subcategory:   ANGKON / CATEGORIES / <PARENT_CATEGORY> / <SUBCATEGORY>
-      let folder = "ANGKON/CATEGORIES";
-      const catSlugClean = (form.slug || slugify(form.name) || "CATEGORY")
-        .toUpperCase()
-        .replace(/[^A-Z0-9_\s-]/g, "")
-        .replace(/[\s-]+/g, "_");
-
-      if (form.type === "sub" && form.parent) {
-        const ancestors = ancestorIdsOf(flat, form.parent).reverse();
-        const ancestorSlugs = [...ancestors, form.parent]
-          .map((id) => flat.find((c) => c.id === id)?.slug || flat.find((c) => c.id === id)?.name)
-          .filter(Boolean) as string[];
-
-        const ancestorParts = ancestorSlugs.map((s) =>
-          s.toUpperCase().replace(/[^A-Z0-9_\s-]/g, "").replace(/[\s-]+/g, "_")
-        );
-
-        folder = ["ANGKON", "CATEGORIES", ...ancestorParts, catSlugClean].join("/");
-      } else {
-        folder = `ANGKON/CATEGORIES/${catSlugClean}`;
-      }
-
       const prepared = await convertImageToWebP(file);
       if (prepared.size > 8 * 1024 * 1024) {
         throw new Error("Image is still over 8MB. Please choose a smaller image.");
       }
 
-      const fd = new FormData();
-      fd.append("image", prepared);
-      fd.append("folder", folder);
-      fd.append("uploadType", "category");
-      if (form.type === "sub" && form.parent) {
-        const parentCat = flat.find((c) => c.id === form.parent);
-        fd.append("category", parentCat?.slug || parentCat?.name || "PARENT");
-        fd.append("subcategory", form.slug || form.name);
-      } else {
-        fd.append("category", form.slug || form.name);
+      const previewUrl = URL.createObjectURL(prepared);
+      stagedBlobUrlsRef.current.add(previewUrl);
+
+      if (prevUrl.startsWith("blob:") && stagedBlobUrlsRef.current.has(prevUrl)) {
+        stagedBlobUrlsRef.current.delete(prevUrl);
+        try {
+          URL.revokeObjectURL(prevUrl);
+        } catch {
+          /* ignore */
+        }
       }
 
-      const res = await authFetch("/api/admin/upload", { method: "POST", body: fd });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        const detail = Array.isArray(d.details) ? ` (${d.details.slice(0, 2).join("; ")})` : "";
-        if (res.status === 413) throw new Error("The image is too large for the server. Please choose a smaller image.");
-        if (res.status === 401) throw new Error("Your admin session expired. Please log in again.");
-        if (res.status === 503) throw new Error("Image storage isn't set up on this server: add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in the hosting environment variables, then redeploy.");
-        throw new Error((d.error || `Upload failed (${res.status})`) + detail);
-      }
-      const data = await res.json();
-      const numericId = data.id && Number.isFinite(Number(data.id)) ? Number(data.id) : null;
-      set("imageUrl", data.url);
-      set("imageId", numericId);
-      set("imageAlt", data.alt ?? form.name);
-
-      // Track uploaded in session
-      sessionUploadedRef.current.push({ id: numericId, url: data.url });
-
-      // If replacing an existing image, delete the old one from Cloudinary
-      if ((prevId || prevUrl) && (prevId !== data.id || prevUrl !== data.url)) {
-        void authFetch("/api/admin/upload", {
-          method: "DELETE",
-          body: JSON.stringify({ id: prevId, url: prevUrl }),
-        });
-      }
+      set("imageUrl", previewUrl);
+      set("imageId", null);
+      set("imageAlt", form.imageAlt || form.name);
+      set("stagedFile", prepared);
     } catch (err: unknown) {
       const errorObj = err as { message?: string } | undefined;
-      setError(errorObj?.message || "Upload failed");
+      setError(errorObj?.message || "Could not prepare image");
     }
     finally { setUploading(false); }
   };
@@ -407,7 +408,7 @@ export function CategoryStudio({
       </div>
 
       {/* Navigation Sub-Tabs (Sticky) */}
-      <div className="flex items-center gap-1 px-4 sm:px-6 pt-2 border-b border-gray-100 bg-white shrink-0 overflow-x-auto z-10">
+      <div className="flex items-center gap-1 px-4 sm:px-6 pt-2 border-b border-gray-100 bg-white shrink-0 overflow-x-auto overflow-y-hidden z-10">
         <button
           type="button"
           onClick={() => setActiveTab("details")}
@@ -700,13 +701,22 @@ export function CategoryStudio({
                   ) : form.imageUrl ? (
                     <div className="relative group flex flex-col items-center">
                       <div className="relative">
-                        <Image
-                          src={form.imageUrl}
-                          alt="Category"
-                          width={128}
-                          height={128}
-                          className="h-32 w-32 object-cover rounded-xl border border-gray-200 shadow-sm"
-                        />
+                        {form.imageUrl.startsWith("blob:") ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={form.imageUrl}
+                            alt="Category"
+                            className="h-32 w-32 object-cover rounded-xl border border-amber-300 shadow-sm"
+                          />
+                        ) : (
+                          <Image
+                            src={form.imageUrl}
+                            alt="Category"
+                            width={128}
+                            height={128}
+                            className="h-32 w-32 object-cover rounded-xl border border-gray-200 shadow-sm"
+                          />
+                        )}
                         <button
                           type="button"
                           onClick={handleRemoveImage}

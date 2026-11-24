@@ -39,6 +39,7 @@ import {
   type ProductFormProps,
   type ImageItem,
   type PendingUpload,
+  type StagedUploadState,
   type UploadFolderContext,
   STOCK_OPTIONS,
 } from "./types";
@@ -65,7 +66,9 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
   const { authFetch } = useAuth();
   const MAX_IMAGES = 12;
 
-  // Track images uploaded in this editing session for server cleanup if cancelled
+  // Track local blob preview URLs to revoke on remove / unmount without touching Cloudinary
+  const stagedBlobUrlsRef = useRef<Set<string>>(new Set());
+  // Track images uploaded during a save attempt (for fallback cleanup if DB write fails and user cancels)
   const sessionUploadedRef = useRef<{ id?: number; url: string }[]>([]);
   const isSubmittedRef = useRef<boolean>(false);
 
@@ -119,6 +122,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
 
   const [availableCategories, setAvailableCategories] = useState<WooCategory[]>([]);
   const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
+  const [stagedUploadStates, setStagedUploadStates] = useState<Record<string, StagedUploadState>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -136,9 +140,9 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
   const [customColorInitialName, setCustomColorInitialName] = useState("");
   const [colorFeedbackMessage, setColorFeedbackMessage] = useState("");
 
-  const uploading = pendingUploads.some(
-    (u) => u.phase === "uploading" || u.phase === "processing"
-  );
+  const uploading =
+    pendingUploads.some((u) => u.phase === "uploading" || u.phase === "processing") ||
+    Object.values(stagedUploadStates).some((u) => u.phase === "uploading" || u.phase === "processing");
 
   // Load available categories
   useEffect(() => {
@@ -165,9 +169,19 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     };
   }, [authFetch]);
 
-  // Clean up freshly uploaded images if navigation cancels
+  // Clean up local blob URLs and any fallback session uploads on unmount
   useEffect(() => {
+    const blobSet = stagedBlobUrlsRef.current;
     return () => {
+      blobSet.forEach((blobUrl) => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          /* ignore */
+        }
+      });
+      blobSet.clear();
+
       if (!isSubmittedRef.current && sessionUploadedRef.current.length > 0) {
         sessionUploadedRef.current.forEach((item) => {
           void authFetch("/api/admin/upload", {
@@ -439,7 +453,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
   };
 
   // Resolve upload folder context based on selected categories and product slug
-  const getFolderContext = (): UploadFolderContext => {
+  const getFolderContext = (overrideProductSlug?: string): UploadFolderContext => {
     let catSlug = "";
     let subSlug = "";
 
@@ -483,7 +497,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
       }
     }
 
-    const prodSlug = (slug || slugifyProductName(name || "") || "").trim();
+    const prodSlug = (overrideProductSlug || slug || slugifyProductName(name || "") || "").trim();
 
     return {
       category: catSlug || undefined,
@@ -507,14 +521,25 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     });
   };
 
-  // Upload handler with progress
-  const handleImageUpload = async (files: FileList | File[]) => {
+  const updateStagedUploadState = (id: string, patch: Partial<StagedUploadState> | null) => {
+    setStagedUploadStates((prev) => {
+      if (patch === null) {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      const existing = prev[id] ?? { progress: 0, phase: "uploading" as const };
+      return {
+        ...prev,
+        [id]: { ...existing, ...patch },
+      };
+    });
+  };
+
+  // Stage images locally without uploading to Cloudinary until Save / Update Product is clicked
+  const handleImageUpload = (files: FileList | File[]) => {
     setError("");
-    const currentCount =
-      images.length +
-      pendingUploads.filter(
-        (u) => u.phase === "uploading" || u.phase === "processing"
-      ).length;
+    const currentCount = images.length;
     const remainingSlots = MAX_IMAGES - currentCount;
 
     if (remainingSlots <= 0) {
@@ -532,52 +557,22 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     if (fileList.length > remainingSlots) {
       filesToProcess = fileList.slice(0, remainingSlots);
       setError(
-        `Only ${remainingSlots} photo(s) will upload. Maximum is ${MAX_IMAGES} photos per product.`
+        `Only ${remainingSlots} photo(s) can be added. Maximum is ${MAX_IMAGES} photos per product.`
       );
     }
 
-    const batch: PendingUpload[] = filesToProcess.map((file) => ({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      name: file.name,
-      previewUrl: URL.createObjectURL(file),
-      progress: 0,
-      phase: "uploading" as const,
-    }));
+    const stagedItems: ImageItem[] = filesToProcess.map((file) => {
+      const previewUrl = URL.createObjectURL(file);
+      stagedBlobUrlsRef.current.add(previewUrl);
+      return {
+        src: previewUrl,
+        alt: name || file.name,
+        stagedFile: file,
+        stagedId: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      };
+    });
 
-    setPendingUploads((prev) => [...prev, ...batch]);
-    const folderCtx = getFolderContext();
-
-    await Promise.all(
-      batch.map(async (item, index) => {
-        const file = filesToProcess[index];
-        try {
-          const { url, id: wpId } = await uploadImageWithProgress(
-            file,
-            (pct) => updatePending(item.id, { progress: pct, phase: "uploading" }),
-            () => updatePending(item.id, { progress: 95, phase: "processing" }),
-            folderCtx
-          );
-
-          const newImg: ImageItem = {
-            src: url,
-            alt: name || file.name,
-            ...(typeof wpId === "number" ? { wpId } : {}),
-          };
-
-          sessionUploadedRef.current.push({
-            ...(typeof wpId === "number" ? { id: wpId } : {}),
-            url,
-          });
-
-          setImages((prev) => [...prev, newImg].slice(0, MAX_IMAGES));
-          removePending(item.id);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Image upload failed";
-          updatePending(item.id, { phase: "error", error: msg, progress: 0 });
-          setError(msg);
-        }
-      })
-    );
+    setImages((prev) => [...prev, ...stagedItems].slice(0, MAX_IMAGES));
   };
 
   const removeImage = (i: number) => {
@@ -586,13 +581,27 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
 
     setImages((prev) => prev.filter((_, idx) => idx !== i));
 
+    if (img.stagedId) {
+      updateStagedUploadState(img.stagedId, null);
+    }
+
+    if (img.src.startsWith("blob:") && stagedBlobUrlsRef.current.has(img.src)) {
+      stagedBlobUrlsRef.current.delete(img.src);
+      try {
+        URL.revokeObjectURL(img.src);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
+
     const wasUploadedInSession = sessionUploadedRef.current.some(
       (item) => item.url === img.src || (img.wpId && item.id === img.wpId)
     );
 
     if (wasUploadedInSession) {
       sessionUploadedRef.current = sessionUploadedRef.current.filter(
-        (item) => (item.id && item.id === img.wpId) || item.url === img.src
+        (item) => !((img.wpId && item.id === img.wpId) || item.url === img.src)
       );
 
       void authFetch("/api/admin/upload", {
@@ -625,7 +634,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     });
   };
 
-  // Crop handler
+  // Crop handler — stages cropped file locally and defers Cloudinary upload until Save / Update
   const handleApplyCrop = async (cropMode: CropMode, cropAlign: CropAlign) => {
     if (cropModalIndex === null) return;
     const targetImg = images[cropModalIndex];
@@ -636,49 +645,47 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
       setError("");
       const blob = await cropImageCanvas(targetImg.src, cropMode, cropAlign);
       const filename = `product-${Date.now()}.jpg`;
-      const form = new FormData();
-      form.append("image", blob, filename);
+      const croppedFile = new File([blob], filename, { type: "image/jpeg" });
+      const previewUrl = URL.createObjectURL(croppedFile);
+      stagedBlobUrlsRef.current.add(previewUrl);
 
-      const folderCtx = getFolderContext();
-      if (folderCtx.category) form.append("category", folderCtx.category);
-      if (folderCtx.subcategory) form.append("subcategory", folderCtx.subcategory);
-      if (folderCtx.product) form.append("product", folderCtx.product);
-      if (folderCtx.folder) form.append("folder", folderCtx.folder);
-
-      const res = await authFetch("/api/admin/upload", {
-        method: "POST",
-        body: form,
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to upload cropped image");
-        return;
+      if (targetImg.stagedId) {
+        updateStagedUploadState(targetImg.stagedId, null);
       }
 
-      const { url, id: wpId } = (await res.json()) as { url: string; id: number };
-
-      const oldImg = targetImg;
-      if (oldImg) {
+      if (targetImg.src.startsWith("blob:") && stagedBlobUrlsRef.current.has(targetImg.src)) {
+        stagedBlobUrlsRef.current.delete(targetImg.src);
+        try {
+          URL.revokeObjectURL(targetImg.src);
+        } catch {
+          /* ignore */
+        }
+      } else {
         const wasOldInSession = sessionUploadedRef.current.some(
-          (item) => item.url === oldImg.src || (oldImg.wpId && item.id === oldImg.wpId)
+          (item) => item.url === targetImg.src || (targetImg.wpId && item.id === targetImg.wpId)
         );
         if (wasOldInSession) {
           sessionUploadedRef.current = sessionUploadedRef.current.filter(
-            (item) => (item.id && item.id === oldImg.wpId) || item.url === oldImg.src
+            (item) => !((targetImg.wpId && item.id === targetImg.wpId) || item.url === targetImg.src)
           );
           void authFetch("/api/admin/upload", {
             method: "DELETE",
-            body: JSON.stringify({ url: oldImg.src }),
+            body: JSON.stringify({ url: targetImg.src }),
           }).catch(() => {});
         }
       }
 
-      sessionUploadedRef.current.push({ id: wpId, url });
-
+      const nextStagedId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       setImages((prev) =>
         prev.map((img, idx) =>
-          idx === cropModalIndex ? { ...img, src: url, wpId } : img
+          idx === cropModalIndex
+            ? {
+                src: previewUrl,
+                alt: img.alt,
+                stagedFile: croppedFile,
+                stagedId: nextStagedId,
+              }
+            : img
         )
       );
       setCropModalIndex(null);
@@ -690,8 +697,17 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     }
   };
 
-  // Cancel action
+  // Cancel action — revokes local previews cleanly without leaving unlinked uploads in Cloudinary
   const handleCancel = () => {
+    stagedBlobUrlsRef.current.forEach((blobUrl) => {
+      try {
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        /* ignore */
+      }
+    });
+    stagedBlobUrlsRef.current.clear();
+
     if (sessionUploadedRef.current.length > 0) {
       sessionUploadedRef.current.forEach((item) => {
         void authFetch("/api/admin/upload", {
@@ -705,11 +721,14 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     else router.push("/admin/products");
   };
 
-  // Submit action
+  // Submit action — validates first, uploads staged files to Cloudinary only now, then saves to MongoDB
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (uploading) {
-      setError("Please wait for image uploads to finish.");
+    if (uploading || saving) {
+      return;
+    }
+    if (!name.trim()) {
+      setError("Product name is required.");
       return;
     }
     if (selectedCategories.length === 0) {
@@ -718,6 +737,80 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
     }
     setError("");
     setSaving(true);
+
+    const productSlug = slugManual
+      ? slugifyProductName(slug || name)
+      : slugifyProductName(name);
+
+    const workingImages: ImageItem[] = [...images];
+    const stagedIndices = workingImages
+      .map((img, index) => (img.stagedFile ? index : -1))
+      .filter((index) => index >= 0);
+
+    if (stagedIndices.length > 0) {
+      const folderCtx = getFolderContext(productSlug);
+      let firstUploadError = "";
+
+      await Promise.all(
+        stagedIndices.map(async (index) => {
+          const item = workingImages[index];
+          const file = item.stagedFile;
+          const sid = item.stagedId || `staged-${index}`;
+          if (!file) return;
+
+          updateStagedUploadState(sid, { progress: 0, phase: "uploading", error: undefined });
+          try {
+            const { url, id: wpId } = await uploadImageWithProgress(
+              file,
+              (pct) => updateStagedUploadState(sid, { progress: pct, phase: "uploading" }),
+              () => updateStagedUploadState(sid, { progress: 95, phase: "processing" }),
+              folderCtx
+            );
+
+            const uploadedImg: ImageItem = {
+              src: url,
+              alt: item.alt || name || file.name,
+              ...(typeof wpId === "number" ? { wpId } : {}),
+            };
+
+            workingImages[index] = uploadedImg;
+            sessionUploadedRef.current.push({
+              ...(typeof wpId === "number" ? { id: wpId } : {}),
+              url,
+            });
+
+            if (item.src.startsWith("blob:") && stagedBlobUrlsRef.current.has(item.src)) {
+              stagedBlobUrlsRef.current.delete(item.src);
+              try {
+                URL.revokeObjectURL(item.src);
+              } catch {
+                /* ignore */
+              }
+            }
+
+            setImages((prev) =>
+              prev.map((curr) =>
+                curr.stagedId === item.stagedId ? uploadedImg : curr
+              )
+            );
+            updateStagedUploadState(sid, null);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "Image upload failed";
+            if (!firstUploadError) firstUploadError = msg;
+            updateStagedUploadState(sid, { progress: 0, phase: "error", error: msg });
+          }
+        })
+      );
+
+      if (firstUploadError || workingImages.some((img) => Boolean(img.stagedFile))) {
+        setError(
+          firstUploadError ||
+            "One or more images failed to upload to Cloudinary. Please try again."
+        );
+        setSaving(false);
+        return;
+      }
+    }
 
     const attributes: Array<{
       id?: number;
@@ -747,10 +840,6 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
       },
     ];
 
-    const productSlug = slugManual
-      ? slugifyProductName(slug || name)
-      : slugifyProductName(name);
-
     const wcBody: Record<string, unknown> = {
       name,
       slug: productSlug,
@@ -770,7 +859,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
         : manageStock
         ? { stock_quantity: 0 }
         : { stock_quantity: null }),
-      images: images.map((img) =>
+      images: workingImages.map((img) =>
         img.wpId
           ? { id: img.wpId, src: img.src, alt: img.alt }
           : { src: img.src, alt: img.alt }
@@ -968,6 +1057,7 @@ export function ProductForm({ initialData, onSuccess, onCancel }: ProductFormPro
           <ProductImageManager
             images={images}
             pendingUploads={pendingUploads}
+            uploadStates={stagedUploadStates}
             uploading={uploading}
             maxImages={MAX_IMAGES}
             onFilesSelected={handleImageUpload}

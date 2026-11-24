@@ -29,6 +29,7 @@ export interface FormData {
   imageUrl: string;
   imageAlt: string;
   imageId: number | null;
+  stagedFile?: File | null;
   isActive: boolean;
   sortOrder: number;
   icon: string;
@@ -45,6 +46,7 @@ export const EMPTY_FORM: FormData = {
   imageUrl: "",
   imageAlt: "",
   imageId: null,
+  stagedFile: null,
   isActive: true,
   sortOrder: 0,
   icon: "",

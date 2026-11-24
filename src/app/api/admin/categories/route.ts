@@ -70,6 +70,15 @@ export async function DELETE(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const id = Number(searchParams.get("id"));
   const deleteProducts = searchParams.get("delete_products") === "true";
+  const rawMode = searchParams.get("mode");
+  const mode =
+    rawMode === "shift" || rawMode === "delete_products" || rawMode === "unlink"
+      ? rawMode
+      : deleteProducts
+      ? "delete_products"
+      : "unlink";
+  const targetCategoryId = Number(searchParams.get("target_category_id")) || undefined;
+  const deleteCloudinary = searchParams.get("delete_cloudinary") !== "false";
 
   if (!id) {
     return NextResponse.json({ error: "Missing category id" }, { status: 400 });
@@ -77,16 +86,26 @@ export async function DELETE(request: NextRequest) {
 
   try {
     await connectToDatabase();
-    const result = await deleteAdminCategoryHierarchy(id, deleteProducts);
+    const result = await deleteAdminCategoryHierarchy(id, {
+      mode,
+      targetCategoryId,
+      deleteCloudinary,
+    });
     if (!result) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
     return NextResponse.json(
       {
-        message: "Category and all associated images deleted successfully",
+        message:
+          result.shiftedProductsCount > 0
+            ? "Category deleted and products shifted successfully"
+            : "Category and associated assets processed successfully",
         deletedCategories: result.deletedCategoriesCount,
         deletedProducts: result.deletedProductsCount,
+        shiftedProducts: result.shiftedProductsCount,
+        cloudinaryAssetsDeleted: result.cloudinaryAssetsDeleted,
+        cloudinaryFoldersCleaned: result.cloudinaryFoldersCleaned,
       },
       { status: 200 }
     );

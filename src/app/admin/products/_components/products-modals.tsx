@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { getProductPageUrl } from "@/utils/product-url";
+import { AdminProcessingOverlay, AdminToast } from "@/components/admin/AdminToast";
 import type { AdminProductsHookReturn } from "../_hooks/use-admin-products";
 
 interface ProductsModalsProps {
@@ -238,29 +239,28 @@ export function ProductsModals({ state }: ProductsModalsProps) {
         </div>
       )}
 
+      {/* ── Processing Overlay ────────────────────────────── */}
+      {isDeleting && (
+        <AdminProcessingOverlay
+          label="Deleting product..."
+          detail="Removing catalog entries and unused images"
+          blocking
+        />
+      )}
+      {!isDeleting && duplicating !== null && (
+        <AdminProcessingOverlay
+          label="Duplicating product..."
+          detail="Creating a draft copy of this product"
+        />
+      )}
+
       {/* ── Toast Notification ────────────────────────────── */}
       {toast && (
-        <div
-          className={`fixed top-6 right-6 z-50 flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-2xl text-[13px] font-bold text-white transition-all animate-in fade-in slide-in-from-top-2 duration-200 ${
-            toast.ok
-              ? "bg-emerald-600 shadow-emerald-500/20"
-              : "bg-rose-600 shadow-rose-500/20"
-          }`}
-        >
-          {toast.ok ? (
-            <Check className="h-5 w-5 flex-shrink-0" />
-          ) : (
-            <AlertCircle className="h-5 w-5 flex-shrink-0" />
-          )}
-          <span>{toast.msg}</span>
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            className="ml-2 p-1 rounded-lg hover:bg-white/20 transition text-white/80 hover:text-white cursor-pointer"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        <AdminToast
+          message={toast.msg}
+          ok={toast.ok}
+          onClose={() => setToast(null)}
+        />
       )}
     </>
   );

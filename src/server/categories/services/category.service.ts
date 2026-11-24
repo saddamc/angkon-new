@@ -4,17 +4,18 @@ import { Category } from "@/models/Category";
 import { Product } from "@/models/Product";
 import {
   deleteFromCloudinary,
-  deleteCloudinaryFolder,
-  deleteProductCloudinaryFolder,
+  deleteCloudinaryFolderIfEmpty,
   extractProductFolderFromUrl,
+  getCloudinaryAssetFolder,
   createCloudinaryFolder,
   buildCategoryFolderPath,
+  buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
 import { isCloudinaryUrl } from "@/lib/cloudinary-delivery";
 import { getAllDbCategoriesIncludingInactive, invalidateCategoriesCache } from "@/lib/db/categories";
 import { cleanCategoryInput, slugifyCategory } from "../category-input";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { removeCategoryRefs } from "../category-sync";
+import { removeCategoryRefs, syncSingleProductAssetFolders } from "../category-sync";
 
 export { slugifyCategory };
 
@@ -136,8 +137,22 @@ export async function createAdminCategory(body: any) {
   });
 
   try {
-    const folderPath = buildCategoryFolderPath({ category: slug });
-    await createCloudinaryFolder(folderPath);
+    const ancestors: string[] = [slug];
+    if (cleaned.parent && Number(cleaned.parent) > 0) {
+      const allCats = await Category.find({}).select("id slug name parent").lean();
+      const byId = new Map(allCats.map((c) => [c.id, c]));
+      const seen = new Set<number>();
+      let curr: number | undefined = Number(cleaned.parent);
+      while (curr && curr > 0 && !seen.has(curr)) {
+        seen.add(curr);
+        const node = byId.get(curr);
+        if (!node) break;
+        ancestors.unshift(node.slug || node.name);
+        curr = node.parent && node.parent > 0 ? node.parent : undefined;
+      }
+    }
+    await createCloudinaryFolder(buildCategoryFolderPath({ ancestors }));
+    await createCloudinaryFolder(buildCloudinaryFolderPath({ ancestors }));
   } catch (cloudErr) {
     console.warn("Could not create Cloudinary folder for category:", cloudErr);
   }
@@ -166,11 +181,47 @@ export async function createAdminCategory(body: any) {
   return categoryDoc;
 }
 
-export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = false) {
+export interface DeleteCategoryHierarchyOptions {
+  mode?: "shift" | "delete_products" | "unlink";
+  targetCategoryId?: number;
+  deleteCloudinary?: boolean;
+}
+
+function buildAncestorSlugs(
+  categoryId: number,
+  byId: Map<number, { id: number; slug: string; name: string; parent?: number }>
+): string[] {
+  const chain: string[] = [];
+  const visited = new Set<number>();
+  let curr: number | undefined = categoryId;
+  while (curr && curr > 0 && !visited.has(curr)) {
+    visited.add(curr);
+    const node = byId.get(curr);
+    if (!node) break;
+    chain.unshift(node.slug || node.name);
+    curr = node.parent && node.parent > 0 ? node.parent : undefined;
+  }
+  return chain;
+}
+
+export async function deleteAdminCategoryHierarchy(
+  id: number,
+  deleteProductsOrOptions: boolean | DeleteCategoryHierarchyOptions = false
+) {
+  const opts: DeleteCategoryHierarchyOptions =
+    typeof deleteProductsOrOptions === "boolean"
+      ? { mode: deleteProductsOrOptions ? "delete_products" : "unlink", deleteCloudinary: true }
+      : {
+          mode: deleteProductsOrOptions.mode || "unlink",
+          targetCategoryId: deleteProductsOrOptions.targetCategoryId,
+          deleteCloudinary: deleteProductsOrOptions.deleteCloudinary !== false,
+        };
+
   const targetCategory = await Category.findOne({ id }).lean();
   if (!targetCategory) return null;
 
   const allCategories = await Category.find({}).lean();
+  const byId = new Map(allCategories.map((c) => [c.id, c]));
   const categoryIdsToDelete = [id];
 
   const findSubcategories = (parentId: number) => {
@@ -183,30 +234,72 @@ export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = 
   findSubcategories(id);
 
   const categoriesToDelete = allCategories.filter((c) => categoryIdsToDelete.includes(c.id));
+  const deletedCatSlugs = categoriesToDelete.map((c) => c.slug).filter(Boolean);
+  const emptyFoldersToClean = new Set<string>();
 
   for (const cat of categoriesToDelete) {
-    if (cat.image?.src && isCloudinaryUrl(cat.image.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
-      try {
-        await deleteFromCloudinary(cat.image.src);
-      } catch (cloudErr) {
-        console.warn(`Failed to delete Cloudinary image for category "${cat.name}":`, cloudErr);
-      }
+    const ancestors = buildAncestorSlugs(cat.id, byId);
+    if (ancestors.length > 0) {
+      emptyFoldersToClean.add(buildCloudinaryFolderPath({ ancestors }));
+      emptyFoldersToClean.add(buildCategoryFolderPath({ ancestors }));
     }
   }
 
+  let shiftedProductsCount = 0;
   let deletedProductsCount = 0;
-  if (deleteProducts) {
+  let cloudinaryAssetsDeleted = 0;
+  const cloudinaryFoldersCleaned: string[] = [];
+
+  if (opts.mode === "shift") {
+    const shiftTargetId = Number(opts.targetCategoryId);
+    if (!shiftTargetId || categoryIdsToDelete.includes(shiftTargetId)) {
+      throw new Error("Please select a valid destination category outside the deleted tree.");
+    }
+    const shiftTarget = byId.get(shiftTargetId);
+    if (!shiftTarget) {
+      throw new Error("Destination category not found.");
+    }
+
+    const productsToShift = await Product.find({
+      $or: [
+        { "categories.id": { $in: categoryIdsToDelete } },
+        { "categories.slug": { $in: deletedCatSlugs } },
+      ],
+    });
+
+    for (const prod of productsToShift) {
+      const remaining = (prod.categories || []).filter(
+        (c) => !categoryIdsToDelete.includes(c.id) && !deletedCatSlugs.includes(c.slug)
+      );
+      if (!remaining.some((c) => c.id === shiftTarget.id)) {
+        remaining.push({
+          id: shiftTarget.id,
+          name: shiftTarget.name,
+          slug: shiftTarget.slug,
+          parent: shiftTarget.parent || 0,
+        });
+      }
+      prod.categories = remaining;
+      await prod.save();
+      await syncSingleProductAssetFolders({
+        id: prod.id,
+        slug: prod.slug,
+        categories: prod.categories,
+        images: prod.images,
+      });
+      shiftedProductsCount++;
+    }
+  } else if (opts.mode === "delete_products") {
     try {
       const productsToDelete = await Product.find({
         $or: [
           { "categories.id": { $in: categoryIdsToDelete } },
-          { "categories.slug": { $in: categoriesToDelete.map((c) => c.slug) } },
+          { "categories.slug": { $in: deletedCatSlugs } },
         ],
       });
 
       const deletedProductIds = productsToDelete.map((p) => p._id);
-      const candidateFolders = new Set<string>();
-      const imageSrcs: string[] = [];
+      const imageSrcs = new Set<string>();
 
       for (const prod of productsToDelete) {
         const productIdentifiers = [
@@ -220,46 +313,33 @@ export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = 
           for (const img of prod.images) {
             const src = typeof img === "string" ? img : img?.src;
             if (src && typeof src === "string" && isCloudinaryUrl(src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
-              imageSrcs.push(src);
-              const folder = extractProductFolderFromUrl(src, productIdentifiers);
-              if (folder) candidateFolders.add(folder);
+              imageSrcs.add(src);
+              const legacyFolder = extractProductFolderFromUrl(src, productIdentifiers);
+              if (legacyFolder) emptyFoldersToClean.add(legacyFolder);
             }
           }
-        }
-      }
-
-      const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-      const deletedFolders = new Set<string>();
-
-      for (const folder of candidateFolders) {
-        try {
-          const isFolderUsedElsewhere = await Product.exists({
-            _id: { $nin: deletedProductIds },
-            "images.src": new RegExp(escapeRegex(folder)),
-          });
-          if (!isFolderUsedElsewhere) {
-            await deleteProductCloudinaryFolder(folder);
-            deletedFolders.add(folder);
-          }
-        } catch (fErr) {
-          console.warn(`Failed to delete product Cloudinary folder "${folder}":`, fErr);
         }
       }
 
       for (const src of imageSrcs) {
-        const wasFolderDeleted = Array.from(deletedFolders).some((f) => src.includes(f));
-        if (!wasFolderDeleted) {
-          try {
-            const isUsedElsewhere = await Product.exists({
-              _id: { $nin: deletedProductIds },
-              "images.src": src,
+        try {
+          const [usedByOtherProduct, usedByRemainingCat] = await Promise.all([
+            Product.exists({ _id: { $nin: deletedProductIds }, "images.src": src }),
+            Category.exists({ id: { $nin: categoryIdsToDelete }, "image.src": src }),
+          ]);
+          if (!usedByOtherProduct && !usedByRemainingCat) {
+            const liveFolder = await getCloudinaryAssetFolder(src);
+            if (liveFolder) emptyFoldersToClean.add(liveFolder);
+
+            const delRes = await deleteFromCloudinary(src, {
+              forceConfirmed: opts.deleteCloudinary,
             });
-            if (!isUsedElsewhere) {
-              await deleteFromCloudinary(src);
+            if (delRes?.result === "ok" || delRes?.result === "not found") {
+              if (delRes.result === "ok") cloudinaryAssetsDeleted++;
             }
-          } catch (prodImgErr) {
-            console.warn(`Failed to delete Cloudinary image:`, prodImgErr);
           }
+        } catch (prodImgErr) {
+          console.warn("Failed to delete Cloudinary product image:", prodImgErr);
         }
       }
 
@@ -272,22 +352,53 @@ export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = 
     }
   }
 
+  for (const cat of categoriesToDelete) {
+    if (cat.image?.src && isCloudinaryUrl(cat.image.src, process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN)) {
+      try {
+        const [usedByRemainingProduct, usedByRemainingCat] = await Promise.all([
+          Product.exists({ "images.src": cat.image.src }),
+          Category.exists({ id: { $nin: categoryIdsToDelete }, "image.src": cat.image.src }),
+        ]);
+        if (!usedByRemainingProduct && !usedByRemainingCat) {
+          const liveCatFolder = await getCloudinaryAssetFolder(cat.image.src);
+          if (liveCatFolder) emptyFoldersToClean.add(liveCatFolder);
+
+          const delRes = await deleteFromCloudinary(cat.image.src, {
+            forceConfirmed: opts.deleteCloudinary,
+          });
+          if (delRes?.result === "ok") cloudinaryAssetsDeleted++;
+        }
+      } catch (cloudErr) {
+        console.warn(`Failed to delete Cloudinary image for category "${cat.name}":`, cloudErr);
+      }
+    }
+  }
+
   await Category.deleteMany({ id: { $in: categoryIdsToDelete } });
   await removeCategoryRefs(categoryIdsToDelete);
+
+  // Clean up vacated product & category folders deepest-first, strictly only when verified empty
+  const sortedFolders = Array.from(emptyFoldersToClean).sort(
+    (a, b) => b.split("/").length - a.split("/").length
+  );
+  const cleanedSet = new Set<string>();
+  for (const folder of sortedFolders) {
+    try {
+      const cleanRes = await deleteCloudinaryFolderIfEmpty(folder, { walkUp: true, minDepth: 3 });
+      for (const deleted of cleanRes.deletedFolders) {
+        if (!cleanedSet.has(deleted)) {
+          cleanedSet.add(deleted);
+          cloudinaryFoldersCleaned.push(deleted);
+        }
+      }
+    } catch (folderErr) {
+      console.warn(`Failed to clean empty Cloudinary folder "${folder}":`, folderErr);
+    }
+  }
 
   syncRealCategoriesFile((cats) =>
     cats.filter((c) => !categoryIdsToDelete.includes(Number(c.id)))
   );
-
-  const folderSlug = (targetCategory.slug || targetCategory.name)
-    .toUpperCase()
-    .replace(/[^A-Z0-9_\s-]/g, "")
-    .replace(/[\s-]+/g, "_");
-  try {
-    await deleteCloudinaryFolder(`ANGKON/CATEGORIES/${folderSlug}`);
-  } catch {
-    // ignore
-  }
 
   invalidateCategoriesCache();
   await publishCatalogChange();
@@ -295,5 +406,8 @@ export async function deleteAdminCategoryHierarchy(id: number, deleteProducts = 
   return {
     deletedCategoriesCount: categoryIdsToDelete.length,
     deletedProductsCount,
+    shiftedProductsCount,
+    cloudinaryAssetsDeleted,
+    cloudinaryFoldersCleaned,
   };
 }

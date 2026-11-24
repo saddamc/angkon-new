@@ -248,27 +248,45 @@ export async function DELETE(request: NextRequest) {
     const results: Array<{ id: string; result: string }> = [];
 
     let ProductModel: typeof import("@/models/Product").Product | null = null;
+    let CategoryModel: typeof import("@/models/Category").Category | null = null;
     try {
       const { connectToDatabase } = await import("@/lib/mongodb");
       await connectToDatabase();
       ProductModel = (await import("@/models/Product")).default;
+      CategoryModel = (await import("@/models/Category")).default;
     } catch (dbErr) {
       console.warn("MongoDB connection warning in upload delete:", dbErr);
     }
 
-    // Delete individual assets
+    // Delete individual assets only if no product or category still references them
     for (const item of itemsToDelete) {
       if (!item) continue;
       const cleanPublicId = extractPublicIdFromUrl(item);
       if (cleanPublicId) {
         try {
+          const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+          const refPattern = new RegExp(escapeRegex(cleanPublicId));
+
           if (ProductModel) {
-            const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-            const isUsedElsewhere = await ProductModel.exists({
-              "images.src": new RegExp(escapeRegex(cleanPublicId)),
+            const isUsedByProduct = await ProductModel.exists({
+              "images.src": refPattern,
             });
-            if (isUsedElsewhere) {
-              console.warn(`Preserving Cloudinary image "${cleanPublicId}" as it is referenced in database.`);
+            if (isUsedByProduct) {
+              console.warn(`Preserving Cloudinary image "${cleanPublicId}" as it is referenced by a product.`);
+              results.push({ id: cleanPublicId, result: "preserved_in_use" });
+              continue;
+            }
+          }
+
+          if (CategoryModel) {
+            const isUsedByCategory = await CategoryModel.exists({
+              $or: [
+                { "image.src": refPattern },
+                { "meta_data.value": refPattern },
+              ],
+            });
+            if (isUsedByCategory) {
+              console.warn(`Preserving Cloudinary image "${cleanPublicId}" as it is referenced by a category.`);
               results.push({ id: cleanPublicId, result: "preserved_in_use" });
               continue;
             }

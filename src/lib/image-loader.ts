@@ -35,6 +35,9 @@ export interface LoaderArgs {
  */
 export default function imageLoader({ src, width, quality }: LoaderArgs): string {
   const normalizedSrc = normalizeKnownCloudinaryProductUrl(src);
+  if (normalizedSrc.startsWith("blob:") || normalizedSrc.startsWith("data:")) {
+    return normalizedSrc;
+  }
   const q = quality ?? 75;
 
   // Only proxy publicly reachable remote images through the CDN.

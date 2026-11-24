@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Pencil,
@@ -54,6 +55,22 @@ export function CategoryRow({ cat, depth = 0, state }: CategoryRowProps) {
   const childCount = cat.children.length;
   const isSelected = selectedCatId === cat.id;
   const isMenuOpen = activeMenuCatId === cat.id;
+  const [menuPos, setMenuPos] = useState<{
+    top?: number;
+    bottom?: number;
+    right: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const closeOnScrollOrResize = () => setActiveMenuCatId(null);
+    window.addEventListener("scroll", closeOnScrollOrResize, true);
+    window.addEventListener("resize", closeOnScrollOrResize);
+    return () => {
+      window.removeEventListener("scroll", closeOnScrollOrResize, true);
+      window.removeEventListener("resize", closeOnScrollOrResize);
+    };
+  }, [isMenuOpen, setActiveMenuCatId]);
 
   const linkedParentNames =
     Array.isArray(cat.linked_parents) && cat.linked_parents.length > 0
@@ -282,7 +299,23 @@ export function CategoryRow({ cat, depth = 0, state }: CategoryRowProps) {
           <div className="relative">
             <button
               type="button"
-              onClick={() => setActiveMenuCatId(isMenuOpen ? null : cat.id)}
+              onClick={(e) => {
+                if (isMenuOpen) {
+                  setActiveMenuCatId(null);
+                  setMenuPos(null);
+                  return;
+                }
+                const rect = e.currentTarget.getBoundingClientRect();
+                const menuHeight = 195;
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const openUp = spaceBelow < menuHeight && rect.top > spaceBelow;
+                setMenuPos(
+                  openUp
+                    ? { bottom: window.innerHeight - rect.top + 6, right: Math.max(12, window.innerWidth - rect.right) }
+                    : { top: rect.bottom + 6, right: Math.max(12, window.innerWidth - rect.right) }
+                );
+                setActiveMenuCatId(cat.id);
+              }}
               className={`p-1.5 rounded-xl transition cursor-pointer ${
                 isMenuOpen
                   ? "bg-purple-600 text-white shadow-xs"
@@ -293,9 +326,14 @@ export function CategoryRow({ cat, depth = 0, state }: CategoryRowProps) {
               <MoreVertical className="h-4 w-4" />
             </button>
 
-            {isMenuOpen && (
+            {isMenuOpen && menuPos && (
               <div
-                className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-40 animate-in fade-in zoom-in-95 duration-150"
+                style={{
+                  top: menuPos.top,
+                  bottom: menuPos.bottom,
+                  right: menuPos.right,
+                }}
+                className="fixed w-48 bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 z-[120] animate-in fade-in zoom-in-95 duration-150"
                 onClick={(e) => e.stopPropagation()}
               >
                 <button

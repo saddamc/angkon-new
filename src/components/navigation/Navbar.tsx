@@ -159,6 +159,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
   const navLinks = [
     { label: "Home", href: "/", isExact: true },
     { label: "Women", href: "/product-category/women", isExact: false },
+    { label: "Ethnic Wear", href: "/product-category/ethnic-wear", isExact: false },
     { label: "Men", href: "/product-category/men", isExact: false },
     { label: "Products", href: "/products", isExact: false },
     { label: "Accessories", href: "/product-category/accessories", isExact: false },
@@ -210,7 +211,7 @@ export function Navbar({ categoryTree: _categoryTree }: NavbarProps) {
           <div className="hidden lg:flex flex-1 mx-4 xl:mx-8 items-center justify-center min-w-0">
             {!searchOpen ? (
               /* Normal State: Centered Navigation Menu with Search Icon at the End */
-              <nav className="hidden lg:flex items-center justify-center gap-6 xl:gap-8 text-[13px] xl:text-[14px] font-bold tracking-normal uppercase animate-in fade-in duration-150">
+              <nav className="hidden lg:flex items-center justify-center gap-4 xl:gap-7 whitespace-nowrap text-[13px] xl:text-[14px] font-bold tracking-normal uppercase animate-in fade-in duration-150">
                 {navLinks.map((link) => {
                   const active = isLinkActive(link.href, link.isExact);
 

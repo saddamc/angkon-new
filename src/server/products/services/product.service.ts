@@ -2,8 +2,9 @@ import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
 import {
   deleteFromCloudinary,
-  syncProductImagesToCategoryFolder,
+  deleteCloudinaryFolderIfEmpty,
   extractProductFolderFromUrl,
+  getCloudinaryAssetFolder,
   deleteProductCloudinaryFolder,
   buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
@@ -182,14 +183,7 @@ export async function createAdminProduct(body: any): Promise<{ status: number; p
     });
   }
 
-  let productImages = Array.isArray(body.images) ? body.images : [];
-  if (productImages.length > 0) {
-    productImages = await syncProductImagesToCategoryFolder({
-      images: productImages,
-      categories: resolvedCategories,
-      productSlug: slug,
-    });
-  }
+  const productImages = Array.isArray(body.images) ? body.images : [];
 
   try {
     const newProduct = await Product.create({
@@ -289,6 +283,11 @@ export async function bulkDeleteAdminProducts(ids: number[]) {
   }
 
   const deletedFolders = new Set<string>();
+  const liveAssetFolders = new Set<string>();
+  for (const src of imageSrcs) {
+    const liveFolder = await getCloudinaryAssetFolder(src);
+    if (liveFolder) liveAssetFolders.add(liveFolder);
+  }
   const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 
   for (const folder of candidateFolders) {
@@ -299,7 +298,7 @@ export async function bulkDeleteAdminProducts(ids: number[]) {
       });
 
       if (!isFolderUsedElsewhere) {
-        await deleteProductCloudinaryFolder(folder);
+        await deleteProductCloudinaryFolder(folder, { forceConfirmed: true });
         deletedFolders.add(folder);
       } else {
         console.warn(`Preserving Cloudinary folder "${folder}" as another product references it.`);
@@ -318,11 +317,19 @@ export async function bulkDeleteAdminProducts(ids: number[]) {
           "images.src": src,
         });
         if (!isUsedElsewhere) {
-          await deleteFromCloudinary(src);
+          await deleteFromCloudinary(src, { forceConfirmed: true });
         }
       } catch (delErr) {
         console.warn("Cloudinary cleanup error on bulk product deletion:", delErr);
       }
+    }
+  }
+
+  for (const folder of liveAssetFolders) {
+    try {
+      await deleteCloudinaryFolderIfEmpty(folder, { walkUp: false, minDepth: 3 });
+    } catch {
+      // ignore non-empty or already removed
     }
   }
 

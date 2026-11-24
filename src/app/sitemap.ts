@@ -76,6 +76,17 @@ function collectCategoryPaths(
     if (populatedCategoryIds && !populatedCategoryIds.has(node.id)) {
       continue;
     }
+    // Avoid emitting duplicate root sitemap URLs for root collections that are canonically
+    // cross-listed under a populated department (e.g. Women -> Ethnic Wear).
+    const linkedParents = (node as { linked_parents?: number[] }).linked_parents;
+    if (
+      parentSlugs.length === 0 &&
+      !node.is_linked &&
+      Array.isArray(linkedParents) &&
+      linkedParents.some((lp) => !populatedCategoryIds || populatedCategoryIds.has(lp))
+    ) {
+      continue;
+    }
     const current = [...parentSlugs, node.slug];
     paths.push(current.join("/"));
     if (Array.isArray(node.children) && node.children.length > 0) {

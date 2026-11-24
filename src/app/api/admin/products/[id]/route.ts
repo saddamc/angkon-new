@@ -4,9 +4,10 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import {
   deleteFromCloudinary,
-  syncProductImagesToCategoryFolder,
+  deleteCloudinaryFolderIfEmpty,
   extractProductFolderFromUrl,
   extractPublicIdFromUrl,
+  getCloudinaryAssetFolder,
   deleteProductCloudinaryFolder,
   buildCloudinaryFolderPath,
 } from "@/lib/cloudinary";
@@ -15,7 +16,10 @@ import { publishCatalogChange } from "@/lib/catalog-sync";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
-import { resolveProductCategories } from "@/server/categories/category-sync";
+import {
+  resolveProductCategories,
+  syncSingleProductAssetFolders,
+} from "@/server/categories/category-sync";
 import { cleanColorName } from "@/utils/color-swatches";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -237,15 +241,7 @@ export async function PUT(
 
     // 1. Existing product already fetched above (used for the slug check).
     //    Detect category changes & removed images from it here.
-
-    // 2. Automatically ensure product images are organized in the matching category-wise Cloudinary folder
-    if (Array.isArray(body.images) && body.images.length > 0) {
-      body.images = await syncProductImagesToCategoryFolder({
-        images: body.images,
-        categories: body.categories || [],
-        productSlug: body.slug || decoded,
-      });
-    }
+    //    Product image URLs remain stable when product categories change.
 
     // 3. Work out which assets are no longer attached to this product.
     //    Deletion is DEFERRED until after the database write succeeds — otherwise
@@ -319,6 +315,15 @@ export async function PUT(
       } catch (delErr) {
         console.warn(`Error deleting removed image "${oldSrc}":`, delErr);
       }
+    }
+
+    if (body.categories !== undefined || body.slug !== undefined) {
+      await syncSingleProductAssetFolders({
+        id: updated.id,
+        slug: updated.slug,
+        categories: updated.categories,
+        images: updated.images,
+      });
     }
 
     await publishCatalogChange();
@@ -426,6 +431,12 @@ export async function DELETE(
     const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 
     // 2. Delete product-level Cloudinary folders ONLY IF no other product references them (e.g. duplicated products)
+    const liveAssetFolders = new Set<string>();
+    for (const src of imageSrcs) {
+      const liveFolder = await getCloudinaryAssetFolder(src);
+      if (liveFolder) liveAssetFolders.add(liveFolder);
+    }
+
     for (const folder of candidateFolders) {
       try {
         const isFolderUsedElsewhere = await Product.exists({
@@ -434,7 +445,7 @@ export async function DELETE(
         });
 
         if (!isFolderUsedElsewhere) {
-          await deleteProductCloudinaryFolder(folder);
+          await deleteProductCloudinaryFolder(folder, { forceConfirmed: true });
           deletedFolders.add(folder);
         } else {
           console.warn(`Preserving Cloudinary folder "${folder}" as another product references it.`);
@@ -454,11 +465,20 @@ export async function DELETE(
             "images.src": src,
           });
           if (!isUsedElsewhere) {
-            await deleteFromCloudinary(src);
+            await deleteFromCloudinary(src, { forceConfirmed: true });
           }
         } catch (e) {
           console.warn("Cloudinary cleanup error on product deletion:", e);
         }
+      }
+    }
+
+    // 4. Clean up empty Dynamic Folder (`asset_folder`) left behind if product had been moved
+    for (const folder of liveAssetFolders) {
+      try {
+        await deleteCloudinaryFolderIfEmpty(folder, { walkUp: false, minDepth: 3 });
+      } catch {
+        // ignore non-empty or already removed
       }
     }
 

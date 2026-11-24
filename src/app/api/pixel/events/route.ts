@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
           orderId: sanitizedParams.order_id ? String(sanitizedParams.order_id) : undefined,
         },
       },
-      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
+      { upsert: true, new: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
 
     // Resolve fbc and fbp from cookies, body payload, or URL parameters
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       success: true,
       eventId,
       deduplicated: isDeduplicated,
-      id: String(doc._id),
+      id: doc?._id ? String(doc._id) : eventId,
     });
 
     if (fbc && !request.cookies.get("_fbc")) {

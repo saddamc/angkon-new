@@ -22,7 +22,7 @@ describe("Tawakkal Wada Cloudinary image recovery", () => {
     const stale = `${cloud}/v1791652410/ANGKON/WOMEN/ETHNIC/tawakkal-wada-midnight-black/3.jpg`;
     assert.equal(
       imageLoader({ src: stale, width: 256, quality: 75 }),
-      `${cloud}/w_256,q_75,f_auto/ANGKON/ETHNIC_WEAR/TAWAKKAL_WADA/tawakkal-wada-midnight-black/file_rlbrdo.webp`
+      `${cloud}/f_auto,q_auto,dpr_auto,w_256,c_limit/ANGKON/ETHNIC_WEAR/TAWAKKAL_WADA/tawakkal-wada-midnight-black/file_rlbrdo.webp`
     );
   });
 

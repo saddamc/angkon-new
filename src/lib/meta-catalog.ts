@@ -708,12 +708,20 @@ export function buildFeedProduct(
   const link = buildProductLink(options.baseUrl, String(product.slug || ""), allowLocalHttp);
   if (!link) issues.push("missing_or_invalid_product_link");
 
-  const imageSources = Array.isArray(product.images)
-    ? product.images.map((image) => image?.src).filter(Boolean)
+  const imageSources: string[] = Array.isArray(product.images)
+    ? product.images.map((image) => image?.src).filter((src): src is string => Boolean(src))
     : [];
   const validImages: string[] = [];
+  const customImageDomain = process.env.META_CATALOG_IMAGE_DOMAIN?.trim();
   for (const source of imageSources) {
-    const safe = validateAbsoluteUrl(source, { allowLocalHttp });
+    let resolvedSource = source;
+    if (customImageDomain && resolvedSource.includes("res.cloudinary.com")) {
+      resolvedSource = resolvedSource.replace(
+        /^https?:\/\/res\.cloudinary\.com\/[^/]+/,
+        `https://${customImageDomain}`
+      );
+    }
+    const safe = validateAbsoluteUrl(resolvedSource, { allowLocalHttp });
     if (safe && !validImages.includes(safe)) validImages.push(safe);
   }
 

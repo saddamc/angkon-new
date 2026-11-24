@@ -302,13 +302,18 @@ export function ProductDetailsView({
   // Touch gesture support for fluid mobile gallery browsing
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+  const isSwiping = useRef<boolean>(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX;
+    isSwiping.current = false;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     touchEndX.current = e.targetTouches[0].clientX;
+    if (touchStartX.current !== null && Math.abs(touchStartX.current - e.targetTouches[0].clientX) > 10) {
+      isSwiping.current = true;
+    }
   };
 
   const handleTouchEnd = () => {
@@ -326,16 +331,6 @@ export function ProductDetailsView({
     touchStartX.current = null;
     touchEndX.current = null;
   };
-
-  // Eagerly pre-cache all gallery images so image switching is 100% instant from the first second
-  useEffect(() => {
-    images.forEach((img, idx) => {
-      if (!img.src || idx === 0) return;
-      const resolved = resolveImageSrc(img.src);
-      const preloader = new window.Image();
-      preloader.src = resolved;
-    });
-  }, [images, resolveImageSrc]);
 
   // Available colors (from product.colors or attributes[Color])
   const availableColors = useMemo(() => {
@@ -455,9 +450,23 @@ export function ProductDetailsView({
 
           {/* LEFT: Image Gallery with In-Place Hover Zoom & Instant Switching */}
           <div className="flex flex-col w-full lg:sticky lg:top-24 lg:self-start">
-            {/* Main Image Container */}
+            {/* Main Image Container — click opens internal lightbox */}
             <div
-              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#42070e] border border-[#E1B76F]/25 rounded-none cursor-default select-none shadow-md touch-pan-y"
+              role="button"
+              tabIndex={0}
+              aria-label="Enlarge image in lightbox"
+              onClick={() => {
+                if (!isSwiping.current) {
+                  openLightbox(activeImage);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openLightbox(activeImage);
+                }
+              }}
+              className="group relative w-full aspect-[4/5] overflow-hidden bg-[#42070e] border border-[#E1B76F]/25 rounded-none cursor-zoom-in select-none shadow-md touch-pan-y"
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={(e) => {
@@ -470,7 +479,7 @@ export function ProductDetailsView({
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {/* In-Place Zoomable Stacked Image Gallery (Pre-warmed with silky cross-fade) */}
+              {/* In-Place Zoomable Stacked Image Gallery */}
               <div
                 className="relative w-full h-full"
                 style={{
@@ -481,8 +490,12 @@ export function ProductDetailsView({
                 }}
               >
                 {images.map((img, i) => {
-                  const resolvedSrc = resolveImageSrc(img.src);
                   const isCurrent = activeImage === i;
+                  // Mount active and immediate neighbor images only to optimize memory and initial payload
+                  const shouldRender = isCurrent || Math.abs(activeImage - i) <= 1;
+                  if (!shouldRender && i !== 0) return null;
+
+                  const resolvedSrc = resolveImageSrc(img.src);
                   return (
                     <div
                       key={img.id ?? i}
@@ -499,7 +512,7 @@ export function ProductDetailsView({
                         sizes="(max-width: 1024px) 100vw, 50vw"
                         className="object-cover pointer-events-none select-none"
                         priority={i === 0}
-                        loading={i < 4 ? "eager" : "lazy"}
+                        loading={i === 0 ? undefined : "lazy"}
                         onError={() => markImageFailed(img.src)}
                       />
                     </div>
@@ -1167,8 +1180,14 @@ export function ProductDetailsView({
               }`}
             >
               {images.map((img, i) => {
-                const resolved = resolveImageSrc(img.src);
                 const isCurrent = lightboxIndex === i;
+                const isAdjacent =
+                  Math.abs(lightboxIndex - i) === 1 ||
+                  (lightboxIndex === 0 && i === images.length - 1) ||
+                  (lightboxIndex === images.length - 1 && i === 0);
+                if (!isCurrent && !isAdjacent) return null;
+
+                const resolved = resolveImageSrc(img.src);
                 return (
                   <div
                     key={img.id ?? i}
@@ -1184,6 +1203,7 @@ export function ProductDetailsView({
                       fill
                       className="object-contain"
                       priority={isCurrent}
+                      loading={isCurrent ? undefined : "lazy"}
                       sizes="100vw"
                       onError={() => markImageFailed(img.src)}
                     />

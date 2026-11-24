@@ -1,4 +1,5 @@
 import { normalizeMetaProductId } from "./meta-product-id";
+import { buildCloudinaryDeliveryUrl, isCloudinaryUrl } from "./cloudinary-delivery";
 
 /** Meta Commerce catalog transport and validation helpers. */
 export const META_CATALOG_CURRENCY = "BDT";
@@ -712,14 +713,13 @@ export function buildFeedProduct(
     ? product.images.map((image) => image?.src).filter((src): src is string => Boolean(src))
     : [];
   const validImages: string[] = [];
-  const customImageDomain = process.env.META_CATALOG_IMAGE_DOMAIN?.trim();
+  const customImageDomain =
+    process.env.META_CATALOG_IMAGE_DOMAIN?.trim() ||
+    process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN?.trim();
   for (const source of imageSources) {
     let resolvedSource = source;
-    if (customImageDomain && resolvedSource.includes("res.cloudinary.com")) {
-      resolvedSource = resolvedSource.replace(
-        /^https?:\/\/res\.cloudinary\.com\/[^/]+/,
-        `https://${customImageDomain}`
-      );
+    if (customImageDomain && isCloudinaryUrl(resolvedSource, customImageDomain)) {
+      resolvedSource = buildCloudinaryDeliveryUrl(resolvedSource, 1600, 85, customImageDomain);
     }
     const safe = validateAbsoluteUrl(resolvedSource, { allowLocalHttp });
     if (safe && !validImages.includes(safe)) validImages.push(safe);

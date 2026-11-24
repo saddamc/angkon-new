@@ -78,7 +78,7 @@ describe("Cloudinary delivery configuration & URL generation", () => {
       assert.ok(customUrl.startsWith("https://img.angkon.net/"), `Expected custom hostname, got: ${customUrl}`);
       assert.equal(
         customUrl,
-        `https://img.angkon.net/${CLOUD_NAME}/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
+        `https://img.angkon.net/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
       );
     });
 
@@ -88,7 +88,16 @@ describe("Cloudinary delivery configuration & URL generation", () => {
       assert.ok(!customUrl.includes("https://https://"), "Must not create duplicate protocol");
       assert.equal(
         customUrl,
-        `https://img.angkon.net/${CLOUD_NAME}/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
+        `https://img.angkon.net/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
+      );
+    });
+
+    it("does not carry the cloud name into a custom delivery hostname", () => {
+      const storedCustom = `https://images.nexcraftly.com/${CLOUD_NAME}/image/upload/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`;
+      const customUrl = buildCloudinaryDeliveryUrl(storedCustom, 800, undefined, "images.nexcraftly.com");
+      assert.equal(
+        customUrl,
+        "https://images.nexcraftly.com/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp",
       );
     });
 
@@ -145,7 +154,7 @@ describe("Cloudinary delivery configuration & URL generation", () => {
       const result = imageLoader({ src: SAMPLE_ASSET, width: 800 });
       assert.equal(
         result,
-        `https://img.angkon.net/${CLOUD_NAME}/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
+        `https://img.angkon.net/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
       );
     });
 

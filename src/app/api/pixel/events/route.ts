@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaEventLog } from "@/models/MetaEventLog";
-import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/pixel-settings";
-import { sendMetaCapiEvent, extractClientIp } from "@/server/meta-capi";
+import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/meta/pixel/pixel-settings";
+import { sendMetaCapiEvent, extractClientIp } from "@/server/meta/capi/meta-capi";
 
 export const dynamic = "force-dynamic";
 

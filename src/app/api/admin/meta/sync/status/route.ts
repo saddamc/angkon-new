@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
-import { getMetaSyncSnapshot } from "@/server/meta-sync";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
+import { getMetaSyncSnapshot } from "@/server/jobs/meta-sync";
 
 export const dynamic = "force-dynamic";
 

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { EMAIL_REGEX, normalizeEmail } from "@/server/auth";
+import { EMAIL_REGEX, normalizeEmail } from "@/server/auth/auth";
 
 export const dynamic = "force-dynamic";
 

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaEventLog } from "@/models/MetaEventLog";
-import { sendMetaCapiEvent, MetaCapiEventPayload } from "@/server/meta-capi";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+import { sendMetaCapiEvent, MetaCapiEventPayload } from "@/server/meta/capi/meta-capi";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 
 export const dynamic = "force-dynamic";
 

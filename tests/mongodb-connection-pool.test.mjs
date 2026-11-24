@@ -77,7 +77,12 @@ test("Phase 3: Admin polling incorporates visibilityState guards to prevent idle
 });
 
 test("Phase 3: Meta queue worker disables in-process intervals on Vercel serverless", () => {
-  const workerContent = fs.readFileSync("src/server/meta-queue-worker.ts", "utf8");
+  const workerContent = fs.readFileSync(
+    fs.existsSync("src/server/jobs/meta-queue-worker.ts")
+      ? "src/server/jobs/meta-queue-worker.ts"
+      : "src/server/meta-queue-worker.ts",
+    "utf8"
+  );
   assert.ok(
     workerContent.includes("process.env.VERCEL"),
     "startMetaQueueWorker must check process.env.VERCEL to prevent in-process intervals in serverless lambdas"

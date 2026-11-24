@@ -1,12 +1,12 @@
-import crypto from "crypto";
+﻿import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Shipment } from "@/models/Shipment";
 import { getCourierAdapter, courierService } from "@/server/courier";
-import { applyCourierStatus } from "@/server/courier/sync";
+import { applyCourierStatus } from "@/server/courier/core/sync";
 import { getCronSecret } from "@/lib/env";
-import { verifyAdminToken } from "@/server/admin-auth";
-import { ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/steadfast-utils";
+import { verifyAdminToken } from "@/server/auth/admin-auth";
+import { ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/providers/steadfast/utils";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

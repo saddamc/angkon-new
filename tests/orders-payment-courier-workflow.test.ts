@@ -15,7 +15,7 @@ import {
   isTerminalShipmentStatus,
   normalizeBdPhone,
   buildRecipientAddress,
-} from "../src/server/courier/steadfast-utils";
+} from "../src/server/courier/providers/steadfast/utils";
 import { generateEventFingerprint } from "../src/server/payments/payment-idempotency";
 import { PaymentStateMachine } from "../src/server/payments/payment-state-machine";
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
@@ -7,9 +7,9 @@ import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
 import { Shipment } from "@/models/Shipment";
 import { User } from "@/models/User";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { courierService } from "@/server/courier";
-import { serializeShipment } from "@/server/courier/serialize";
+import { serializeShipment } from "@/server/courier/core/serialize";
 import { getCourierSettings } from "@/server/courier/settings";
 import {
   checkCourierBookingEligibility,

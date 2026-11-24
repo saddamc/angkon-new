@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback, useId } from "react";
 import Link from "next/link";
@@ -30,8 +30,8 @@ import {
   Eye,
 } from "lucide-react";
 import { InfoPopover } from "./info-popover";
-import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
-import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
+import type { PublicAdminPixelSettings } from "@/server/meta/pixel/pixel-settings";
+import type { PublicAdminMetaMarketingSettings } from "@/server/meta/marketing/meta-marketing-settings";
 
 export type IntegrationNodeType =
   | "capi"

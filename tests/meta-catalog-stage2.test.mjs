@@ -49,9 +49,21 @@ registerHooks({
 
 const cryptoUtils = await import("../src/lib/security/token-encryption.ts");
 const graphClient = await import("../src/lib/integrations/meta/client.ts");
-const connectionModule = await import("../src/server/meta-catalog-connection.ts");
-const feedsModule = await import("../src/server/meta-product-feeds.ts");
-const monitoringModule = await import("../src/server/meta-feed-monitoring.ts");
+const connectionModule = await import(
+  fs.existsSync("src/server/meta/catalog/meta-catalog-connection.ts")
+    ? "../src/server/meta/catalog/meta-catalog-connection.ts"
+    : "../src/server/meta-catalog-connection.ts"
+);
+const feedsModule = await import(
+  fs.existsSync("src/server/meta/catalog/meta-product-feeds.ts")
+    ? "../src/server/meta/catalog/meta-product-feeds.ts"
+    : "../src/server/meta-product-feeds.ts"
+);
+const monitoringModule = await import(
+  fs.existsSync("src/server/meta/catalog/meta-feed-monitoring.ts")
+    ? "../src/server/meta/catalog/meta-feed-monitoring.ts"
+    : "../src/server/meta-feed-monitoring.ts"
+);
 
 /* ──────────────────────────────────────────────────────────────────────────
  * 1. Token Encryption at Rest & Redaction

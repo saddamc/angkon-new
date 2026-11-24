@@ -1,11 +1,11 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
   buildRecipientAddress,
   mapSteadfastStatus,
   normalizeBdPhone,
-} from "../src/server/courier/steadfast-utils.ts";
+} from "../src/server/courier/providers/steadfast/utils.ts";
 
 /**
  * P2 contract: Steadfast adapter, shipment model, admin API/UI and webhook.
@@ -13,14 +13,14 @@ import {
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
-const adapter = read("src/server/courier/steadfast.ts");
+const adapter = read((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"));
 const shipmentModel = read("src/models/Shipment.ts");
 const createRoute = read("src/app/api/admin/orders/[id]/shipment/route.ts");
-const courierService = read("src/server/courier/courier-service.ts");
+const courierService = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
 const workflow = read("src/server/orders/workflow.ts");
 const refreshRoute = read("src/app/api/admin/shipments/[id]/refresh/route.ts");
 const webhook = read("src/app/api/webhooks/steadfast/route.ts");
-const sync = read("src/server/courier/sync.ts");
+const sync = read((fs.existsSync("src/server/courier/core/sync.ts") ? "src/server/courier/core/sync.ts" : "src/server/courier/sync.ts"));
 const hook = read("src/app/admin/orders/_hooks/use-admin-orders.ts");
 const modals = read("src/app/admin/orders/_components/orders-modals.tsx");
 const row = read("src/app/admin/orders/_components/order-row.tsx");

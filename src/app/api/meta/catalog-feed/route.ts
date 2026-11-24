@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { generateMetaCatalogFeed } from "@/lib/integrations/meta";
-import { buildCatalogVisibilityFilter } from "@/server/meta-catalog";
+import { buildCatalogVisibilityFilter } from "@/server/meta/catalog/meta-catalog";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

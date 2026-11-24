@@ -1,9 +1,9 @@
-import crypto from "crypto";
+﻿import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { executeMetaSync } from "@/server/meta-sync";
-import { verifyAdminToken } from "@/server/admin-auth";
+import { executeMetaSync } from "@/server/jobs/meta-sync";
+import { verifyAdminToken } from "@/server/auth/admin-auth";
 import { getCronSecret } from "@/lib/env";
-import { DEFAULT_TENANT_ID } from "@/server/tenant";
+import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 
 export const dynamic = "force-dynamic";
 

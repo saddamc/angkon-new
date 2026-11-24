@@ -1,6 +1,6 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Settings, CheckCircle2 } from "lucide-react";
-import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
+import type { PublicAdminPixelSettings } from "@/server/meta/pixel/pixel-settings";
 
 interface EventsSettingsTabProps {
   pixelId: string;

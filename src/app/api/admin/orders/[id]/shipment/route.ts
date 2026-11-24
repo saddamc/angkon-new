@@ -1,25 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import { Shipment } from "@/models/Shipment";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { courierService, getCourierModeConfig } from "@/server/courier";
-import { isLocalTestOrder } from "@/server/courier/courier-mode";
-import { serializeShipment } from "@/server/courier/serialize";
+import { isLocalTestOrder } from "@/server/courier/core/courier-mode";
+import { serializeShipment } from "@/server/courier/core/serialize";
 import { getCourierSettings } from "@/server/courier/settings";
 import {
   calculateOrderParcelWeight,
   PACKAGING_PRESETS,
-} from "@/server/courier/parcel-classifier";
+} from "@/server/courier/core/parcel-classifier";
 import {
   checkCourierBookingEligibility,
   computeOrderFinancials,
 } from "@/server/orders/workflow";
-import { clientIp } from "@/server/rate-limit";
-import type { CourierProviderMeta } from "@/server/courier/types";
+import { clientIp } from "@/server/security/rate-limit";
+import type { CourierProviderMeta } from "@/server/courier/core/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSession } from "@/server/admin-auth";
-import { getShippingSettings } from "@/server/shipping";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSession } from "@/server/auth/admin-auth";
+import { getShippingSettings } from "@/server/settings/shipping";
 
 export const dynamic = "force-dynamic";
 

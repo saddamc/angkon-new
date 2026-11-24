@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import {
   getMetaCatalogSettings,
   getPublicMetaCatalogSettings,
   normalizeMetaCatalogId,
   saveMetaCatalogSettings,
   type MetaCatalogSettings,
-} from "@/server/meta-catalog";
-import { getOrInitCatalogConfig } from "@/server/meta-catalog-connection";
+} from "@/server/meta/catalog/meta-catalog";
+import { getOrInitCatalogConfig } from "@/server/meta/catalog/meta-catalog-connection";
 import { buildFeedUrl, resolveProductionBaseUrl, resolvePublicBaseUrl } from "@/lib/meta-catalog";
 
 export const dynamic = "force-dynamic";

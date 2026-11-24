@@ -13,7 +13,9 @@ import { registerHooks } from "node:module";
 const STUBS = {
   "@/lib/integrations/meta/client": "tests/stubs/meta-client-stub.mjs",
   "@/server/admin-auth": "tests/stubs/admin-auth-stub.mjs",
+  "@/server/auth/admin-auth": "tests/stubs/admin-auth-stub.mjs",
   "@/server/pixel-settings": "tests/stubs/pixel-settings-stub.mjs",
+  "@/server/meta/pixel/pixel-settings": "tests/stubs/pixel-settings-stub.mjs",
 };
 
 function resolveAlias(specifier) {
@@ -61,7 +63,11 @@ registerHooks({
 });
 
 const { normaliseDatasetQuality, fetchEventMatchQuality, resolveEmqTokens } =
-  await import("../src/server/meta-emq.ts");
+  await import(
+    fs.existsSync("src/server/meta/pixel/meta-emq.ts")
+      ? "../src/server/meta/pixel/meta-emq.ts"
+      : "../src/server/meta-emq.ts"
+  );
 const { graphState, resetGraph, MetaGraphApiError } = await import(
   "./stubs/meta-client-stub.mjs"
 );

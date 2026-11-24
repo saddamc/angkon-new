@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
-import { requireAdminSessionCore, createAdminToken } from "@/server/admin-auth";
-import { EMAIL_REGEX, normalizeEmail } from "@/server/auth";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { requireAdminSessionCore, createAdminToken } from "@/server/auth/admin-auth";
+import { EMAIL_REGEX, normalizeEmail } from "@/server/auth/auth";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 const PHONE_REGEX = /^[0-9+\-\s()]{6,20}$/;
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;

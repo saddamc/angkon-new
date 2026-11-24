@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import {
@@ -14,7 +14,7 @@ import { publishCatalogChange } from "@/lib/catalog-sync";
 
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
-import { resolveProductCategories } from "@/server/category-sync";
+import { resolveProductCategories } from "@/server/categories/category-sync";
 import { cleanColorName } from "@/utils/color-swatches";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

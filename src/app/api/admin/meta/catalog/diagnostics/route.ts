@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import {
   getCatalogFeedDiagnostics,
   getMetaCatalogSettings,
   getPublicMetaCatalogSettings,
   probeProductionFeed,
-} from "@/server/meta-catalog";
+} from "@/server/meta/catalog/meta-catalog";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

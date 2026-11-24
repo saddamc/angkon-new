@@ -1,7 +1,7 @@
-import { Types } from "mongoose";
+﻿import { Types } from "mongoose";
 import { Order } from "@/models/Order";
-import { sendMetaCapiEvent } from "@/server/meta-capi";
-import { isSslcommerzLive } from "@/server/sslcommerz";
+import { sendMetaCapiEvent } from "@/server/meta/capi/meta-capi";
+import { isSslcommerzLive } from "@/server/payments/config/sslcommerz";
 
 const META_EVENT_SOURCE =
   process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || "https://angkon.net";

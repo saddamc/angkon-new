@@ -1,11 +1,11 @@
-import {
+﻿import {
   Trash2,
   ChevronDown,
   Search,
   Copy,
   Check,
 } from "lucide-react";
-import type { PixelEventRecord } from "@/server/pixel-settings";
+import type { PixelEventRecord } from "@/server/meta/pixel/pixel-settings";
 
 interface HistoryTabProps {
   events: PixelEventRecord[];

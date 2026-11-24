@@ -1,7 +1,7 @@
-import { Types } from "mongoose";
+﻿import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order, type IOrder } from "@/models/Order";
-import { commitStockForOrder, releaseStockForOrder } from "@/server/stock";
+import { commitStockForOrder, releaseStockForOrder } from "@/server/products/stock";
 
 export class OrderPaymentRepository {
   public static async findByOrderNumber(orderNumber: string): Promise<IOrder | null> {

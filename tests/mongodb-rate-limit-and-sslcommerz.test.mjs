@@ -15,7 +15,7 @@ function simulateHashIp(ip, secret = "test-secret") {
   return crypto.createHmac("sha256", secret).update(normalized).digest("hex").slice(0, 16);
 }
 
-const rateLimitModule = read("src/server/rate-limit.ts");
+const rateLimitModule = read(fs.existsSync("src/server/security/rate-limit.ts") ? "src/server/security/rate-limit.ts" : "src/server/rate-limit.ts");
 const rateLimitBucketModel = read("src/models/RateLimitBucket.ts");
 const paymentModel = read("src/models/Payment.ts");
 const paymentAttemptModel = read("src/models/PaymentAttempt.ts");
@@ -23,7 +23,7 @@ const initiateRoute = read("src/app/api/payment/sslcommerz/initiate/route.ts");
 const callbackRoute = read("src/app/api/payment/sslcommerz/callback/route.ts");
 const ipnRoute = read("src/app/api/payment/sslcommerz/ipn/route.ts");
 const reconcileModule = read("src/server/payments/services/reconcile-payment.ts");
-const sslcommerzModule = read("src/server/sslcommerz.ts");
+const sslcommerzModule = read(fs.existsSync("src/server/payments/config/sslcommerz.ts") ? "src/server/payments/config/sslcommerz.ts" : "src/server/sslcommerz.ts");
 const ordersRoute = read("src/app/api/orders/route.ts");
 const promoRoute = read("src/app/api/promo/validate/route.ts");
 const resetRoute = read("src/app/api/auth/reset-password/route.ts");
@@ -156,9 +156,9 @@ const adminLoginRoute = read("src/app/api/admin/login/route.ts");
 const registerRoute = read("src/app/api/auth/register/route.ts");
 const verifyModule = read("src/server/payments/services/verify-payment.ts");
 const settleModule = read("src/server/payments/services/finalize-payment.ts");
-const csrfModule = read("src/server/csrf.ts");
+const csrfModule = read(fs.existsSync("src/server/security/csrf.ts") ? "src/server/security/csrf.ts" : "src/server/csrf.ts");
 const proxyModule = read("src/proxy.ts");
-const securityLogModule = read("src/server/security-log.ts");
+const securityLogModule = read(fs.existsSync("src/server/security/security-log.ts") ? "src/server/security/security-log.ts" : "src/server/security-log.ts");
 
 test("rate limit store: no duplicate key index and TTL is cleanup only", () => {
   assert.ok(!rateLimitBucketModel.includes("index: true,"));

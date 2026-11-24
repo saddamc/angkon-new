@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import {
@@ -11,7 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { formatBDT, type WCOrder } from "../_types/orders.types";
-import { normalizeBdPhone } from "@/server/courier/steadfast-utils";
+import { normalizeBdPhone } from "@/server/courier/providers/steadfast/utils";
 import type { AdminOrdersHookReturn } from "../_hooks/use-admin-orders";
 
 interface BulkShipmentModalProps {

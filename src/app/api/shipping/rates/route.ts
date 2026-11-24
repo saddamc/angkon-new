@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { getShippingSettings } from "@/server/shipping";
+﻿import { NextResponse } from "next/server";
+import { getShippingSettings } from "@/server/settings/shipping";
 
 /**
  * Public, read-only delivery rates for the cart, checkout and info pages.

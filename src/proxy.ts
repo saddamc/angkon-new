@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isSameOriginRequest, needsCsrfProtection } from "./server/csrf";
-import { securityLog } from "./server/security-log";
+import { isSameOriginRequest, needsCsrfProtection } from "./server/security/csrf";
+import { securityLog } from "./server/security/security-log";
 
 const JWT_SECRET = process.env.JWT_SECRET?.trim() || "";
 

@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import {
   MockSteadfastProvider,
   mockSteadfastProvider,
-} from "../src/server/courier/mock-steadfast";
+} from "../src/server/courier/mock/steadfast";
 import {
   getCourierModeConfig,
   isLocalTestOrder,
-} from "../src/server/courier/courier-mode";
+} from "../src/server/courier/core/courier-mode";
 import { getCourierAdapter } from "../src/server/courier/index";
-import { steadfastAdapter } from "../src/server/courier/steadfast";
-import { SHIPMENT_STATUSES } from "../src/server/courier/steadfast-utils";
+import { steadfastAdapter } from "../src/server/courier/providers/steadfast/adapter";
+import { SHIPMENT_STATUSES } from "../src/server/courier/providers/steadfast/utils";
 import { Shipment } from "../src/models/Shipment";
 
 test("MockSteadfastProvider: Local development defaults to mock mode with zero HTTP requests", () => {

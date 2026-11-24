@@ -1,4 +1,4 @@
-import { getSslcommerzCredentials } from "@/server/sslcommerz";
+﻿import { getSslcommerzCredentials } from "@/server/payments/config/sslcommerz";
 
 export interface SslcommerzConfig {
   storeId: string;

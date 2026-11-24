@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { GET as publicCatalogFeed } from "@/app/api/meta/catalog-feed/route";
 
 export const dynamic = "force-dynamic";

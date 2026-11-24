@@ -1,7 +1,7 @@
-import type { ComponentType } from "react";
+﻿import type { ComponentType } from "react";
 import type { PerformanceDataPoint } from "@/components/admin/meta/performance-chart";
-import type { PixelEventRecord, PublicAdminPixelSettings } from "@/server/pixel-settings";
-import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
+import type { PixelEventRecord, PublicAdminPixelSettings } from "@/server/meta/pixel/pixel-settings";
+import type { PublicAdminMetaMarketingSettings } from "@/server/meta/marketing/meta-marketing-settings";
 
 export type EventsTabType =
   | "telemetry"

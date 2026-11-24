@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { getSessionUserId, hashPassword, validatePassword, verifyPassword } from "@/server/auth";
-import { publicUser } from "@/server/account";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { getSessionUserId, hashPassword, validatePassword, verifyPassword } from "@/server/auth/auth";
+import { publicUser } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 /**
  * POST /api/auth/set-password { password, currentPassword? }

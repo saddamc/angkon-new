@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { calculateShipping, DEFAULT_SHIPPING_SETTINGS } from "../src/lib/shipping.ts";
 import { evaluateSslcommerzResult } from "../src/server/payments/sslcommerz-result.ts";
-import { normalizePolicySettings, DEFAULT_POLICY_SETTINGS } from "../src/server/policy-settings-core.ts";
+import { normalizePolicySettings, DEFAULT_POLICY_SETTINGS } from "../src/server/settings/policy-settings-core.ts";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 

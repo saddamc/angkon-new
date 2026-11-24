@@ -1,11 +1,11 @@
-import crypto from "crypto";
+﻿import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Shipment } from "@/models/Shipment";
 import { getCourierAdapter } from "@/server/courier";
-import { applyCourierStatus } from "@/server/courier/sync";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
-import type { CourierProvider } from "@/server/courier/types";
+import { applyCourierStatus } from "@/server/courier/core/sync";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
+import type { CourierProvider } from "@/server/courier/core/types";
 
 interface WebhookHandlerOptions {
   request: NextRequest;

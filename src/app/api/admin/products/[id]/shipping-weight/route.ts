@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
-import { requireAdminSessionCore } from "@/server/admin-auth";
-import { clientIp } from "@/server/rate-limit";
-import { normalizeUnitWeightToKg } from "@/server/courier/parcel-classifier";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { clientIp } from "@/server/security/rate-limit";
+import { normalizeUnitWeightToKg } from "@/server/courier/core/parcel-classifier";
 
 export const dynamic = "force-dynamic";
 

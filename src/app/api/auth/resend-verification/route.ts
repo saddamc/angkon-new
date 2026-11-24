@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { getSessionUserId } from "@/server/auth";
-import { canSendVerification, issueVerificationEmail } from "@/server/account";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { getSessionUserId } from "@/server/auth/auth";
+import { canSendVerification, issueVerificationEmail } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 /** POST /api/auth/resend-verification — signed-in customer asks for a new link. */
 export async function POST(request: NextRequest) {

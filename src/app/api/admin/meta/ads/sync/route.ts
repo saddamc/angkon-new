@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaAdImportJob } from "@/models/MetaAdImportJob";
 import {
   createAndRunAdImportJob,
   resumeAdImportJob,
-} from "@/server/meta-marketing-api";
+} from "@/server/meta/marketing/meta-marketing-api";
 import { MetaAdReportingLevel } from "@/models/MetaAdReport";
 
 export const dynamic = "force-dynamic";

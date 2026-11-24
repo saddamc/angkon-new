@@ -34,7 +34,7 @@ const expireService = read("src/server/payments/services/expire-payment-attempts
 const adminPage = read("src/app/admin/payments/page.tsx");
 const statusPage = read("src/app/checkout/payment-status/[attemptId]/page.tsx");
 const capi = read("src/server/payments/capi.ts");
-const csrf = read("src/server/csrf.ts");
+const csrf = read(fs.existsSync("src/server/security/csrf.ts") ? "src/server/security/csrf.ts" : "src/server/csrf.ts");
 const vercel = JSON.parse(read("vercel.json"));
 
 test("status vocabulary: legacy paid/initiated normalize without losing safety", () => {

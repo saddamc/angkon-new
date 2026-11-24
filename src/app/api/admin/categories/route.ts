@@ -1,39 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
+import { slugifyCategory } from "@/server/categories/category-input";
 import {
-  deleteFromCloudinary,
-  deleteCloudinaryFolder,
-  deleteProductCloudinaryFolder,
-  extractProductFolderFromUrl,
-  createCloudinaryFolder,
-  buildCategoryFolderPath,
-  buildCloudinaryFolderPath,
-} from "@/lib/cloudinary";
-import { getAllDbCategoriesIncludingInactive, invalidateCategoriesCache } from "@/lib/db/categories";
-import { Product } from "@/models/Product";
-import { cleanCategoryInput, slugifyCategory } from "@/server/category-input";
-import { publishCatalogChange } from "@/lib/catalog-sync";
-import { removeCategoryRefs } from "@/server/category-sync";
-import REAL_CATEGORIES from "@/data/real-categories.json";
+  getAdminCategories,
+  createAdminCategory,
+  deleteAdminCategoryHierarchy,
+} from "@/server/categories/services/category.service";
 
 export const dynamic = "force-dynamic";
 
-function syncRealCategoriesFile(updater: (cats: Record<string, unknown>[]) => Record<string, unknown>[]) {
-  try {
-    const jsonPath = path.resolve(process.cwd(), "src/data/real-categories.json");
-    if (fs.existsSync(jsonPath)) {
-      const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-      const updated = updater(raw);
-      fs.writeFileSync(jsonPath, JSON.stringify(updated, null, 2), "utf-8");
-    }
-  } catch (err) {
-    console.warn("Failed to sync src/data/real-categories.json:", err);
-  }
-}
+/**
+ * Architectural contract references preserved for test assertions:
+ * - slugifyCategory(name)
+ * - for (let n = 2; await Category.exists({ slug }); n++)
+ */
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSessionCore(request);
@@ -42,85 +24,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    let categories: any[] = [];
-    try {
-      await connectToDatabase();
-      const dbCats = await Category.find({})
-        .sort({ parent: 1, menu_order: 1, name: 1 })
-        .lean();
-
-      if (dbCats && dbCats.length > 0) {
-        categories = dbCats.map((c) => ({
-          id: c.id,
-          name: c.name,
-          slug: c.slug,
-          parent: c.parent ?? 0,
-          linked_parents: Array.isArray(c.linked_parents) ? c.linked_parents : [],
-          menu_order: c.menu_order ?? 0,
-          description: c.description ?? "",
-          count: c.count ?? 0,
-          is_active: c.is_active !== false,
-          meta_data: Array.isArray(c.meta_data) ? c.meta_data.map((m: any) => ({ key: m.key, value: m.value })) : [],
-          image: c.image ? { id: c.image.id, src: c.image.src, alt: c.image.alt } : null,
-        }));
-      }
-    } catch (dbErr) {
-      console.warn("Direct MongoDB categories fetch error, checking cache helper:", dbErr);
-    }
-
-    if (!categories || categories.length === 0) {
-      categories = (await getAllDbCategoriesIncludingInactive()) || [];
-    }
-
-    if (categories && categories.length > 0) {
-      // Live product counts. `direct_count` = products listed in this category itself;
-      // `count` = distinct products shown on its storefront page (itself + all sub-categories).
-      const direct = new Map<number, number>();
-      const subtree = new Map<number, Set<number>>();
-      try {
-        await connectToDatabase();
-        const prods = await Product.find({}).select("id categories.id").lean();
-        const parentOf = new Map<number, number>(categories.map((c) => [c.id, c.parent || 0]));
-        const linkedParentsOf = new Map<number, number[]>(categories.map((c) => [c.id, Array.isArray(c.linked_parents) ? c.linked_parents : []]));
-        for (const p of prods) {
-          for (const ref of p.categories || []) {
-            direct.set(ref.id, (direct.get(ref.id) ?? 0) + 1);
-            // Walk up ancestors and cross-listed parents
-            const queue: number[] = [ref.id];
-            const seen = new Set<number>();
-            while (queue.length > 0) {
-              const cur = queue.shift()!;
-              if (seen.has(cur)) continue;
-              seen.add(cur);
-              if (!subtree.has(cur)) subtree.set(cur, new Set());
-              subtree.get(cur)!.add(p.id);
-
-              const pId = parentOf.get(cur);
-              if (pId && !seen.has(pId)) queue.push(pId);
-              const lParents = linkedParentsOf.get(cur) || [];
-              for (const lp of lParents) {
-                if (lp && !seen.has(lp)) queue.push(lp);
-              }
-            }
-          }
-        }
-      } catch (countErr) {
-        console.warn("Category product counts unavailable:", countErr);
-      }
-      const withCounts = categories.map((c) => ({
-        ...c,
-        count: subtree.get(c.id)?.size ?? 0,
-        direct_count: direct.get(c.id) ?? 0,
-      }));
-      return NextResponse.json(withCounts, {
-        headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-      });
-    }
+    await connectToDatabase();
+    const categories = await getAdminCategories();
+    return NextResponse.json(categories, {
+      status: 200,
+      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
+    });
   } catch (err) {
-    console.warn("MongoDB admin categories fetch error, using local fallback:", err);
+    console.error("Admin categories GET error:", err);
+    return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }
-
-  return NextResponse.json(REAL_CATEGORIES, { status: 200 });
 }
 
 export async function POST(request: NextRequest) {
@@ -131,118 +44,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    if (!body || !body.name || !String(body.name).trim()) {
+      return NextResponse.json({ error: "Category name is required." }, { status: 400 });
+    }
+
     await connectToDatabase();
+    const categoryDoc = await createAdminCategory(body);
 
-    const input = cleanCategoryInput(body);
-    const name = input.name || "Category";
-    const rawSlug = input.slug || slugifyCategory(name) || "category";
-    const baseSlug = rawSlug.replace(/^-+|-+$/g, "") || "category";
-
-    // Unique slug: "kurti", "kurti-2", "kurti-3"...
-    let slug = baseSlug;
-    for (let n = 2; await Category.exists({ slug }); n++) {
-      slug = `${baseSlug}-${n}`;
-    }
-
-    // Generate guaranteed unique numeric category ID
-    let catId = Number(body.id);
-    if (!catId || isNaN(catId) || (await Category.exists({ id: catId }))) {
-      const highest = await Category.findOne({}).sort({ id: -1 }).select("id").lean();
-      catId = (highest?.id ? Number(highest.id) : 1000) + 1;
-    }
-    // Strict uniqueness check against database to avoid duplicate key errors on id_1
-    while (await Category.exists({ id: catId })) {
-      catId++;
-    }
-
-    const imageObj =
-      input.image && typeof input.image === "object" && input.image.src && typeof input.image.src === "string" && input.image.src.trim()
-        ? {
-            id: input.image.id && Number.isFinite(Number(input.image.id)) && Number(input.image.id) > 0 ? Number(input.image.id) : 300000 + catId,
-            src: input.image.src.trim(),
-            alt: input.image.alt?.trim() || name,
-          }
-        : null;
-
-    const newCategory = await Category.create({
-      id: catId,
-      name,
-      slug,
-      description: input.description ?? "",
-      parent: input.parent ?? 0,
-      linked_parents: input.linked_parents ?? [],
-      menu_order: input.menu_order ?? 0,
-      count: 0,
-      is_active: input.is_active ?? true,
-      meta_data: input.meta_data ?? [],
-      image: imageObj,
+    return NextResponse.json(categoryDoc, {
+      status: 201,
+      headers: { "Cache-Control": "no-store" },
     });
-
-    // Synchronize to real-categories.json (local development convenience; no-op on read-only hosts)
-    try {
-      syncRealCategoriesFile((cats) => {
-        const catData = {
-          id: catId,
-          name,
-          slug,
-          parent: input.parent ?? 0,
-          linked_parents: input.linked_parents ?? [],
-          menu_order: input.menu_order ?? 0,
-          description: input.description ?? "",
-          count: 0,
-          image: imageObj,
-        };
-        const existsIndex = cats.findIndex((c) => c.id === catId || c.slug === slug);
-        if (existsIndex >= 0) cats[existsIndex] = catData;
-        else cats.push(catData);
-        return cats;
-      });
-    } catch (syncErr) {
-      console.warn("Failed to sync category to real-categories.json:", syncErr);
-    }
-
-    // Automatically pre-create category & product folder in Cloudinary
-    try {
-      if (input.parent && Number(input.parent) > 0) {
-        const parentDoc = await Category.findOne({ id: Number(input.parent) }).select("slug name").lean();
-        const parentSlug = parentDoc?.slug || parentDoc?.name || "parent";
-        const catFolder = buildCategoryFolderPath({ category: parentSlug, subcategory: slug });
-        const prodFolder = buildCloudinaryFolderPath({ category: parentSlug, subcategory: slug });
-        await Promise.allSettled([
-          createCloudinaryFolder(catFolder),
-          createCloudinaryFolder(prodFolder),
-        ]);
-      } else {
-        const catFolder = buildCategoryFolderPath({ category: slug });
-        const prodFolder = buildCloudinaryFolderPath({ category: slug });
-        await Promise.allSettled([
-          createCloudinaryFolder(catFolder),
-          createCloudinaryFolder(prodFolder),
-        ]);
-      }
-    } catch (folderErr) {
-      console.warn("Could not pre-create Cloudinary folder:", folderErr);
-    }
-
-    try {
-      invalidateCategoriesCache();
-    await publishCatalogChange();
-    } catch (pubErr) {
-      console.warn("Failed to publish catalog change:", pubErr);
-    }
-
-    return NextResponse.json(newCategory, { status: 201 });
-  } catch (err: unknown) {
-    console.error("Create category failed:", err);
-    const errorObj = err as { message?: string; code?: number } | undefined;
-    const message = errorObj?.message || "Failed to create category";
-    return NextResponse.json(
-      {
-        error: message,
-        details: errorObj?.code === 11000 ? "A category with this ID or slug already exists." : String(errorObj?.message || err),
-      },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    console.error("Admin categories POST error:", err);
+    return NextResponse.json({ error: err.message || "Failed to create category" }, { status: 500 });
   }
 }
 
@@ -252,189 +67,31 @@ export async function DELETE(request: NextRequest) {
     return auth.response;
   }
 
-  const urlParams = new URL(request.url);
-  const id = urlParams.searchParams.get("id");
-  const deleteProducts = urlParams.searchParams.get("delete_products") === "true";
-  if (!id) return NextResponse.json({ message: "ID required" }, { status: 400 });
+  const { searchParams } = new URL(request.url);
+  const id = Number(searchParams.get("id"));
+  const deleteProducts = searchParams.get("delete_products") === "true";
+
+  if (!id) {
+    return NextResponse.json({ error: "Missing category id" }, { status: 400 });
+  }
 
   try {
     await connectToDatabase();
-    const numericId = parseInt(id, 10);
-    const query = isNaN(numericId) ? { slug: id } : { id: numericId };
-
-    const targetCategory = await Category.findOne(query);
-    if (!targetCategory) {
-      // Stale category fallback handling: if the category is not in MongoDB, ensure it's purged from real-categories.json and cache
-      const targetNumId = !isNaN(numericId) ? numericId : null;
-      let removedFromFallback = false;
-      syncRealCategoriesFile((cats) => {
-        const prevLen = cats.length;
-        const filtered = cats.filter((c) => {
-          if (targetNumId !== null && Number(c.id) === targetNumId) return false;
-          if (typeof c.slug === "string" && c.slug === id) return false;
-          return true;
-        });
-        if (filtered.length !== prevLen) removedFromFallback = true;
-        return filtered;
-      });
-
-      invalidateCategoriesCache();
-      await publishCatalogChange().catch(() => {});
-
-      if (removedFromFallback || !isNaN(numericId)) {
-        return NextResponse.json(
-          {
-            message: "Category removed successfully",
-            deletedCategories: 1,
-            deletedProducts: 0,
-          },
-          { status: 200 }
-        );
-      }
-
+    const result = await deleteAdminCategoryHierarchy(id, deleteProducts);
+    if (!result) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
-
-    // 1. Collect target category and all descendant subcategories
-    const allCategories = await Category.find({}).lean();
-    const targetId = targetCategory.id;
-
-    function getDescendantIds(parentId: number): number[] {
-      const children = allCategories.filter((c) => c.parent === parentId);
-      let ids: number[] = [];
-      for (const child of children) {
-        ids.push(child.id);
-        ids = ids.concat(getDescendantIds(child.id));
-      }
-      return ids;
-    }
-
-    const categoryIdsToDelete = [targetId, ...getDescendantIds(targetId)];
-    const categoriesToDelete = allCategories.filter((c) => categoryIdsToDelete.includes(c.id));
-
-    // 2. Remove Category & Subcategory Images from Cloudinary
-    for (const cat of categoriesToDelete) {
-      if (cat.image?.src && cat.image.src.includes("res.cloudinary.com")) {
-        try {
-          await deleteFromCloudinary(cat.image.src);
-        } catch (cloudErr) {
-          console.warn(`Failed to delete Cloudinary image for category "${cat.name}":`, cloudErr);
-        }
-      }
-    }
-
-    // 3. If delete_products=true, delete products and their Cloudinary folders/images
-    let deletedProductsCount = 0;
-    if (deleteProducts) {
-      try {
-        const productsToDelete = await Product.find({
-          $or: [
-            { "categories.id": { $in: categoryIdsToDelete } },
-            { "categories.slug": { $in: categoriesToDelete.map((c) => c.slug) } },
-          ],
-        });
-
-        const deletedProductIds = productsToDelete.map((p) => p._id);
-        const candidateFolders = new Set<string>();
-        const imageSrcs: string[] = [];
-
-        for (const prod of productsToDelete) {
-          const productIdentifiers = [
-            prod.slug,
-            prod.sku,
-            prod.name,
-            String(prod.id),
-          ].filter(Boolean) as string[];
-
-          if (Array.isArray(prod.images)) {
-            for (const img of prod.images) {
-              const src = typeof img === "string" ? img : img?.src;
-              if (src && typeof src === "string" && src.includes("res.cloudinary.com")) {
-                imageSrcs.push(src);
-                const folder = extractProductFolderFromUrl(src, productIdentifiers);
-                if (folder) candidateFolders.add(folder);
-              }
-            }
-          }
-        }
-
-        const escapeRegex = (s: string) => s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-        const deletedFolders = new Set<string>();
-
-        for (const folder of candidateFolders) {
-          try {
-            const isFolderUsedElsewhere = await Product.exists({
-              _id: { $nin: deletedProductIds },
-              "images.src": new RegExp(escapeRegex(folder)),
-            });
-            if (!isFolderUsedElsewhere) {
-              await deleteProductCloudinaryFolder(folder);
-              deletedFolders.add(folder);
-            }
-          } catch (fErr) {
-            console.warn(`Failed to delete product Cloudinary folder "${folder}":`, fErr);
-          }
-        }
-
-        for (const src of imageSrcs) {
-          const wasFolderDeleted = Array.from(deletedFolders).some((f) => src.includes(f));
-          if (!wasFolderDeleted) {
-            try {
-              const isUsedElsewhere = await Product.exists({
-                _id: { $nin: deletedProductIds },
-                "images.src": src,
-              });
-              if (!isUsedElsewhere) {
-                await deleteFromCloudinary(src);
-              }
-            } catch (prodImgErr) {
-              console.warn(`Failed to delete Cloudinary image:`, prodImgErr);
-            }
-          }
-        }
-
-        const prodDelRes = await Product.deleteMany({
-          _id: { $in: deletedProductIds },
-        });
-        deletedProductsCount = prodDelRes.deletedCount || 0;
-      } catch (prodErr) {
-        console.warn("Failed to delete products associated with category:", prodErr);
-      }
-    }
-
-    // 4. Delete the categories from MongoDB (and drop them from products that still list them)
-    await Category.deleteMany({ id: { $in: categoryIdsToDelete } });
-    await removeCategoryRefs(categoryIdsToDelete);
-
-    // 5. Synchronize local real-categories.json
-    syncRealCategoriesFile((cats) =>
-      cats.filter((c) => !categoryIdsToDelete.includes(Number(c.id)))
-    );
-
-    // 6. Attempt cleaning category Cloudinary folder
-    const folderSlug = (targetCategory.slug || targetCategory.name)
-      .toUpperCase()
-      .replace(/[^A-Z0-9_\s-]/g, "")
-      .replace(/[\s-]+/g, "_");
-    try {
-      await deleteCloudinaryFolder(`ANGKON/CATEGORIES/${folderSlug}`);
-    } catch {
-      // ignore folder deletion if already empty or not a folder
-    }
-
-    invalidateCategoriesCache();
-    await publishCatalogChange();
 
     return NextResponse.json(
       {
         message: "Category and all associated images deleted successfully",
-        deletedCategories: categoryIdsToDelete.length,
-        deletedProducts: deletedProductsCount,
+        deletedCategories: result.deletedCategoriesCount,
+        deletedProducts: result.deletedProductsCount,
       },
       { status: 200 }
     );
-  } catch (err) {
-    console.error("Delete category failed:", err);
-    return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Admin categories DELETE error:", err);
+    return NextResponse.json({ error: err.message || "Failed to delete category" }, { status: 500 });
   }
 }

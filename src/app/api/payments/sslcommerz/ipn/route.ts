@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 import { ProcessIpnService } from "@/server/payments/services/process-ipn";
 import { parseGatewayCallback } from "@/server/payments/parse-callback";
-import { securityLog } from "@/server/security-log";
+import { securityLog } from "@/server/security/security-log";
 
 export async function POST(req: NextRequest) {
   const payload = await parseGatewayCallback(req);

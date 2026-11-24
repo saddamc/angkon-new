@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+﻿import { Fragment } from "react";
 import {
   Activity,
   Share2,
@@ -18,7 +18,7 @@ import { InfoPopover } from "@/components/admin/meta/info-popover";
 import { PerformanceChart, type PerformanceDataPoint } from "@/components/admin/meta/performance-chart";
 import { EmqBreakdown } from "@/components/admin/meta/emq-breakdown";
 import { scoreLabel } from "@/components/admin/meta/meta-ui";
-import type { PixelEventRecord } from "@/server/pixel-settings";
+import type { PixelEventRecord } from "@/server/meta/pixel/pixel-settings";
 import type {
   MetaEventRow,
   DeliveryStats,

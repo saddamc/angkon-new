@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getPixelSettings } from "@/server/pixel-settings";
-import { testMetaCapiConnection } from "@/server/meta-capi";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { getPixelSettings } from "@/server/meta/pixel/pixel-settings";
+import { testMetaCapiConnection } from "@/server/meta/capi/meta-capi";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 
 export const dynamic = "force-dynamic";
 

@@ -1,11 +1,11 @@
-import { connectToDatabase } from "@/lib/mongodb";
+﻿import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
-import { DEFAULT_TENANT_ID } from "@/server/tenant";
+import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 import {
   DEFAULT_COURIER_SETTINGS,
   normalizeCourierSettings,
   type CourierSettings,
-} from "./tracking";
+} from "./core/tracking";
 
 export const COURIER_SETTINGS_KEY = "courier";
 export { DEFAULT_COURIER_SETTINGS, normalizeCourierSettings, type CourierSettings };

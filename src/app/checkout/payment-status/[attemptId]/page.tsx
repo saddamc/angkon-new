@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connectToDatabase } from "@/lib/mongodb";
@@ -6,7 +6,7 @@ import { PaymentAttempt } from "@/models/PaymentAttempt";
 import { PaymentStatusCard } from "@/components/checkout/payment-status-card";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { verifyAuthToken } from "@/server/auth";
+import { verifyAuthToken } from "@/server/auth/auth";
 import { customerOwnsOrder } from "@/server/payments/customer-auth";
 import { verifyPaymentStatusToken, createPaymentStatusToken } from "@/server/payments/status-token";
 import { Order } from "@/models/Order";

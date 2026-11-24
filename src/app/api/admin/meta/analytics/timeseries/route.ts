@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import Order from "@/models/Order";
 import { MetaAdReport } from "@/models/MetaAdReport";

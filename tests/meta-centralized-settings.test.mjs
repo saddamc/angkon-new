@@ -35,7 +35,14 @@ test("Priority 4 & 5: Auto-sync cadence and corrected 24-hour stale window", () 
     "EMQ stale window must be 24 hours (not 24 minutes)"
   );
 
-  const syncContent = fs.readFileSync(path.resolve("src/server/meta-sync.ts"), "utf-8");
+  const syncContent = fs.readFileSync(
+    path.resolve(
+      fs.existsSync("src/server/jobs/meta-sync.ts")
+        ? "src/server/jobs/meta-sync.ts"
+        : "src/server/meta-sync.ts"
+    ),
+    "utf-8"
+  );
   assert.ok(
     syncContent.includes("emq_quality: 24 * 60 * 60 * 1000"),
     "meta-sync.ts must specify 24 hours in milliseconds"

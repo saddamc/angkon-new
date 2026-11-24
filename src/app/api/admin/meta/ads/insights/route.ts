@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import {
   fetchMetaDailyInsights,
   importMetaHistoricalInsights,
-} from "@/server/meta-ads";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+} from "@/server/meta/marketing/meta-ads";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { MetaAdReportingLevel } from "@/models/MetaAdReport";
 
 export const dynamic = "force-dynamic";

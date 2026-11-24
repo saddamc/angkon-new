@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { computeOrderFinancials } from "@/server/orders/workflow";
-import { commitStockForOrder } from "@/server/stock";
-import { clientIp } from "@/server/rate-limit";
+import { commitStockForOrder } from "@/server/products/stock";
+import { clientIp } from "@/server/security/rate-limit";
 
 /**
  * POST /api/admin/orders/[id]/payments/manual

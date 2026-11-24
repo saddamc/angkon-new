@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -18,7 +18,7 @@ import {
   isDeliveredStatus,
   BD_PHONE_REGEX,
   evaluateShipmentTransition,
-} from "../src/server/courier/steadfast-utils.ts";
+} from "../src/server/courier/providers/steadfast/utils.ts";
 
 function read(relPath) {
   return fs.readFileSync(path.resolve(process.cwd(), relPath), "utf8");
@@ -168,13 +168,13 @@ test("T4: Vercel serverless maxDuration and bounded timeouts configured", () => 
   const reconcileRoute = read("src/app/api/payment/sslcommerz/reconcile/route.ts");
   assert.ok(reconcileRoute.includes("export const maxDuration = 60"), "Reconcile route must set maxDuration = 60");
 
-  const steadfastCode = read("src/server/courier/steadfast.ts");
+  const steadfastCode = read((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"));
   assert.ok(steadfastCode.includes("TIMEOUT_MS = 8_000"), "External timeout bounded to 8s");
   assert.ok(steadfastCode.includes("RECOVERY_TIMEOUT_MS = 5_000"), "Recovery lookup timeout bounded to 5s");
 });
 
 test("T4: Pre-flight and post-timeout recovery by invoice number", () => {
-  const steadfastCode = read("src/server/courier/steadfast.ts");
+  const steadfastCode = read((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"));
   assert.ok(
     steadfastCode.includes("getSteadfastStatusByInvoice"),
     "Must implement getSteadfastStatusByInvoice"
@@ -192,7 +192,7 @@ test("T4: Pre-flight and post-timeout recovery by invoice number", () => {
     "Must recover on timeout"
   );
 
-  const courierServiceCode = read("src/server/courier/courier-service.ts");
+  const courierServiceCode = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
   assert.ok(
     courierServiceCode.includes("staleLockCutoff"),
     "Must reclaim stale in-progress booking locks"

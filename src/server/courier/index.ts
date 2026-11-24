@@ -1,10 +1,13 @@
-import { steadfastAdapter } from "./steadfast";
-import { mockSteadfastProvider } from "./mock-steadfast";
-import { pathaoAdapter } from "./pathao";
-import { redxAdapter } from "./redx";
-import { ecourierAdapter } from "./ecourier";
-import { getCourierModeConfig, type CourierMode } from "./courier-mode";
-import type { CourierAdapter, CourierProvider } from "./types";
+import { steadfastAdapter } from "./providers/steadfast";
+import { mockSteadfastProvider } from "./mock/steadfast";
+import { pathaoAdapter } from "./providers/pathao";
+import { redxAdapter } from "./providers/redx";
+import { ecourierAdapter } from "./providers/ecourier";
+import { getCourierModeConfig, type CourierMode } from "./core/courier-mode";
+import type { CourierAdapter, CourierProvider } from "./core/types";
+import { courierService } from "./core/courier-service";
+
+// courierService re-exported below
 
 /**
  * Courier registry. All providers implement the same `CourierAdapter`
@@ -81,18 +84,22 @@ export function getProviderConfigSummary() {
   };
 }
 
-export { CourierService, courierService, COURIER_FAILURE_HTTP_STATUS } from "./courier-service";
-export { isSteadfastConfigured } from "./steadfast";
-export { mockSteadfastProvider } from "./mock-steadfast";
+export {
+  CourierService,
+  courierService,
+  COURIER_FAILURE_HTTP_STATUS,
+} from "./core/courier-service";
+export { isSteadfastConfigured } from "./providers/steadfast";
+export { mockSteadfastProvider } from "./mock/steadfast";
 export {
   getCourierModeConfig,
   isLocalTestOrder,
   type CourierMode,
   type CourierModeConfig,
-} from "./courier-mode";
-export { isPathaoConfigured } from "./pathao";
-export { isRedxConfigured } from "./redx";
-export { isEcourierConfigured } from "./ecourier";
+} from "./core/courier-mode";
+export { isPathaoConfigured } from "./providers/pathao";
+export { isRedxConfigured } from "./providers/redx";
+export { isEcourierConfigured } from "./providers/ecourier";
 export type {
   BulkShipmentInputItem,
   BulkShipmentResultItem,
@@ -107,4 +114,5 @@ export type {
   CreateShipmentInput,
   CreateShipmentResult,
   ShipmentStatusResult,
-} from "./types";
+} from "./core/types";
+

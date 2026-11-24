@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
@@ -23,7 +23,7 @@ import {
   Check,
   XCircle,
 } from "lucide-react";
-import { getCourierTrackingUrl } from "@/server/courier/tracking";
+import { getCourierTrackingUrl } from "@/server/courier/core/tracking";
 import { getPaymentMethodBadge, isOnlinePaymentMethod } from "@/lib/payment-methods";
 import { CourierLogo } from "@/components/admin/courier-logo";
 import { CourierPrintAction } from "./courier-print-action";

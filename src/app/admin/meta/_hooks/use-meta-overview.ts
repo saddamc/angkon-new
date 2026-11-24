@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
-import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
+import type { PublicAdminPixelSettings } from "@/server/meta/pixel/pixel-settings";
+import type { PublicAdminMetaMarketingSettings } from "@/server/meta/marketing/meta-marketing-settings";
 import type { PerformanceDataPoint } from "@/components/admin/meta/performance-chart";
 import type { AnalyticsPeriod, MetaAnalyticsData, MetaOverviewState } from "../_types/meta-overview.types";
 

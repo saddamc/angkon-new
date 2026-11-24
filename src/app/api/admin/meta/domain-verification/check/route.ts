@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import {
   CANONICAL_ROOT_DOMAIN,
   CANONICAL_SITE_URL,
@@ -16,10 +16,10 @@ import {
   normalizeRootDomain,
   ensureTenantPrimaryDomain,
   verifyHtmlMetaTag,
-} from "@/server/meta-domain";
+} from "@/server/meta/domain/meta-domain";
 import { MetaDomain } from "@/models/MetaDomain";
 import { MetaDomainAuditLog } from "@/models/MetaDomainAuditLog";
-import { getPixelSettings, savePixelSettings } from "@/server/pixel-settings";
+import { getPixelSettings, savePixelSettings } from "@/server/meta/pixel/pixel-settings";
 
 export const dynamic = "force-dynamic";
 

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { courierService, getCourierModeConfig } from "@/server/courier";
 import { getCourierSettings } from "@/server/courier/settings";
 

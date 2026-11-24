@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";

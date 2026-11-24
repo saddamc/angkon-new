@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { ProcessCancellationService } from "@/server/payments/services/process-cancellation";
 import { parseGatewayCallback, firstDefined } from "@/server/payments/parse-callback";
-import { checkDualRateLimit, createRateLimitResponse } from "@/server/rate-limit";
-import { getSiteUrl } from "@/server/auth";
+import { checkDualRateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
+import { getSiteUrl } from "@/server/auth/auth";
 
 async function handleCallback(req: NextRequest) {
   const limit = await checkDualRateLimit({

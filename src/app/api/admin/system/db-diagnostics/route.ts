@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase, getDatabaseDiagnostics } from "@/lib/mongodb";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) return auth.response;
+
   try {
     await connectToDatabase();
     const diagnostics = getDatabaseDiagnostics();
@@ -21,11 +25,12 @@ export async function GET() {
       }
     );
   } catch (error) {
+    console.error("Admin database diagnostics error:", error);
     const diagnostics = getDatabaseDiagnostics();
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Database connection failure",
+        error: "Database diagnostics unavailable",
         data: diagnostics,
         timestamp: new Date().toISOString(),
       },

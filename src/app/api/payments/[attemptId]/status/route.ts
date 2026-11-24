@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { PaymentAttemptRepository } from "@/server/payments/repositories/payment-attempt.repository";
 import { verifyPaymentStatusToken, createPaymentStatusToken } from "@/server/payments/status-token";
 import { requireCustomerId, assertAttemptOwnership } from "@/server/payments/customer-auth";
 import { PaymentError } from "@/server/payments/payment-errors";
-import { checkDualRateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { checkDualRateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 import { getPaymentStatusInfo } from "@/lib/payments/payment-status-labels";
 import { isValidObjectId } from "@/server/payments/utils/object-id";
 

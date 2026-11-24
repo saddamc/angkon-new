@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { invalidateShippingSettingsCache } from "@/server/shipping";
+import { invalidateShippingSettingsCache } from "@/server/settings/shipping";
 
 // Product-specific delivery fees (`_delivery_inside` / `_delivery_outside`) REPLACE the store-wide
 // rates for that product. This endpoint lets the admin see how many products do that and clear them

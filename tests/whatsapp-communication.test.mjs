@@ -9,7 +9,7 @@ import {
   generateWhatsAppMessage,
   mapStatusToTemplateKey,
   WHATSAPP_TEMPLATE_OPTIONS,
-} from "../src/server/whatsapp/whatsapp-templates.ts";
+} from "../src/server/integrations/whatsapp/whatsapp-templates.ts";
 
 test("1. Bangladeshi Phone Normalization for WhatsApp", () => {
   // Standard 11-digit local format: 01XXXXXXXXX -> 8801XXXXXXXXX
@@ -300,7 +300,10 @@ test("10. Template Registry Count & Brand Invariants", () => {
   assert.ok(optionsKeys.includes("returned"));
   assert.ok(optionsKeys.includes("custom"));
 
-  const source = fs.readFileSync("src/server/whatsapp/whatsapp-templates.ts", "utf8");
+  const waPath = fs.existsSync("src/server/integrations/whatsapp/whatsapp-templates.ts")
+    ? "src/server/integrations/whatsapp/whatsapp-templates.ts"
+    : "src/server/whatsapp/whatsapp-templates.ts";
+  const source = fs.readFileSync(waPath, "utf8");
   assert.ok(source.includes("ANGKON – Style That Speaks."));
   assert.ok(source.includes("https://wa.me/"));
 });

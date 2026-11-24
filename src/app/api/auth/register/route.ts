@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import {
@@ -7,9 +7,9 @@ import {
   normalizeEmail,
   setSessionCookie,
   validatePassword,
-} from "@/server/auth";
-import { issueVerificationEmail, publicUser } from "@/server/account";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+} from "@/server/auth/auth";
+import { issueVerificationEmail, publicUser } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {

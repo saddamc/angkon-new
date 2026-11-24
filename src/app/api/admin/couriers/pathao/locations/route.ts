@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
-import { getPathaoAreas, getPathaoCities, getPathaoZones } from "@/server/courier/pathao";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { getPathaoAreas, getPathaoCities, getPathaoZones } from "@/server/courier/providers/pathao";
 
 export const dynamic = "force-dynamic";
 

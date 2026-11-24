@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { syncProductCategoryRefs } from "@/server/category-sync";
+import { syncProductCategoryRefs } from "@/server/categories/category-sync";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,9 @@ interface ReorderItem {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) return auth.response;
+
   try {
     const body = await request.json();
     const items: ReorderItem[] = Array.isArray(body?.items)

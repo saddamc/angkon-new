@@ -1,5 +1,5 @@
-import type { NextRequest } from "next/server";
-import { getSessionUserId, normalizeEmail } from "@/server/auth";
+﻿import type { NextRequest } from "next/server";
+import { getSessionUserId, normalizeEmail } from "@/server/auth/auth";
 import { Order, type IOrder } from "@/models/Order";
 import { User } from "@/models/User";
 import type { IPaymentAttempt } from "@/models/PaymentAttempt";

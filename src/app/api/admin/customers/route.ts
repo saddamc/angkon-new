@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { User } from "@/models/User";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 // GET /api/admin/customers — every customer (registered accounts + guest buyers),
 // merged by phone / email / account, with lifetime stats computed over ALL orders.
@@ -53,7 +54,10 @@ interface Group {
   }[];
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) return auth.response;
+
   try {
     await connectToDatabase();
 

@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
@@ -8,7 +8,7 @@ import {
   getAllowedNextStatuses,
   normalizeOrderStatus,
 } from "../src/server/orders/workflow.ts";
-import { normalizeBdPhone, buildRecipientAddress } from "../src/server/courier/steadfast-utils.ts";
+import { normalizeBdPhone, buildRecipientAddress } from "../src/server/courier/providers/steadfast/utils.ts";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
@@ -174,7 +174,7 @@ test("Needs Action: categorizes prioritized action queue across all 7 operationa
 
 // ── 4. ORDER STATUS WORKFLOW & NON-ADVANCING BOOKING TESTS ────────────────────
 test("Workflow: Booking consignment transitions order to ready_to_ship, NEVER straight to shipped", () => {
-  const courierServiceSource = read("src/server/courier/courier-service.ts");
+  const courierServiceSource = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
 
   // Booking result sets ready_to_ship
   assert.match(
@@ -202,7 +202,7 @@ test("Workflow: Booking consignment transitions order to ready_to_ship, NEVER st
 });
 
 test("Workflow: Physical courier pickup (in_transit) moves order to shipped via sync", () => {
-  const syncSource = read("src/server/courier/sync.ts");
+  const syncSource = read((fs.existsSync("src/server/courier/core/sync.ts") ? "src/server/courier/core/sync.ts" : "src/server/courier/sync.ts"));
   assert.match(
     syncSource,
     /in_transit|out_for_delivery/,

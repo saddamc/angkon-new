@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { checkDualRateLimit, createRateLimitResponse } from "@/server/rate-limit";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { checkDualRateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 import { RetryPaymentService } from "@/server/payments/services/retry-payment";
 import { PaymentError } from "@/server/payments/payment-errors";
 import { requireCustomerId, assertAttemptOwnership } from "@/server/payments/customer-auth";

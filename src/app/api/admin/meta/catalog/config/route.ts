@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
-import { getOrInitCatalogConfig } from "@/server/meta-catalog-connection";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
+import { getOrInitCatalogConfig } from "@/server/meta/catalog/meta-catalog-connection";
 import type { IMetaFeedSchedule } from "@/models/MetaCatalogConfig";
 
 export const dynamic = "force-dynamic";

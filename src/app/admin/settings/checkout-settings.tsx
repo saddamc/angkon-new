@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -18,7 +18,7 @@ import {
   X,
   RefreshCw,
 } from "lucide-react";
-import type { PromoCodeItem, CheckoutSettings as ICheckoutSettings } from "@/server/checkout-settings";
+import type { PromoCodeItem, CheckoutSettings as ICheckoutSettings } from "@/server/settings/checkout-settings";
 
 interface PromoFormState {
   code: string;

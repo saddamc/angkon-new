@@ -9,7 +9,12 @@ import fs from "node:fs";
  * sliding-window smoothing while preserving atomic increments and fail-closed security.
  */
 
-const rateLimitSource = fs.readFileSync("src/server/rate-limit.ts", "utf8");
+const rateLimitSource = fs.readFileSync(
+  fs.existsSync("src/server/security/rate-limit.ts")
+    ? "src/server/security/rate-limit.ts"
+    : "src/server/rate-limit.ts",
+  "utf8"
+);
 
 test("sliding-window rate limiter: implementation includes weighted counter algorithm", () => {
   assert.ok(rateLimitSource.includes("calculateSlidingWindowCount"));
@@ -20,7 +25,7 @@ test("sliding-window rate limiter: implementation includes weighted counter algo
 });
 
 test("sliding-window rate limiter: boundary burst attack is defeated by sliding weight", async () => {
-  const { calculateSlidingWindowCount } = await import("../src/server/rate-limit.ts");
+  const { calculateSlidingWindowCount } = await import("../src/server/security/rate-limit.ts");
 
   const windowSizeMs = 60 * 1000; // 60 seconds
   const windowStartMs = 60000;
@@ -45,7 +50,7 @@ test("sliding-window rate limiter: boundary burst attack is defeated by sliding 
 });
 
 test("sliding-window rate limiter: mid-window and full window decay behave smoothly", async () => {
-  const { calculateSlidingWindowCount } = await import("../src/server/rate-limit.ts");
+  const { calculateSlidingWindowCount } = await import("../src/server/security/rate-limit.ts");
 
   const windowSizeMs = 60 * 1000;
   const windowStartMs = 60000;
@@ -67,7 +72,7 @@ test("sliding-window rate limiter: mid-window and full window decay behave smoot
 });
 
 test("sliding-window rate limiter: IP spoofing protection reads rightmost non-empty IP", async () => {
-  const { clientIp } = await import("../src/server/rate-limit.ts");
+  const { clientIp } = await import("../src/server/security/rate-limit.ts");
 
   // Mock request with spoofed left IP: "1.2.3.4, 203.0.113.195"
   const map = new Map([
@@ -85,7 +90,7 @@ test("sliding-window rate limiter: IP spoofing protection reads rightmost non-em
 });
 
 test("sliding-window rate limiter: HMAC IP hashing prevents plain PII in database", async () => {
-  const { hashIp } = await import("../src/server/rate-limit.ts");
+  const { hashIp } = await import("../src/server/security/rate-limit.ts");
 
   const hash1 = hashIp("203.0.113.195");
   const hash2 = hashIp("203.0.113.195");

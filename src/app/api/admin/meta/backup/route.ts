@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -7,7 +7,7 @@ import {
   getDatabaseStats,
   restoreDatabase,
   validateBackupPayload,
-} from "@/server/database-backup";
+} from "@/server/operations/database-backup";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

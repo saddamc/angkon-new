@@ -1,14 +1,14 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { extractSteadfastPayloadError } from "../src/server/courier/steadfast-utils.ts";
-import { mapRedxStatus } from "../src/server/courier/redx-utils.ts";
-import { mapEcourierStatus } from "../src/server/courier/ecourier-utils.ts";
+import { extractSteadfastPayloadError } from "../src/server/courier/providers/steadfast/utils.ts";
+import { mapRedxStatus } from "../src/server/courier/providers/redx/mapper.ts";
+import { mapEcourierStatus } from "../src/server/courier/providers/ecourier/utils.ts";
 import {
   getCourierTrackingUrl,
   getCourierLabel,
   normalizeCourierSettings,
-} from "../src/server/courier/tracking.ts";
+} from "../src/server/courier/core/tracking.ts";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
@@ -27,7 +27,7 @@ test("steadfast: flattens HTTP-200 validation payloads with Laravel errors", () 
 });
 
 test("steadfast adapter: implements status_by_invoice recovery and bulk booking", () => {
-  const steadfast = read("src/server/courier/steadfast.ts");
+  const steadfast = read((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"));
   assert.ok(steadfast.includes("extractSteadfastPayloadError"));
   assert.ok(steadfast.includes("getSteadfastStatusByInvoice"));
   assert.ok(steadfast.includes("/status_by_invoice/"));
@@ -92,7 +92,7 @@ test("multi-courier registry, shipment model, and webhooks cover all 4 providers
 
 test("shipment route enforces unpaid online protection and audited recipient editing", () => {
   const shipmentRoute = read("src/app/api/admin/orders/[id]/shipment/route.ts");
-  const courierService = read("src/server/courier/courier-service.ts");
+  const courierService = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
   assert.ok(shipmentRoute.includes("courierService.bookShipment"));
   assert.ok(courierService.includes("UNPAID_ONLINE_ORDER"));
   assert.ok(courierService.includes("allowCodFallback"));
@@ -118,15 +118,15 @@ test("courier settings normalize defaults safely and credentials stay server-onl
 
 test("redx scaffold: architecture, fail-closed gate, and capability flags", () => {
   // Dedicated files exist
-  assert.ok(fs.existsSync("src/server/courier/redx/types.ts"), "types.ts must exist");
-  assert.ok(fs.existsSync("src/server/courier/redx/mapper.ts"), "mapper.ts must exist");
-  assert.ok(fs.existsSync("src/server/courier/redx/webhook.ts"), "webhook.ts must exist");
-  assert.ok(fs.existsSync("src/server/courier/redx/redx.ts"), "redx.ts must exist");
+  assert.ok((fs.existsSync("src/server/courier/providers/redx/types.ts") || fs.existsSync("src/server/courier/redx/types.ts")), "types.ts must exist");
+  assert.ok((fs.existsSync("src/server/courier/providers/redx/mapper.ts") || fs.existsSync("src/server/courier/redx/mapper.ts")), "mapper.ts must exist");
+  assert.ok((fs.existsSync("src/server/courier/providers/redx/webhook.ts") || fs.existsSync("src/server/courier/redx/webhook.ts")), "webhook.ts must exist");
+  assert.ok((fs.existsSync("src/server/courier/providers/redx/adapter.ts") || fs.existsSync("src/server/courier/redx/redx.ts")), "redx.ts must exist");
 
-  const typesContent = read("src/server/courier/redx/types.ts");
-  const mapperContent = read("src/server/courier/redx/mapper.ts");
-  const webhookContent = read("src/server/courier/redx/webhook.ts");
-  const redxContent = read("src/server/courier/redx/redx.ts");
+  const typesContent = read((fs.existsSync("src/server/courier/providers/redx/types.ts") ? "src/server/courier/providers/redx/types.ts" : "src/server/courier/redx/types.ts"));
+  const mapperContent = read((fs.existsSync("src/server/courier/providers/redx/mapper.ts") ? "src/server/courier/providers/redx/mapper.ts" : "src/server/courier/redx/mapper.ts"));
+  const webhookContent = read((fs.existsSync("src/server/courier/providers/redx/webhook.ts") ? "src/server/courier/providers/redx/webhook.ts" : "src/server/courier/redx/webhook.ts"));
+  const redxContent = read((fs.existsSync("src/server/courier/providers/redx/adapter.ts") ? "src/server/courier/providers/redx/adapter.ts" : "src/server/courier/redx/redx.ts"));
 
   // Capability flags in types.ts
   assert.ok(typesContent.includes("hasWeightRequirement: true"));

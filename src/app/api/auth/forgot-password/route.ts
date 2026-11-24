@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { EMAIL_REGEX, EMAIL_RESEND_COOLDOWN_MS, normalizeEmail } from "@/server/auth";
-import { issuePasswordResetEmail } from "@/server/account";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { EMAIL_REGEX, EMAIL_RESEND_COOLDOWN_MS, normalizeEmail } from "@/server/auth/auth";
+import { issuePasswordResetEmail } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 // Same answer whether or not the account exists, so this can't be used to
 // discover which emails are registered.

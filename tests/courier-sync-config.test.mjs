@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
@@ -19,7 +19,7 @@ import fs from "node:fs";
  */
 
 const read = (file) => fs.readFileSync(file, "utf8");
-const steadfastUtils = read("src/server/courier/steadfast-utils.ts");
+const steadfastUtils = read((fs.existsSync("src/server/courier/providers/steadfast/utils.ts") ? "src/server/courier/providers/steadfast/utils.ts" : "src/server/courier/steadfast-utils.ts"));
 const cronSyncRoute = read("src/app/api/cron/courier-sync/route.ts");
 const adminSyncRoute = read("src/app/api/admin/shipments/sync/route.ts");
 const courierSettingsModule = read("src/server/courier/settings.ts");
@@ -53,6 +53,7 @@ test("the shared active-shipment scan list covers freshly booked parcels", () =>
 test("both sync routes import the shared list — no local drift is possible", () => {
   for (const route of [cronSyncRoute, adminSyncRoute]) {
     assert.ok(
+      route.includes('ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/providers/steadfast/utils"') ||
       route.includes('ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/steadfast-utils"'),
       "the route must import the canonical list from steadfast-utils"
     );

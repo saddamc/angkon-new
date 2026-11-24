@@ -1,12 +1,12 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
 test("1. Steadfast Weight Rules: Weight is optional and unsupported fields are omitted", () => {
-  const courierServiceSource = read("src/server/courier/courier-service.ts");
-  const steadfastSource = read("src/server/courier/steadfast.ts");
+  const courierServiceSource = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
+  const steadfastSource = read((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"));
 
   // Steadfast weight is optional in courier-service
   assert.ok(
@@ -32,8 +32,8 @@ test("1. Steadfast Weight Rules: Weight is optional and unsupported fields are o
 });
 
 test("2. Pathao Weight Rules: Verified weight is strictly required (> 0 kg)", () => {
-  const courierServiceSource = read("src/server/courier/courier-service.ts");
-  const pathaoSource = read("src/server/courier/pathao.ts");
+  const courierServiceSource = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
+  const pathaoSource = read((fs.existsSync("src/server/courier/providers/pathao/adapter.ts") ? "src/server/courier/providers/pathao/adapter.ts" : "src/server/courier/pathao.ts"));
 
   // Pathao requires weight > 0 kg
   assert.ok(
@@ -58,7 +58,7 @@ test("2. Pathao Weight Rules: Verified weight is strictly required (> 0 kg)", ()
 });
 
 test("3. RedX Weight Rules: Follows verified official requirements without assumptions", () => {
-  const courierServiceSource = read("src/server/courier/courier-service.ts");
+  const courierServiceSource = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
 
   // Rejects invalid negative weight if passed
   assert.ok(
@@ -109,7 +109,7 @@ test("4. Dynamic UI: Modal updates indicators and warnings per provider", () => 
 
 test("5. Financial Safety: Changing courier weight validation never affects COD or paid amount", () => {
   const modalSource = read("src/app/admin/orders/_components/orders-modals.tsx");
-  const courierServiceSource = read("src/server/courier/courier-service.ts");
+  const courierServiceSource = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
 
   // Collectible COD calculated strictly from backend order totals
   assert.ok(

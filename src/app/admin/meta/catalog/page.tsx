@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
@@ -46,11 +46,11 @@ import {
   CatalogProductDetailDrawer,
   CatalogDrawerItem,
 } from "@/components/admin/meta/catalog-product-detail-drawer";
-import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
+import type { PublicAdminPixelSettings } from "@/server/meta/pixel/pixel-settings";
 import type {
   MetaCatalogConnectionState,
   PublicMetaCatalogSettings,
-} from "@/server/meta-catalog";
+} from "@/server/meta/catalog/meta-catalog";
 import type {
   CatalogCategoryCoverage,
   CatalogFeedCounts,

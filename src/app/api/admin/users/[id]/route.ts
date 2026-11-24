@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
-import { requireAdminSessionCore } from "@/server/admin-auth";
-import { normalizeEmail } from "@/server/auth";
-import { clientIp } from "@/server/rate-limit";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { normalizeEmail } from "@/server/auth/auth";
+import { clientIp } from "@/server/security/rate-limit";
 
 // PATCH /api/admin/users/[id] — change role or suspend / reactivate an admin.
 export async function PATCH(

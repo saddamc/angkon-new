@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { getShippingSettings } from "@/server/shipping";
+﻿import type { Metadata } from "next";
+import { getShippingSettings } from "@/server/settings/shipping";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions — ANGKON",

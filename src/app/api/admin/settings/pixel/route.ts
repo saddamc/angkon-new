@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import {
   getPixelSettings,
   savePixelSettings,
   getPublicAdminPixelSettings,
   getDurablePixelEvents,
   PixelSettings,
-} from "@/server/pixel-settings";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+} from "@/server/meta/pixel/pixel-settings";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 
 export async function GET(request: NextRequest) {
   try {

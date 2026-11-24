@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Poppins, Lato } from "next/font/google";
 import "./globals.css";
 import { RootShell } from "@/components/layout/root-shell";
 import { getCategoryTree } from "@/lib/woocommerce/categories";
 import { FacebookPixel } from "@/components/analytics/facebook-pixel";
-import { getPixelSettings } from "@/server/pixel-settings";
+import { getPixelSettings } from "@/server/meta/pixel/pixel-settings";
 
 const poppins = Poppins({
   subsets: ["latin"],

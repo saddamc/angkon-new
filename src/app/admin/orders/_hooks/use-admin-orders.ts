@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,7 +22,7 @@ import type {
   PackagingPresetUI,
   CreateOrderPayload,
 } from "../_types/orders.types";
-import { getCourierLabel } from "@/server/courier/tracking";
+import { getCourierLabel } from "@/server/courier/core/tracking";
 
 const REFRESH_INTERVAL = 30_000;
 const DEFAULT_PER_PAGE = 25;

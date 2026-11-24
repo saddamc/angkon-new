@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
-import { registerOrUpdateProductFeed, disconnectProductFeed } from "@/server/meta-product-feeds";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
+import { registerOrUpdateProductFeed, disconnectProductFeed } from "@/server/meta/catalog/meta-product-feeds";
 import type { IMetaFeedSchedule } from "@/models/MetaCatalogConfig";
 
 export const dynamic = "force-dynamic";

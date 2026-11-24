@@ -3,9 +3,13 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { Category } from "@/models/Category";
 import { publishCatalogChange } from "@/lib/catalog-sync";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSessionCore(request);
+  if (!auth.authorized) return auth.response;
+
   try {
     const { from, to } = await request.json();
     if (!from || !to) {

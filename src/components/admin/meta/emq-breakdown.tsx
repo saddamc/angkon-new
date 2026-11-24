@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, RefreshCw, Sparkles, Target } from "lucide-react";
-import type { EmqDiagnostic, EmqMatchKey, EmqReport } from "@/server/meta-emq";
+import type { EmqDiagnostic, EmqMatchKey, EmqReport } from "@/server/meta/pixel/meta-emq";
 import {
   META_EYEBROW,
   MetaBadge,

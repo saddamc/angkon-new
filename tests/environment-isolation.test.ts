@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
@@ -15,13 +15,23 @@ import fs from "node:fs";
 
 const appEnvModule = fs.readFileSync("src/server/env/app-environment.ts", "utf8");
 const mongodbModule = fs.readFileSync("src/lib/mongodb.ts", "utf8");
-const sslcommerzModule = fs.readFileSync("src/server/sslcommerz.ts", "utf8");
-const courierModeModule = fs.readFileSync("src/server/courier/courier-mode.ts", "utf8");
+const sslcommerzModule = fs.readFileSync(
+  fs.existsSync("src/server/payments/config/sslcommerz.ts")
+    ? "src/server/payments/config/sslcommerz.ts"
+    : "src/server/sslcommerz.ts",
+  "utf8"
+);
+const courierModeModule = fs.readFileSync((fs.existsSync("src/server/courier/core/courier-mode.ts") ? "src/server/courier/core/courier-mode.ts" : "src/server/courier/courier-mode.ts"), "utf8");
 const initiatePaymentService = fs.readFileSync("src/server/payments/services/initiate-payment.ts", "utf8");
 const verifyPaymentService = fs.readFileSync("src/server/payments/services/verify-payment.ts", "utf8");
 const emailModule = fs.readFileSync("src/lib/email/resend.ts", "utf8");
 const cloudinaryModule = fs.readFileSync("src/lib/cloudinary.ts", "utf8");
-const metaCapiModule = fs.readFileSync("src/server/meta-capi.ts", "utf8");
+const metaCapiModule = fs.readFileSync(
+  fs.existsSync("src/server/meta/capi/meta-capi.ts")
+    ? "src/server/meta/capi/meta-capi.ts"
+    : "src/server/meta-capi.ts",
+  "utf8"
+);
 
 test("environment isolation: explicit APP_ENVIRONMENT and database mappings", async () => {
   const {
@@ -91,7 +101,7 @@ test("mongodb connection guard: connectToDatabase enforces isolation validation"
 
 test("sslcommerz live readiness: sandbox credentials rejected in production", async () => {
   const { isSslcommerzLiveReady, isOnlinePaymentAvailableForEnvironment } = await import(
-    "../src/server/sslcommerz.ts"
+    "../src/server/payments/config/sslcommerz.ts"
   );
 
   // Mock sandbox credentials
@@ -132,7 +142,7 @@ test("sslcommerz payment initiation: production blocks sandbox payment attempts"
 
 test("courier safety: non-production forces mock mode and disables live bookings", async () => {
   const { getCourierModeConfig, isLocalTestOrder } = await import(
-    "../src/server/courier/courier-mode.ts"
+    "../src/server/courier/core/courier-mode.ts"
   );
 
   // Non-production must force mock

@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
@@ -6,7 +6,7 @@ const read = (file) => fs.readFileSync(file, "utf8");
 
 const webhook = read("src/app/api/webhooks/steadfast/route.ts");
 const shipmentRoute = read("src/app/api/admin/orders/[id]/shipment/route.ts");
-const courierService = read("src/server/courier/courier-service.ts");
+const courierService = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
 const syncRoute = read("src/app/api/admin/shipments/sync/route.ts");
 const adminOrdersRoute = read("src/app/api/admin/orders/route.ts");
 const orderTypes = read("src/app/admin/orders/_types/orders.types.ts");

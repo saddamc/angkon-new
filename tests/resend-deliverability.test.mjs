@@ -9,12 +9,12 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import fs, { readFileSync } from "node:fs";
 
 const read = (file) => readFileSync(file, "utf8");
 const resend = read("src/lib/email/resend.ts");
-const auth = read("src/server/auth.ts");
-const account = read("src/server/account.ts");
+const auth = read(fs.existsSync("src/server/auth/auth.ts") ? "src/server/auth/auth.ts" : "src/server/auth.ts");
+const account = read(fs.existsSync("src/server/auth/account.ts") ? "src/server/auth/account.ts" : "src/server/account.ts");
 const envExample = read(".env.example");
 const integrations = read("src/app/api/admin/integrations/status/route.ts");
 

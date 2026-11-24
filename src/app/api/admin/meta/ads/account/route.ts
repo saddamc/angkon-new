@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
 import { MetaAdImportJob } from "@/models/MetaAdImportJob";
 import {
   getPublicMetaMarketingSettings,
   getMetaMarketingSettings,
-} from "@/server/meta-marketing-settings";
-import { verifyAdAccountCredentials } from "@/server/meta-marketing-api";
+} from "@/server/meta/marketing/meta-marketing-settings";
+import { verifyAdAccountCredentials } from "@/server/meta/marketing/meta-marketing-api";
 
 export const dynamic = "force-dynamic";
 

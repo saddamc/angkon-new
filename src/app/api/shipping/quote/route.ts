@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { calculateShipping } from "@/lib/shipping";
-import { getProductDeliveryRates, getShippingSettings } from "@/server/shipping";
+import { getProductDeliveryRates, getShippingSettings } from "@/server/settings/shipping";
 
 const MAX_ITEMS = 100;
 

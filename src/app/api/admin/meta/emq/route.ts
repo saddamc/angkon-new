@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
-import { getPixelSettings } from "@/server/pixel-settings";
-import { getMetaMarketingSettings } from "@/server/meta-marketing-settings";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
+import { getPixelSettings } from "@/server/meta/pixel/pixel-settings";
+import { getMetaMarketingSettings } from "@/server/meta/marketing/meta-marketing-settings";
 import {
   fetchEventMatchQuality,
   resolveEmqTokens,
   type EmqFailureReason,
-} from "@/server/meta-emq";
+} from "@/server/meta/pixel/meta-emq";
 
 export const dynamic = "force-dynamic";
 

@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Truck, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { getShippingSettings } from "@/server/shipping";
+import { getShippingSettings } from "@/server/settings/shipping";
 
 export const metadata: Metadata = {
   title: "Delivery Time & Shipping Policy — ANGKON",

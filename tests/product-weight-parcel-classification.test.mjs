@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,7 +9,7 @@ import {
   calculateOrderParcelWeight,
   PACKAGING_PRESETS,
   getPackagingPreset,
-} from "../src/server/courier/parcel-classifier.ts";
+} from "../src/server/courier/core/parcel-classifier.ts";
 
 test("1. Weight Normalization & Unit Conversions", () => {
   // Explicit kg
@@ -203,7 +203,7 @@ test("6. Missing Weight Handling (Never Silently Assumes 0.5 kg)", () => {
 });
 
 test("7. Courier Payload Isolation (Steadfast vs Pathao)", () => {
-  const steadfastSource = fs.readFileSync("src/server/courier/steadfast.ts", "utf8");
+  const steadfastSource = fs.readFileSync((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"), "utf8");
 
   // Steadfast MUST NOT send weight or parcel_type to /create_order
   assert.match(
@@ -230,7 +230,7 @@ test("7. Courier Payload Isolation (Steadfast vs Pathao)", () => {
   );
 
   // Pathao adapter accepts item_weight
-  const pathaoSource = fs.readFileSync("src/server/courier/pathao.ts", "utf8");
+  const pathaoSource = fs.readFileSync((fs.existsSync("src/server/courier/providers/pathao/adapter.ts") ? "src/server/courier/providers/pathao/adapter.ts" : "src/server/courier/pathao.ts"), "utf8");
   assert.match(
     pathaoSource,
     /item_weight:/,

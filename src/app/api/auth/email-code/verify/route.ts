@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { EMAIL_REGEX, normalizeEmail, setSessionCookie } from "@/server/auth";
-import { consumeEmailCode, isWellFormedCode } from "@/server/email-code";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
-import { publicUser } from "@/server/account";
+import { EMAIL_REGEX, normalizeEmail, setSessionCookie } from "@/server/auth/auth";
+import { consumeEmailCode, isWellFormedCode } from "@/server/auth/email-code";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
+import { publicUser } from "@/server/auth/account";
 
 /**
  * POST /api/auth/email-code/verify { email, code, name?, phone? }

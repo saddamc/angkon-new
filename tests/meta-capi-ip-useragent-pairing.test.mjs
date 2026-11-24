@@ -8,7 +8,7 @@ import {
   isPublicIp,
   isLoopbackIp,
   isPrivateIp,
-} from "../src/server/client-ip.ts";
+} from "../src/server/security/client-ip.ts";
 
 test("IP Validation: Recognizes valid, loopback, and private IPs", () => {
   assert.equal(isValidIp("103.145.132.55"), true);
@@ -120,7 +120,12 @@ test("Meta CAPI Rule: Enforces that User Agent and Client IP are paired together
 });
 
 test("Codebase Static Verification: meta-capi.ts pairs client_ip_address and client_user_agent", () => {
-  const capiFile = fs.readFileSync("src/server/meta-capi.ts", "utf8");
+  const capiFile = fs.readFileSync(
+    fs.existsSync("src/server/meta/capi/meta-capi.ts")
+      ? "src/server/meta/capi/meta-capi.ts"
+      : "src/server/meta-capi.ts",
+    "utf8"
+  );
   assert.match(capiFile, /sanitizeClientIp\(userData\.clientIp\)/, "Must use sanitizeClientIp");
   assert.match(
     capiFile,

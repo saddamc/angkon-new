@@ -862,7 +862,12 @@ test("Audit Criterion 22: Client route navigation generates fresh shared eventId
 
 test("Audit Criterion 23: CAPI PageView payload contains no currency, value, or custom_data", async () => {
   const fs = await import("node:fs");
-  const capiContent = fs.readFileSync("src/server/meta-capi.ts", "utf8");
+  const capiContent = fs.readFileSync(
+    fs.existsSync("src/server/meta/capi/meta-capi.ts")
+      ? "src/server/meta/capi/meta-capi.ts"
+      : "src/server/meta-capi.ts",
+    "utf8"
+  );
 
   assert.ok(
     capiContent.includes('if (event.eventName === "PageView")'),

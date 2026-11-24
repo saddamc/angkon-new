@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { publishCatalogChange } from "@/lib/catalog-sync";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 
 
 function uniqueSku(sku: string | undefined): string {
@@ -25,6 +26,9 @@ export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireAdminSessionCore(_request);
+  if (!auth.authorized) return auth.response;
+
   try {
     const { id } = await params;
     const numericId = parseInt(id, 10);

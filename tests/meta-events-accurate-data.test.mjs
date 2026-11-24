@@ -13,8 +13,12 @@ import fs from "node:fs";
 const PAGE = "src/app/admin/meta/events/page.tsx";
 const TELEMETRY = "src/app/admin/meta/events/_components/telemetry-tab.tsx";
 const HEADER = "src/app/admin/meta/events/_components/events-workspace-header.tsx";
-const VOLUMES = "src/server/meta-event-volumes.ts";
-const PIXEL_SETTINGS = "src/server/pixel-settings.ts";
+const VOLUMES = fs.existsSync("src/server/meta/pixel/meta-event-volumes.ts")
+  ? "src/server/meta/pixel/meta-event-volumes.ts"
+  : "src/server/meta-event-volumes.ts";
+const PIXEL_SETTINGS = fs.existsSync("src/server/meta/pixel/pixel-settings.ts")
+  ? "src/server/meta/pixel/pixel-settings.ts"
+  : "src/server/pixel-settings.ts";
 
 const page = fs.readFileSync(PAGE, "utf8");
 const telemetry = fs.readFileSync(TELEMETRY, "utf8");

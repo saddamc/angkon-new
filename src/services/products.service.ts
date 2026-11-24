@@ -1,4 +1,4 @@
-import type { WooCategory, WooProduct, WooReview } from "@/types/product";
+﻿import type { WooCategory, WooProduct, WooReview } from "@/types/product";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import REAL_CATEGORIES from "@/data/real-categories.json";
 
@@ -94,7 +94,7 @@ export const getProducts = async (query: ProductQuery = {}): Promise<WooProduct[
   try {
     if (typeof window === "undefined") {
       // Server-side: Delegate to full-server products layer
-      const { getProducts: getProductsFromServer } = await import("@/server/products");
+      const { getProducts: getProductsFromServer } = await import("@/server/products/products");
       return await getProductsFromServer(query);
     } else {
       // Client-side: Query via Next.js API route
@@ -134,7 +134,7 @@ export const getProductBySlug = async (slug: string): Promise<WooProduct | null>
   try {
     if (typeof window === "undefined") {
       // Server-side: Delegate to full-server products layer
-      const { getProductBySlug: getProductFromServer } = await import("@/server/products");
+      const { getProductBySlug: getProductFromServer } = await import("@/server/products/products");
       return await getProductFromServer(slug);
     } else {
       // Client-side: Query via Next.js API route
@@ -153,7 +153,7 @@ export const getProductReviews = async (_productId: number): Promise<WooReview[]
 
 export const getRelatedProducts = async (product: WooProduct): Promise<WooProduct[]> => {
   if (typeof window === "undefined") {
-    const { getRelatedProducts: getRelatedFromServer } = await import("@/server/products");
+    const { getRelatedProducts: getRelatedFromServer } = await import("@/server/products/products");
     return await getRelatedFromServer(product, 4);
   }
   const products = await getProducts({ perPage: 8, category: product.categories?.[0]?.slug });
@@ -171,7 +171,7 @@ export const getCategoryProducts = async (categorySlug: string): Promise<WooProd
 export const getCategories = async (): Promise<WooCategory[]> => {
   try {
     if (typeof window === "undefined") {
-      const { getCategories: getCategoriesFromServer } = await import("@/server/categories");
+      const { getCategories: getCategoriesFromServer } = await import("@/server/categories/categories");
       return await getCategoriesFromServer();
     } else {
       const response = await fetch("/api/categories", { cache: "no-store" });

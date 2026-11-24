@@ -22,7 +22,7 @@ import {
   extractOrderWhatsAppContext,
   generateWhatsAppMessage,
   mapStatusToTemplateKey,
-} from "@/server/whatsapp/whatsapp-templates";
+} from "@/server/integrations/whatsapp/whatsapp-templates";
 
 interface WhatsAppModalProps {
   order: WCOrder | null;

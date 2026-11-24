@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Category } from "@/models/Category";
 import { deleteFromCloudinary } from "@/lib/cloudinary";
 import { publishCatalogChange } from "@/lib/catalog-sync";
-import { syncProductCategoryRefs } from "@/server/category-sync";
-import { cleanCategoryInput } from "@/server/category-input";
+import { syncProductCategoryRefs } from "@/server/categories/category-sync";
+import { cleanCategoryInput } from "@/server/categories/category-input";
 import { invalidateCategoriesCache } from "@/lib/db/categories";
 
 export async function PATCH(

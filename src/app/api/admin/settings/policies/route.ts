@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import {
   getPolicySettings,
   POLICY_SETTINGS_KEY,
   invalidatePolicySettingsCache,
   normalizePolicySettings,
-} from "@/server/policy-settings";
+} from "@/server/settings/policy-settings";
 
 export const dynamic = "force-dynamic";
 

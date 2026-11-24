@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Shipment } from "@/models/Shipment";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { getCourierAdapter, courierService } from "@/server/courier";
-import { applyCourierStatus } from "@/server/courier/sync";
-import { serializeShipment } from "@/server/courier/serialize";
-import { getCourierLabel } from "@/server/courier/tracking";
-import type { CourierErrorCode } from "@/server/courier/types";
+import { applyCourierStatus } from "@/server/courier/core/sync";
+import { serializeShipment } from "@/server/courier/core/serialize";
+import { getCourierLabel } from "@/server/courier/core/tracking";
+import type { CourierErrorCode } from "@/server/courier/core/types";
 
 export const dynamic = "force-dynamic";
 

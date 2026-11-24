@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { getSessionUserId } from "@/server/auth";
-import { getAccountOrders, publicUser } from "@/server/account";
+import { getSessionUserId } from "@/server/auth/auth";
+import { getAccountOrders, publicUser } from "@/server/auth/account";
 
 const NO_STORE = { "Cache-Control": "no-store, no-cache, must-revalidate" };
 

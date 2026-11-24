@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import {
   mapSteadfastStatus,
   evaluateShipmentTransition,
-} from "../src/server/courier/steadfast-utils";
-import { normaliseSteadfastCreate } from "../src/server/courier/steadfast";
+} from "../src/server/courier/providers/steadfast/utils";
+import { normaliseSteadfastCreate } from "../src/server/courier/providers/steadfast/adapter";
 
 describe("Steadfast Status Mapping & Reconciliation Engine", () => {
   it("Steadfast API: 'unknown' stays indeterminate — never disguised as 'in_review'", () => {

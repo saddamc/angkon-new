@@ -1,12 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongodb";
-import { Order } from "@/models/Order";
-import { getSiteUrl } from "@/server/auth";
-import { initiateSslcommerzForOrder } from "@/server/payments/initiate";
-import { isSslcommerzConfigured, isOnlinePaymentAvailableForEnvironment } from "@/server/sslcommerz";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
-import { Product } from "@/models/Product";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { getSiteUrl } from "@/server/auth/auth";
+import { isSslcommerzConfigured, isOnlinePaymentAvailableForEnvironment } from "@/server/payments/config/sslcommerz";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 import { requireCustomerId, assertOrderOwnership } from "@/server/payments/customer-auth";
+import { OrderPaymentRepository } from "@/server/payments/repositories/order-payment.repository";
+import { InitiatePaymentService } from "@/server/payments/services/initiate-payment";
 import { PaymentError } from "@/server/payments/payment-errors";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +14,9 @@ export const dynamic = "force-dynamic";
  * Canonical endpoint: /api/payments/sslcommerz/initiate
  * Maintained strictly for backward compatibility with pending customer sessions.
  *
- * POST /api/payment/sslcommerz/initiate
- *
- * Safe payment initiation and retry endpoint.
- * Enables customers to initiate or re-attempt payment for an existing unpaid
- * SSLCOMMERZ order without creating duplicate orders or double-deducting stock.
+ * All payment business logic (inventory validation, order state verification like
+ * order.paymentStatus === "paid", and gateway communication) has been consolidated into
+ * InitiatePaymentService.initiate, superseding legacy duplicate initiateSslcommerzForOrder logic.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +29,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json().catch(() => ({}))) as { orderNumber?: unknown };
+    const body = (await request.json().catch(() => ({}))) as {
+      orderNumber?: unknown;
+      idempotencyKey?: unknown;
+    };
     const orderNumber = String(body.orderNumber || "").trim();
 
     if (!orderNumber) {
@@ -58,71 +57,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await connectToDatabase();
-    const order = await Order.findOne({ orderNumber });
-
+    // Money-moving operation: verify customer authentication and ownership before initiating
+    const userId = await requireCustomerId(request);
+    const order = await OrderPaymentRepository.findByOrderNumber(orderNumber);
     if (!order) {
       return NextResponse.json({ error: "Order not found." }, { status: 404 });
     }
-
-    // Only the customer who owns this order may start a payment session.
-    try {
-      const userId = await requireCustomerId(request);
-      await assertOrderOwnership(order, userId);
-    } catch (authError) {
-      if (authError instanceof PaymentError) {
-        return NextResponse.json(
-          { error: authError.message, code: authError.code },
-          { status: authError.statusCode }
-        );
-      }
-      throw authError;
-    }
-
-    if (order.paymentMethod !== "sslcommerz") {
-      return NextResponse.json(
-        { error: "This order is not configured for online payment." },
-        { status: 400 }
-      );
-    }
-
-    if (order.paymentStatus === "paid") {
-      return NextResponse.json(
-        { error: "This order has already been paid successfully.", code: "ALREADY_PAID" },
-        { status: 400 }
-      );
-    }
-
-    if (order.orderStatus === "cancelled" || order.orderStatus === "refunded") {
-      return NextResponse.json(
-        { error: `Cannot pay for an order in ${order.orderStatus} state.`, code: "INVALID_ORDER_STATE" },
-        { status: 400 }
-      );
-    }
-
-    // Verify product availability from database catalog before restarting session
-    const productIds = order.items.map((i) => i.productId);
-    const dbProducts = await Product.find({ id: { $in: productIds } })
-      .select("id name manage_stock stock_quantity")
-      .lean();
-
-    for (const item of order.items) {
-      const prod = dbProducts.find((p) => p.id === item.productId);
-      if (prod && prod.manage_stock && typeof prod.stock_quantity === "number") {
-        if (prod.stock_quantity < item.quantity && !order.stockReservedAt) {
-          return NextResponse.json(
-            {
-              error: `Item "${item.name}" does not have enough stock to complete payment.`,
-              code: "OUT_OF_STOCK",
-            },
-            { status: 409 }
-          );
-        }
-      }
-    }
+    await assertOrderOwnership(order, userId);
 
     const appBaseUrl = getSiteUrl(request);
-    const result = await initiateSslcommerzForOrder(order, appBaseUrl);
+    const idempotencyKey =
+      typeof body.idempotencyKey === "string" ? body.idempotencyKey : undefined;
+
+    // Delegate directly to the canonical domain service
+    const result = await InitiatePaymentService.initiate({
+      orderNumber,
+      appBaseUrl,
+      idempotencyKey,
+    });
 
     if (!result.ok || !result.gatewayUrl) {
       return NextResponse.json(
@@ -134,15 +86,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Preserve legacy response shape for existing clients
     return NextResponse.json({
       ok: true,
-      orderNumber: order.orderNumber,
-      total: order.total,
-      currency: "BDT",
+      orderNumber: result.orderNumber,
+      total: result.total,
+      currency: result.currency || "BDT",
       gatewayUrl: result.gatewayUrl,
     });
   } catch (error) {
-    console.error("[Payment:Initiate] Unexpected error:", error);
+    if (error instanceof PaymentError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.statusCode || 400 }
+      );
+    }
+
+    console.error("[Payment:Initiate:Legacy] Unexpected error:", error);
     return NextResponse.json(
       { error: "Payment initiation encountered an unexpected error. Please try again." },
       { status: 500 }

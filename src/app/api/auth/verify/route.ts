@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSiteUrl, setSessionCookie } from "@/server/auth";
-import { findUserByToken } from "@/server/account";
-import { clientIp, hashIp, rateLimit } from "@/server/rate-limit";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { getSiteUrl, setSessionCookie } from "@/server/auth/auth";
+import { findUserByToken } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit } from "@/server/security/rate-limit";
 
 /**
  * GET /api/auth/verify?token=… — the link in the verification email.

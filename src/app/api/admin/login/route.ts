@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import nodeCrypto from "crypto";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { verifyPassword } from "@/server/auth";
+import { verifyPassword } from "@/server/auth/auth";
 import { RateLimitBucket } from "@/models/RateLimitBucket";
 import { getJwtSecret } from "@/lib/env";
 

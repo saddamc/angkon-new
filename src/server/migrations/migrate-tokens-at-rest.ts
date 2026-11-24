@@ -1,14 +1,14 @@
-import { connectToDatabase } from "@/lib/mongodb";
+﻿import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
-import { DEFAULT_TENANT_ID } from "../tenant";
+import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 import {
   isEncryptedToken,
   encryptTokenString,
   redactTokens,
 } from "@/lib/security/token-encryption";
-import { PIXEL_SETTINGS_KEY } from "../pixel-settings";
-import { META_MARKETING_SETTINGS_KEY } from "../meta-marketing-settings";
-import { META_CATALOG_SETTINGS_KEY } from "../meta-catalog";
+import { PIXEL_SETTINGS_KEY } from "../meta/pixel/pixel-settings";
+import { META_MARKETING_SETTINGS_KEY } from "../meta/marketing/meta-marketing-settings";
+import { META_CATALOG_SETTINGS_KEY } from "../meta/catalog/meta-catalog";
 
 export interface MigrationSummary {
   tenantId: string;

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
-import { verifyAndConnectCatalog } from "@/server/meta-catalog-connection";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
+import { verifyAndConnectCatalog } from "@/server/meta/catalog/meta-catalog-connection";
 
 export const dynamic = "force-dynamic";
 

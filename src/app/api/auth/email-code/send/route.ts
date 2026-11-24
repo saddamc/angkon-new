@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { EMAIL_REGEX, normalizeEmail } from "@/server/auth";
-import { CODE_TTL_MS, discardEmailCode, issueEmailCode } from "@/server/email-code";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { EMAIL_REGEX, normalizeEmail } from "@/server/auth/auth";
+import { CODE_TTL_MS, discardEmailCode, issueEmailCode } from "@/server/auth/email-code";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 import { sendVerificationCodeEmail } from "@/lib/email/account-emails";
 
 /**

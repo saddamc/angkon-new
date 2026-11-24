@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -34,18 +34,18 @@ import {
   type WCOrder,
 } from "../_types/orders.types";
 import type { AdminOrdersHookReturn } from "../_hooks/use-admin-orders";
-import { normalizeBdPhone } from "@/server/courier/steadfast-utils";
+import { normalizeBdPhone } from "@/server/courier/providers/steadfast/utils";
 import {
   getCourierLabel,
   getCourierTrackingUrl,
-} from "@/server/courier/tracking";
+} from "@/server/courier/core/tracking";
 import { BulkShipmentModal } from "./bulk-shipment-modal";
 import { WhatsAppModal } from "./whatsapp-modal";
 import {
   PACKAGING_PRESETS,
   getPackagingPreset,
   type DisplayParcelType,
-} from "@/server/courier/parcel-classifier";
+} from "@/server/courier/core/parcel-classifier";
 
 interface OrdersModalsProps {
   state: AdminOrdersHookReturn;

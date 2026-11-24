@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAttributionComparisonReport } from "@/server/meta-ads";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { getAttributionComparisonReport } from "@/server/meta/marketing/meta-ads";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { MetaAdReportingLevel } from "@/models/MetaAdReport";
 
 export const dynamic = "force-dynamic";

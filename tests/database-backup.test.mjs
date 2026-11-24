@@ -32,7 +32,7 @@ registerHooks({
   },
 });
 
-const mod = await import("../src/server/database-backup.ts");
+const mod = await import("../src/server/operations/database-backup.ts");
 const { ObjectId } = await import("bson");
 
 const {

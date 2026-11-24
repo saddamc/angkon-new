@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
@@ -11,10 +11,10 @@ import fs from "node:fs";
  */
 
 const read = (file) => fs.readFileSync(file, "utf8");
-const courierService = read("src/server/courier/courier-service.ts");
+const courierService = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
 const orderRoute = read("src/app/api/admin/orders/[id]/route.ts");
 const reopenRoute = read("src/app/api/admin/orders/[id]/reopen/route.ts");
-const autoBook = read("src/server/courier/auto-book.ts");
+const autoBook = read((fs.existsSync("src/server/courier/core/auto-book.ts") ? "src/server/courier/core/auto-book.ts" : "src/server/courier/auto-book.ts"));
 const shipmentRoute = read("src/app/api/admin/orders/[id]/shipment/route.ts");
 const orderDetailsContent = read("src/app/admin/orders/_components/order-details-content.tsx");
 

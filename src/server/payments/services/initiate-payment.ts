@@ -1,4 +1,4 @@
-import { Order } from "@/models/Order";
+﻿import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
 import type { InitiatePaymentInput, InitiatePaymentResult } from "../types";
 import { PaymentAttemptRepository } from "../repositories/payment-attempt.repository";
@@ -7,7 +7,7 @@ import { generateTranId } from "../utils/generate-tran-id";
 import { createSslcommerzSession } from "../providers/sslcommerz/create-session";
 import { maskSessionKey } from "../payment-idempotency";
 import { getSslcommerzConfig } from "../providers/sslcommerz/config";
-import { isSslcommerzLiveReady } from "@/server/sslcommerz";
+import { isSslcommerzLiveReady } from "@/server/payments/config/sslcommerz";
 import { getAppEnvironment } from "@/server/env/app-environment";
 import { GatewayTimeoutError, PaymentError } from "../payment-errors";
 import { createPaymentReturnToken } from "../return-token";

@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Image from "next/image";
 import { getProducts } from "@/services/products.service";
 import REAL_PRODUCTS from "@/data/real-products.json";
 import { ProductCard } from "@/components/product/product-card";
 import type { WooProduct } from "@/types/product";
-import { getShippingSettings } from "@/server/shipping";
+import { getShippingSettings } from "@/server/settings/shipping";
 
 export const metadata: Metadata = {
   title: {

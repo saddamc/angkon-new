@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { generateCatalogFeed } from "@/server/meta-catalog";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { generateCatalogFeed } from "@/server/meta/catalog/meta-catalog";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

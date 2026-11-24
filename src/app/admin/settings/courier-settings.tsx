@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -12,7 +12,7 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
-import { COURIER_PROVIDER_LIST, type CourierSettings as CourierSettingsType } from "@/server/courier/tracking";
+import { COURIER_PROVIDER_LIST, type CourierSettings as CourierSettingsType } from "@/server/courier/core/tracking";
 import { CourierLogo } from "@/components/admin/courier-logo";
 
 const DEFAULT_STATE: CourierSettingsType = {

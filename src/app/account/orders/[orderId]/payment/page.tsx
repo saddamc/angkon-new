@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
@@ -7,7 +7,7 @@ import { Order } from "@/models/Order";
 import { PaymentAttempt } from "@/models/PaymentAttempt";
 import { PaymentStatusCard } from "@/components/checkout/payment-status-card";
 import { ArrowLeft, CreditCard } from "lucide-react";
-import { verifyAuthToken } from "@/server/auth";
+import { verifyAuthToken } from "@/server/auth/auth";
 import { customerOwnsOrder } from "@/server/payments/customer-auth";
 import { createPaymentStatusToken } from "@/server/payments/status-token";
 import { getPaymentStatusInfo } from "@/lib/payments/payment-status-labels";

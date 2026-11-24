@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { drainMetaCapiQueue } from "@/server/meta-capi";
-import { requireSuperAdminSession } from "@/server/admin-auth";
-import { DEFAULT_TENANT_ID } from "@/server/tenant";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { drainMetaCapiQueue } from "@/server/meta/capi/meta-capi";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
+import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 
 export const dynamic = "force-dynamic";
 

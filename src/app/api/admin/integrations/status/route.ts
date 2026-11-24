@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import {
   getProviderConfigSummary,
   getCourierModeConfig,
@@ -8,7 +8,7 @@ import {
   isSslcommerzConfigured,
   isSslcommerzLive,
   isSslcommerzLiveReady,
-} from "@/server/sslcommerz";
+} from "@/server/payments/config/sslcommerz";
 
 export const dynamic = "force-dynamic";
 

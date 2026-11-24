@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
 import { Order } from "@/models/Order";
-import { requireAdminSessionCore } from "@/server/admin-auth";
-import { clientIp } from "@/server/rate-limit";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { clientIp } from "@/server/security/rate-limit";
 
 export async function POST(
   request: NextRequest,

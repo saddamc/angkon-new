@@ -1,5 +1,5 @@
-import type { ShipmentRecord, WCOrder } from "../_types/orders.types";
-import { getCourierLabel } from "@/server/courier/tracking";
+﻿import type { ShipmentRecord, WCOrder } from "../_types/orders.types";
+import { getCourierLabel } from "@/server/courier/core/tracking";
 
 function esc(value: unknown): string {
   return String(value ?? "")

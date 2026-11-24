@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
-import { getRedxAreas } from "@/server/courier/redx";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { getRedxAreas } from "@/server/courier/providers/redx";
 
 export const dynamic = "force-dynamic";
 

@@ -12,7 +12,9 @@ import fs from "node:fs";
  */
 
 const PAGE = "src/app/admin/meta/events/page.tsx";
-const EMQ = "src/server/meta-emq.ts";
+const EMQ = fs.existsSync("src/server/meta/pixel/meta-emq.ts")
+  ? "src/server/meta/pixel/meta-emq.ts"
+  : "src/server/meta-emq.ts";
 
 const page = fs.readFileSync(PAGE, "utf8");
 const emq = fs.readFileSync(EMQ, "utf8");

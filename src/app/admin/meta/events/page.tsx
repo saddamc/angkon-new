@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -18,8 +18,8 @@ import { useEventMatchQuality } from "@/components/admin/meta/emq-breakdown";
 import { IntegrationsArchitectureDiagram } from "@/components/admin/meta/integrations-architecture-diagram";
 import type { DrawerEventData } from "@/components/admin/meta/event-detail-drawer";
 import type { PerformanceDataPoint } from "@/components/admin/meta/performance-chart";
-import type { PublicAdminPixelSettings, PixelEventRecord } from "@/server/pixel-settings";
-import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
+import type { PublicAdminPixelSettings, PixelEventRecord } from "@/server/meta/pixel/pixel-settings";
+import type { PublicAdminMetaMarketingSettings } from "@/server/meta/marketing/meta-marketing-settings";
 
 import type {
   EventsTabType,

@@ -56,7 +56,11 @@ const { GET } = await import("../src/app/api/meta/catalog-feed/route.ts");
 const { NextRequest } = await import("next/server");
 const { setProducts, setDatabaseFailure, resetDb } = await import("./stubs/db-state.mjs");
 const { matchesFilter } = await import("./stubs/product-stub.mjs");
-const { buildCatalogVisibilityFilter } = await import("../src/server/meta-catalog.ts");
+const { buildCatalogVisibilityFilter } = await import(
+  fs.existsSync("src/server/meta/catalog/meta-catalog.ts")
+    ? "../src/server/meta/catalog/meta-catalog.ts"
+    : "../src/server/meta-catalog.ts"
+);
 
 const FEED_KEY = "unit-test-feed-key";
 const SNAPSHOT_NAMES = ["Tawakkal Wada", "Safaidah", "Gulnaar", "Shabnam"];

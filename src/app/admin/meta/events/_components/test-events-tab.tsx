@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import {
   HelpCircle,
   AlertTriangle,
@@ -13,7 +13,7 @@ import {
   PlayCircle,
   Server,
 } from "lucide-react";
-import type { PixelEventRecord } from "@/server/pixel-settings";
+import type { PixelEventRecord } from "@/server/meta/pixel/pixel-settings";
 import type { RecentTestDispatch } from "../_types/events.types";
 
 interface TestEventsTabProps {

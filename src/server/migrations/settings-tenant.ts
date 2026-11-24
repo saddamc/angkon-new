@@ -1,6 +1,6 @@
-import { connectToDatabase } from "@/lib/mongodb";
+﻿import { connectToDatabase } from "@/lib/mongodb";
 import { Settings } from "@/models/Settings";
-import { DEFAULT_TENANT_ID } from "../tenant";
+import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 
 export interface MigrationInspectionReport {
   totalDocuments: number;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
@@ -37,9 +37,9 @@ import { MetaNavigationHeader } from "../meta-nav";
 import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
 import { InfoPopover } from "@/components/admin/meta/info-popover";
 import { MetaConfirmWarningModal } from "@/components/admin/meta/meta-credential-modals";
-import type { PublicAdminPixelSettings } from "@/server/pixel-settings";
-import type { PublicAdminMetaMarketingSettings } from "@/server/meta-marketing-settings";
-import type { DualLedgerAttributionReport } from "@/server/meta-ads";
+import type { PublicAdminPixelSettings } from "@/server/meta/pixel/pixel-settings";
+import type { PublicAdminMetaMarketingSettings } from "@/server/meta/marketing/meta-marketing-settings";
+import type { DualLedgerAttributionReport } from "@/server/meta/marketing/meta-ads";
 
 interface EnrichedMetaCampaign {
   id: string;

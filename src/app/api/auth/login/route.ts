@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User } from "@/models/User";
-import { normalizeEmail, setSessionCookie, verifyPassword } from "@/server/auth";
-import { publicUser } from "@/server/account";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
-import { securityLog } from "@/server/security-log";
+import { normalizeEmail, setSessionCookie, verifyPassword } from "@/server/auth/auth";
+import { publicUser } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
+import { securityLog } from "@/server/security/security-log";
 
 const INVALID = "Invalid email or password.";
 

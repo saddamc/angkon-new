@@ -1,4 +1,4 @@
-import {
+﻿import {
   ShoppingCart,
   Clock,
   CheckCircle2,
@@ -10,7 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { CourierSettings } from "@/server/courier/tracking";
+import type { CourierSettings } from "@/server/courier/core/tracking";
 
 export interface WCLineItem {
   id?: number | string;

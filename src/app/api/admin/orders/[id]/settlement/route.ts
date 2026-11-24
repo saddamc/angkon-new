@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
 import { Order } from "@/models/Order";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { computeOrderFinancials } from "@/server/orders/workflow";
-import { clientIp } from "@/server/rate-limit";
+import { clientIp } from "@/server/security/rate-limit";
 
 function sanitizeNonNegativeMoney(v: unknown, fallback: number): number {
   const n = Number(v);

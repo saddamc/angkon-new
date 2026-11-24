@@ -1,6 +1,6 @@
-import { notFound, redirect } from "next/navigation";
+﻿import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { isMetaSuiteEnabled, verifyAdminToken } from "@/server/admin-auth";
+import { isMetaSuiteEnabled, verifyAdminToken } from "@/server/auth/admin-auth";
 import { MetaSuiteShell } from "./meta-shell";
 
 export default async function MetaRoutesLayout({

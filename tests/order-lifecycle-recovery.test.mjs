@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
@@ -18,7 +18,7 @@ import {
   evaluateShipmentTransition,
   isDeliveredStatus,
   isTerminalShipmentStatus,
-} from "../src/server/courier/steadfast-utils.ts";
+} from "../src/server/courier/providers/steadfast/utils.ts";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
@@ -94,7 +94,7 @@ test("1. Separate Lifecycles: Order, Payment, Shipment, and Courier Settlement m
     /SHIPMENT_STATUSES/,
     "Shipment schema must use the canonical SHIPMENT_STATUSES enum"
   );
-  const canonicalStatusSource = read("src/server/courier/steadfast-utils.ts");
+  const canonicalStatusSource = read((fs.existsSync("src/server/courier/providers/steadfast/utils.ts") ? "src/server/courier/providers/steadfast/utils.ts" : "src/server/courier/steadfast-utils.ts"));
   assert.match(
     canonicalStatusSource,
     /picked_up/,
@@ -119,7 +119,7 @@ test("2. Automated Courier Status Synchronization: Status mappings & courier can
   assert.equal(mapSteadfastStatus("returned"), "returned");
 
   // Verify sync.ts implements automated mappings
-  const syncSource = read("src/server/courier/sync.ts");
+  const syncSource = read((fs.existsSync("src/server/courier/core/sync.ts") ? "src/server/courier/core/sync.ts" : "src/server/courier/sync.ts"));
 
   // Consignment created -> Order Ready to Ship
   assert.match(

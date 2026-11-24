@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { fetchMetaCampaigns } from "@/server/meta-ads";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { fetchMetaCampaigns } from "@/server/meta/marketing/meta-ads";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { MetaAdReport } from "@/models/MetaAdReport";
 

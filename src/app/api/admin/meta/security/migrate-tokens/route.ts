@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdminSession } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSuperAdminSession } from "@/server/auth/admin-auth";
 import { migrateAllMetaTokensAtRest } from "@/server/migrations/migrate-tokens-at-rest";
 
 export const dynamic = "force-dynamic";

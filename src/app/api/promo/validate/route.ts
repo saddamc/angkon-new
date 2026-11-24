@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCheckoutSettings } from "@/server/checkout-settings";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { getCheckoutSettings } from "@/server/settings/checkout-settings";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 export const dynamic = "force-dynamic";
 

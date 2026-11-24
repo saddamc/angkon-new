@@ -1,7 +1,7 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { mapPathaoStatus } from "../src/server/courier/pathao-utils.ts";
+import { mapPathaoStatus } from "../src/server/courier/providers/pathao/utils.ts";
 
 /**
  * P3 contract: atomic stock lifecycle, CI typecheck, Pathao adapter.
@@ -9,16 +9,16 @@ import { mapPathaoStatus } from "../src/server/courier/pathao-utils.ts";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
-const stock = read("src/server/stock.ts");
+const stock = read(fs.existsSync("src/server/products/stock.ts") ? "src/server/products/stock.ts" : "src/server/stock.ts");
 const ordersRoute = read("src/app/api/orders/route.ts");
 const settle = [
   read("src/server/payments/repositories/order-payment.repository.ts"),
   read("src/server/payments/services/finalize-payment.ts"),
 ].join("\n");
 const adminOrder = read("src/app/api/admin/orders/[id]/route.ts");
-const courierSync = read("src/server/courier/sync.ts");
+const courierSync = read((fs.existsSync("src/server/courier/core/sync.ts") ? "src/server/courier/core/sync.ts" : "src/server/courier/sync.ts"));
 const orderModel = read("src/models/Order.ts");
-const pathao = read("src/server/courier/pathao.ts");
+const pathao = read((fs.existsSync("src/server/courier/providers/pathao/adapter.ts") ? "src/server/courier/providers/pathao/adapter.ts" : "src/server/courier/pathao.ts"));
 const courierIndex = read("src/server/courier/index.ts");
 const envExample = read(".env.example");
 const nextConfig = read("next.config.ts");

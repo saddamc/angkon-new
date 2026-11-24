@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { hashPassword, setSessionCookie, validatePassword } from "@/server/auth";
-import { findUserByToken, publicUser } from "@/server/account";
-import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/rate-limit";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { hashPassword, setSessionCookie, validatePassword } from "@/server/auth/auth";
+import { findUserByToken, publicUser } from "@/server/auth/account";
+import { clientIp, hashIp, rateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
 
 /**
  * GET  /api/auth/reset-password?token=… — check a link is still valid (for the page).

@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document, Model, Types } from "mongoose";
-import { SHIPMENT_STATUSES, type ShipmentStatus } from "@/server/courier/steadfast-utils";
+﻿import mongoose, { Schema, Document, Model, Types } from "mongoose";
+import { SHIPMENT_STATUSES, type ShipmentStatus } from "@/server/courier/providers/steadfast/utils";
 
 /**
  * One consignment per courier provider per order.

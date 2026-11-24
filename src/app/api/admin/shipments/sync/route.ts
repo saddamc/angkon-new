@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Shipment } from "@/models/Shipment";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { getCourierAdapter, courierService } from "@/server/courier";
-import { applyCourierStatus } from "@/server/courier/sync";
-import { ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/steadfast-utils";
+import { applyCourierStatus } from "@/server/courier/core/sync";
+import { ACTIVE_SHIPMENT_STATUSES } from "@/server/courier/providers/steadfast/utils";
 
 export const dynamic = "force-dynamic";
 

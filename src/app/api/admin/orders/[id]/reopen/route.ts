@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { Shipment } from "@/models/Shipment";
 import { Payment } from "@/models/Payment";
 import { AdminAuditLog } from "@/models/AdminAuditLog";
-import { requireAdminSessionCore } from "@/server/admin-auth";
-import { reserveStockForOrder, restoreReservedItems } from "@/server/stock";
-import { clientIp } from "@/server/rate-limit";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { reserveStockForOrder, restoreReservedItems } from "@/server/products/stock";
+import { clientIp } from "@/server/security/rate-limit";
 import {
   computeOrderFinancials,
   evaluateReopenOrderEligibility,

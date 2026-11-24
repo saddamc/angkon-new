@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/admin-auth";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { getOrderNotificationEmails } from "@/lib/email/resend";
 
 export async function GET(request: NextRequest) {

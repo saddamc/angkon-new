@@ -24,10 +24,10 @@ function walk(dir) {
   });
 }
 
-const auth = read("src/server/auth.ts");
-const adminAuth = read("src/server/admin-auth.ts");
-const sslcommerz = read("src/server/sslcommerz.ts");
-const emailCode = read("src/server/email-code.ts");
+const auth = read(fs.existsSync("src/server/auth/auth.ts") ? "src/server/auth/auth.ts" : "src/server/auth.ts");
+const adminAuth = read(fs.existsSync("src/server/auth/admin-auth.ts") ? "src/server/auth/admin-auth.ts" : "src/server/admin-auth.ts");
+const sslcommerz = read(fs.existsSync("src/server/payments/config/sslcommerz.ts") ? "src/server/payments/config/sslcommerz.ts" : "src/server/sslcommerz.ts");
+const emailCode = read(fs.existsSync("src/server/auth/email-code.ts") ? "src/server/auth/email-code.ts" : "src/server/email-code.ts");
 const returnToken = read("src/server/payments/return-token.ts");
 const proxy = read("src/proxy.ts");
 const cronMeta = read("src/app/api/cron/meta-sync/route.ts");

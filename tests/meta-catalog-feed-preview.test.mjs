@@ -13,6 +13,7 @@ import { registerHooks } from "node:module";
 
 const STUBS = {
   "@/server/admin-auth": "tests/stubs/admin-auth-stub.mjs",
+  "@/server/auth/admin-auth": "tests/stubs/admin-auth-stub.mjs",
   "@/app/api/meta/catalog-feed/route": "tests/stubs/catalog-feed-route-stub.mjs",
 };
 

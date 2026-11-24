@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -9,7 +9,7 @@ import {
   mapSteadfastStatus,
   isDeliveredStatus,
   evaluateShipmentTransition,
-} from "../src/server/courier/steadfast-utils.ts";
+} from "../src/server/courier/providers/steadfast/utils.ts";
 import {
   computeOrderFinancials,
   checkCourierBookingEligibility,
@@ -156,7 +156,7 @@ test("5. Duplicate booking prevention on order and service level", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 test("6. Timeout recovery by invoice number and bounded execution time", () => {
-  const steadfastCode = read("src/server/courier/steadfast.ts");
+  const steadfastCode = read((fs.existsSync("src/server/courier/providers/steadfast/adapter.ts") ? "src/server/courier/providers/steadfast/adapter.ts" : "src/server/courier/steadfast.ts"));
   assert.ok(steadfastCode.includes("getSteadfastStatusByInvoice"), "Must implement invoice lookup");
   assert.ok(
     steadfastCode.includes("const preCheck = await getSteadfastStatusByInvoice(input.orderNumber)"),

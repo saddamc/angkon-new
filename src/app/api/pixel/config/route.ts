@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/pixel-settings";
+﻿import { NextResponse } from "next/server";
+import { getPixelSettings, DEFAULT_TENANT_ID } from "@/server/meta/pixel/pixel-settings";
 
 export const dynamic = "force-dynamic";
 

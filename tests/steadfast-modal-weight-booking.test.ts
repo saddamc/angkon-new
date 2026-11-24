@@ -6,17 +6,17 @@ import {
   getPackagingPreset,
   normalizeUnitWeightToKg,
   classifyOrderParcel,
-} from "../src/server/courier/parcel-classifier";
+} from "../src/server/courier/core/parcel-classifier";
 import {
   isLocalTestOrder,
   getCourierModeConfig,
-} from "../src/server/courier/courier-mode";
+} from "../src/server/courier/core/courier-mode";
 import {
   computeOrderFinancials,
   checkCourierBookingEligibility,
 } from "../src/server/orders/workflow";
-import { normalizeBdPhone } from "../src/server/courier/steadfast-utils";
-import { MockSteadfastProvider } from "../src/server/courier/mock-steadfast";
+import { normalizeBdPhone } from "../src/server/courier/providers/steadfast/utils";
+import { MockSteadfastProvider } from "../src/server/courier/mock/steadfast";
 
 // ── Scenario 1: Automatic weight from a single product ──────────────────
 test("Scenario 1: Automatic weight from a single product correctly calculated", () => {

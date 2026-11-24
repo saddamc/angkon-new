@@ -217,8 +217,22 @@ test("Custom fields deduplication: even when caller passes duplicate fields, que
 });
 
 test("Live codebase verification: meta-marketing-api.ts and meta-ads.ts export and use deduplicateFields", () => {
-  const apiFile = fs.readFileSync(path.resolve("src/server/meta-marketing-api.ts"), "utf-8");
-  const adsFile = fs.readFileSync(path.resolve("src/server/meta-ads.ts"), "utf-8");
+  const apiFile = fs.readFileSync(
+    path.resolve(
+      fs.existsSync("src/server/meta/marketing/meta-marketing-api.ts")
+        ? "src/server/meta/marketing/meta-marketing-api.ts"
+        : "src/server/meta-marketing-api.ts"
+    ),
+    "utf-8"
+  );
+  const adsFile = fs.readFileSync(
+    path.resolve(
+      fs.existsSync("src/server/meta/marketing/meta-ads.ts")
+        ? "src/server/meta/marketing/meta-ads.ts"
+        : "src/server/meta-ads.ts"
+    ),
+    "utf-8"
+  );
 
   assert.ok(apiFile.includes("export function deduplicateFields"), "deduplicateFields must be exported from meta-marketing-api");
   assert.ok(apiFile.includes("export function buildInsightsFieldsForLevel"), "buildInsightsFieldsForLevel must be exported from meta-marketing-api");

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -39,14 +39,14 @@ import {
   SHIPMENT_STATUS_LABELS,
   COURIER_SETTLEMENT_LABELS,
 } from "@/server/orders/workflow";
-import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/tracking";
+import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/core/tracking";
 import { CourierLogo } from "@/components/admin/courier-logo";
 import { CourierPrintAction } from "./courier-print-action";
 import { WhatsAppIcon } from "./whatsapp-icon";
 import {
   buildWhatsAppUrl,
   generateWhatsAppMessage,
-} from "@/server/whatsapp/whatsapp-templates";
+} from "@/server/integrations/whatsapp/whatsapp-templates";
 import { ProductThumbnail } from "./product-thumbnail";
 import { OrderActivityView } from "./order-activity-view";
 import { OrderCancellationModal } from "./order-cancellation-modal";

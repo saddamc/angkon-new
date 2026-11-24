@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import { requestEmailCode } from "@/components/checkout/email-verify-dialog";
-import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/tracking";
+import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/core/tracking";
 import { getPaymentMethodLabel, isOnlinePaymentMethod } from "@/lib/payment-methods";
 import {
   AlertTriangle,

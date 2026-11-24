@@ -1,4 +1,4 @@
-import test from "node:test";
+﻿import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import {
@@ -10,7 +10,7 @@ import {
 import {
   COURIER_PROVIDER_LIST,
   normalizeCourierSettings,
-} from "../src/server/courier/tracking.ts";
+} from "../src/server/courier/core/tracking.ts";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
@@ -170,8 +170,8 @@ test("Stage 3 & Stage 7 courier UI list exposes only Steadfast active and Pathao
 });
 
 test("Stage 5 & Rules 9, 10, 11, 12 enforced in CourierService, sync, and admin APIs", () => {
-  const service = read("src/server/courier/courier-service.ts");
-  const sync = read("src/server/courier/sync.ts");
+  const service = read((fs.existsSync("src/server/courier/core/courier-service.ts") ? "src/server/courier/core/courier-service.ts" : "src/server/courier/courier-service.ts"));
+  const sync = read((fs.existsSync("src/server/courier/core/sync.ts") ? "src/server/courier/core/sync.ts" : "src/server/courier/sync.ts"));
   const settlementRoute = read("src/app/api/admin/orders/[id]/settlement/route.ts");
   const detailsRoute = read("src/app/api/admin/orders/[id]/details/route.ts");
   const manualPayRoute = read("src/app/api/admin/orders/[id]/payments/manual/route.ts");

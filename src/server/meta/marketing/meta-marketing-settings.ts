@@ -121,12 +121,26 @@ export async function getMetaMarketingSettings(
     }).lean();
   }
 
+  const envAdAccount = normalizeAdAccountId(process.env.META_AD_ACCOUNT_ID || "");
+  const envToken = (
+    process.env.META_MARKETING_API_TOKEN ||
+    process.env.META_ACCESS_TOKEN ||
+    ""
+  ).trim();
+
   if (doc && doc.value) {
     const v = doc.value as Partial<MetaMarketingSettings>;
+    const rawAdAccount = v.adAccountId || "";
+    const resolvedAdAccount =
+      (!rawAdAccount || /mock/i.test(rawAdAccount)) && envAdAccount
+        ? envAdAccount
+        : rawAdAccount;
+    const rawToken = typeof v.accessToken === "string" ? decryptTokenString(v.accessToken) : "";
+    const resolvedToken = rawToken || envToken;
     return {
       tenantId,
-      adAccountId: v.adAccountId || "",
-      accessToken: typeof v.accessToken === "string" ? decryptTokenString(v.accessToken) : "",
+      adAccountId: resolvedAdAccount,
+      accessToken: resolvedToken,
       accountName: v.accountName || "",
       accountCurrency: v.accountCurrency || "BDT",
       accountTimezoneName: v.accountTimezoneName || "Asia/Dhaka",
@@ -138,7 +152,7 @@ export async function getMetaMarketingSettings(
           : DEFAULT_ATTRIBUTION_CONFIG.actionAttributionWindows,
         actionReportTime: v.attributionConfig?.actionReportTime === "impression" ? "impression" : "conversion",
       },
-      status: v.status || (v.accessToken && v.adAccountId ? "connected" : "unconfigured"),
+      status: v.status || (resolvedToken && resolvedAdAccount ? "configured" : "unconfigured"),
       lastVerifiedAt: v.lastVerifiedAt,
       lastErrorMessage: v.lastErrorMessage,
       rateLimitRegainAccessAt: v.rateLimitRegainAccessAt,
@@ -154,11 +168,16 @@ export async function getMetaMarketingSettings(
 
   if (legacyDoc && legacyDoc.value) {
     const legacyVal = legacyDoc.value as Record<string, unknown>;
-    const legacyAdAccount = typeof legacyVal.adAccountId === "string" ? legacyVal.adAccountId : "";
-    const legacyToken =
+    const rawLegacyAdAccount = typeof legacyVal.adAccountId === "string" ? legacyVal.adAccountId : "";
+    const legacyAdAccount =
+      (!rawLegacyAdAccount || /mock/i.test(rawLegacyAdAccount)) && envAdAccount
+        ? envAdAccount
+        : rawLegacyAdAccount;
+    const rawLegacyToken =
       typeof legacyVal.marketingApiAccessToken === "string"
         ? decryptTokenString(legacyVal.marketingApiAccessToken)
         : "";
+    const legacyToken = rawLegacyToken || envToken;
 
     if (legacyAdAccount || legacyToken) {
       return {
@@ -170,9 +189,19 @@ export async function getMetaMarketingSettings(
         accountTimezoneName: "Asia/Dhaka",
         accountTimezoneOffsetHours: 6,
         attributionConfig: DEFAULT_ATTRIBUTION_CONFIG,
-        status: legacyToken && legacyAdAccount ? "connected" : "unconfigured",
+        status: legacyToken && legacyAdAccount ? "configured" : "unconfigured",
       };
     }
+  }
+
+  if (envAdAccount || envToken) {
+    return {
+      ...DEFAULT_MARKETING_SETTINGS,
+      tenantId,
+      adAccountId: envAdAccount,
+      accessToken: envToken,
+      status: envAdAccount && envToken ? "configured" : "unconfigured",
+    };
   }
 
   return { ...DEFAULT_MARKETING_SETTINGS, tenantId };

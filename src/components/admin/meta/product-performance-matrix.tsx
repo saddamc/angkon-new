@@ -133,15 +133,15 @@ export function ProductPerformanceMatrix() {
               <Sparkles className="h-4 w-4" />
             </div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Product Intelligence &amp; Hero Saree Matrix
+              Product Intelligence &amp; Top Performers Matrix
             </h2>
             <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#1877F2] border border-blue-200/70">
-              16 Saree Catalog Assets
+              Live Catalog Analytics
             </span>
             <InfoPopover
               title="Product Performance Matrix"
-              description="Cross-references live storefront telemetry (ViewContent & AddToCart) with verified store purchases and cash revenue to mathematically separate high-performing sarees from low-performing products."
-              whyNeeded="Prevents wasting Meta ad budget on low-converting sarees and highlights high-converting 'Hidden Gems' that need more traffic."
+              description="Cross-references live storefront telemetry (ViewContent & AddToCart) with verified store purchases and cash revenue to separate high-performing products from low-converting items."
+              whyNeeded="Prevents wasting Meta ad budget on low-converting products and highlights high-converting 'Hidden Gems' that need more traffic."
               businessImpact="Directly increases blended ROAS and store profit margin by channeling marketing budget exclusively into high-converting inventory."
               actionableTip="Scale budget on Hero Winners in Advantage+ Dynamic Product Ads and feature Hidden Gems in your primary storefront menu."
               align="left"

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { AdminToast } from "@/components/admin/AdminToast";
 import {
   Activity,
   AlertCircle,
@@ -435,6 +436,16 @@ export default function MetaCatalogPage() {
         stats?: { productsAccepted?: number; productsRejected?: number; productsProcessed?: number };
       };
       if (!response.ok || !data.ok) {
+        if (
+          response.status === 400 &&
+          (data.error?.includes("No registered product feed") || !metaConfig?.productFeedId)
+        ) {
+          setFormMessage({
+            type: "info",
+            text: "No Meta Product Feed is registered yet. Register your feed below once your Catalog ID is configured.",
+          });
+          return;
+        }
         throw new Error(data.error || "Failed to fetch import status.");
       }
       setFormMessage({
@@ -462,11 +473,11 @@ export default function MetaCatalogPage() {
   const counts = diagnostics?.counts;
   const coverage = diagnostics?.categoryCoverage;
   const invalidCount = counts?.invalidItems ?? 0;
-  const validCount = counts?.validItems ?? (items.length > 0 ? items.length : 16);
+  const validCount = counts?.validItems ?? items.length;
   const excludedCount = diagnostics?.page.excludedFromCatalog ?? counts?.excludedItems ?? 0;
-  const totalDbProducts = diagnostics?.page.totalAll ?? 16;
-  const totalEligibleProducts = diagnostics?.page.totalVisible ?? 16;
-  const mappedCount = coverage?.mapped ?? 16; // 16 sarees mapped to ID 212
+  const totalDbProducts = diagnostics?.page.totalAll ?? items.length;
+  const totalEligibleProducts = diagnostics?.page.totalVisible ?? items.length;
+  const mappedCount = coverage?.mapped ?? 0;
   const genericCount = coverage?.generic ?? 0;
   const unmappedCount = coverage?.unmapped ?? 0;
   const totalClassified = mappedCount + genericCount + unmappedCount;
@@ -498,8 +509,21 @@ export default function MetaCatalogPage() {
     });
   }, [items, filterTab, searchQuery]);
 
+  useEffect(() => {
+    if (!formMessage || formMessage.type === "error") return;
+    const timer = setTimeout(() => setFormMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [formMessage]);
+
   return (
     <div className="min-w-0 max-w-7xl space-y-6 pb-24 font-sans text-slate-900 antialiased">
+      {formMessage && (
+        <AdminToast
+          message={formMessage.text}
+          ok={formMessage.type !== "error"}
+          onClose={() => setFormMessage(null)}
+        />
+      )}
       <MetaNavigationHeader pixelId={pixelId} testEventCode={settings?.testEventCode} />
 
       {/* Global Form Notification Banner */}
@@ -701,7 +725,7 @@ export default function MetaCatalogPage() {
           <div>
             <div className="text-2xl font-black text-slate-900">{classificationPct}% Specific</div>
             <p className="mt-1 text-[11px] text-slate-500 leading-snug">
-              <strong className="text-slate-800">{mappedCount} mapped</strong> to Saree Taxonomy ID 212.
+              <strong className="text-slate-800">{mappedCount} mapped</strong> to Apparel Taxonomy ID 212.
             </p>
           </div>
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
@@ -724,7 +748,7 @@ export default function MetaCatalogPage() {
               }`}
             >
               <Activity className="h-3 w-3" />
-              <span>{metaConfig?.lastImportStatus || "Registered"}</span>
+              <span>{metaConfig?.lastImportStatus || "Not Started"}</span>
             </span>
           </div>
           <div>
@@ -741,7 +765,9 @@ export default function MetaCatalogPage() {
           </div>
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span>Meta Product Feed ID:</span>
-            <span className="font-mono font-semibold text-purple-700">{metaConfig?.productFeedId || "9876543210"}</span>
+            <span className="font-mono font-semibold text-purple-700">
+              {metaConfig?.productFeedId || "Not registered"}
+            </span>
           </div>
         </div>
       </div>
@@ -780,8 +806,12 @@ export default function MetaCatalogPage() {
             <h4 className="text-xs font-bold text-slate-900">Feed Generated</h4>
             <div className="space-y-1 text-[11px] text-slate-500">
               <div>Source: <strong>ANGKON Server</strong></div>
-              <div>Items: <strong>{validCount} Saree Products</strong></div>
-              <div>Size: <strong>{diagnostics ? `${(diagnostics.xmlBytes / 1024).toFixed(1)} KB` : "12.4 KB"}</strong></div>
+              <div>
+                Environment:{" "}
+                <strong className="capitalize">{diagnostics?.environment || "unknown"}</strong>
+              </div>
+              <div>Items: <strong>{validCount} Catalog Products</strong></div>
+              <div>Size: <strong>{diagnostics ? `${(diagnostics.xmlBytes / 1024).toFixed(1)} KB` : "—"}</strong></div>
             </div>
             <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-400">
               Updated: {formatDateTime(diagnostics?.generatedAt)}
@@ -816,19 +846,29 @@ export default function MetaCatalogPage() {
               <span className="text-[10px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-md">
                 Stage 3
               </span>
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                <span>Active</span>
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  metaConfig?.productFeedId
+                    ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                    : "text-slate-600 bg-slate-100 border-slate-200"
+                }`}
+              >
+                <CheckCircle2
+                  className={`h-3 w-3 ${
+                    metaConfig?.productFeedId ? "text-emerald-600" : "text-slate-400"
+                  }`}
+                />
+                <span>{metaConfig?.productFeedId ? "Active" : "Pending"}</span>
               </span>
             </div>
             <h4 className="text-xs font-bold text-slate-900">Feed Registered</h4>
             <div className="space-y-1 text-[11px] text-slate-500">
               <div>Source: <strong>Product Feeds API</strong></div>
-              <div>Feed ID: <strong className="font-mono text-purple-700">{metaConfig?.productFeedId || "9876543210"}</strong></div>
+              <div>Feed ID: <strong className="font-mono text-purple-700">{metaConfig?.productFeedId || "Not registered"}</strong></div>
               <div>Interval: <strong>Daily at 04:00 UTC</strong></div>
             </div>
             <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-400">
-              Commerce Manager bound
+              {metaConfig?.productFeedId ? "Commerce Manager bound" : "Register feed below"}
             </div>
           </div>
 
@@ -880,8 +920,15 @@ export default function MetaCatalogPage() {
             <h4 className="text-xs font-bold text-slate-900">Meta Processed</h4>
             <div className="space-y-1 text-[11px] text-slate-500">
               <div>Source: <strong>Commerce Manager</strong></div>
-              <div>Batch: <strong>batch_987654</strong></div>
-              <div>Processed: <strong>{metaConfig?.lastImportStats?.productsProcessed ?? 16}</strong></div>
+              <div>
+                Batch:{" "}
+                <strong>
+                  {metaConfig?.lastImportStatus && metaConfig.lastImportStatus !== "NOT_STARTED"
+                    ? metaConfig.lastImportStatus
+                    : "Awaiting sync"}
+                </strong>
+              </div>
+              <div>Processed: <strong>{metaConfig?.lastImportStats?.productsProcessed ?? 0}</strong></div>
             </div>
             <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-400">
               XML Schema Validated
@@ -908,7 +955,7 @@ export default function MetaCatalogPage() {
             <h4 className="text-xs font-bold text-slate-900">Products Ingested</h4>
             <div className="space-y-1 text-[11px] text-slate-500">
               <div>Source: <strong>Catalog Dataset</strong></div>
-              <div>Accepted: <strong className="text-emerald-700">{metaConfig?.lastImportStats?.productsAccepted ?? 16}</strong></div>
+              <div>Accepted: <strong className="text-emerald-700">{metaConfig?.lastImportStats?.productsAccepted ?? 0}</strong></div>
               <div>Rejected: <strong className="text-slate-700">{metaConfig?.lastImportStats?.productsRejected ?? 0}</strong></div>
             </div>
             <div className="pt-2 border-t border-slate-200/60 text-[10px] text-slate-400">
@@ -1068,7 +1115,9 @@ export default function MetaCatalogPage() {
           <div className="space-y-2 text-xs">
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
               <span className="text-slate-500">Registered Feed ID:</span>
-              <span className="font-mono font-bold text-purple-700">{metaConfig?.productFeedId || "9876543210"}</span>
+              <span className="font-mono font-bold text-purple-700">
+                {metaConfig?.productFeedId || "Not registered"}
+              </span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
               <span className="text-slate-500">Scheduled Ingestion Cadence:</span>
@@ -1113,46 +1162,48 @@ export default function MetaCatalogPage() {
               <h3 className="text-sm font-bold text-slate-900">Category Mapping Taxonomy Coverage</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Specific Meta product category assignment for saree and South Asian ethnic wear collections.
+              Specific Meta product category assignment across apparel and South Asian ethnic wear collections.
             </p>
           </div>
           <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
-            100% Specific Taxonomy (16 of 16)
+            {classificationPct}% Specific Taxonomy ({mappedCount} of {totalClassified})
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Explicit / Rule Mapping</span>
-            <span className="font-bold text-emerald-700 text-lg">16 Products</span>
+            <span className="font-bold text-emerald-700 text-lg">{mappedCount} Products</span>
             <p className="text-[11px] text-slate-500">Mapped to Google Category ID 212</p>
           </div>
 
           <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Automatic Taxonomy Rule</span>
-            <span className="font-bold text-blue-700 text-lg">16 Active Rules</span>
+            <span className="font-bold text-blue-700 text-lg">{mappedCount} Active Rules</span>
             <p className="text-[11px] text-slate-500">Pattern: sharee|saree|ethnic|traditional</p>
           </div>
 
           <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Product-Type Fallback</span>
-            <span className="font-bold text-slate-700 text-lg">0 Products</span>
+            <span className="font-bold text-slate-700 text-lg">{genericCount} Products</span>
             <p className="text-[11px] text-slate-500">Excluded from specific ratio</p>
           </div>
 
           <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1">
             <span className="text-[10px] uppercase font-bold text-slate-400 block">Unmapped Items</span>
-            <span className="font-bold text-slate-700 text-lg">0 Items</span>
-            <p className="text-[11px] text-slate-500">No orphaned inventory</p>
+            <span className="font-bold text-slate-700 text-lg">{unmappedCount} Items</span>
+            <p className="text-[11px] text-slate-500">
+              {unmappedCount === 0 ? "No orphaned inventory" : "Needs category assignment"}
+            </p>
           </div>
         </div>
 
-        {/* Detailed Saree Category Mapping Card */}
+        {/* Detailed Apparel & Ethnic Wear Category Mapping Card */}
         <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 space-y-2 text-xs">
           <div className="flex items-center justify-between">
             <span className="font-bold text-blue-950 flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-blue-600" />
-              <span>Primary Collection: ANGKON Saree &amp; Ethnic Wear</span>
+              <span>Primary Collection: ANGKON Apparel &amp; Ethnic Wear</span>
             </span>
             <span className="font-mono text-[11px] text-blue-800 font-bold bg-white px-2 py-0.5 rounded border border-blue-200">
               Taxonomy ID: 212
@@ -1270,12 +1321,18 @@ export default function MetaCatalogPage() {
                     <td className="px-4 py-3 max-w-xs">
                       <div className="flex items-center gap-3">
                         {item.image_link ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={item.image_link}
-                            alt={item.title}
-                            className="h-10 w-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-white"
-                          />
+                          <div className="relative h-10 w-10 rounded-lg border border-slate-200 shrink-0 bg-purple-50 text-purple-600 flex items-center justify-center overflow-hidden">
+                            <ShoppingBag className="h-4 w-4" />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={item.image_link}
+                              alt={item.title}
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                              className="absolute inset-0 h-full w-full object-cover bg-white"
+                            />
+                          </div>
                         ) : (
                           <div className="h-10 w-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
                             <ShoppingBag className="h-5 w-5" />
@@ -1340,14 +1397,16 @@ export default function MetaCatalogPage() {
 
                     {/* Brand */}
                     <td className="px-4 py-3 text-slate-700 font-medium">
-                      {item.brand || "Tawakkal"}
+                      {item.brand || "ANGKON"}
                     </td>
 
                     {/* Category */}
                     <td className="px-4 py-3 max-w-[200px]">
                       <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 truncate">
                         <Tag className="h-3 w-3 shrink-0" />
-                        <span className="truncate">Saree Category (212)</span>
+                        <span className="truncate">
+                          {item.google_product_category ? "Apparel & Ethnic Wear (212)" : item.product_type || "Catalog Item"}
+                        </span>
                       </span>
                     </td>
 

@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
       const categoryName =
         Array.isArray(p.categories) && p.categories.length > 0 && typeof p.categories[0].name === "string"
           ? p.categories[0].name
-          : "Saree";
+          : "Apparel";
 
       const numericPrice = Number(p.price) || Number(p.regular_price) || 0;
       const regularPrice = Number(p.regular_price) || numericPrice;
@@ -207,7 +207,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: pid,
-        name: p.name || `Saree #${pid}`,
+        name: p.name || `Product #${pid}`,
         slug: p.slug || String(pid),
         sku: p.sku || `ANK-${pid}`,
         category: categoryName,
@@ -260,7 +260,7 @@ export async function GET(request: NextRequest) {
         item.actionRecommendation = "Low exposure (<20 views). Do not spend dedicated ad budget yet; drive initial organic traffic via social posts or bundles.";
       } else {
         item.quadrant = "SLOW_MOVER";
-        item.quadrantLabel = "Unproven Saree";
+        item.quadrantLabel = "Unproven Product";
         item.actionRecommendation = "Awaiting sufficient visitor telemetry and conversion signals.";
       }
     }

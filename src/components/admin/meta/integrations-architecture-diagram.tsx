@@ -592,7 +592,7 @@ export function IntegrationsArchitectureDiagram({
                       <div className="min-w-0">
                         <div className="font-bold text-slate-900 text-xs truncate">Ad Sets</div>
                         <div className="text-[11px] text-slate-500 truncate">
-                          {marketingSettings?.accountName || "Plain Stitch"}
+                          {marketingSettings?.accountName || "ANGKON"}
                         </div>
                       </div>
                     </div>
@@ -1012,8 +1012,8 @@ export function IntegrationsArchitectureDiagram({
                       </span>
                     </div>
                     <div className="font-bold text-slate-900 text-xs">Ad Sets</div>
-                    <div className="text-[10px] text-slate-500 mt-0.5 truncate" title={marketingSettings?.accountName || "Plain Stitch"}>
-                      {marketingSettings?.accountName || "Plain Stitch"}
+                    <div className="text-[10px] text-slate-500 mt-0.5 truncate" title={marketingSettings?.accountName || "ANGKON"}>
+                      {marketingSettings?.accountName || "ANGKON"}
                     </div>
                   </div>
 
@@ -1155,8 +1155,14 @@ export function IntegrationsArchitectureDiagram({
                     <Server className="h-3.5 w-3.5 text-purple-600" />
                     <span className="font-semibold text-slate-800">Conversions API</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    Active
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      isCapiActive
+                        ? "text-emerald-700 bg-emerald-50"
+                        : "text-amber-700 bg-amber-50"
+                    }`}
+                  >
+                    {isCapiActive ? "Active" : "Unconfigured"}
                   </span>
                 </div>
 
@@ -1168,8 +1174,14 @@ export function IntegrationsArchitectureDiagram({
                     <Globe className="h-3.5 w-3.5 text-blue-600" />
                     <span className="font-semibold text-slate-800">Meta Pixel</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    Active
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      isPixelActive
+                        ? "text-emerald-700 bg-emerald-50"
+                        : "text-amber-700 bg-amber-50"
+                    }`}
+                  >
+                    {isPixelActive ? "Active" : "Unconfigured"}
                   </span>
                 </div>
 
@@ -1181,8 +1193,14 @@ export function IntegrationsArchitectureDiagram({
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                     <span className="font-semibold text-slate-800">Domain Verification</span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                    Verified
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                      isDomainActive
+                        ? "text-emerald-700 bg-emerald-50"
+                        : "text-amber-700 bg-amber-50"
+                    }`}
+                  >
+                    {isDomainActive ? "Verified" : "Pending"}
                   </span>
                 </div>
               </div>
@@ -1495,7 +1513,7 @@ export function IntegrationsArchitectureDiagram({
                       <span>Ad Account &amp; Campaign Optimization</span>
                     </div>
                     <p className="text-slate-600 text-xs leading-relaxed">
-                      Ad account connected: <strong>{marketingSettings?.accountName || "Plain Stitch"}</strong> (<code>{marketingSettings?.adAccountId || "act_1646756900434912"}</code>).
+                      Ad account connected: <strong>{marketingSettings?.accountName || "ANGKON"}</strong> (<code>{marketingSettings?.adAccountId || "Not connected"}</code>).
                       Distinguishes credentials configured locally from verified Meta API connectivity.
                     </p>
                   </div>

@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
+import { getAppEnvironment } from "@/server/env/app-environment";
 import {
   buildCatalogFeed,
   buildFeedUrl,
@@ -172,7 +173,12 @@ export async function generateCatalogFeed(options: {
   nodeEnv?: string;
 } = {}): Promise<GeneratedCatalogFeed> {
   const env = options.env || process.env;
-  const nodeEnv = options.nodeEnv || env.NODE_ENV || "development";
+  // Resolve the environment with the same engine used by the database
+  // isolation guard and the Meta CAPI dispatcher. Reading raw NODE_ENV here
+  // caused "development" labels on a production database whenever `next dev`
+  // ran with APP_ENVIRONMENT=production.
+  const appEnvironment = getAppEnvironment();
+  const nodeEnv = options.nodeEnv || appEnvironment;
   const baseResolution = resolvePublicBaseUrl({
     env,
     requestOrigin: options.requestOrigin,

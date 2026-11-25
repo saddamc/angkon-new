@@ -94,7 +94,7 @@ test("Invariant 2: Three Independent Diagnostic Pillars exist in Domain page", (
 
   // Pillar 3: Meta Business Manager Ownership
   assert.ok(pageContent.includes("Pillar 3: Meta Ownership"), "Pillar 3 Meta Ownership must be present");
-  assert.ok(pageContent.includes("Plain Stitch"), "Business Portfolio Plain Stitch must be referenced");
+  assert.ok(pageContent.includes("ANGKON"), "Business Portfolio name must be referenced");
   assert.ok(pageContent.includes("1068222718624963"), "Portfolio ID 1068222718624963 must be referenced");
 });
 

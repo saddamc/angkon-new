@@ -85,13 +85,13 @@ export function MetaSuiteHeader({ overview }: MetaSuiteHeaderProps) {
             </div>
           )}
 
-          {/* Business Account Pill (Plain Stitch) */}
+          {/* Business Account Pill */}
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs">
-            <span className="h-4 w-4 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[10px]">
-              P
+            <span className="h-4 w-4 rounded-md bg-purple-100 text-purple-800 font-bold flex items-center justify-center text-[10px]">
+              {(marketingSettings?.accountName || "ANGKON").trim().charAt(0).toUpperCase()}
             </span>
-            <span className="font-semibold text-slate-900 truncate max-w-[100px]">
-              {marketingSettings?.accountName || "Plain Stitch"}
+            <span className="font-semibold text-slate-900 truncate max-w-[120px]">
+              {marketingSettings?.accountName || "ANGKON"}
             </span>
           </div>
 

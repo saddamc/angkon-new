@@ -247,12 +247,26 @@ export function PerformanceChart({
   }, [data]);
 
   // Clean Meta Y-Axis tick generation (0, 50, 100, 150, 200, 250, 300)
-  const yTicks = useMemo(() => {
-    const activeKeys = Object.keys(activeMetrics).filter((k) => activeMetrics[k]);
-    const primaryKey = activeKeys[0] || primaryMetricKey || "events";
+  // Determine if any active metrics are enabled, default to events
+  const hasActiveMetric = Object.values(activeMetrics).some(Boolean);
+  const effectiveActiveMetrics = hasActiveMetric ? activeMetrics : { events: true };
+
+  const hasCurrencySeries = Boolean(
+    effectiveActiveMetrics.revenue || effectiveActiveMetrics.spend
+  );
+  const hasCountSeries = Boolean(
+    effectiveActiveMetrics.events ||
+      effectiveActiveMetrics.orders ||
+      effectiveActiveMetrics.clicks ||
+      effectiveActiveMetrics.impressions
+  );
+
+  const computeAxisScale = (keys: string[], minCeiling: number) => {
     const maxVal = Math.max(
-      ...chartData.map((d) => Number((d as Record<string, unknown>)[primaryKey]) || 0),
-      10
+      ...chartData.flatMap((d) =>
+        keys.map((k) => Number((d as Record<string, unknown>)[k]) || 0)
+      ),
+      minCeiling
     );
 
     let step = 50;
@@ -271,8 +285,43 @@ export function PerformanceChart({
     for (let t = 0; t <= roundedMax; t += step) {
       ticks.push(t);
     }
-    return { ticks, max: roundedMax > 0 ? roundedMax : 50 };
-  }, [chartData, activeMetrics, primaryMetricKey]);
+    return { ticks, max: roundedMax > 0 ? roundedMax : minCeiling };
+  };
+
+  const currencyScale = useMemo(() => {
+    const keys = (["revenue", "spend"] as const).filter(
+      (k) => effectiveActiveMetrics[k]
+    );
+    return computeAxisScale(keys.length ? [...keys] : ["revenue"], 100);
+  }, [chartData, effectiveActiveMetrics]);
+
+  const countScale = useMemo(() => {
+    const keys = (["events", "orders", "clicks", "impressions"] as const).filter(
+      (k) => effectiveActiveMetrics[k]
+    );
+    return computeAxisScale(keys.length ? [...keys] : ["events"], 10);
+  }, [chartData, effectiveActiveMetrics]);
+
+  const currencySymbol =
+    !effectiveActiveMetrics.revenue &&
+    effectiveActiveMetrics.spend &&
+    spendCurrency === "USD"
+      ? "$"
+      : "৳";
+
+  const formatCurrencyTick = (v: number) => {
+    if (v === 0) return "0";
+    if (v >= 1000) {
+      const k = v / 1000;
+      return `${currencySymbol}${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+    }
+    return `${currencySymbol}${v}`;
+  };
+
+  const formatCountTick = (v: number) =>
+    v >= 1000
+      ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`
+      : String(v);
 
   if (!chartData || chartData.length === 0) {
     return (
@@ -281,10 +330,6 @@ export function PerformanceChart({
       </div>
     );
   }
-
-  // Determine if any active metrics are enabled, default to events
-  const hasActiveMetric = Object.values(activeMetrics).some(Boolean);
-  const effectiveActiveMetrics = hasActiveMetric ? activeMetrics : { events: true };
 
   return (
     <div className="w-full font-sans select-none overflow-hidden bg-white">
@@ -295,7 +340,12 @@ export function PerformanceChart({
       >
         <AreaChart
           data={chartData}
-          margin={{ top: 12, right: 18, left: -14, bottom: 4 }}
+          margin={{
+            top: 12,
+            right: hasCurrencySeries && hasCountSeries ? 12 : 18,
+            left: 6,
+            bottom: 4,
+          }}
         >
           <defs>
             <linearGradient id="metaEventsGrad" x1="0" y1="0" x2="0" y2="1">
@@ -338,6 +388,7 @@ export function PerformanceChart({
             tickLine={false}
             axisLine={{ stroke: "#E4E6EB", strokeWidth: 1 }}
             tickMargin={10}
+            minTickGap={28}
             tick={{
               fill: "#65676B",
               fontSize: 11,
@@ -346,24 +397,48 @@ export function PerformanceChart({
             interval="preserveStartEnd"
           />
 
-          {/* Left Y-Axis Rounded Labels (Meta REA) */}
+          {/* Left Y-Axis (Currency when revenue/spend active, otherwise Count) */}
           <YAxis
+            yAxisId={hasCurrencySeries ? "currency" : "count"}
+            orientation="left"
+            width={hasCurrencySeries ? 54 : 40}
             tickLine={false}
             axisLine={false}
-            tickMargin={10}
+            tickMargin={8}
             tick={{
               fill: "#65676B",
-              fontSize: 12,
+              fontSize: 11,
               fontFamily: "system-ui, -apple-system, sans-serif",
             }}
-            domain={[0, yTicks.max]}
-            ticks={yTicks.ticks}
-            tickFormatter={(v) =>
-              v >= 1000
-                ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`
-                : String(v)
+            domain={[
+              0,
+              hasCurrencySeries ? currencyScale.max : countScale.max,
+            ]}
+            ticks={hasCurrencySeries ? currencyScale.ticks : countScale.ticks}
+            tickFormatter={
+              hasCurrencySeries ? formatCurrencyTick : formatCountTick
             }
           />
+
+          {/* Right Y-Axis (Count metrics when overlaid with Currency) */}
+          {hasCurrencySeries && hasCountSeries && (
+            <YAxis
+              yAxisId="count"
+              orientation="right"
+              width={40}
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{
+                fill: "#65676B",
+                fontSize: 11,
+                fontFamily: "system-ui, -apple-system, sans-serif",
+              }}
+              domain={[0, countScale.max]}
+              ticks={countScale.ticks}
+              tickFormatter={formatCountTick}
+            />
+          )}
 
           {/* Dotted Vertical Crosshair & Meta Popover Tooltip (Meta REA) */}
           <ChartTooltip
@@ -379,6 +454,7 @@ export function PerformanceChart({
           {/* Primary Meta Telemetry Curve */}
           {effectiveActiveMetrics.events && (
             <Area
+              yAxisId="count"
               type="monotone"
               dataKey="events"
               stroke="#70C5F7"
@@ -399,6 +475,7 @@ export function PerformanceChart({
           {/* Store Revenue */}
           {effectiveActiveMetrics.revenue && (
             <Area
+              yAxisId="currency"
               type="monotone"
               dataKey="revenue"
               stroke="#2563EB"
@@ -419,6 +496,7 @@ export function PerformanceChart({
           {/* Orders Completed */}
           {effectiveActiveMetrics.orders && (
             <Area
+              yAxisId="count"
               type="monotone"
               dataKey="orders"
               stroke="#9333EA"
@@ -439,6 +517,7 @@ export function PerformanceChart({
           {/* Meta Ad Spend */}
           {effectiveActiveMetrics.spend && (
             <Area
+              yAxisId="currency"
               type="monotone"
               dataKey="spend"
               stroke="#F59E0B"
@@ -459,6 +538,7 @@ export function PerformanceChart({
           {/* Ad Clicks */}
           {effectiveActiveMetrics.clicks && (
             <Area
+              yAxisId="count"
               type="monotone"
               dataKey="clicks"
               stroke="#6366F1"
@@ -479,6 +559,7 @@ export function PerformanceChart({
           {/* Ad Impressions */}
           {effectiveActiveMetrics.impressions && (
             <Area
+              yAxisId="count"
               type="monotone"
               dataKey="impressions"
               stroke="#10B981"

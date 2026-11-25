@@ -54,9 +54,9 @@ async function run() {
     isSslcommerzLiveReady,
     isOnlinePaymentAvailableForEnvironment,
     getSslcommerzCredentials,
-  } = await import("../src/server/sslcommerz.ts");
+  } = await import("../src/server/payments/config/sslcommerz.ts");
 
-  const { getCourierModeConfig } = await import("../src/server/courier/courier-mode.ts");
+  const { getCourierModeConfig } = await import("../src/server/courier/core/courier-mode.ts");
   const { connectToDatabase } = await import("../src/lib/mongodb.ts");
 
   // ── 1. Resolved Environment ──

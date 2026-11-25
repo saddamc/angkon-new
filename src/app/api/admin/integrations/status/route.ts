@@ -9,6 +9,7 @@ import {
   isSslcommerzLive,
   isSslcommerzLiveReady,
 } from "@/server/payments/config/sslcommerz";
+import { getPixelSettings } from "@/server/meta/pixel/pixel-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -42,12 +43,25 @@ export async function GET(request: NextRequest) {
   const sslLive = isSslcommerzLive();
   const sslLiveReady = isSslcommerzLiveReady();
 
-  const pixelId = (
+  let pixelSettings: Awaited<ReturnType<typeof getPixelSettings>> | null = null;
+  try {
+    pixelSettings = await getPixelSettings(auth.tenantId);
+  } catch {
+    pixelSettings = null;
+  }
+
+  const envPixelId = (
+    process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ||
     process.env.NEXT_PUBLIC_META_PIXEL_ID ||
     process.env.META_PIXEL_ID ||
     ""
   ).trim();
-  const capiToken = (process.env.META_CAPI_ACCESS_TOKEN || "").trim();
+  const dbPixelId = (pixelSettings?.pixelId || "").trim();
+  const isMockPixel = dbPixelId.startsWith("DEV_MOCK_");
+  const pixelId = (!isMockPixel && dbPixelId) || envPixelId || dbPixelId;
+  const capiToken =
+    Boolean((process.env.META_CAPI_ACCESS_TOKEN || "").trim()) ||
+    Boolean((pixelSettings?.capiAccessToken || "").trim());
   const resendKey = (process.env.RESEND_API_KEY || "").trim();
   const emailFrom = (process.env.EMAIL_FROM || "").trim();
   const cloudinary =
@@ -133,8 +147,18 @@ export async function GET(request: NextRequest) {
       name: "Meta Pixel",
       category: "Marketing",
       description: "Browser-side conversion tracking for ads and catalog remarketing.",
-      state: pixelId ? "connected" : "not-configured",
-      detail: pixelId ? `Pixel ${pixelId.slice(0, 6)}… configured` : "Pixel ID missing",
+      state: !pixelId
+        ? "not-configured"
+        : pixelId.startsWith("DEV_MOCK_")
+          ? "sandbox"
+          : pixelSettings && !pixelSettings.enabled && !envPixelId
+            ? "disabled"
+            : "connected",
+      detail: !pixelId
+        ? "Pixel ID missing"
+        : pixelId.startsWith("DEV_MOCK_")
+          ? `Dev mock (${pixelId.slice(0, 14)}…)`
+          : `Pixel ${pixelId.slice(0, 6)}… configured`,
       href: "/admin/meta/settings",
       actionLabel: "Pixel settings",
     },

@@ -291,3 +291,54 @@ export function validateDatabaseConnection(
     uri: rawUri,
   };
 }
+
+/**
+ * A safe, credential-free snapshot of the runtime environment.
+ *
+ * This is the single source of truth for any UI that shows an environment
+ * badge. It resolves the environment with `getAppEnvironment()` (the same
+ * resolver used by the database isolation guard and the Meta CAPI dispatcher)
+ * and reports the database the process is actually connected to.
+ */
+export interface RuntimeEnvironmentInfo {
+  environment: AppEnvironment;
+  expectedDatabase: string;
+  actualDatabase: string;
+  sanitizedHost: string;
+  isolationValid: boolean;
+  /** True when the process is a development server (`next dev`). */
+  isDevServer: boolean;
+  isVercel: boolean;
+}
+
+export function getRuntimeEnvironmentInfo(): RuntimeEnvironmentInfo {
+  const environment = getAppEnvironment();
+  // `next dev` forces NODE_ENV=development even when APP_ENVIRONMENT says
+  // production. That combination is what produces a "production database on a
+  // development server" split-brain, so surface it explicitly.
+  const isDevServer = process.env.NODE_ENV !== "production";
+  const isVercel = Boolean(process.env.VERCEL);
+
+  try {
+    const validation = validateDatabaseConnection();
+    return {
+      environment: validation.environment,
+      expectedDatabase: validation.expectedDatabase,
+      actualDatabase: validation.actualDatabase || "unknown",
+      sanitizedHost: validation.sanitizedHost || "unknown",
+      isolationValid: validation.valid,
+      isDevServer,
+      isVercel,
+    };
+  } catch {
+    return {
+      environment,
+      expectedDatabase: ENVIRONMENT_DATABASE_MAP[environment],
+      actualDatabase: "unknown",
+      sanitizedHost: "unknown",
+      isolationValid: false,
+      isDevServer,
+      isVercel,
+    };
+  }
+}

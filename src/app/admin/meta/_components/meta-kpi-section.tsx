@@ -17,6 +17,9 @@ export function MetaKpiSection({ overview }: MetaKpiSectionProps) {
     handleToggleMetric,
     totalCapturedEvents,
     analyticsData,
+    analyticsLoading,
+    analyticsError,
+    retryAnalytics,
     timeseries,
   } = overview;
 
@@ -58,6 +61,19 @@ export function MetaKpiSection({ overview }: MetaKpiSectionProps) {
       </div>
 
       {/* Google Search Console & Meta-Style Togglable Performance Cards */}
+      {analyticsError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
+          <span>{analyticsError}</span>
+          <button
+            type="button"
+            onClick={() => void retryAnalytics()}
+            className="shrink-0 rounded-lg bg-amber-100 hover:bg-amber-200 px-2.5 py-1 font-bold text-amber-900 transition cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {/* Card 1: Meta Events Telemetry (Sky Blue - Exact Meta Events Manager #70C5F7) */}
         <MetricToggleCard
@@ -75,8 +91,20 @@ export function MetaKpiSection({ overview }: MetaKpiSectionProps) {
         <MetricToggleCard
           id="revenue"
           label="Store Revenue"
-          value={analyticsData ? `৳${analyticsData.revenue.total.toLocaleString("en-BD")}` : "Loading…"}
-          subValue={analyticsData ? `Paid: ৳${analyticsData.revenue.paid.toLocaleString("en-BD")}` : undefined}
+          value={
+            analyticsData
+              ? `৳${analyticsData.revenue.total.toLocaleString("en-BD")}`
+              : analyticsLoading
+              ? "Loading…"
+              : "Unavailable"
+          }
+          subValue={
+            analyticsData
+              ? `Paid: ৳${analyticsData.revenue.paid.toLocaleString("en-BD")}`
+              : analyticsLoading
+              ? "Fetching store revenue"
+              : "Click Retry to load"
+          }
           checked={activeMetrics.revenue}
           onToggle={handleToggleMetric}
           color="blue"
@@ -87,10 +115,16 @@ export function MetaKpiSection({ overview }: MetaKpiSectionProps) {
         <MetricToggleCard
           id="orders"
           label="Orders Completed"
-          value={analyticsData ? analyticsData.orders.total : "—"}
+          value={
+            analyticsData
+              ? analyticsData.orders.total
+              : analyticsLoading
+              ? "Loading…"
+              : "—"
+          }
           subValue={
             analyticsData
-              ? `${analyticsData.orders.completed} completed · AOV ৳${analyticsData.revenue.aov}`
+              ? `${analyticsData.orders.completed} completed · AOV ৳${Math.round(analyticsData.revenue.aov).toLocaleString("en-BD")}`
               : undefined
           }
           checked={activeMetrics.orders}
@@ -104,11 +138,17 @@ export function MetaKpiSection({ overview }: MetaKpiSectionProps) {
           id="spend"
           label={`Meta Ad Spend (${analyticsData?.adSpend?.currency || "USD"})`}
           value={
-            analyticsData?.adSpend && analyticsData.adSpend.total > 0
-              ? analyticsData.adSpend.currency === "USD"
-                ? `$${analyticsData.adSpend.total.toFixed(2)} USD`
-                : `৳${analyticsData.adSpend.total.toLocaleString("en-BD")}`
-              : "0.00"
+            analyticsData?.adSpend
+              ? analyticsData.adSpend.total > 0
+                ? analyticsData.adSpend.currency === "USD"
+                  ? `$${analyticsData.adSpend.total.toFixed(2)} USD`
+                  : `৳${analyticsData.adSpend.total.toLocaleString("en-BD")}`
+                : analyticsData.adSpend.currency === "USD"
+                ? "$0.00"
+                : "৳0.00"
+              : analyticsLoading
+              ? "Loading…"
+              : "—"
           }
           subValue={
             analyticsData?.adSpend?.currency === "USD" && (analyticsData.adSpend.totalInBdt ?? 0) > 0

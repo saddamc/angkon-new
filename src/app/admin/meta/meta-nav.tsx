@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Activity,
   Layers,
@@ -22,6 +22,7 @@ import {
   BookOpen,
   Settings,
   DatabaseBackup,
+  Server,
 } from "lucide-react";
 import { MetaAssetLocatorModal } from "@/components/admin/meta/meta-asset-locator-modal";
 import {
@@ -86,6 +87,11 @@ export const META_NAV_GROUPS: MetaNavGroup[] = [
         href: "/admin/meta/events",
         label: "Events Manager",
         icon: Activity,
+      },
+      {
+        href: "/admin/meta/events?tab=conversions-api",
+        label: "Conversions API",
+        icon: Server,
       },
     ],
   },
@@ -160,11 +166,25 @@ export const META_NAV_TABS = META_NAV_GROUPS.flatMap((group) =>
 );
 
 // ── Path Match Helpers ────────────────────────────────────────────────
-export function isRouteActive(pathname: string, item: MetaNavItem): boolean {
+export function isRouteActive(
+  pathname: string,
+  item: MetaNavItem,
+  currentTab?: string | null
+): boolean {
+  const [itemPath, itemQuery] = item.href.split("?");
   if (item.exact) {
-    return pathname === item.href;
+    return pathname === itemPath;
   }
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const pathMatch = pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+  if (!pathMatch) return false;
+  if (itemQuery) {
+    const itemTab = new URLSearchParams(itemQuery).get("tab");
+    if (itemTab) {
+      if (currentTab) return currentTab === itemTab;
+      return itemTab === "events-manager";
+    }
+  }
+  return true;
 }
 
 export function getActiveGroup(pathname: string): MetaNavGroup | undefined {
@@ -360,6 +380,8 @@ export function MetaSuiteSidebar({
   onClose?: () => void;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const { isCollapsed, toggleCollapse, expandedGroups, toggleGroup } = useMetaNav();
 
   // If in drawer mode, always render expanded width
@@ -399,7 +421,7 @@ export function MetaSuiteSidebar({
       {/* ── Navigation Items List ── */}
       <nav
         aria-label="Meta Marketing Suite routes"
-        className={`flex-1 min-h-0 p-2.5 pt-3 space-y-2 ${
+        className={`flex-1 min-h-0 p-2.5 pt-2.5 space-y-1.5 ${
           collapsed ? "overflow-visible" : "overflow-y-auto overflow-x-hidden"
         }`}
       >
@@ -494,7 +516,7 @@ export function MetaSuiteSidebar({
               {!collapsed && isGroupExpanded && (
                 <ul className="space-y-0.5">
                   {group.items.map((item) => {
-                    const isActive = isRouteActive(pathname, item);
+                    const isActive = isRouteActive(pathname, item, currentTab);
 
                     return (
                       <li key={item.href} className="relative">
@@ -520,7 +542,7 @@ export function MetaSuiteSidebar({
               {collapsed && (
                 <ul className="space-y-0.5">
                   {group.items.map((item) => {
-                    const isActive = isRouteActive(pathname, item);
+                    const isActive = isRouteActive(pathname, item, currentTab);
                     const Icon = item.icon;
 
                     return (

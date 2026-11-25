@@ -110,7 +110,7 @@ export function TelemetryTab({
             <InfoPopover
               title="Total Storefront Events"
               description="Aggregated count of all shopper activities received and processed by ANGKON's tracking engine across the selected timeframe."
-              whyNeeded="Shows total telemetry volume used by Meta algorithms to identify prospective saree buyers."
+              whyNeeded="Shows total telemetry volume used by Meta algorithms to identify prospective buyers."
               businessImpact="High event volume allows Meta Advantage+ algorithms to exit the learning phase faster."
             />
           </div>
@@ -787,7 +787,7 @@ export function TelemetryTab({
                                               custom_data: {
                                                 currency: "BDT",
                                                 value: row.name === "Purchase" ? 18500 : undefined,
-                                                content_ids: ["angkon_saree_104"],
+                                                content_ids: ["angkon_item_104"],
                                                 content_type: "product",
                                               },
                                             },
@@ -832,7 +832,7 @@ export function TelemetryTab({
                                           custom_data: {
                                             currency: "BDT",
                                             value: row.name === "Purchase" ? 18500 : undefined,
-                                            content_ids: ["angkon_saree_104"],
+                                            content_ids: ["angkon_item_104"],
                                             content_type: "product",
                                           },
                                         },

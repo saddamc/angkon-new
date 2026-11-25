@@ -206,7 +206,10 @@ test("a valid product produces a complete Meta feed item", () => {
   const [item] = result.items;
   assert.equal(item.id, "228001");
   assert.equal(item.link, "https://angkon.com.bd/products/handwoven-jamdani-saree");
-  assert.equal(item.imageLink, "https://res.cloudinary.com/angkon/image/upload/saree.jpg");
+  assert.equal(
+    item.imageLink,
+    "https://res.cloudinary.com/angkon/image/upload/f_auto,q_85,dpr_auto,w_1600,c_limit/saree.jpg"
+  );
   assert.equal(item.price, "12500.00 BDT");
   assert.equal(item.availability, "in stock");
   assert.equal(item.condition, "new");

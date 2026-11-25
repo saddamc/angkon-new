@@ -63,9 +63,9 @@ export function useAdminOrders() {
   const [paymentFilter, setPaymentFilter] = useState<string>("any");
   const [shipmentFilter, setShipmentFilter] = useState<string>("any");
   const [courierFilter, setCourierFilter] = useState<string>("any");
-  // Show every order by default — including QA/test orders — so the panel always
-  // matches the database. The toggle lets an admin hide QA data explicitly.
-  const [showTestOrders, setShowTestOrders] = useState<boolean>(true);
+  // Hide archived/QA/test orders by default so live order metrics stay clean.
+  // The toolbar toggle lets an admin reveal QA/test orders explicitly.
+  const [showTestOrders, setShowTestOrders] = useState<boolean>(false);
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");

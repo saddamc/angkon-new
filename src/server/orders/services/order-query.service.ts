@@ -70,6 +70,7 @@ export async function queryAdminOrders(params: AdminOrderQueryParams) {
     andClauses.push({
       isTestOrder: { $ne: true },
       isArchived: { $ne: true },
+      orderNumber: { $not: /^SANDBOX/i },
     });
   }
 

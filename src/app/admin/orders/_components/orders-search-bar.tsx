@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   RefreshCw,
   Truck,
@@ -12,6 +13,13 @@ import type { AdminOrdersHookReturn } from "../_hooks/use-admin-orders";
 
 interface OrdersSearchBarProps {
   state: AdminOrdersHookReturn;
+}
+
+function toIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
@@ -37,6 +45,32 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
     courierProviders,
   } = state;
 
+  const [datePreset, setDatePreset] = useState<string>(() =>
+    dateFrom || dateTo ? "custom" : "all"
+  );
+
+  const handlePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    const now = new Date();
+    const todayStr = toIsoDate(now);
+    if (preset === "all") {
+      handleDateRangeChange("", "");
+    } else if (preset === "today") {
+      handleDateRangeChange(todayStr, todayStr);
+    } else if (preset === "7d") {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 6);
+      handleDateRangeChange(toIsoDate(start), todayStr);
+    } else if (preset === "30d") {
+      const start = new Date(now);
+      start.setDate(start.getDate() - 29);
+      handleDateRangeChange(toIsoDate(start), todayStr);
+    } else if (preset === "month") {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      handleDateRangeChange(toIsoDate(start), todayStr);
+    }
+  };
+
   const hasActiveFilters =
     filterStatus !== "any" ||
     paymentFilter !== "any" ||
@@ -53,27 +87,45 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
   return (
     <div className="space-y-3">
       {/* Filter Toolbar */}
-      <div className="flex flex-nowrap items-center justify-between gap-2 overflow-x-auto rounded-2xl border border-stone-200/90 bg-white p-2.5 shadow-xs">
-        <div className="flex flex-nowrap items-center gap-2 shrink-0">
-          {/* Date Range Picker with Calendar Icon */}
-          <div className="flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-700 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-stone-200/90 bg-white p-2.5 shadow-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date Preset Selector */}
+          <div className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 text-[12px] font-medium text-gray-700 focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-100 transition">
             <Calendar className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-            <input
-              type="date"
-              aria-label="Date from"
-              value={dateFrom}
-              onChange={(e) => handleDateRangeChange(e.target.value, dateTo)}
-              className="bg-transparent text-[11px] text-gray-700 focus:outline-none cursor-pointer"
-            />
-            <span className="text-[10px] text-gray-400">to</span>
-            <input
-              type="date"
-              aria-label="Date to"
-              value={dateTo}
-              onChange={(e) => handleDateRangeChange(dateFrom, e.target.value)}
-              className="bg-transparent text-[11px] text-gray-700 focus:outline-none cursor-pointer"
-            />
+            <select
+              aria-label="Filter by date range"
+              value={datePreset}
+              onChange={(e) => handlePresetChange(e.target.value)}
+              className="bg-transparent text-[12px] font-medium text-gray-700 focus:outline-none cursor-pointer"
+            >
+              <option value="all">Date: All Time</option>
+              <option value="today">Date: Today</option>
+              <option value="7d">Date: Last 7 Days</option>
+              <option value="30d">Date: Last 30 Days</option>
+              <option value="month">Date: This Month</option>
+              <option value="custom">Date: Custom Range…</option>
+            </select>
           </div>
+
+          {datePreset === "custom" && (
+            <div className="flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50/40 px-2.5 py-1.5 text-[11px] text-gray-700">
+              <input
+                type="date"
+                aria-label="Date from"
+                value={dateFrom}
+                onChange={(e) => handleDateRangeChange(e.target.value, dateTo)}
+                className="bg-transparent text-[11px] font-medium text-gray-700 focus:outline-none cursor-pointer"
+              />
+              <span className="text-[10px] text-gray-400">to</span>
+              <input
+                type="date"
+                aria-label="Date to"
+                value={dateTo}
+                onChange={(e) => handleDateRangeChange(dateFrom, e.target.value)}
+                className="bg-transparent text-[11px] font-medium text-gray-700 focus:outline-none cursor-pointer"
+              />
+            </div>
+          )}
 
           {/* Payment Status Filter */}
           <select
@@ -127,7 +179,10 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
 
           <button
             type="button"
-            onClick={clearAllFilters}
+            onClick={() => {
+              setDatePreset("all");
+              clearAllFilters();
+            }}
             className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-[11.5px] font-semibold transition cursor-pointer shrink-0 ${
               hasActiveFilters
                 ? "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
@@ -141,23 +196,7 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0 ml-2">
-          <button
-            type="button"
-            onClick={() => {
-              const next = !state.showTestOrders;
-              state.setShowTestOrders(next);
-              void state.load(state.filterStatus, true);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-semibold transition cursor-pointer ${
-              state.showTestOrders
-                ? "border-amber-300 bg-amber-50 text-amber-900"
-                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
-            }`}
-            title="Toggle display of archived QA / mock test orders"
-          >
-            <span>{state.showTestOrders ? "Hide Test Orders" : "Show Test Orders"}</span>
-          </button>
+        <div className="flex items-center gap-2 shrink-0">
 
           {/* Courier sync lives once, in the page header ("Sync Status"), so
               this toolbar no longer carries a duplicate button. */}

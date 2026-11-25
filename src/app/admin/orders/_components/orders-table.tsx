@@ -61,9 +61,21 @@ export function OrdersTable({ state }: OrdersTableProps) {
               ))}
             </div>
           ) : filteredOrders.length === 0 ? (
-            <p className="py-24 text-center text-sm text-gray-400">
-              No orders match your current filters.
-            </p>
+            <div className="flex flex-col items-center justify-center gap-3 py-20 px-4 text-center">
+              <p className="text-sm font-semibold text-gray-700">
+                No orders match your current filters.
+              </p>
+              <p className="text-xs text-gray-400">
+                Try clearing your search or adjusting the date and status filters.
+              </p>
+              <button
+                type="button"
+                onClick={() => state.clearAllFilters()}
+                className="rounded-xl border border-purple-200 bg-purple-50 px-3.5 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-100 transition cursor-pointer"
+              >
+                Reset Filters
+              </button>
+            </div>
           ) : (
             <div className="divide-y divide-stone-200/70">
               {filteredOrders.map((order, idx) => (

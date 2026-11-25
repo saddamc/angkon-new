@@ -296,7 +296,8 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
   if (typeof source.pixelId === "string") {
     pixelId = source.pixelId.trim();
   }
-  if (!pixelId && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID) {
+  const isMockPixel = /^dev_mock/i.test(pixelId);
+  if ((!pixelId || isMockPixel) && process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID) {
     pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID.trim();
   }
 
@@ -308,7 +309,8 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
     : false;
 
   let adAccountId = typeof source.adAccountId === "string" ? source.adAccountId.trim() : "";
-  if (!adAccountId && process.env.META_AD_ACCOUNT_ID) {
+  const isMockAdAccount = /mock/i.test(adAccountId);
+  if ((!adAccountId || isMockAdAccount) && process.env.META_AD_ACCOUNT_ID) {
     adAccountId = process.env.META_AD_ACCOUNT_ID.trim();
   }
   if (adAccountId && !adAccountId.startsWith("act_") && /^\d+$/.test(adAccountId)) {
@@ -343,9 +345,11 @@ export function normalizePixelSettings(raw: unknown, tenantId = DEFAULT_TENANT_I
         ? decryptTokenString(source.capiAccessToken.trim())
         : process.env.META_CAPI_ACCESS_TOKEN?.trim() || "",
     marketingApiAccessToken:
-      typeof source.marketingApiAccessToken === "string"
+      typeof source.marketingApiAccessToken === "string" && source.marketingApiAccessToken.trim()
         ? decryptTokenString(source.marketingApiAccessToken.trim())
-        : "",
+        : process.env.META_MARKETING_API_TOKEN?.trim() ||
+          process.env.META_ACCESS_TOKEN?.trim() ||
+          "",
     adAccountId,
     trackPageView: source.trackPageView !== false,
     trackViewContent: source.trackViewContent !== false,

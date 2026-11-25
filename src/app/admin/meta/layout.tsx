@@ -1,7 +1,9 @@
 ﻿import { notFound, redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { isMetaSuiteEnabled, verifyAdminToken } from "@/server/auth/admin-auth";
+import { getRuntimeEnvironmentInfo } from "@/server/env/app-environment";
 import { MetaSuiteShell } from "./meta-shell";
+import { MetaEnvironmentBar } from "./meta-environment-bar";
 
 export default async function MetaRoutesLayout({
   children,
@@ -21,5 +23,14 @@ export default async function MetaRoutesLayout({
     redirect("/admin/dashboard");
   }
 
-  return <MetaSuiteShell>{children}</MetaSuiteShell>;
+  const environmentInfo = getRuntimeEnvironmentInfo();
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <MetaEnvironmentBar info={environmentInfo} />
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <MetaSuiteShell>{children}</MetaSuiteShell>
+      </div>
+    </div>
+  );
 }

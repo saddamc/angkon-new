@@ -40,9 +40,15 @@ export function getCourierModeConfig(): CourierModeConfig {
   // Automated test runners (node --test, vitest, jest) MUST default to mock unless explicitly testing adapter
   const isTestRunner = process.env.NODE_ENV === "test" || Boolean(process.env.VITEST) || Boolean(process.env.JEST_WORKER_ID);
 
+  // Parse the escape hatch strictly. A raw truthiness check treated
+  // `FORCE_LIVE_COURIER_TEST=false` as enabled, which silently disabled the
+  // non-production mock guard — the exact opposite of what the flag means.
+  const forceLiveCourierTest =
+    (process.env.FORCE_LIVE_COURIER_TEST || "").trim().toLowerCase() === "true";
+
   // Strict Environment Isolation: Non-production environments MUST NEVER use live booking
   const appEnv = getAppEnvironment();
-  if (appEnv !== "production" && !process.env.FORCE_LIVE_COURIER_TEST) {
+  if (appEnv !== "production" && !forceLiveCourierTest) {
     return {
       mode: "mock",
       isLive: false,
@@ -54,7 +60,7 @@ export function getCourierModeConfig(): CourierModeConfig {
   }
 
   if (rawMode === "live") {
-    if (isTestRunner && !process.env.FORCE_LIVE_COURIER_TEST) {
+    if (isTestRunner && !forceLiveCourierTest) {
       return {
         mode: "mock",
         isLive: false,

@@ -95,7 +95,7 @@ export default function MetaAdsPage() {
   // True until the initial /ads/account request settles. Without it the status
   // pill cannot tell "still loading" apart from "the request failed".
   const [loadingSettings, setLoadingSettings] = useState(true);
-  const [businessId, setBusinessId] = useState("1646756900434912");
+  const [businessId, setBusinessId] = useState("");
   const [marketingApiVersion, setMarketingApiVersion] = useState("v22.0");
   const [permissionScope, setPermissionScope] = useState("ads_read, ads_management");
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
@@ -330,7 +330,7 @@ export default function MetaAdsPage() {
         await refreshCampaigns();
         setMessage({
           type: "success",
-          text: `Verified in ${latency}ms! Account "${data.settings.accountName || "Plain Stitch"}" connected via Meta Graph API v22.0.`,
+          text: `Verified in ${latency}ms! Account "${data.settings.accountName || "ANGKON"}" connected via Meta Graph API v22.0.`,
         });
       } else {
         setMessage({
@@ -615,22 +615,24 @@ export default function MetaAdsPage() {
                 Connected Ad Account
               </span>
               <span className="font-bold text-slate-900 text-sm block">
-                {marketingSettings?.accountName || "Plain Stitch"}
+                {marketingSettings?.accountName || "ANGKON"}
               </span>
             </div>
             <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
               <span className="font-mono text-xs font-semibold text-slate-700">
-                {adAccountId || "act_1646756900434912"}
+                {adAccountId || "Not connected"}
               </span>
-              <button
-                type="button"
-                onClick={() => handleCopy(adAccountId || "act_1646756900434912", "actId")}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
-                title="Copy Ad Account ID"
-              >
-                {copiedKey === "actId" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                <span>{copiedKey === "actId" ? "Copied" : "Copy"}</span>
-              </button>
+              {adAccountId && (
+                <button
+                  type="button"
+                  onClick={() => handleCopy(adAccountId, "actId")}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                  title="Copy Ad Account ID"
+                >
+                  {copiedKey === "actId" ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                  <span>{copiedKey === "actId" ? "Copied" : "Copy"}</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -641,12 +643,12 @@ export default function MetaAdsPage() {
                 Business Portfolio ID
               </span>
               <span className="font-bold text-slate-900 text-sm block">
-                Plain Stitch Portfolio
+                ANGKON Portfolio
               </span>
             </div>
             <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
               <span className="font-mono text-xs font-semibold text-slate-700">
-                {businessId}
+                {businessId || "Not configured"}
               </span>
               <button
                 type="button"
@@ -805,8 +807,8 @@ export default function MetaAdsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                 <span className="text-[10px] text-slate-400 uppercase font-bold block">Graph API Endpoint</span>
-                <span className="font-mono text-slate-800 text-xs block truncate" title={`https://graph.facebook.com/v22.0/${adAccountId || "act_1646756900434912"}`}>
-                  /v22.0/{adAccountId || "act_1646756900434912"}
+                <span className="font-mono text-slate-800 text-xs block truncate" title={`https://graph.facebook.com/v22.0/${adAccountId || "<ad-account-id>"}`}>
+                  /v22.0/{adAccountId || "<ad-account-id>"}
                 </span>
                 <div className="text-slate-500 text-[11px]">Insights, campaigns, and ad set attribution queries.</div>
               </div>
@@ -1525,7 +1527,7 @@ export default function MetaAdsPage() {
 
             <div className="pt-2 flex items-center justify-between">
               <a
-                href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${adAccountId || "1646756900434912"}&selected_campaign_ids=${selectedCampaign.id}`}
+                href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?${adAccountId ? `act=${adAccountId.replace(/^act_/, "")}&` : ""}selected_campaign_ids=${selectedCampaign.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"

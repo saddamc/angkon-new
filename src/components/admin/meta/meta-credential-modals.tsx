@@ -1105,7 +1105,7 @@ export function UpdateBusinessIdModal({
             type="text"
             value={businessName}
             onChange={(e) => setBusinessName(e.target.value)}
-            placeholder="Plain Stitch Business Portfolio"
+            placeholder="ANGKON Business Portfolio"
             className="w-full h-10 px-3.5 rounded-xl border border-slate-300 bg-white text-xs text-slate-900 focus:outline-none focus:border-[#1877F2] focus:ring-2 focus:ring-blue-100 transition shadow-2xs"
           />
         </div>

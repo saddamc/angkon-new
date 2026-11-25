@@ -92,8 +92,8 @@ export function MetaAssetStatusCards({ overview }: MetaAssetStatusCardsProps) {
               <Activity className="h-4 w-4 text-blue-600 shrink-0" />
               <span>Client SDK</span>
             </div>
-            <div className="font-mono text-[10.5px] text-slate-500 truncate mt-0.5" title={pixelId || "1267868848130835"}>
-              ID: {pixelId || "1267868848130835"}
+            <div className="font-mono text-[10.5px] text-slate-500 truncate mt-0.5" title={pixelId || "Not configured"}>
+              {pixelId ? `ID: ${pixelId}` : "Not configured"}
             </div>
           </div>
         </div>
@@ -266,19 +266,19 @@ export function MetaAssetStatusCards({ overview }: MetaAssetStatusCardsProps) {
               <TrendingUp className="h-4 w-4 text-amber-600 shrink-0" />
               <span>Ads &amp; Attribution</span>
             </div>
-            <div className="text-[10.5px] font-mono text-slate-500 truncate mt-0.5" title={marketingSettings?.accountName || "Plain Stitch"}>
+            <div className="text-[10.5px] font-mono text-slate-500 truncate mt-0.5" title={marketingSettings?.accountName || "ANGKON"}>
               {marketingSettings === null
                 ? "Verifying marketing token..."
                 : marketingSettings?.accountName
                 ? `${marketingSettings.accountName} (${marketingSettings.accountCurrency || "USD"})`
-                : "Plain Stitch (USD)"}
+                : "ANGKON (USD)"}
             </div>
           </div>
         </div>
 
         <div className="pt-2.5 border-t border-slate-100 mt-3 flex items-center justify-between">
-          <span className="text-[11px] font-mono font-semibold text-slate-700 truncate max-w-[110px]" title={marketingSettings?.adAccountId || settings?.adAccountId || "act_1646756900434912"}>
-            {marketingSettings?.adAccountId || settings?.adAccountId || "act_1646756900434912"}
+          <span className="text-[11px] font-mono font-semibold text-slate-700 truncate max-w-[110px]" title={marketingSettings?.adAccountId || settings?.adAccountId || "Not connected"}>
+            {marketingSettings?.adAccountId || settings?.adAccountId || "Not connected"}
           </span>
           <Link
             href="/admin/meta/ads"

@@ -5,6 +5,7 @@ import {
 } from "@/models/MetaCatalogConfig";
 import { callMetaGraphApi, MetaGraphApiError } from "@/lib/integrations/meta/client";
 import { getOrInitCatalogConfig } from "./meta-catalog-connection";
+import { getMetaCatalogSettings } from "./meta-catalog";
 import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 
 export interface RegisterProductFeedOptions {
@@ -65,8 +66,18 @@ export async function registerOrUpdateProductFeed(
   }
 
   const config = await getOrInitCatalogConfig(tenantId);
-  const catalogId = config.catalogId?.trim();
-  const token = config.getDecryptedToken();
+  let catalogId = config.catalogId?.trim();
+  let token = config.getDecryptedToken();
+
+  if (!catalogId || !token) {
+    const catalogSettings = await getMetaCatalogSettings(tenantId).catch(() => null);
+    if (!catalogId && catalogSettings?.catalogId) {
+      catalogId = catalogSettings.catalogId.trim();
+    }
+    if (!token && catalogSettings?.catalogApiToken) {
+      token = catalogSettings.catalogApiToken.trim();
+    }
+  }
 
   const feedName = options.feedName?.trim() || config.feedName || "ANGKON Production Catalog Feed";
   const resolvedFeedUrl = resolveProductionFeedUrl(options.feedUrl || config.feedUrl);

@@ -106,9 +106,19 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
                     iconSize="xs"
                   />
                 </div>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/80 text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Active
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    countPageView > 0
+                      ? "bg-emerald-100/80 text-emerald-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      countPageView > 0 ? "bg-emerald-600 animate-pulse" : "bg-slate-400"
+                    }`}
+                  />
+                  {countPageView > 0 ? "Active" : "No signals"}
                 </span>
               </div>
 
@@ -123,17 +133,22 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
               <div className="space-y-1 pt-1">
                 <div className="flex justify-between text-[10px] font-semibold text-blue-700">
                   <span>Funnel Baseline</span>
-                  <span>100%</span>
+                  <span>{countPageView > 0 ? "100%" : "0%"}</span>
                 </div>
                 <div className="h-1.5 w-full bg-blue-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 rounded-full w-full" />
+                  <div
+                    className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                    style={{ width: countPageView > 0 ? "100%" : "0%" }}
+                  />
                 </div>
               </div>
             </div>
 
             <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
-              <span className="font-semibold text-slate-600">EMQ: 6.1/10</span>
-              <span className="text-slate-400">Multiple</span>
+              <span className="font-semibold text-slate-600">
+                {countPageView > 0 ? "Signal Logged" : "Awaiting Traffic"}
+              </span>
+              <span className="text-slate-400">Browser + CAPI</span>
             </div>
           </div>
 
@@ -151,15 +166,25 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
                       label: "Events Manager → Test Events → ViewContent",
                       url: "https://eventsmanager.facebook.com",
                     }}
-                    businessImpact="Powers Advantage+ Catalog Ads: Meta automatically re-engages shoppers on Facebook/Instagram showing the exact sarees or jewelry they browsed."
+                    businessImpact="Powers Advantage+ Catalog Ads: Meta automatically re-engages shoppers on Facebook/Instagram showing the exact products they browsed."
                     actionableTip="Ensure content_ids sent match the product IDs in your /api/meta/catalog RSS feed."
                     align="left"
                     iconSize="xs"
                   />
                 </div>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/80 text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Active
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    countViewContent > 0
+                      ? "bg-emerald-100/80 text-emerald-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      countViewContent > 0 ? "bg-emerald-600 animate-pulse" : "bg-slate-400"
+                    }`}
+                  />
+                  {countViewContent > 0 ? "Active" : "No signals"}
                 </span>
               </div>
 
@@ -186,7 +211,9 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
             </div>
 
             <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
-              <span className="font-semibold text-slate-600">EMQ: 6.1/10</span>
+              <span className="font-semibold text-slate-600">
+                {countViewContent > 0 ? "Signal Logged" : "Awaiting Traffic"}
+              </span>
               <span className="text-purple-700 font-semibold">DPA Signal</span>
             </div>
           </div>
@@ -211,9 +238,19 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
                     iconSize="xs"
                   />
                 </div>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/80 text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Active
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    countAddToCart > 0
+                      ? "bg-emerald-100/80 text-emerald-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      countAddToCart > 0 ? "bg-emerald-600 animate-pulse" : "bg-slate-400"
+                    }`}
+                  />
+                  {countAddToCart > 0 ? "Active" : "No signals"}
                 </span>
               </div>
 
@@ -240,8 +277,10 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
             </div>
 
             <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
-              <span className="font-semibold text-slate-600">EMQ: 4.4/10</span>
-              <span className="text-slate-400">Multiple</span>
+              <span className="font-semibold text-slate-600">
+                {countAddToCart > 0 ? "Signal Logged" : "Awaiting Traffic"}
+              </span>
+              <span className="text-slate-400">Browser + CAPI</span>
             </div>
           </div>
 
@@ -265,9 +304,19 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
                     iconSize="xs"
                   />
                 </div>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/80 text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Active
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    countInitiateCheckout > 0
+                      ? "bg-emerald-100/80 text-emerald-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      countInitiateCheckout > 0 ? "bg-emerald-600 animate-pulse" : "bg-slate-400"
+                    }`}
+                  />
+                  {countInitiateCheckout > 0 ? "Active" : "No signals"}
                 </span>
               </div>
 
@@ -294,8 +343,10 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
             </div>
 
             <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
-              <span className="font-semibold text-slate-600">EMQ: 6.7/10</span>
-              <span className="text-slate-400">Multiple</span>
+              <span className="font-semibold text-slate-600">
+                {countInitiateCheckout > 0 ? "Signal Logged" : "Awaiting Traffic"}
+              </span>
+              <span className="text-slate-400">Browser + CAPI</span>
             </div>
           </div>
 
@@ -319,9 +370,19 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
                     iconSize="xs"
                   />
                 </div>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100/80 text-emerald-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                  Active
+                <span
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    countPurchase > 0
+                      ? "bg-emerald-100/80 text-emerald-800"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      countPurchase > 0 ? "bg-emerald-600 animate-pulse" : "bg-slate-400"
+                    }`}
+                  />
+                  {countPurchase > 0 ? "Active" : "No signals"}
                 </span>
               </div>
 
@@ -348,8 +409,12 @@ export function MetaFunnelTelemetry({ overview }: MetaFunnelTelemetryProps) {
             </div>
 
             <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[10.5px]">
-              <span className="font-semibold text-slate-600">EMQ: 7.3/10</span>
-              <span className="text-emerald-700 font-bold">2 ad sets</span>
+              <span className="font-semibold text-slate-600">
+                {countPurchase > 0 ? "Verified CAPI" : "Awaiting Orders"}
+              </span>
+              <span className="text-emerald-700 font-bold">
+                {countPurchase > 0 ? "Server + Browser" : "—"}
+              </span>
             </div>
           </div>
         </div>

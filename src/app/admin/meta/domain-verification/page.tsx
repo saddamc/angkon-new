@@ -267,7 +267,7 @@ export default function MetaDomainVerificationPage() {
         : `Record Meta Business Manager Ownership for ${selectedDomain}`,
       description: isRevoke
         ? "Revoking Meta ownership will drop this domain into PENDING or DNS_DETECTED state, which may impact iOS 14.5+ Aggregated Event Measurement campaign optimization."
-        : `Record that ${selectedDomain} has been successfully verified inside Meta Business Manager under portfolio Plain Stitch (ID: 1068222718624963).`,
+        : `Record that ${selectedDomain} has been successfully verified inside Meta Business Manager under portfolio ANGKON${checkResult?.portfolio?.id ? ` (ID: ${checkResult.portfolio.id})` : ""}.`,
       onConfirm: async () => {
         setConfirmingOwnership(true);
         try {
@@ -456,7 +456,7 @@ export default function MetaDomainVerificationPage() {
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                 <Shield className="h-3 w-3 text-slate-500" />
-                <span>Portfolio: Plain Stitch (1068222718624963)</span>
+                <span>Portfolio: {checkResult?.portfolio?.name || "ANGKON"}{checkResult?.portfolio?.id ? ` (${checkResult.portfolio.id})` : ""}</span>
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                 <Layers className="h-3 w-3 text-blue-600" />
@@ -608,16 +608,18 @@ export default function MetaDomainVerificationPage() {
           </div>
           <div>
             <div className="text-sm font-bold text-slate-900 flex items-center justify-between">
-              <span>{checkResult?.portfolio?.name || "Plain Stitch"}</span>
-              <button
-                type="button"
-                onClick={() => copyText(checkResult?.portfolio?.id || "1068222718624963", setCopiedPortfolioId)}
-                className="text-[10px] text-slate-400 hover:text-slate-700 font-mono inline-flex items-center gap-1 cursor-pointer"
-                title="Copy Business ID"
-              >
-                {copiedPortfolioId ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                <span>{checkResult?.portfolio?.id || "1068222718624963"}</span>
-              </button>
+              <span>{checkResult?.portfolio?.name || "ANGKON"}</span>
+              {checkResult?.portfolio?.id && (
+                <button
+                  type="button"
+                  onClick={() => copyText(checkResult.portfolio!.id, setCopiedPortfolioId)}
+                  className="text-[10px] text-slate-400 hover:text-slate-700 font-mono inline-flex items-center gap-1 cursor-pointer"
+                  title="Copy Business ID"
+                >
+                  {copiedPortfolioId ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                  <span>{checkResult.portfolio.id}</span>
+                </button>
+              )}
             </div>
             <div className="text-[11px] text-slate-500 mt-1">Verified Business Asset Holder</div>
           </div>
@@ -821,7 +823,7 @@ export default function MetaDomainVerificationPage() {
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-900">
-                  Portfolio: {checkResult?.portfolio?.name || "Plain Stitch"}
+                  Portfolio: {checkResult?.portfolio?.name || "ANGKON"}
                 </div>
                 <div className="text-xs text-slate-600 font-mono mt-0.5">
                   ID: {checkResult?.portfolio?.id || "1068222718624963"}

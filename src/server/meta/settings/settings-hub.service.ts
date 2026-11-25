@@ -73,9 +73,9 @@ export async function getAggregatedMetaSettings(tenantId: string) {
     bizDoc = await Settings.findOne({ key: "meta_business" }).lean();
   }
   const bizValue = (bizDoc?.value as Record<string, unknown>) || {};
-  const businessName = String(bizValue.businessName || "Plain Stitch Business Portfolio");
-  const businessId = String(bizValue.businessId || "1646756900434912");
-  const appId = String(bizValue.appId || "104938271649281");
+  const businessName = String(bizValue.businessName || "ANGKON");
+  const businessId = String(bizValue.businessId || process.env.META_BUSINESS_ID || "");
+  const appId = String(bizValue.appId || process.env.META_APP_ID || "");
   let rawAppSecret = String(bizValue.appSecret || process.env.META_APP_SECRET || "");
   if (rawAppSecret) {
     rawAppSecret = decryptTokenString(rawAppSecret);
@@ -105,8 +105,8 @@ export async function getAggregatedMetaSettings(tenantId: string) {
       status: generalStatus,
     },
     dataset: {
-      datasetId: pixelSettings.pixelId || "1304551066085265",
-      pixelId: pixelSettings.pixelId || "1304551066085265",
+      datasetId: pixelSettings.pixelId || "",
+      pixelId: pixelSettings.pixelId || "",
       testEventCode: pixelSettings.testEventCode || "",
       enabled: pixelSettings.enabled,
       trackPageView: pixelSettings.trackPageView,
@@ -117,8 +117,8 @@ export async function getAggregatedMetaSettings(tenantId: string) {
       status: pixelSettings.enabled && pixelSettings.pixelId ? "Verified" : "Configured",
     },
     ads: {
-      adAccountId: marketingPublic.adAccountId || "act_1646756900434912",
-      accountName: marketingFull?.accountName || "Plain Stitch",
+      adAccountId: marketingPublic.adAccountId || "",
+      accountName: marketingFull?.accountName || "ANGKON",
       accountCurrency: marketingFull?.accountCurrency || "BDT",
       accountTimezone: marketingFull?.accountTimezoneName || "Asia/Dhaka",
       hasMarketingToken: marketingPublic.hasAccessToken,
@@ -145,7 +145,7 @@ export async function getAggregatedMetaSettings(tenantId: string) {
       status: pixelSettings.capiAccessToken && pixelSettings.enabled ? "Connected" : "Configured",
     },
     catalog: {
-      catalogId: catalogSettings?.catalogId || "1112170671558899",
+      catalogId: catalogSettings?.catalogId || "",
       feedUrl: `https://${CANONICAL_ROOT_DOMAIN}/api/meta/catalog-feed`,
       hasCatalogApiToken: Boolean(catalogSettings?.catalogApiToken),
       maskedCatalogApiToken: maskSecret(catalogSettings?.catalogApiToken || ""),

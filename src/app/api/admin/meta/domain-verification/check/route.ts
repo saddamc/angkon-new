@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const rawToken = activeDomainDoc.verificationToken || "";
     const maskedToken = rawToken
       ? `${rawToken.slice(0, 10)}${"•".repeat(Math.max(0, rawToken.length - 10))}`
-      : "c82us1ogm8••••••••••••••••••••";
+      : "Not configured";
 
     const lastCheckTime = activeDomainDoc.lastCheckedAt
       ? new Date(activeDomainDoc.lastCheckedAt).getTime()

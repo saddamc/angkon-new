@@ -33,6 +33,7 @@ export interface MetaOverviewState {
   activeMetrics: Record<string, boolean>;
   analyticsPeriod: AnalyticsPeriod;
   analyticsLoading: boolean;
+  analyticsError: string | null;
   lastUpdated: string;
   copiedDatasetId: boolean;
   pixelId: string;
@@ -54,6 +55,7 @@ export interface MetaOverviewState {
   handleToggleMetric: (id: string, nextChecked: boolean) => void;
   setAnalyticsPeriod: (period: AnalyticsPeriod) => void;
   fetchData: () => Promise<void>;
+  retryAnalytics: () => Promise<void>;
   handleExportCsv: () => void;
   copyDatasetId: () => void;
 }

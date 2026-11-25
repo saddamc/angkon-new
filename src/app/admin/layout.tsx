@@ -381,6 +381,12 @@ export default function AdminLayout({
     } else if (pathname.startsWith("/admin/meta/domain-verification")) {
       pageTitle = "Meta Domain Verification";
       PageIcon = Activity;
+    } else if (pathname.startsWith("/admin/meta/backup")) {
+      pageTitle = "Meta Backup & Restore";
+      PageIcon = Activity;
+    } else if (pathname.startsWith("/admin/meta/settings")) {
+      pageTitle = "Meta Suite Settings";
+      PageIcon = Settings;
     } else {
       pageTitle = "Meta Marketing Overview";
       PageIcon = Activity;

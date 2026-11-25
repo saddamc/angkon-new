@@ -5,6 +5,9 @@ import {
 } from "@/models/MetaCatalogConfig";
 import { callMetaGraphApi, MetaGraphApiError } from "@/lib/integrations/meta/client";
 import { getOrInitCatalogConfig } from "./meta-catalog-connection";
+import { getMetaCatalogSettings } from "./meta-catalog";
+import { getMetaMarketingSettings } from "../marketing/meta-marketing-settings";
+import { getPixelSettings } from "../pixel/pixel-settings";
 import { DEFAULT_TENANT_ID } from "@/server/auth/tenant";
 
 export interface MetaUploadBatchSession {
@@ -55,7 +58,22 @@ export async function checkFeedImportStatus(options: {
 
   const config = await getOrInitCatalogConfig(tenantId);
   const feedId = config.productFeedId?.trim();
-  const token = config.getDecryptedToken();
+  let token = config.getDecryptedToken();
+
+  if (!token) {
+    const [catalogSettings, marketingSettings, pixelSettings] = await Promise.all([
+      getMetaCatalogSettings(tenantId).catch(() => null),
+      getMetaMarketingSettings(tenantId).catch(() => null),
+      getPixelSettings(tenantId).catch(() => null),
+    ]);
+    token =
+      catalogSettings?.catalogApiToken?.trim() ||
+      marketingSettings?.accessToken?.trim() ||
+      pixelSettings?.capiAccessToken?.trim() ||
+      process.env.META_CATALOG_API_TOKEN?.trim() ||
+      process.env.META_ACCESS_TOKEN?.trim() ||
+      "";
+  }
 
   if (!feedId) {
     return {

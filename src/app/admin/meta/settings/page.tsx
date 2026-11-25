@@ -942,7 +942,7 @@ function CentralizedMetaSettingsContent() {
             },
             {
               label: "Verified account",
-              value: `${data?.ads.accountName || "Plain Stitch"} · ${data?.ads.accountCurrency || "BDT"} · ${data?.ads.accountTimezone || "Asia/Dhaka"}`,
+              value: `${data?.ads.accountName || "ANGKON"} · ${data?.ads.accountCurrency || "BDT"} · ${data?.ads.accountTimezone || "Asia/Dhaka"}`,
               isSet: Boolean(data?.ads.accountName),
               readOnly: true,
               auto: true,
@@ -989,7 +989,7 @@ function CentralizedMetaSettingsContent() {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <span className="block text-[10px] font-bold uppercase text-slate-400">Ad Account Resource Path</span>
-                      <span className="font-mono text-xs text-slate-800">/v22.0/{adAccountId || "act_1646756900434912"}</span>
+                      <span className="font-mono text-xs text-slate-800">/v22.0/{adAccountId || "<ad-account-id>"}</span>
                       <div className="text-[11px] text-slate-500">Insights, campaign objects, and conversion attribution query endpoint.</div>
                     </div>
                     <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -1046,7 +1046,7 @@ function CentralizedMetaSettingsContent() {
         <MetaSettingsSection
           index={4}
           title="Conversions API (CAPI)"
-          description="Server-side telemetry token (configured in .env file — locked in read-only mode), Graph API version, and delivery channel."
+          description="Server-side telemetry token (AES-256-GCM encrypted in MongoDB with .env fallback), Graph API version, and delivery channel."
           icon={<Server className="h-5 w-5" />}
           accent="bg-blue-50 text-blue-600 border-blue-200/60"
           status={data ? renderStatusBadge(data.capi.status) : null}
@@ -1060,7 +1060,7 @@ function CentralizedMetaSettingsContent() {
             <div className="flex items-center gap-2 text-xs font-medium text-amber-900">
               <Lock className="h-3.5 w-3.5 text-amber-600 shrink-0" />
               <span>
-                Conversions API Dataset Token is managed in the <strong>.env file</strong> (zero DB query overhead). Token replacement is locked in the UI for security.
+                Conversions API Dataset Token is managed via <code className="font-mono">META_CAPI_ACCESS_TOKEN</code> in <strong>.env</strong> (read-only in UI for security).
               </span>
             </div>
           }
@@ -1071,9 +1071,9 @@ function CentralizedMetaSettingsContent() {
           rows={[
             {
               label: "Conversions API Dataset Token",
-              value: data?.capi.maskedCapiToken || "EAAT••••••••••••",
-              isSet: true,
-              secret: true,
+              value: data?.capi.maskedCapiToken || "Not configured",
+              isSet: Boolean(data?.capi.hasCapiToken),
+              secret: Boolean(data?.capi.hasCapiToken),
               locked: true,
               lockReason: "Active in .env via META_CAPI_ACCESS_TOKEN — locked in read-only mode",
             },
@@ -1167,9 +1167,10 @@ function CentralizedMetaSettingsContent() {
           rows={[
             {
               label: "Catalog Dataset ID",
-              value: catalogId || "1112170671558899",
+              value: catalogId || "Not configured",
               isSet: Boolean(catalogId),
               mono: true,
+              actionLabel: catalogId ? "Replace" : "Configure",
               onAction: () => setIsCatalogIdModalOpen(true),
             },
             {
@@ -1300,10 +1301,10 @@ function CentralizedMetaSettingsContent() {
               label: "Meta verification token",
               value: domainToken
                 ? `${domainToken.slice(0, 10)}${"•".repeat(16)}`
-                : "c82us1ogm8••••••••••••••••••••",
+                : "Not configured",
               isSet: Boolean(domainToken),
-              secret: true,
-              actionLabel: "Replace",
+              secret: Boolean(domainToken),
+              actionLabel: domainToken ? "Replace" : "Configure",
               onAction: () => setIsConfigureDomainTokenModalOpen(true),
             },
             {
@@ -1371,7 +1372,7 @@ function CentralizedMetaSettingsContent() {
                     <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3">
                       <span className="block text-[10px] font-bold uppercase text-slate-400">Expected DNS TXT Record</span>
                       <span className="break-all font-mono text-xs text-slate-800">
-                        facebook-domain-verification={domainToken || "c82us1ogm8zgy1u7zn8v7dcvzpt1a2"}
+                        facebook-domain-verification={domainToken || "<your-meta-verification-token>"}
                       </span>
                       <div className="text-[11px] text-slate-500">Host: @ • TTL: Automatic / 300s on Namecheap DNS.</div>
                     </div>
@@ -1564,7 +1565,7 @@ function CentralizedMetaSettingsContent() {
               auto: true,
             },
             {
-              label: "Vercel production cron",
+              label: "Production cron schedule",
               value: "0 0 * * * (/api/cron/meta-sync - daily)",
               isSet: true,
               mono: true,

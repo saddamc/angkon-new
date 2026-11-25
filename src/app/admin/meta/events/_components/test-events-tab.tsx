@@ -28,7 +28,7 @@ interface TestEventsTabProps {
 
 const FUNNEL_SIMULATION_EVENTS = [
   { name: "PageView", desc: "Test visitor page load", icon: Globe },
-  { name: "ViewContent", desc: "Test saree product view", icon: Eye },
+  { name: "ViewContent", desc: "Test product detail view", icon: Eye },
   { name: "AddToCart", desc: "Test cart addition event", icon: ShoppingCart },
   { name: "InitiateCheckout", desc: "Test checkout drawer opening", icon: CreditCard },
   { name: "Purchase", desc: "Test confirmed sale event", icon: ShoppingBag },

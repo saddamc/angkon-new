@@ -314,7 +314,7 @@ export function getDatabaseDiagnostics() {
     runtime: {
       nodeVersion: process.version,
       runtime: process.env.NEXT_RUNTIME || "nodejs",
-      vercelEnv: process.env.VERCEL_ENV || "development",
+      vercelEnv: process.env.VERCEL_ENV || getAppEnvironment(),
       vercelRegion: process.env.VERCEL_REGION || "local",
       isVercel: Boolean(process.env.VERCEL),
       uptimeSeconds: Math.floor(process.uptime()),

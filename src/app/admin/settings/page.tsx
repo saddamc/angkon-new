@@ -24,7 +24,7 @@ import { ShippingSettings } from "./shipping-settings";
 import { CheckoutSettings } from "./checkout-settings";
 import { CourierSettings } from "./courier-settings";
 
-const STORE_URL = "https://angkon.net";
+const STORE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://angkon.net";
 
 const inputClass =
   "w-full rounded-xl border border-stone-200 bg-stone-50 pl-10 pr-4 py-2.5 text-[13px] text-stone-600 cursor-not-allowed";
@@ -97,17 +97,13 @@ export default function AdminSettingsPage() {
   const orderEmailText = !mail ? "Loading…" : mail.orderEmails.length ? mail.orderEmails.join(", ") : "Not configured — set ADMIN_EMAIL";
   const alertTargets = mail?.orderEmails.length ? mail.orderEmails.join(", ") : "the configured order email";
 
-  const isDevMode =
-    process.env.NODE_ENV !== "production" ||
-    process.env.NEXT_PUBLIC_ENABLE_META_ROUTES === "true";
-
   const tabs = [
     { key: "general", label: "General", icon: Store },
     { key: "notifications", label: "Notifications", icon: Bell },
     { key: "shipping", label: "Shipping", icon: Truck },
     ...(isSuperAdmin ? [{ key: "courier", label: "Courier & Dispatch", icon: Truck }] : []),
     ...(isSuperAdmin ? [{ key: "checkout", label: "Payments & Checkout", icon: ShoppingCart }] : []),
-    ...(isDevMode ? [{ key: "pixel", label: "Meta Pixel", icon: Activity }] : []),
+    { key: "pixel", label: "Meta Pixel & CAPI", icon: Activity },
     { key: "appearance", label: "Appearance", icon: Palette },
     { key: "security", label: "Security", icon: Shield },
   ];
@@ -212,31 +208,58 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {[
-                  { label: "Customer Confirmation Email", desc: "Instant branded receipt with order ID dispatched to customer via Resend", enabled: true },
-                  { label: "New Order Alert", desc: `Real-time dispatch to ${alertTargets} upon checkout`, enabled: Boolean(mail?.orderEmails.length) },
-                  { label: "Order Status Lifecycle Updates", desc: "Notify client upon order confirmation, dispatch, and delivery", enabled: true },
-                  { label: "Low Inventory Notification", desc: "Alert administrator when items drop below threshold", enabled: true },
+                  {
+                    label: "Customer Confirmation Email",
+                    desc: "Instant branded receipt with order ID dispatched to customer via Resend",
+                    enabled: Boolean(mail?.emailServiceConfigured),
+                    statusText: mail?.emailServiceConfigured ? "Active" : "Needs RESEND_API_KEY",
+                  },
+                  {
+                    label: "New Order Alert",
+                    desc: `Real-time dispatch to ${alertTargets} upon checkout`,
+                    enabled: Boolean(mail?.emailServiceConfigured && mail?.orderEmails.length),
+                    statusText:
+                      mail?.emailServiceConfigured && mail?.orderEmails.length
+                        ? "Active"
+                        : "Needs ADMIN_EMAIL",
+                  },
+                  {
+                    label: "Order Status Lifecycle Updates",
+                    desc: "Notify client upon order confirmation, dispatch, and delivery",
+                    enabled: Boolean(mail?.emailServiceConfigured),
+                    statusText: mail?.emailServiceConfigured ? "Active" : "Needs RESEND_API_KEY",
+                  },
+                  {
+                    label: "Low Inventory Notification",
+                    desc: "Alert administrator when items drop below threshold",
+                    enabled: Boolean(mail?.emailServiceConfigured),
+                    statusText: mail?.emailServiceConfigured ? "Active" : "Needs RESEND_API_KEY",
+                  },
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className="flex items-center justify-between p-4 rounded-xl border border-purple-100/60 bg-stone-50/50"
+                    className="flex items-center justify-between gap-3 p-4 rounded-xl border border-purple-100/60 bg-stone-50/50"
                   >
                     <div>
                       <p className="text-[13px] font-bold text-gray-800">{item.label}</p>
                       <p className="text-[11px] text-stone-500">{item.desc}</p>
                     </div>
-                    <div
-                      className={`w-11 h-6 rounded-full relative transition-colors ${item.enabled ? "bg-purple-600" : "bg-stone-300"}`}
-                      aria-hidden
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold shrink-0 ${
+                        item.enabled
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-amber-200 bg-amber-50 text-amber-800"
+                      }`}
                     >
                       <span
-                        className={`absolute top-[2px] h-5 w-5 rounded-full bg-white border border-stone-200 shadow-sm transition-all ${
-                          item.enabled ? "right-[2px]" : "left-[2px]"
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          item.enabled ? "bg-emerald-500" : "bg-amber-500"
                         }`}
                       />
-                    </div>
+                      {item.statusText}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -276,18 +299,18 @@ export default function AdminSettingsPage() {
 
           {activeTab === "pixel" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-stone-100">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-stone-100">
                 <div>
-                  <h2 className="text-lg font-bold text-gray-800 mb-1">Meta (Facebook) Pixel Integration</h2>
+                  <h2 className="text-lg font-bold text-gray-800 mb-1">Meta Pixel &amp; Conversions API</h2>
                   <p className="text-[13px] text-stone-500">
-                    Manage your store pixel dataset ID, view live tracked events, and test conversion telemetry
+                    Manage your dataset ID, encrypted CAPI tokens, event diagnostics, and live telemetry
                   </p>
                 </div>
                 <Link
-                  href="/admin/pixel"
+                  href="/admin/meta/settings"
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition"
                 >
-                  <span>Open Dedicated Pixel Suite</span>
+                  <span>Open Meta Suite Settings</span>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Link>
               </div>
@@ -295,21 +318,24 @@ export default function AdminSettingsPage() {
               <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-5 space-y-3">
                 <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
                   <Activity className="h-4 w-4 text-blue-600" />
-                  Full Telemetry Dashboard Available
+                  Centralized Meta Marketing Suite
                 </div>
                 <p className="text-xs text-blue-800 leading-relaxed">
-                  We have provided a dedicated administrative route at{" "}
-                  <Link href="/admin/pixel" className="underline font-bold text-blue-900 hover:text-blue-700">
-                    /admin/pixel
-                  </Link>{" "}
-                  featuring real-time event simulation, PageView/AddToCart/Purchase event diagnostics, and instant database updates.
+                  Pixel, Conversions API, Catalog Feed, and Domain Verification are managed centrally inside the Meta Marketing Suite with AES-256-GCM token encryption and live Graph API diagnostics.
                 </p>
-                <div className="pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <Link
-                    href="/admin/meta"
+                    href="/admin/meta/events"
                     className="inline-flex items-center gap-2 rounded-lg bg-white border border-blue-200 px-4 py-2 text-xs font-bold text-blue-700 shadow-xs hover:bg-blue-50 transition"
                   >
-                    <span>Open Meta Events Manager</span>
+                    <span>Open Events Manager</span>
+                    <span>→</span>
+                  </Link>
+                  <Link
+                    href="/admin/integrations"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white border border-stone-200 px-4 py-2 text-xs font-bold text-stone-700 shadow-xs hover:bg-stone-50 transition"
+                  >
+                    <span>View All Integrations</span>
                     <span>→</span>
                   </Link>
                 </div>
@@ -355,9 +381,26 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-purple-100/60 bg-stone-50/50 p-4 text-[13px] text-stone-700 leading-relaxed">
-                Credentials are systematically managed via <code className="bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded font-mono font-bold">ADMIN_USERNAME</code> and{" "}
-                <code className="bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded font-mono font-bold">ADMIN_PASSWORD</code> in your secure environment. HttpOnly cookies prevent XSS credential interception.
+              <div className="rounded-xl border border-purple-100/60 bg-stone-50/50 p-4 text-[13px] text-stone-700 leading-relaxed space-y-3">
+                <p>
+                  Admin accounts and role-based permissions are stored in MongoDB and secured with <code className="bg-purple-50 text-purple-700 border border-purple-100 px-1.5 py-0.5 rounded font-mono font-bold">HttpOnly</code> JWT session cookies.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href="/admin/profile"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-purple-200 bg-white px-3 py-1.5 text-xs font-bold text-purple-700 hover:bg-purple-50 transition"
+                  >
+                    Manage My Password &amp; Profile →
+                  </Link>
+                  {isSuperAdmin && (
+                    <Link
+                      href="/admin/users"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 hover:bg-stone-100 transition"
+                    >
+                      Manage Users &amp; Access →
+                    </Link>
+                  )}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-stone-100">

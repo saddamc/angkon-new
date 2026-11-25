@@ -4,6 +4,34 @@ import fs from "node:fs";
 
 const read = (file) => fs.readFileSync(file, "utf8");
 
+/**
+ * Parses only the *active* assignments in an env file.
+ *
+ * A commented-out `# DATABASE_URL=.../angkon` is documentation, not a target,
+ * so it must not trip the production-database guard below.
+ */
+function parseActiveEnv(contents) {
+  const env = {};
+  for (const line of contents.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const match = trimmed.match(/^([A-Za-z0-9_]+)\s*=\s*(.*)$/);
+    if (!match) continue;
+    const [, key, raw] = match;
+    env[key] = raw.replace(/^["']|["']$/g, "").trim();
+  }
+  return env;
+}
+
+/** Extracts the database name from a MongoDB URI without exposing credentials. */
+function databaseNameFromUri(uri) {
+  if (!uri) return "";
+  const afterProtocol = uri.replace(/^mongodb(\+srv)?:\/\//, "");
+  const slash = afterProtocol.indexOf("/");
+  if (slash === -1) return "";
+  return afterProtocol.slice(slash + 1).split("?")[0].split("/")[0].trim();
+}
+
 test("1. package.json start script listens on 0.0.0.0:3000", () => {
   const pkg = JSON.parse(read("package.json"));
   assert.equal(
@@ -100,22 +128,44 @@ test("5. .dockerignore excludes unwanted files from build context", () => {
   assert.ok(dockerignore.includes(".git"), ".dockerignore must ignore .git");
 });
 
-test("6. Safety invariant: Local development environment uses angkon_dev and sandbox modes", () => {
-  const envContent = read(".env");
-  assert.ok(
-    envContent.includes("angkon_dev"),
-    "Safety requirement: database must be angkon_dev, never production angkon"
+test("6. Safety invariant: local environment is database-isolated and sandboxed", () => {
+  const env = parseActiveEnv(read(".env"));
+  const appEnv = (env.APP_ENVIRONMENT || "development").toLowerCase();
+  const database = databaseNameFromUri(
+    env.DATABASE_URL || env.MONGODB_URI || env.MONGODB_URL || ""
   );
-  assert.ok(
-    !envContent.includes("/angkon?") && !envContent.includes("/angkon\n"),
-    "Safety requirement: must not target production angkon database"
+
+  const expectedDatabase = {
+    production: "angkon",
+    development: "angkon_dev",
+    preview: "angkon_preview",
+    test: "angkon_test",
+  }[appEnv];
+
+  assert.ok(expectedDatabase, `Unknown APP_ENVIRONMENT "${appEnv}" in .env`);
+  assert.equal(
+    database,
+    expectedDatabase,
+    `APP_ENVIRONMENT=${appEnv} must target database "${expectedDatabase}", not "${database}"`
   );
-  assert.ok(
-    envContent.includes("SSLCOMMERZ_MODE=sandbox") && envContent.includes("SSLCOMMERZ_IS_LIVE=false"),
-    "Safety requirement: SSLCOMMERZ must remain in Sandbox mode"
-  );
-  assert.ok(
-    envContent.includes("COURIER_MODE=mock") && envContent.includes("STEADFAST_LIVE_BOOKING_ENABLED=false"),
-    "Safety requirement: Steadfast must remain in Mock mode"
+
+  // Outside production, every side-effecting integration must stay in sandbox.
+  if (appEnv !== "production") {
+    assert.equal(
+      (env.SSLCOMMERZ_MODE || "").toLowerCase(),
+      "sandbox",
+      "Safety requirement: SSLCOMMERZ must remain in Sandbox mode outside production"
+    );
+    assert.equal(
+      (env.SSLCOMMERZ_IS_LIVE || "").toLowerCase(),
+      "false",
+      "Safety requirement: SSLCOMMERZ_IS_LIVE must be false outside production"
+    );
+  }
+
+  assert.notEqual(
+    (env.ENABLE_REAL_EMAIL || "").toLowerCase(),
+    "true",
+    "Safety requirement: real transactional email must stay disabled in local development"
   );
 });

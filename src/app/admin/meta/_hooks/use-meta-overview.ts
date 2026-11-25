@@ -26,7 +26,8 @@ export function useMetaOverview(): MetaOverviewState {
   });
 
   const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>("30d");
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>("");
 
   useEffect(() => {
@@ -111,15 +112,50 @@ export function useMetaOverview(): MetaOverviewState {
     document.body.removeChild(link);
   };
 
+  const fetchAnalytics = useCallback(async (period: AnalyticsPeriod) => {
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const [aRes, tsRes] = await Promise.allSettled([
+        fetch(`/api/admin/meta/analytics?period=${period}`, { credentials: "include" }),
+        fetch(`/api/admin/meta/analytics/timeseries?period=${period}`, { credentials: "include" }),
+      ]);
+
+      let failed = false;
+      if (aRes.status === "fulfilled" && aRes.value.ok) {
+        const a = (await aRes.value.json()) as MetaAnalyticsData;
+        setAnalyticsData(a);
+      } else {
+        failed = true;
+      }
+
+      if (tsRes.status === "fulfilled" && tsRes.value.ok) {
+        const ts = (await tsRes.value.json()) as { series?: PerformanceDataPoint[] };
+        setTimeseries(ts.series ?? []);
+      } else {
+        failed = true;
+      }
+
+      if (failed) {
+        setAnalyticsError("Could not load some store analytics metrics.");
+      }
+    } catch {
+      setAnalyticsError("Failed to reach analytics service.");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       setRefreshing(true);
       const [sRes, eRes, cRes, dRes, mRes] = await Promise.allSettled([
-        fetch("/api/admin/settings/pixel"),
-        fetch("/api/admin/pixel/events"),
-        fetch("/api/meta/catalog?format=json"),
-        fetch("/api/admin/meta/domain-verification/check"),
-        fetch("/api/admin/meta/ads/account"),
+        fetch("/api/admin/settings/pixel", { credentials: "include" }),
+        fetch("/api/admin/pixel/events", { credentials: "include" }),
+        fetch("/api/meta/catalog?format=json", { credentials: "include" }),
+        fetch("/api/admin/meta/domain-verification/check", { credentials: "include" }),
+        fetch("/api/admin/meta/ads/account", { credentials: "include" }),
+        fetchAnalytics(analyticsPeriod),
       ]);
 
       if (sRes.status === "fulfilled" && sRes.value.ok) {
@@ -148,40 +184,41 @@ export function useMetaOverview(): MetaOverviewState {
       setRefreshing(false);
       setLastUpdated(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
     }
-  }, []);
+  }, [analyticsPeriod, fetchAnalytics]);
 
   useEffect(() => {
     let ignore = false;
-    Promise.allSettled([
-      fetch("/api/admin/settings/pixel"),
-      fetch("/api/admin/pixel/events"),
-      fetch("/api/meta/catalog?format=json"),
-      fetch("/api/admin/meta/domain-verification/check"),
-      fetch("/api/admin/meta/ads/account"),
-    ]).then(([sRes, eRes, cRes, dRes, mRes]) => {
+    async function loadInitialAssets() {
+      const [sRes, eRes, cRes, dRes, mRes] = await Promise.allSettled([
+        fetch("/api/admin/settings/pixel", { credentials: "include" }),
+        fetch("/api/admin/pixel/events", { credentials: "include" }),
+        fetch("/api/meta/catalog?format=json", { credentials: "include" }),
+        fetch("/api/admin/meta/domain-verification/check", { credentials: "include" }),
+        fetch("/api/admin/meta/ads/account", { credentials: "include" }),
+      ]);
       if (ignore) return;
       if (sRes.status === "fulfilled" && sRes.value.ok) {
-        void sRes.value.json().then((s) => !ignore && setSettings(s));
+        const s = await sRes.value.json();
+        if (!ignore) setSettings(s);
       }
       if (eRes.status === "fulfilled" && eRes.value.ok) {
-        void eRes.value.json().then((e) => !ignore && setStats(e.stats || {}));
+        const e = await eRes.value.json();
+        if (!ignore) setStats(e.stats || {});
       }
       if (cRes.status === "fulfilled" && cRes.value.ok) {
-        void cRes.value
-          .json()
-          .then((c) => !ignore && setCatalogCount(typeof c.total === "number" ? c.total : 0));
+        const c = await cRes.value.json();
+        if (!ignore) setCatalogCount(typeof c.total === "number" ? c.total : 0);
       }
       if (dRes.status === "fulfilled" && dRes.value.ok) {
-        void dRes.value
-          .json()
-          .then((d) => !ignore && setDomainVerified(Boolean(d.verified)));
+        const d = await dRes.value.json();
+        if (!ignore) setDomainVerified(Boolean(d.verified));
       }
       if (mRes.status === "fulfilled" && mRes.value.ok) {
-        void mRes.value
-          .json()
-          .then((m) => !ignore && m.settings && setMarketingSettings(m.settings));
+        const m = await mRes.value.json();
+        if (!ignore && m.settings) setMarketingSettings(m.settings);
       }
-    });
+    }
+    void loadInitialAssets();
 
     return () => {
       ignore = true;
@@ -190,31 +227,8 @@ export function useMetaOverview(): MetaOverviewState {
 
   // Analytics period-driven fetch
   useEffect(() => {
-    let ignore = false;
-    setAnalyticsLoading(true);
-    Promise.allSettled([
-      fetch(`/api/admin/meta/analytics?period=${analyticsPeriod}`),
-      fetch(`/api/admin/meta/analytics/timeseries?period=${analyticsPeriod}`),
-    ])
-      .then(([aRes, tsRes]) => {
-        if (ignore) return;
-        if (aRes.status === "fulfilled" && aRes.value.ok) {
-          void aRes.value.json().then((a) => !ignore && setAnalyticsData(a as MetaAnalyticsData));
-        }
-        if (tsRes.status === "fulfilled" && tsRes.value.ok) {
-          void tsRes.value.json().then(
-            (ts: { series?: PerformanceDataPoint[] }) =>
-              !ignore && setTimeseries(ts.series ?? [])
-          );
-        }
-      })
-      .finally(() => {
-        if (!ignore) setAnalyticsLoading(false);
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [analyticsPeriod]);
+    void fetchAnalytics(analyticsPeriod);
+  }, [analyticsPeriod, fetchAnalytics]);
 
   const copyDatasetId = () => {
     const id = settings?.pixelId ?? "";
@@ -228,18 +242,23 @@ export function useMetaOverview(): MetaOverviewState {
   const pixelId = settings?.pixelId ?? "";
   const isPixelEnabled = Boolean(pixelId && settings?.enabled);
   const isCapiActive = Boolean(settings?.hasCapiAccessToken);
-  const isAdsActive = Boolean(
-    settings?.hasMarketingApiAccessToken ||
-      marketingSettings?.hasAccessToken ||
-      marketingSettings?.adAccountId
+  const hasRealAdAccount = Boolean(
+    marketingSettings?.adAccountId &&
+      !marketingSettings.adAccountId.toLowerCase().includes("mock")
   );
+  const hasMarketingToken = Boolean(
+    settings?.hasMarketingApiAccessToken || marketingSettings?.hasAccessToken
+  );
+
+  const isAdsActive = Boolean(hasMarketingToken && hasRealAdAccount);
 
   const isMarketingConnected =
     marketingSettings?.status === "connected" ||
     Boolean(
-      marketingSettings?.adAccountId &&
-        marketingSettings.status !== "rate_limited" &&
-        marketingSettings.status !== "token_expired"
+      hasMarketingToken &&
+        hasRealAdAccount &&
+        marketingSettings?.status !== "rate_limited" &&
+        marketingSettings?.status !== "token_expired"
     );
 
   const pixelStatus = settings?.statuses?.browserPixel;
@@ -258,6 +277,7 @@ export function useMetaOverview(): MetaOverviewState {
     activeMetrics,
     analyticsPeriod,
     analyticsLoading,
+    analyticsError,
     lastUpdated,
     copiedDatasetId,
     pixelId,
@@ -279,6 +299,7 @@ export function useMetaOverview(): MetaOverviewState {
     handleToggleMetric,
     setAnalyticsPeriod,
     fetchData,
+    retryAnalytics: () => fetchAnalytics(analyticsPeriod),
     handleExportCsv,
     copyDatasetId,
   };

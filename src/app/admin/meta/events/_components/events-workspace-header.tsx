@@ -236,10 +236,10 @@ export function EventsWorkspaceHeader({
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           {/* Business Account Pill */}
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium text-slate-700 shadow-2xs">
-            <span className="h-5 w-5 rounded-md bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-[11px]">
-              P
+            <span className="h-5 w-5 rounded-md bg-purple-100 text-purple-800 font-bold flex items-center justify-center text-[11px]">
+              A
             </span>
-            <span className="font-semibold text-slate-900">Plain Stitch</span>
+            <span className="font-semibold text-slate-900">ANGKON</span>
           </div>
 
           {/* Date Range Selector Dropdown */}

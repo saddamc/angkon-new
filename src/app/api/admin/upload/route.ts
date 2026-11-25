@@ -103,12 +103,27 @@ export async function POST(request: NextRequest) {
     }
 
     const filename = (file as File).name ?? "upload.jpg";
+    const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { error: "Image exceeds 15 MB maximum size." },
+        { status: 413 }
+      );
+    }
+
+    const isSvg = file.type === "image/svg+xml" || filename.toLowerCase().endsWith(".svg");
+    if (isSvg) {
+      return NextResponse.json(
+        { error: "SVG uploads are disabled for security. Please upload PNG, JPG, WebP, or GIF." },
+        { status: 400 }
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Category and product images are converted to WebP (preserve SVG vector and animated GIF)
-    const isSvg = file.type === "image/svg+xml" || filename.toLowerCase().endsWith(".svg");
+    // Category and product images are converted to WebP (preserve animated GIF)
     const isGif = file.type === "image/gif" || filename.toLowerCase().endsWith(".gif");
-    const shouldConvertToWebP = !isSvg && !isGif;
+    const shouldConvertToWebP = !isGif;
 
     let uploadBuffer = buffer;
     if (shouldConvertToWebP) {

@@ -9,7 +9,17 @@ interface MetaReconciliationTableProps {
 }
 
 export function MetaReconciliationTable({ overview }: MetaReconciliationTableProps) {
-  const { analyticsData, stats } = overview;
+  const { analyticsData, stats, isMarketingConnected } = overview;
+
+  const totalOrders = analyticsData?.orders.total ?? 0;
+  const completedOrders = analyticsData?.orders.completed ?? 0;
+  const grossRevenue = analyticsData?.revenue.total ?? 0;
+  const purchaseSignals = stats?.Purchase ?? 0;
+  const totalLast30d = stats?.last30d ?? 0;
+  const adSpendTotal = analyticsData?.adSpend?.total ?? 0;
+  const adSpendCurrency = analyticsData?.adSpend?.currency ?? "USD";
+  const adSpendBdt = analyticsData?.adSpend?.totalInBdt ?? 0;
+  const blendedRoas = analyticsData?.adSpend?.blendedRoas ?? 0;
 
   return (
     <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-3">
@@ -34,14 +44,42 @@ export function MetaReconciliationTable({ overview }: MetaReconciliationTablePro
         </div>
       </div>
 
-      {/* Audit Notice Explaining the 1 Store Order vs 46 Telemetry Signals */}
+      {/* Dynamic Audit Notice */}
       <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200/80 text-[11px] text-slate-700 leading-relaxed space-y-1">
         <div className="font-bold text-blue-900 flex items-center gap-1.5">
           <Info className="h-3.5 w-3.5 text-blue-600 shrink-0" />
           <span>Attribution &amp; Telemetry Signal Audit Notice</span>
         </div>
         <p>
-          Your store database confirms <strong>1 verified customer order</strong> (<code className="font-mono text-[10.5px] bg-white px-1.5 py-0.5 rounded border border-blue-200">ANG-887618-237</code>, gross cash ৳8,920 BDT) placed on Nov 2, 2026. The <strong>46 Purchase events</strong> logged in <code className="font-mono text-[10.5px] bg-white px-1.5 py-0.5 rounded border border-blue-200">metaeventlogs</code> represent client-side test simulator dispatches, silenced test runs, and browser checkouts during QA. Meta Ad Spend is billed in USD ($7.81 USD ≈ ৳937 BDT), producing an authentic First-Party Blended ROAS of <strong>9.52x</strong>.
+          Your store database confirms{" "}
+          <strong>
+            {totalOrders.toLocaleString()} {totalOrders === 1 ? "order" : "orders"}
+          </strong>{" "}
+          ({completedOrders.toLocaleString()} completed, gross revenue{" "}
+          <strong>৳{grossRevenue.toLocaleString("en-BD")} BDT</strong>) for the selected window.{" "}
+          <strong>{purchaseSignals.toLocaleString()} Purchase signals</strong> are logged in{" "}
+          <code className="font-mono text-[10.5px] bg-white px-1.5 py-0.5 rounded border border-blue-200">
+            metaeventlogs
+          </code>{" "}
+          ({totalLast30d.toLocaleString()} total events in the last 30 days).{" "}
+          {isMarketingConnected && adSpendTotal > 0 ? (
+            <>
+              Meta Ad Spend is{" "}
+              <strong>
+                {adSpendCurrency === "USD"
+                  ? `$${adSpendTotal.toFixed(2)} USD (≈ ৳${adSpendBdt.toLocaleString("en-BD")} BDT)`
+                  : `৳${adSpendTotal.toLocaleString("en-BD")} BDT`}
+              </strong>
+              , producing a First-Party Blended ROAS of{" "}
+              <strong>{blendedRoas > 0 ? `${blendedRoas.toFixed(2)}x` : "—"}</strong>.
+            </>
+          ) : (
+            <>
+              No active Meta Ad Spend is synced for this period (
+              {isMarketingConnected ? "৳0.00" : "Marketing API not connected"}), so all realized revenue is{" "}
+              <strong>100% Organic / Direct</strong>.
+            </>
+          )}
         </p>
       </div>
 
@@ -63,18 +101,20 @@ export function MetaReconciliationTable({ overview }: MetaReconciliationTablePro
                 <InfoPopover metricKey="purchase-signal-reconciliation" iconSize="xs" />
               </td>
               <td className="py-2.5 px-4 font-bold text-slate-900">
-                {analyticsData ? `${analyticsData.orders.total} order (ANG-887618-237)` : "—"}
+                {analyticsData
+                  ? `${totalOrders.toLocaleString()} ${totalOrders === 1 ? "order" : "orders"} (${completedOrders.toLocaleString()} completed)`
+                  : "—"}
               </td>
               <td className="py-2.5 px-4 text-slate-600">
-                {stats.Purchase ? `${stats.Purchase} telemetry signals` : "0 signals"}
+                {purchaseSignals > 0 ? `${purchaseSignals.toLocaleString()} telemetry signals` : "0 signals"}
               </td>
               <td className="py-2.5 px-4 text-slate-500">
-                {analyticsData && stats.Purchase !== undefined
-                  ? `${Math.abs(analyticsData.orders.total - (stats.Purchase || 0))} test signals`
+                {analyticsData
+                  ? `${Math.abs(totalOrders - purchaseSignals).toLocaleString()} delta`
                   : "—"}
               </td>
               <td className="py-2.5 pl-4 text-right font-sans font-medium text-emerald-700">
-                Verified Single Order
+                {totalOrders > 0 ? "Verified Store Orders" : "No Orders in Range"}
               </td>
             </tr>
             <tr>
@@ -83,11 +123,11 @@ export function MetaReconciliationTable({ overview }: MetaReconciliationTablePro
                 <InfoPopover metricKey="store-revenue" iconSize="xs" />
               </td>
               <td className="py-2.5 px-4 font-bold text-blue-700">
-                {analyticsData ? `৳${analyticsData.revenue.total.toLocaleString("en-BD")} BDT` : "—"}
+                {analyticsData ? `৳${grossRevenue.toLocaleString("en-BD")} BDT` : "—"}
               </td>
               <td className="py-2.5 px-4 text-slate-600">
-                {analyticsData?.adSpend && analyticsData.adSpend.total > 0
-                  ? `$${analyticsData.adSpend.total.toFixed(2)} USD Ad Spend`
+                {adSpendTotal > 0
+                  ? `$${adSpendTotal.toFixed(2)} ${adSpendCurrency} Ad Spend`
                   : "৳0.00"}
               </td>
               <td className="py-2.5 px-4 text-slate-500">First-Party Realized</td>
@@ -101,18 +141,20 @@ export function MetaReconciliationTable({ overview }: MetaReconciliationTablePro
                 <InfoPopover metricKey="meta-ad-spend" iconSize="xs" />
               </td>
               <td className="py-2.5 px-4 font-bold text-slate-800">
-                {analyticsData?.adSpend?.currency === "USD" && analyticsData.adSpend.totalInBdt
-                  ? `≈ ৳${analyticsData.adSpend.totalInBdt.toLocaleString()} BDT`
-                  : "—"}
+                {adSpendCurrency === "USD" && adSpendBdt > 0
+                  ? `≈ ৳${adSpendBdt.toLocaleString("en-BD")} BDT`
+                  : adSpendTotal > 0
+                  ? `৳${adSpendTotal.toLocaleString("en-BD")} BDT`
+                  : "৳0 BDT"}
               </td>
               <td className="py-2.5 px-4 text-amber-700 font-bold">
-                {analyticsData?.adSpend && analyticsData.adSpend.total > 0
-                  ? `$${analyticsData.adSpend.total.toFixed(2)} USD`
+                {adSpendTotal > 0
+                  ? `${adSpendCurrency === "USD" ? "$" : "৳"}${adSpendTotal.toFixed(2)} ${adSpendCurrency}`
                   : "$0.00 USD"}
               </td>
               <td className="py-2.5 px-4 text-slate-500">Rate: 1 USD ≈ 120 BDT</td>
               <td className="py-2.5 pl-4 text-right font-sans font-medium text-amber-700">
-                Dual-Currency Reconciled
+                {isMarketingConnected ? "Dual-Currency Reconciled" : "Awaiting Ad Account"}
               </td>
             </tr>
             <tr>
@@ -121,18 +163,20 @@ export function MetaReconciliationTable({ overview }: MetaReconciliationTablePro
                 <InfoPopover metricKey="blended-roas" iconSize="xs" />
               </td>
               <td className="py-2.5 px-4 font-bold text-emerald-700">
-                {analyticsData?.adSpend && analyticsData.adSpend.blendedRoas > 0
-                  ? `${analyticsData.adSpend.blendedRoas}x (First-Party MER)`
+                {blendedRoas > 0
+                  ? `${blendedRoas.toFixed(2)}x (First-Party MER)`
                   : "— (Organic)"}
               </td>
               <td className="py-2.5 px-4 text-slate-600">
-                {analyticsData?.adSpend && analyticsData.adSpend.blendedRoas > 0
-                  ? `${(analyticsData.adSpend.blendedRoas * 1.12).toFixed(2)}x (Claimed)`
+                {blendedRoas > 0
+                  ? `${(blendedRoas * 1.12).toFixed(2)}x (Claimed)`
                   : "—"}
               </td>
               <td className="py-2.5 px-4 text-slate-500">Multi-touch deduplicated</td>
               <td className="py-2.5 pl-4 text-right font-sans font-medium text-emerald-700">
-                9.52x Profitable Unit Economics
+                {blendedRoas > 0
+                  ? `${blendedRoas.toFixed(2)}x Blended ROAS`
+                  : "100% Organic Revenue"}
               </td>
             </tr>
           </tbody>

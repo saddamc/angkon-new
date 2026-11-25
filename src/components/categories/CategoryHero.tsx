@@ -24,8 +24,11 @@ export function CategoryHero({
         src={heroImage}
         alt={`${name} Banner`}
         fill
-        loading="eager"
-        fetchPriority="high"
+        // Category pages can render more than one hero during navigation. Do
+        // not emit a speculative preload for every category banner; the
+        // browser will request the visible image normally and avoids the
+        // "preloaded but not used" warning for women-banner.webp.
+        loading="lazy"
         sizes="(max-width: 1440px) 100vw, 1440px"
         className="object-cover object-[center_top] sm:object-center transition-transform duration-700 hover:scale-[1.01]"
       />

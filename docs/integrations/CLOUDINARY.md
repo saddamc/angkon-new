@@ -11,9 +11,9 @@ ANGKON uses **Cloudinary** for image and media asset management, including:
 ## 2. Environment Configuration
 
 ```bash
-CLOUDINARY_CLOUD_NAME="angkon_cloud_name"
-CLOUDINARY_API_KEY="angkon_api_key"
-CLOUDINARY_API_SECRET="angkon_api_secret"
+CLOUDINARY_CLOUD_NAME=<your-cloud-name>
+CLOUDINARY_API_KEY=<your-api-key>
+CLOUDINARY_API_SECRET=<your-api-secret>
 ```
 
 ---

@@ -98,7 +98,7 @@ async function run() {
   console.log("\n2. Customer Authentication Testing:");
 
   const testEmail = `qa-${Date.now()}@angkon.dev`;
-  const testPassword = "QaTesterPass@2026!";
+  const testPassword = process.env.QA_TEST_PASSWORD || `Qa-${crypto.randomBytes(8).toString("hex")}!1`;
 
   // 2.1 Customer Registration
   const regRes = await fetch(`${BASE_URL}/api/auth/register`, {
@@ -120,7 +120,7 @@ async function run() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email: testEmail,
-      password: "WrongPassword123!",
+      password: `${testPassword}_wrong`,
     }),
   });
   assertTest("Bad Password Rejection", badLoginRes.status === 401, "Returned HTTP 401 Unauthorized");

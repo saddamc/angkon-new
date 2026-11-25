@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useMounted } from "@/hooks/use-mounted";
@@ -11,6 +11,7 @@ import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/utils/price";
 import { getColorDisplayName } from "@/utils/color-swatches";
 import { useShippingQuote } from "@/hooks/use-shipping-quote";
+import { fetchLiveProductImageMap, STORED_IMAGE_FALLBACK } from "@/utils/live-product-images";
 
 interface Props {
   open: boolean;
@@ -21,10 +22,19 @@ export function CartDrawer({ open, onClose }: Props) {
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const syncItemImages = useCartStore((s) => s.syncItemImages);
   const itemCount = useCartStore((s) => s.itemCount());
   const subtotal = useCartStore((s) => s.subtotal());
 
   const mounted = useMounted();
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!open || items.length === 0) return;
+    fetchLiveProductImageMap().then((imageMap) => {
+      if (imageMap.size > 0) syncItemImages(imageMap);
+    });
+  }, [open, items.length, syncItemImages]);
 
   // Free-delivery goal comes from Admin → Settings → Shipping (0 = no free-delivery goal).
   const { quote } = useShippingQuote(items);
@@ -153,11 +163,16 @@ export function CartDrawer({ open, onClose }: Props) {
                     <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded bg-[#42070e] border border-[#E1B76F]/20">
                       {item.image && (
                         <Image
-                          src={item.image}
+                          src={brokenImages[item.image] ? STORED_IMAGE_FALLBACK : item.image}
                           alt={item.name}
                           fill
                           className="object-cover"
                           sizes="64px"
+                          onError={() =>
+                            setBrokenImages((prev) =>
+                              prev[item.image] ? prev : { ...prev, [item.image]: true }
+                            )
+                          }
                         />
                       )}
                     </div>

@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { CartItem } from "@/types/product";
+import { resolveStoredItemImages } from "@/utils/live-product-images";
 
 interface CartState {
   items: CartItem[];
@@ -12,6 +13,7 @@ interface CartState {
   addItem: (item: CartItem) => void;
   removeItem: (productId: number, size?: string, color?: string) => void;
   updateQuantity: (productId: number, size: string | undefined, quantity: number, color?: string) => void;
+  syncItemImages: (imageMap: Map<string, string>) => void;
   clearCart: () => void;
   itemCount: () => number;
   subtotal: () => number;
@@ -77,6 +79,11 @@ export const useCartStore = create<CartState>()(
               : item;
           }),
         }));
+      },
+      syncItemImages: (imageMap) => {
+        const current = get().items;
+        const { items, changed } = resolveStoredItemImages(current, imageMap);
+        if (changed) set({ items });
       },
       clearCart: () => set({ items: [] }),
       itemCount: () => get().items.reduce((sum, item) => sum + item.quantity, 0),

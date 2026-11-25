@@ -8,9 +8,11 @@ import { Search } from "lucide-react";
 import {
   DEFAULT_RECENTLY_VIEWED,
   getRecentlyViewed,
+  refreshRecentlyViewedImages,
   formatRecentlyViewedPrice,
   type RecentlyViewedProduct,
 } from "@/utils/recently-viewed";
+import { STORED_IMAGE_FALLBACK } from "@/utils/live-product-images";
 
 interface CategorySidebarProps {
   isMobile?: boolean;
@@ -20,9 +22,17 @@ export function CategorySidebar({ isMobile = false }: CategorySidebarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [recentItems, setRecentItems] = useState<RecentlyViewedProduct[]>(DEFAULT_RECENTLY_VIEWED);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    let active = true;
     setRecentItems(getRecentlyViewed());
+    refreshRecentlyViewedImages().then((updated) => {
+      if (active) setRecentItems(updated);
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -81,11 +91,16 @@ export function CategorySidebar({ isMobile = false }: CategorySidebarProps) {
                   className="relative w-14 h-14 sm:w-[60px] sm:h-[60px] flex-shrink-0 rounded-lg overflow-hidden bg-[#42070e] border border-[#E1B76F]/25"
                 >
                   <Image
-                    src={item.image}
+                    src={brokenImages[item.image] ? STORED_IMAGE_FALLBACK : item.image}
                     alt={item.name}
                     fill
                     sizes="60px"
                     className="object-cover transition-transform duration-200 group-hover:scale-105"
+                    onError={() =>
+                      setBrokenImages((prev) =>
+                        prev[item.image] ? prev : { ...prev, [item.image]: true }
+                      )
+                    }
                   />
                 </Link>
 

@@ -1,10 +1,31 @@
 import { NextResponse } from "next/server";
 import { Order, type IOrder } from "@/models/Order";
+import { Product } from "@/models/Product";
 import { Shipment } from "@/models/Shipment";
 import { User } from "@/models/User";
 import { getProviderConfigSummary } from "@/server/courier";
 import { computeOrderFinancials } from "@/server/orders/workflow";
 import { ONLINE_PAYMENT_METHODS } from "@/lib/payment-methods";
+
+export async function resolveLiveProductImageMap(
+  productIds: number[]
+): Promise<Map<number, string>> {
+  const uniqueIds = Array.from(
+    new Set(productIds.filter((id) => Number.isFinite(id) && id > 0))
+  );
+  const map = new Map<number, string>();
+  if (uniqueIds.length === 0) return map;
+
+  const productRows = await Product.find({ id: { $in: uniqueIds } })
+    .select("id images")
+    .lean();
+  for (const p of productRows) {
+    const firstImg =
+      Array.isArray(p.images) && p.images[0]?.src ? String(p.images[0].src).trim() : "";
+    if (firstImg) map.set(Number(p.id), firstImg);
+  }
+  return map;
+}
 
 export function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -583,6 +604,10 @@ export async function queryAdminOrders(params: AdminOrderQueryParams) {
     }
   }
 
+  const liveProductImageMap = await resolveLiveProductImageMap(
+    orders.flatMap((o) => (o.items || []).map((it) => Number(it.productId)))
+  );
+
   const formattedOrders = orders.map((o) => {
     const financials = computeOrderFinancials(o as unknown as IOrder);
     const shipment =
@@ -653,18 +678,22 @@ export async function queryAdminOrders(params: AdminOrderQueryParams) {
         address_1: o.customer?.address || "",
         city: o.customer?.district || o.customer?.city || "",
       },
-      line_items: (o.items || []).map((it) => ({
-        name: it.name,
-        price: it.price,
-        quantity: it.quantity,
-        size: it.size || "",
-        color: it.color || "",
-        image: it.image ? { src: it.image } : undefined,
-        meta_data: [
-          ...(it.size ? [{ key: "Size", value: it.size }] : []),
-          ...(it.color ? [{ key: "Color", value: it.color }] : []),
-        ],
-      })),
+      line_items: (o.items || []).map((it) => {
+        const liveSrc =
+          (it.productId ? liveProductImageMap.get(Number(it.productId)) : undefined) || it.image;
+        return {
+          name: it.name,
+          price: it.price,
+          quantity: it.quantity,
+          size: it.size || "",
+          color: it.color || "",
+          image: liveSrc ? { src: liveSrc } : undefined,
+          meta_data: [
+            ...(it.size ? [{ key: "Size", value: it.size }] : []),
+            ...(it.color ? [{ key: "Color", value: it.color }] : []),
+          ],
+        };
+      }),
       raw: o,
     };
   });

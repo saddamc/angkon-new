@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Pencil, Copy, Check, MoreVertical } from "lucide-react";
@@ -13,6 +13,11 @@ import type { AdminProductsHookReturn } from "../_hooks/use-admin-products";
 
 function ProductTableThumb({ src, name }: { src?: string; name: string }) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
   if (!src || failed) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-stone-100 text-[#530911] text-xs font-bold">

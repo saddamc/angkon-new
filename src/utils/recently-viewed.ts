@@ -1,3 +1,5 @@
+import { fetchLiveProductImageMap, resolveStoredItemImages } from "./live-product-images";
+
 export interface RecentlyViewedProduct {
   id: number | string;
   name: string;
@@ -61,4 +63,23 @@ export function getRecentlyViewed(): RecentlyViewedProduct[] {
   } catch {
     return DEFAULT_RECENTLY_VIEWED;
   }
+}
+
+/**
+ * Refreshes any stale product image URLs stored in localStorage against the live catalog.
+ */
+export async function refreshRecentlyViewedImages(): Promise<RecentlyViewedProduct[]> {
+  const current = getRecentlyViewed();
+  if (typeof window === "undefined" || current.length === 0) return current;
+
+  const imageMap = await fetchLiveProductImageMap();
+  const { items, changed } = resolveStoredItemImages(current, imageMap);
+  if (changed) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore storage quota / restricted context errors
+    }
+  }
+  return items;
 }

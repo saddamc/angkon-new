@@ -24,7 +24,8 @@ export function CategoryHero({
         src={heroImage}
         alt={`${name} Banner`}
         fill
-        priority
+        loading="eager"
+        fetchPriority="high"
         sizes="(max-width: 1440px) 100vw, 1440px"
         className="object-cover object-[center_top] sm:object-center transition-transform duration-700 hover:scale-[1.01]"
       />

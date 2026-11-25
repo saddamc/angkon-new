@@ -17,6 +17,7 @@ import {
   evaluateReopenOrderEligibility,
   getAllowedNextStatuses,
 } from "@/server/orders/workflow";
+import { resolveLiveProductImageMap } from "@/server/orders/services/order-query.service";
 
 export const dynamic = "force-dynamic";
 
@@ -469,10 +470,20 @@ export async function GET(
 
     timeline.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
+    const liveProductImageMap = await resolveLiveProductImageMap(
+      (order.items || []).map((it) => Number(it.productId))
+    );
+
     return NextResponse.json(
       {
         order: {
           ...order,
+          items: (order.items || []).map((it) => ({
+            ...it,
+            image:
+              (it.productId ? liveProductImageMap.get(Number(it.productId)) : undefined) ||
+              it.image,
+          })),
           id: order.orderNumber,
           number: order.orderNumber,
           status: order.orderStatus,

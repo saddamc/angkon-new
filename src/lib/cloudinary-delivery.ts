@@ -53,7 +53,9 @@ export function buildCloudinaryDeliveryUrl(
     // Standard res.cloudinary.com URLs require /<cloud_name>/image/upload/....
     let prefix = customDomain ? "" : sourcePrefix;
     if (!customDomain && !prefix) {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim();
+      const cloudName =
+        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() ||
+        process.env.CLOUDINARY_CLOUD_NAME?.trim();
       if (!cloudName) return normalized;
       prefix = `/${cloudName}`;
     }

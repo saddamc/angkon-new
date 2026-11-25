@@ -718,7 +718,7 @@ export function buildFeedProduct(
     process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN?.trim();
   for (const source of imageSources) {
     let resolvedSource = source;
-    if (customImageDomain && isCloudinaryUrl(resolvedSource, customImageDomain)) {
+    if (isCloudinaryUrl(resolvedSource, customImageDomain)) {
       resolvedSource = buildCloudinaryDeliveryUrl(resolvedSource, 1600, 85, customImageDomain);
     }
     const safe = validateAbsoluteUrl(resolvedSource, { allowLocalHttp });

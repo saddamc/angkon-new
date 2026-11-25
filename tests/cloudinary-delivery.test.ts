@@ -168,6 +168,24 @@ describe("Cloudinary delivery configuration & URL generation", () => {
       );
     });
 
+    it("reverts stored path-less images.nexcraftly.com URLs using NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", () => {
+      const prevCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      delete process.env.NEXT_PUBLIC_CLOUDINARY_DELIVERY_DOMAIN;
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = CLOUD_NAME;
+      try {
+        const storedLegacy =
+          "https://images.nexcraftly.com/image/upload/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp";
+        const result = imageLoader({ src: storedLegacy, width: 800 });
+        assert.equal(
+          result,
+          `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/f_auto,q_auto,dpr_auto,w_800,c_limit/v1795155578/ANGKON/CATEGORIES/ETHNIC_WEAR/GUZEL/file_xg0qnq.webp`
+        );
+      } finally {
+        if (prevCloudName === undefined) delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+        else process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = prevCloudName;
+      }
+    });
+
     it("routes non-Cloudinary remote images through wsrv.nl", () => {
       const wpImage = "https://netbazarbd.net/wp-content/uploads/2026/01/banner.png";
       const result = imageLoader({ src: wpImage, width: 400, quality: 80 });

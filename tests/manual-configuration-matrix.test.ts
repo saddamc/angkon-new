@@ -231,34 +231,13 @@ test("Permitted Combination 5: Production DB + Mock Courier (Decoupled mock cour
   }
 });
 
-test("Safety Rejection: Non-production connecting to 'angkon' is rejected without explicit authorization", () => {
+test("Manual DB Selection: Non-production connecting to 'angkon' runs with security warning", () => {
   const prodUri = "mongodb+srv://user:secret@cluster.mongodb.net/angkon?retryWrites=true";
-  const prevAllow = process.env.ALLOW_PRODUCTION_DB_ACCESS;
-
-  try {
-    delete process.env.ALLOW_PRODUCTION_DB_ACCESS;
-    const res = validateDatabaseConnection(prodUri, "development");
-    assert.equal(res.valid, false);
-    assert.match(res.error || "", /CRITICAL ISOLATION VIOLATION/);
-  } finally {
-    setEnv("ALLOW_PRODUCTION_DB_ACCESS", prevAllow);
-  }
-});
-
-test("Safety Bypass: Non-production connecting to 'angkon' with ALLOW_PRODUCTION_DB_ACCESS=true succeeds with warning", () => {
-  const prodUri = "mongodb+srv://user:secret@cluster.mongodb.net/angkon?retryWrites=true";
-  const prevAllow = process.env.ALLOW_PRODUCTION_DB_ACCESS;
-
-  try {
-    setEnv("ALLOW_PRODUCTION_DB_ACCESS", "true");
-    const res = validateDatabaseConnection(prodUri, "development");
-    assert.equal(res.valid, true);
-    assert.equal(res.actualDatabase, "angkon");
-    assert.equal(res.isProductionDatabase, true);
-    assert.ok(res.productionWarning?.includes("ALLOW_PRODUCTION_DB_ACCESS=true"));
-  } finally {
-    setEnv("ALLOW_PRODUCTION_DB_ACCESS", prevAllow);
-  }
+  const res = validateDatabaseConnection(prodUri, "development");
+  assert.equal(res.valid, true);
+  assert.equal(res.actualDatabase, "angkon");
+  assert.equal(res.isProductionDatabase, true);
+  assert.match(res.productionWarning || "", /ACTIVE DATABASE IS PRODUCTION: 'angkon'/);
 });
 
 test("Manual DB Selection: Production allows manually configured 'angkon_dev' via DATABASE_URL with notice", () => {

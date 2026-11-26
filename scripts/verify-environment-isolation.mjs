@@ -127,24 +127,24 @@ async function run() {
   // Check Development trying to connect to production
   const devCheck = validateDatabaseConnection(mockProdUri, "development");
   assertCheck(
-    "Production DB Access STRICTLY DENIED from Development",
-    !devCheck.valid && devCheck.error.includes("CRITICAL ISOLATION VIOLATION"),
+    "Development allows manual 'angkon' in DATABASE_URL with security warning",
+    devCheck.valid && devCheck.isProductionDatabase && Boolean(devCheck.productionWarning),
     devCheck.error
   );
 
   // Check Preview trying to connect to production
   const previewCheck = validateDatabaseConnection(mockProdUri, "preview");
   assertCheck(
-    "Production DB Access STRICTLY DENIED from Preview",
-    !previewCheck.valid && previewCheck.error.includes("CRITICAL ISOLATION VIOLATION"),
+    "Preview allows manual 'angkon' in DATABASE_URL with security warning",
+    previewCheck.valid && previewCheck.isProductionDatabase && Boolean(previewCheck.productionWarning),
     previewCheck.error
   );
 
   // Check Test trying to connect to production
   const testCheck = validateDatabaseConnection(mockProdUri, "test");
   assertCheck(
-    "Production DB Access STRICTLY DENIED from Test",
-    !testCheck.valid && testCheck.error.includes("CRITICAL ISOLATION VIOLATION"),
+    "Test allows manual 'angkon' in DATABASE_URL with security warning",
+    testCheck.valid && testCheck.isProductionDatabase && Boolean(testCheck.productionWarning),
     testCheck.error
   );
 

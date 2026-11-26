@@ -52,16 +52,18 @@ test("environment isolation: explicit APP_ENVIRONMENT and database mappings", as
   assert.equal(parsed.sanitizedUri.includes("pass"), false);
 });
 
-test("environment isolation: non-production connecting to production 'angkon' is strictly rejected", async () => {
+test("environment isolation: non-production connecting to 'angkon' succeeds with security warning and never leaks credentials", async () => {
   const { validateDatabaseConnection } = await import("../src/server/env/app-environment.ts");
 
   const prodUri = "mongodb+srv://user:secret@cluster0.sdaudkh.mongodb.net/angkon?retryWrites=true";
 
-  for (const env of ["development", "preview", "test"]) {
+  for (const env of ["development", "preview", "test"] as const) {
     const res = validateDatabaseConnection(prodUri, env);
-    assert.equal(res.valid, false);
-    assert.match(res.error || "", /CRITICAL ISOLATION VIOLATION/);
-    assert.equal((res.error || "").includes("secret"), false, "Credentials must never leak in error messages");
+    assert.equal(res.valid, true);
+    assert.equal(res.actualDatabase, "angkon");
+    assert.equal(res.isProductionDatabase, true);
+    assert.match(res.productionWarning || "", /ACTIVE DATABASE IS PRODUCTION/);
+    assert.equal((res.sanitizedHost || "").includes("secret"), false, "Credentials must never leak");
   }
 });
 

@@ -271,28 +271,13 @@ export function validateDatabaseConnection(
   const actualDatabase = parsed.databaseName;
   const isProductionDatabase = actualDatabase === "angkon";
 
-  // RULE 1: Non-production MUST NOT accidentally connect to production database "angkon"
-  // unless explicitly authorized via ALLOW_PRODUCTION_DB_ACCESS=true.
-  // Any other database name configured in DATABASE_URL is permitted directly.
-  const allowProdDbAccess = process.env.ALLOW_PRODUCTION_DB_ACCESS?.trim().toLowerCase() === "true";
-  if (env !== "production" && isProductionDatabase && !allowProdDbAccess) {
-    return {
-      valid: false,
-      environment: env,
-      expectedDatabase,
-      actualDatabase,
-      isProductionDatabase: true,
-      productionWarning: null,
-      sanitizedHost: parsed.host,
-      uri: rawUri,
-      error: `CRITICAL ISOLATION VIOLATION: Environment "${env}" is configured with production database "angkon". Non-production environments must not accidentally write to "angkon". To explicitly allow manual production DB access, set ALLOW_PRODUCTION_DB_ACCESS=true.`,
-    };
-  }
-
+  // Direct manual database selection: whatever valid database the operator
+  // configures in DATABASE_URL is honored in every environment without blocking.
+  // When 'angkon' is active, emit a prominent security warning banner.
   const productionWarning = isProductionDatabase
     ? env === "production"
       ? "⚠️ [SECURITY WARNING] ACTIVE DATABASE IS PRODUCTION: 'angkon'. Any modifications affect real production data!"
-      : `⚠️ [SECURITY WARNING] ACTIVE DATABASE IS PRODUCTION: 'angkon' running under non-production environment '${env}' with ALLOW_PRODUCTION_DB_ACCESS=true. Extreme caution advised!`
+      : `⚠️ [SECURITY WARNING] ACTIVE DATABASE IS PRODUCTION: 'angkon' running under '${env}' environment.`
     : env === "production"
       ? `⚠️ [NOTICE] Production environment is manually configured via DATABASE_URL to use '${actualDatabase}' instead of 'angkon'.`
       : null;

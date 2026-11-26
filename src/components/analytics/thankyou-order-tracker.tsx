@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { trackPurchase } from "@/lib/fpixel";
+import { useCartStore } from "@/store/cart-store";
 
 export function ThankYouOrderTracker() {
   const searchParams = useSearchParams();
@@ -36,6 +37,14 @@ export function ThankYouOrderTracker() {
       .then((data) => {
         if (!data || !data.verified || data.orderNumber !== orderNumber) {
           return;
+        }
+
+        // Clear cart and applied promo only once the server confirms the order is verified.
+        useCartStore.getState().clearCart();
+        try {
+          localStorage.removeItem("angkon_applied_promo");
+        } catch {
+          // ignore storage access errors
         }
 
         // Sandbox payments must not emit a real browser Purchase event.

@@ -8,10 +8,14 @@ const QUICK_ACTIONS = [
   { href: "/admin/reports", label: "Reports", icon: Banknote, sub: "Revenue & performance" },
 ];
 
-export function DashboardQuickActions() {
+export function DashboardQuickActions({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const visibleActions = isSuperAdmin
+    ? QUICK_ACTIONS
+    : QUICK_ACTIONS.filter((action) => action.href !== "/admin/couriers");
+
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-      {QUICK_ACTIONS.map((q) => {
+      {visibleActions.map((q) => {
         const Icon = q.icon;
         return (
           <Link

@@ -341,7 +341,12 @@ export default function AdminLayout({
   // Filter navigation by role (Meta Events Manager is strictly Super Admin only)
   const isSuperAdmin = adminUser?.role === "superadmin";
   const filteredNav = NAV.filter((item) => {
-    if (item.href === "/admin/meta" || item.href === "/admin/users") {
+    if (
+      item.href === "/admin/meta" ||
+      item.href === "/admin/users" ||
+      item.href === "/admin/integrations" ||
+      item.href === "/admin/couriers"
+    ) {
       return isSuperAdmin;
     }
     return true;

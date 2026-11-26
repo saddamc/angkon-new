@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ArrowUpRight, ShoppingCart } from "lucide-react";
 import { getDashboardData } from "./_lib/dashboard-data";
+import { verifyAdminToken } from "@/server/auth/admin-auth";
 import { RevenueDonutsSection } from "./_components/revenue-donut-card";
 import { DashboardKpiGrid } from "./_components/dashboard-kpi-grid";
 import { SalesChartCard } from "./_components/sales-chart-card";
@@ -20,9 +21,11 @@ function fmt(n: number) {
 
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
-  if (!cookieStore.get("nb_admin_token")?.value) {
+  const adminToken = cookieStore.get("nb_admin_token")?.value;
+  if (!adminToken) {
     redirect("/login");
   }
+  const adminAuth = await verifyAdminToken(adminToken);
 
   const data = await getDashboardData();
 
@@ -113,7 +116,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Bottom Quick Navigation */}
-      <DashboardQuickActions />
+      <DashboardQuickActions isSuperAdmin={adminAuth.valid && adminAuth.role === "superadmin"} />
     </div>
   );
 }

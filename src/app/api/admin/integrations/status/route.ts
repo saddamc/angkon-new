@@ -1,5 +1,5 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { requireAdminSessionCore } from "@/server/auth/admin-auth";
+import { requireSuperAdminSessionCore } from "@/server/auth/admin-auth";
 import {
   getProviderConfigSummary,
   getCourierModeConfig,
@@ -30,14 +30,14 @@ interface IntegrationCard {
 
 // GET /api/admin/integrations/status — configuration state only. Never secrets.
 export async function GET(request: NextRequest) {
-  const auth = await requireAdminSessionCore(request);
+  const auth = await requireSuperAdminSessionCore(request);
   if (!auth.authorized) {
     return auth.response || NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const providers = getProviderConfigSummary();
   const courierMode = getCourierModeConfig();
-  const canConfigure = auth.role === "superadmin";
+  const canConfigure = true;
 
   const sslConfigured = isSslcommerzConfigured();
   const sslLive = isSslcommerzLive();

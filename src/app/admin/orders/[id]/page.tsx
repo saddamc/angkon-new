@@ -88,19 +88,29 @@ export default function AdminOrderDetailsPage({
         isDrawer={false}
         busy={busy}
         notificationBanner={bannerMsg}
-        onStatusTransition={async (status, reason) => {
+        onStatusTransition={async (status, reason, extra) => {
           setBusy(true);
           try {
             const res = await authFetch(`/api/admin/orders/${encodeURIComponent(id)}`, {
               method: "PATCH",
-              body: JSON.stringify({ status, reason }),
+              body: JSON.stringify({
+                status,
+                reason,
+                ...(extra?.cancelDecision ? { cancelDecision: extra.cancelDecision } : {}),
+                ...(extra?.adminNote ? { adminNote: extra.adminNote } : {}),
+                ...(extra?.refund ? { refund: extra.refund } : {}),
+              }),
             });
             const body = await res.json().catch(() => ({}));
             if (!res.ok) {
               notify(body.error || "Status change rejected");
               return false;
             }
-            notify(`Status updated to ${status}`);
+            notify(
+              body?.refundResult && !body.refundResult.ok
+                ? `Cancelled, refund needs attention: ${body.refundResult.error || "failed"}`
+                : `Status updated to ${status}`
+            );
             await loadDetails();
             return true;
           } finally {
@@ -263,6 +273,88 @@ export default function AdminOrderDetailsPage({
             notify(body.ok ? "Payment recorded" : body.error || "Payment update failed");
             await loadDetails();
             return Boolean(body.ok);
+          } finally {
+            setBusy(false);
+          }
+        }}
+        onInitiateGatewayRefund={async (attemptId, amount, reason) => {
+          setBusy(true);
+          try {
+            const res = await authFetch(`/api/payments/${encodeURIComponent(attemptId)}/refund`, {
+              method: "POST",
+              body: JSON.stringify({ amount, reason }),
+            });
+            const body = await res.json().catch(() => ({}));
+            notify(
+              res.ok && body.ok !== false
+                ? `Refund initiated (${body.status || "processing"})`
+                : body.error || "Failed to initiate SSLCOMMERZ refund"
+            );
+            await loadDetails();
+            return Boolean(res.ok && body.ok !== false);
+          } finally {
+            setBusy(false);
+          }
+        }}
+        onSyncRefund={async (refundId) => {
+          setBusy(true);
+          try {
+            const res = await authFetch(
+              `/api/payments/refunds/${encodeURIComponent(refundId)}/sync`,
+              { method: "POST" }
+            );
+            const body = await res.json().catch(() => ({}));
+            notify(
+              res.ok
+                ? `Refund status: ${body.status || "processing"}`
+                : body.error || "Could not sync refund status"
+            );
+            await loadDetails();
+            return Boolean(res.ok);
+          } finally {
+            setBusy(false);
+          }
+        }}
+        onRequestCourierReturn={async (reason) => {
+          setBusy(true);
+          try {
+            const res = await authFetch(`/api/admin/orders/${encodeURIComponent(id)}/shipment`, {
+              method: "PATCH",
+              body: JSON.stringify({ action: "request_return", reason }),
+            });
+            const body = await res.json().catch(() => ({}));
+            notify(
+              res.ok && body.ok !== false
+                ? "Courier return / recall requested"
+                : body.error || "Could not request return"
+            );
+            await loadDetails();
+            return Boolean(res.ok && body.ok !== false);
+          } finally {
+            setBusy(false);
+          }
+        }}
+        onConfirmPhysicalReturn={async (inspectionOutcome, inspectionNote) => {
+          setBusy(true);
+          try {
+            const res = await authFetch(`/api/admin/orders/${encodeURIComponent(id)}/shipment`, {
+              method: "PATCH",
+              body: JSON.stringify({
+                action: "confirm_physical_return",
+                inspectionOutcome,
+                inspectionNote,
+              }),
+            });
+            const body = await res.json().catch(() => ({}));
+            notify(
+              res.ok && body.ok !== false
+                ? body.stockReleased
+                  ? "Physical return confirmed & stock restored"
+                  : "Physical return confirmed"
+                : body.error || "Could not confirm physical return"
+            );
+            await loadDetails();
+            return Boolean(res.ok && body.ok !== false);
           } finally {
             setBusy(false);
           }

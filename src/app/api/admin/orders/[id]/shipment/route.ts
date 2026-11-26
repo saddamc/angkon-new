@@ -286,6 +286,49 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
+
+    if (body.action === "request_return") {
+      await connectToDatabase();
+      const result = await courierService.requestReturn({
+        orderIdOrNumber: id,
+        reason: typeof body.reason === "string" ? body.reason : undefined,
+        actor: auth.user || "admin",
+        tenantId: auth.tenantId,
+        ip: clientIp(request),
+        userAgent: request.headers.get("user-agent") || "",
+      });
+      if (!result.ok) {
+        return NextResponse.json(
+          { ok: false, code: result.code, error: result.error },
+          { status: result.status }
+        );
+      }
+      return NextResponse.json(result);
+    }
+
+    if (body.action === "confirm_physical_return") {
+      await connectToDatabase();
+      const outcome =
+        body.inspectionOutcome === "damaged" ? "damaged" : "restockable";
+      const result = await courierService.confirmPhysicalReturn({
+        orderIdOrNumber: id,
+        inspectionOutcome: outcome,
+        inspectionNote:
+          typeof body.inspectionNote === "string" ? body.inspectionNote : undefined,
+        actor: auth.user || "admin",
+        tenantId: auth.tenantId,
+        ip: clientIp(request),
+        userAgent: request.headers.get("user-agent") || "",
+      });
+      if (!result.ok) {
+        return NextResponse.json(
+          { ok: false, code: result.code, error: result.error },
+          { status: result.status }
+        );
+      }
+      return NextResponse.json(result);
+    }
+
     const courier = typeof body.courier === "string" ? body.courier.trim().slice(0, 80) : "";
     const courierName =
       typeof body.courierName === "string" && body.courierName.trim()

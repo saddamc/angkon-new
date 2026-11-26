@@ -66,6 +66,35 @@ export interface IOrderManualDeliveryDetails {
   updatedAt?: Date | null;
 }
 
+/** Embedded when an admin cancels the order. Separate from payment/shipment state. */
+export interface IOrderCancellationDetails {
+  cancelledAt: Date;
+  cancelledBy: string;
+  reasonCode?: string | null;
+  reason: string;
+  adminNote?: string | null;
+  decision: "cancel_only" | "cancel_and_refund";
+  refundId?: string | null;
+  refundOutcome?: string | null;
+  courierDisposition?:
+    | "not_booked"
+    | "cancelled"
+    | "portal_action_required"
+    | "return_requested"
+    | null;
+}
+
+/** Embedded when a physical return / recall is in progress. */
+export interface IOrderReturnInspection {
+  returnRequestedAt?: Date | null;
+  returnRequestedBy?: string | null;
+  returnReason?: string | null;
+  physicalReceiptConfirmedAt?: Date | null;
+  physicalReceiptConfirmedBy?: string | null;
+  inspectionOutcome?: "pending" | "restockable" | "damaged" | null;
+  inspectionNote?: string | null;
+}
+
 export interface IOrder extends Document {
   orderNumber: string;
   /** Customer account that owns this order (set at checkout) */
@@ -180,6 +209,10 @@ export interface IOrder extends Document {
   notes?: string;
   statusHistory?: IOrderStatusHistoryEntry[];
   adminNotes?: IOrderAdminNote[];
+  /** Set when an administrator cancels the order. */
+  cancellationDetails?: IOrderCancellationDetails | null;
+  /** Set when a return / recall is initiated or confirmed. */
+  returnInspection?: IOrderReturnInspection | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -254,6 +287,46 @@ const OrderManualDeliveryDetailsSchema = new Schema<IOrderManualDeliveryDetails>
     notes: { type: String, default: "" },
     updatedBy: { type: String, default: "" },
     updatedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
+const OrderCancellationDetailsSchema = new Schema<IOrderCancellationDetails>(
+  {
+    cancelledAt: { type: Date, required: true },
+    cancelledBy: { type: String, required: true },
+    reasonCode: { type: String, default: null },
+    reason: { type: String, required: true },
+    adminNote: { type: String, default: null },
+    decision: {
+      type: String,
+      enum: ["cancel_only", "cancel_and_refund"],
+      required: true,
+    },
+    refundId: { type: String, default: null },
+    refundOutcome: { type: String, default: null },
+    courierDisposition: {
+      type: String,
+      enum: ["not_booked", "cancelled", "portal_action_required", "return_requested", null],
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
+const OrderReturnInspectionSchema = new Schema<IOrderReturnInspection>(
+  {
+    returnRequestedAt: { type: Date, default: null },
+    returnRequestedBy: { type: String, default: null },
+    returnReason: { type: String, default: null },
+    physicalReceiptConfirmedAt: { type: Date, default: null },
+    physicalReceiptConfirmedBy: { type: String, default: null },
+    inspectionOutcome: {
+      type: String,
+      enum: ["pending", "restockable", "damaged", null],
+      default: null,
+    },
+    inspectionNote: { type: String, default: null },
   },
   { _id: false }
 );
@@ -376,6 +449,8 @@ const OrderSchema = new Schema<IOrder>(
     consignmentId: { type: String, default: "" },
     trackingUrl: { type: String, default: null },
     manualDeliveryDetails: { type: OrderManualDeliveryDetailsSchema, default: null },
+    cancellationDetails: { type: OrderCancellationDetailsSchema, default: null },
+    returnInspection: { type: OrderReturnInspectionSchema, default: null },
   },
   {
     timestamps: true,

@@ -26,12 +26,13 @@ import {
   User,
   Bot,
 } from "lucide-react";
-import type { OrderDetailsPayload } from "../_types/orders.types";
+import type { OrderDetailsPayload, OrderRefundRecord } from "../_types/orders.types";
 import { formatBDT } from "../_types/orders.types";
 
 export interface OrderActivityViewProps {
   order: OrderDetailsPayload["order"];
   timeline: OrderDetailsPayload["timeline"];
+  refunds?: OrderRefundRecord[];
   busy?: boolean;
   onAddNote: (text: string) => Promise<boolean>;
   isDrawer?: boolean;
@@ -118,6 +119,7 @@ function parseNoteTag(text: string): { tag: string | null; cleanText: string } {
 export function OrderActivityView({
   order,
   timeline,
+  refunds = [],
   busy = false,
   onAddNote,
   isDrawer = false,
@@ -267,6 +269,37 @@ export function OrderActivityView({
           <span className="text-[10.5px] text-stone-400">Gateway & Courier</span>
         </div>
       </div>
+
+      {/* 1.5 REFUND SUMMARY (when refunds exist) */}
+      {refunds.length > 0 && (
+        <div className="rounded-2xl border border-rose-200/80 bg-rose-50/30 p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-rose-900 uppercase tracking-wider">
+              <RotateCcw className="h-3.5 w-3.5 text-rose-600" />
+              Refunds ({refunds.length})
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {refunds.map((r) => (
+              <div
+                key={r.id}
+                className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-[11.5px] flex items-center justify-between gap-2"
+              >
+                <div className="min-w-0">
+                  <p className="font-mono font-bold text-gray-900 truncate">{r.refundId}</p>
+                  <p className="text-[10.5px] text-gray-500 truncate">
+                    {r.refundChannel === "manual_offline" ? "Manual Offline" : "SSLCOMMERZ"} · {r.reason}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-gray-900">{formatBDT(r.amount)}</p>
+                  <span className="text-[10px] font-bold uppercase text-purple-700">{r.status}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 2. ADMIN NOTES WORKSPACE */}
       <div className="rounded-2xl border border-purple-100 bg-linear-to-b from-purple-50/30 via-white to-white p-4 sm:p-5 shadow-xs space-y-4">

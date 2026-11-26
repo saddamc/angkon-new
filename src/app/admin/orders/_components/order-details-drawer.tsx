@@ -24,6 +24,10 @@ export function OrderDetailsDrawer({ state }: OrderDetailsDrawerProps) {
     addAdminNote,
     reconcileSettlement,
     recordManualPayment,
+    initiateGatewayRefund,
+    syncRefundStatus,
+    requestCourierReturn,
+    confirmPhysicalReturn,
     copyValue,
     updating,
     shipmentBusy,
@@ -62,8 +66,13 @@ export function OrderDetailsDrawer({ state }: OrderDetailsDrawerProps) {
               data={detailsData}
               isDrawer={true}
               busy={updating === detailsOrderNumber || shipmentBusy}
-              onStatusTransition={(status, reason) =>
-                handleStatusChange(detailsOrderNumber, status, { reason })
+              onStatusTransition={(status, reason, extra) =>
+                handleStatusChange(detailsOrderNumber, status, {
+                  reason,
+                  cancelDecision: extra?.cancelDecision,
+                  adminNote: extra?.adminNote,
+                  refund: extra?.refund,
+                })
               }
               onReopenOrder={(reason) => reopenOrder(detailsOrderNumber, reason)}
               onOpenShipment={(stub) => openShipment(stub)}
@@ -73,6 +82,16 @@ export function OrderDetailsDrawer({ state }: OrderDetailsDrawerProps) {
               onAddNote={(text) => addAdminNote(detailsOrderNumber, text)}
               onSaveSettlement={(payload) => reconcileSettlement(detailsOrderNumber, payload)}
               onRecordPayment={(payload) => recordManualPayment(detailsOrderNumber, payload)}
+              onInitiateGatewayRefund={(attemptId, amount, reason) =>
+                initiateGatewayRefund(attemptId, amount, reason, detailsOrderNumber)
+              }
+              onSyncRefund={(refundId) => syncRefundStatus(refundId, detailsOrderNumber)}
+              onRequestCourierReturn={(reason) =>
+                requestCourierReturn(detailsOrderNumber, reason)
+              }
+              onConfirmPhysicalReturn={(outcome, note) =>
+                confirmPhysicalReturn(detailsOrderNumber, outcome, note)
+              }
               onCodFallback={() =>
                 setCodFallbackModal({
                   id: detailsData.order.orderNumber,

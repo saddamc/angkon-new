@@ -1,14 +1,22 @@
-import test from "node:test";
+import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { registerHooks } from "node:module";
+import { setDatabaseFailure, resetDb } from "./stubs/db-state.mjs";
+
+const DB_STUBS = {
+  "@/lib/mongodb": "tests/stubs/mongodb-stub.mjs",
+};
 
 registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier === "next/server") {
       return nextResolve("next/server.js", context);
+    }
+    if (DB_STUBS[specifier]) {
+      return nextResolve(pathToFileURL(path.resolve(process.cwd(), DB_STUBS[specifier])).href, context);
     }
     if (specifier.startsWith("@/")) {
       const subpath = specifier.slice(2);
@@ -64,6 +72,20 @@ const monitoringModule = await import(
     ? "../src/server/meta/catalog/meta-feed-monitoring.ts"
     : "../src/server/meta-feed-monitoring.ts"
 );
+
+// Force offline in-memory fallback even when CI sets DATABASE_URL, so this
+// unit/contract suite never opens a lingering Mongoose socket pool.
+before(() => {
+  setDatabaseFailure(true);
+});
+
+after(async () => {
+  resetDb();
+  const mongoose = (await import("mongoose")).default;
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+});
 
 /* ──────────────────────────────────────────────────────────────────────────
  * 1. Token Encryption at Rest & Redaction

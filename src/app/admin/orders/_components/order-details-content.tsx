@@ -49,7 +49,7 @@ import {
 } from "@/server/integrations/whatsapp/whatsapp-templates";
 import { ProductThumbnail } from "./product-thumbnail";
 import { OrderActivityView } from "./order-activity-view";
-import { OrderCancellationModal } from "./order-cancellation-modal";
+import { OrderCancellationModal, type CancelConfirmOptions } from "./order-cancellation-modal";
 import type { ShipmentRecord } from "../_types/orders.types";
 
 const PROVIDERS_WITHOUT_API_CANCEL = new Set(["steadfast"]);
@@ -219,7 +219,11 @@ export interface OrderDetailsContentProps {
   data: OrderDetailsPayload;
   isDrawer?: boolean;
   busy?: boolean;
-  onStatusTransition: (status: string, reason?: string) => Promise<boolean>;
+  onStatusTransition: (
+    status: string,
+    reason?: string,
+    extra?: CancelConfirmOptions
+  ) => Promise<boolean>;
   onReopenOrder?: (reason: string) => Promise<boolean>;
   onOpenShipment: (orderStub: WCOrder) => void;
   onRefreshShipment: (shipmentId: string) => Promise<boolean>;
@@ -243,7 +247,23 @@ export interface OrderDetailsContentProps {
     method?: string;
     reference?: string;
     note?: string;
+    refundMethod?: string;
+    externalReference?: string;
+    refundDate?: string;
+    reason?: string;
+    adminNote?: string;
   }) => Promise<boolean>;
+  onInitiateGatewayRefund?: (
+    attemptId: string,
+    amount: number,
+    reason: string
+  ) => Promise<boolean>;
+  onSyncRefund?: (refundId: string) => Promise<boolean>;
+  onRequestCourierReturn?: (reason: string) => Promise<boolean>;
+  onConfirmPhysicalReturn?: (
+    inspectionOutcome: "restockable" | "damaged",
+    inspectionNote?: string
+  ) => Promise<boolean>;
   onCodFallback?: () => void;
   onCopy: (value: string, label: string) => void;
   fullPageHref?: string;
@@ -388,13 +408,17 @@ export function OrderDetailsContent({
   onAddNote,
   onSaveSettlement,
   onRecordPayment,
+  onInitiateGatewayRefund,
+  onSyncRefund,
+  onRequestCourierReturn,
+  onConfirmPhysicalReturn,
   onCodFallback,
   onCopy,
   fullPageHref,
   onClose,
   notificationBanner,
 }: OrderDetailsContentProps) {
-  const { order, payments, shipments, timeline, auditLogs: _auditLogs } = data;
+  const { order, payments, shipments, timeline, auditLogs: _auditLogs, refundSummary, refunds = [] } = data;
   const fin = order.financials;
   const allowed = order.allowedNextStatuses || [];
   const orderStub = buildOrderStub(order);
@@ -433,16 +457,17 @@ export function OrderDetailsContent({
 
   const [actionBusy, setActionBusy] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancellationDetailsOpen, setCancellationDetailsOpen] = useState(false);
 
   const requestOrderCancellation = useCallback(() => {
     setCancelModalOpen(true);
   }, []);
 
   const handleConfirmOrderCancellation = useCallback(
-    async (reason: string) => {
+    async (reason: string, options?: CancelConfirmOptions) => {
       setActionBusy(true);
       try {
-        const success = await onStatusTransition("cancelled", reason);
+        const success = await onStatusTransition("cancelled", reason, options);
         return Boolean(success);
       } finally {
         setActionBusy(false);
@@ -467,17 +492,43 @@ export function OrderDetailsContent({
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [refundAmountInput, setRefundAmountInput] = useState("");
   const [refundRefInput, setRefundRefInput] = useState("");
+  const [refundMethodInput, setRefundMethodInput] = useState("bkash");
+  const [refundDateInput, setRefundDateInput] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
   const [refundNoteInput, setRefundNoteInput] = useState("");
   const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [syncingRefundId, setSyncingRefundId] = useState<string | null>(null);
 
-  // Financial calculations: Max Refundable = Captured - Refunded
-  const capturedAmount = fin.advancePaidAmount || (order.paymentStatus === "paid" ? order.total : 0);
-  const refundedAmount = payments.reduce((acc, p) => acc + (Number(p.refundedAmount) || 0), 0);
-  const maxRefundable = Math.max(0, capturedAmount - refundedAmount);
+  // Return / physical inspection UI states
+  const [returnFormOpen, setReturnFormOpen] = useState(false);
+  const [returnReasonInput, setReturnReasonInput] = useState("");
+  const [inspectionFormOpen, setInspectionFormOpen] = useState(false);
+  const [inspectionOutcomeInput, setInspectionOutcomeInput] = useState<"restockable" | "damaged">(
+    "restockable"
+  );
+  const [inspectionNoteInput, setInspectionNoteInput] = useState("");
+
+  // Financial calculations: authoritative server refundSummary with safe fallback
+  const capturedAmount =
+    refundSummary?.capturedAmount ??
+    (fin.advancePaidAmount || (order.paymentStatus === "paid" ? order.total : 0));
+  const refundedAmount =
+    refundSummary?.completedRefundAmount ??
+    payments.reduce((acc, p) => acc + (Number(p.refundedAmount) || 0), 0);
+  const pendingRefundAmount = refundSummary?.pendingRefundAmount ?? 0;
+  const maxRefundable =
+    refundSummary?.availableRefundableAmount ??
+    Math.max(0, capturedAmount - refundedAmount - pendingRefundAmount);
   const gatewayPayment = payments.find(
     (p) =>
       String(p.provider).toLowerCase() === "sslcommerz" &&
-      ["paid", "succeeded", "valid", "validated"].includes(String(p.status).toLowerCase())
+      ["paid", "succeeded", "valid", "validated", "partially_refunded"].includes(
+        String(p.status).toLowerCase()
+      )
+  );
+  const eligibleGatewayAttempt = refundSummary?.eligibleGatewayAttempts?.find(
+    (a) => a.available > 0 && a.bankTranId && a.valId
   );
 
   // Settlement form — courier charge defaults to verified fee, never hardcoded 100
@@ -618,30 +669,104 @@ export function OrderDetailsContent({
   };
 
   const renderCancellationModal = () => (
-    <OrderCancellationModal
-      isOpen={cancelModalOpen}
-      onClose={() => setCancelModalOpen(false)}
-      orderNumber={order.orderNumber}
-      customerName={order.customer?.fullName}
-      orderTotal={Number(order.total || 0)}
-      paymentMethod={order.paymentMethod || "cod"}
-      paymentStatus={order.paymentStatus || "pending"}
-      advancePaidAmount={Number(fin.advancePaidAmount || 0)}
-      isPrepaidVerified={Boolean(fin.isPrepaidVerified)}
-      courierProvider={order.courier || activeShipment?.provider}
-      courierStatus={activeShipment?.status || order.shipmentStatus}
-      consignmentId={activeShipment?.consignmentId || order.consignmentId}
-      hasActiveShipment={Boolean(
-        activeShipment &&
-          !["cancelled", "failed", "returned"].includes(String(activeShipment.status)) &&
-          (activeShipment.consignmentId || order.consignmentId)
+    <>
+      <OrderCancellationModal
+        isOpen={cancelModalOpen}
+        onClose={() => setCancelModalOpen(false)}
+        orderNumber={order.orderNumber}
+        orderStatus={order.orderStatus}
+        customerName={order.customer?.fullName}
+        orderTotal={Number(order.total || 0)}
+        items={order.items}
+        paymentMethod={order.paymentMethod || "cod"}
+        paymentStatus={order.paymentStatus || "pending"}
+        advancePaidAmount={Number(fin.advancePaidAmount || 0)}
+        isPrepaidVerified={Boolean(fin.isPrepaidVerified)}
+        refundSummary={refundSummary}
+        courierProvider={order.courier || activeShipment?.provider}
+        courierStatus={activeShipment?.status || order.shipmentStatus}
+        consignmentId={activeShipment?.consignmentId || order.consignmentId}
+        hasActiveShipment={Boolean(
+          activeShipment &&
+            !["cancelled", "failed", "returned"].includes(String(activeShipment.status)) &&
+            (activeShipment.consignmentId || order.consignmentId)
+        )}
+        isShipmentInTransit={Boolean(
+          activeShipment &&
+            ["in_transit", "out_for_delivery", "picked_up"].includes(String(activeShipment.status))
+        )}
+        onConfirmCancel={handleConfirmOrderCancellation}
+      />
+
+      {cancellationDetailsOpen && order.cancellationDetails && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+              <h3 className="text-[14px] font-bold text-gray-900">
+                Cancellation Details · #{order.orderNumber}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCancellationDetailsOpen(false)}
+                className="rounded-lg p-1 text-gray-400 hover:bg-stone-100 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2 text-[12px]">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Cancelled By</span>
+                <span className="font-semibold text-gray-900">{order.cancellationDetails.cancelledBy}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Cancelled At</span>
+                <span className="font-semibold text-gray-900">
+                  {formatDateTime(order.cancellationDetails.cancelledAt)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Decision</span>
+                <span className="font-semibold text-gray-900">
+                  {order.cancellationDetails.decision === "cancel_and_refund"
+                    ? "Cancel & Request Refund"
+                    : "Cancel Order Only"}
+                </span>
+              </div>
+              {order.cancellationDetails.refundId && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Linked Refund</span>
+                  <span className="font-mono text-gray-900">
+                    {order.cancellationDetails.refundId} ({order.cancellationDetails.refundOutcome || "pending"})
+                  </span>
+                </div>
+              )}
+              {order.cancellationDetails.courierDisposition && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Courier Disposition</span>
+                  <span className="font-semibold text-gray-900">
+                    {order.cancellationDetails.courierDisposition.replace(/_/g, " ")}
+                  </span>
+                </div>
+              )}
+              <div className="rounded-xl bg-stone-50 border border-stone-200 p-2.5">
+                <p className="text-[10.5px] font-bold uppercase text-gray-400">Reason</p>
+                <p className="text-gray-800 mt-0.5">{order.cancellationDetails.reason}</p>
+                {order.cancellationDetails.adminNote && (
+                  <>
+                    <p className="text-[10.5px] font-bold uppercase text-gray-400 mt-2">Admin Note</p>
+                    <p className="text-gray-700 mt-0.5">{order.cancellationDetails.adminNote}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-      isShipmentInTransit={Boolean(
-        activeShipment &&
-          ["in_transit", "out_for_delivery", "picked_up"].includes(String(activeShipment.status))
-      )}
-      onConfirmCancel={handleConfirmOrderCancellation}
-    />
+    </>
   );
 
   const renderLifecycleBadgesStrip = () => (
@@ -997,10 +1122,12 @@ export function OrderDetailsContent({
   const renderRefundModal = () => {
     if (!refundModalOpen) return null;
 
+    const isGatewayMode = Boolean(eligibleGatewayAttempt && onInitiateGatewayRefund);
     const amt = Number(refundAmountInput);
-    const validAmount = !isNaN(amt) && amt > 0 && amt <= maxRefundable;
+    const validAmount = !isNaN(amt) && amt > 0 && amt <= maxRefundable + 0.01;
     const validReason = refundNoteInput.trim().length >= 3;
-    const canSubmit = validAmount && validReason && !refundSubmitting;
+    const validRef = isGatewayMode || refundRefInput.trim().length >= 2;
+    const canSubmit = validAmount && validReason && validRef && !refundSubmitting;
 
     return (
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in duration-150">
@@ -1009,7 +1136,9 @@ export function OrderDetailsContent({
             <div className="flex items-center gap-2">
               <RotateCcw className="h-5 w-5 text-rose-600" />
               <div>
-                <h3 className="text-[14px] font-bold text-gray-900">Request Payment Refund</h3>
+                <h3 className="text-[14px] font-bold text-gray-900">
+                  {isGatewayMode ? "Request SSLCOMMERZ Refund" : "Record Manual Offline Refund"}
+                </h3>
                 <p className="text-[11px] text-gray-500">Order #{order.orderNumber}</p>
               </div>
             </div>
@@ -1023,7 +1152,7 @@ export function OrderDetailsContent({
           </div>
 
           {/* Refund Financial Guardrails */}
-          <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-3 text-[11.5px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl bg-slate-50 p-3 text-[11.5px]">
             <div>
               <p className="text-[10px] uppercase font-bold text-gray-400">Captured</p>
               <p className="font-bold text-gray-900">{formatBDT(capturedAmount)}</p>
@@ -1033,7 +1162,11 @@ export function OrderDetailsContent({
               <p className="font-bold text-rose-700">{formatBDT(refundedAmount)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-gray-400">Max Refundable</p>
+              <p className="text-[10px] uppercase font-bold text-gray-400">Pending</p>
+              <p className="font-bold text-amber-700">{formatBDT(pendingRefundAmount)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-gray-400">Available</p>
               <p className="font-bold text-emerald-700">{formatBDT(maxRefundable)}</p>
             </div>
           </div>
@@ -1055,25 +1188,55 @@ export function OrderDetailsContent({
                   className="w-full rounded-xl border border-stone-200 bg-white py-1.5 pl-8 pr-3 text-[12px] outline-none focus:border-rose-500"
                 />
               </div>
-              {amt > maxRefundable && (
+              {amt > maxRefundable + 0.01 && (
                 <p className="text-[10.5px] text-rose-600 mt-1 font-medium">
                   Amount exceeds maximum refundable balance ({formatBDT(maxRefundable)}).
                 </p>
               )}
             </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-gray-700 mb-1">
-                Gateway Reference / Bank TXN ID
-              </label>
-              <input
-                type="text"
-                value={refundRefInput}
-                onChange={(e) => setRefundRefInput(e.target.value)}
-                placeholder="e.g. SSLCOMMERZ Refund Ref, bKash TXN ID"
-                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] outline-none focus:border-rose-500"
-              />
-            </div>
+            {!isGatewayMode && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    Refund Method <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={refundMethodInput}
+                    onChange={(e) => setRefundMethodInput(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-2.5 py-1.5 text-[12px] outline-none focus:border-rose-500"
+                  >
+                    <option value="bkash">bKash</option>
+                    <option value="nagad">Nagad</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                    <option value="cash">Cash</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    Reference / TXN ID <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={refundRefInput}
+                    onChange={(e) => setRefundRefInput(e.target.value)}
+                    placeholder="e.g. TRX9A82B..."
+                    className="w-full rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] outline-none focus:border-rose-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                    Refund Date
+                  </label>
+                  <input
+                    type="date"
+                    value={refundDateInput}
+                    onChange={(e) => setRefundDateInput(e.target.value)}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-2.5 py-1.5 text-[12px] outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-[11px] font-bold text-gray-700 mb-1">
@@ -1092,7 +1255,9 @@ export function OrderDetailsContent({
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[11px] text-amber-800">
-              ℹ️ Refund records an immutable audit ledger entry. It does not cancel shipment consignments.
+              {isGatewayMode
+                ? "ℹ️ Submits a real refund request to SSLCOMMERZ. Order remains active unless separately cancelled."
+                : "ℹ️ Records an authorized manual offline refund in PaymentRefund without altering captured payment history."}
             </div>
           </div>
 
@@ -1111,12 +1276,23 @@ export function OrderDetailsContent({
               onClick={async () => {
                 setRefundSubmitting(true);
                 try {
-                  const ok = await onRecordPayment({
-                    action: "refund",
-                    amount: amt,
-                    reference: refundRefInput.trim(),
-                    note: refundNoteInput.trim(),
-                  });
+                  let ok = false;
+                  if (isGatewayMode && eligibleGatewayAttempt && onInitiateGatewayRefund) {
+                    ok = await onInitiateGatewayRefund(
+                      eligibleGatewayAttempt.attemptId,
+                      amt,
+                      refundNoteInput.trim()
+                    );
+                  } else {
+                    ok = await onRecordPayment({
+                      action: "refund",
+                      amount: amt,
+                      refundMethod: refundMethodInput,
+                      externalReference: refundRefInput.trim(),
+                      refundDate: refundDateInput,
+                      reason: refundNoteInput.trim(),
+                    });
+                  }
                   if (ok) {
                     setRefundModalOpen(false);
                     setRefundAmountInput("");
@@ -1134,7 +1310,7 @@ export function OrderDetailsContent({
               ) : (
                 <RotateCcw className="h-3.5 w-3.5" />
               )}
-              <span>Submit Refund</span>
+              <span>{isGatewayMode ? "Submit SSLCOMMERZ Refund" : "Submit Refund"}</span>
             </button>
           </div>
         </div>
@@ -1307,7 +1483,7 @@ export function OrderDetailsContent({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[12px]">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[12px]">
           <div className="rounded-xl bg-stone-50 p-2.5 border border-stone-100">
             <p className="text-[10px] uppercase font-bold text-gray-400">Order Total</p>
             <p className="font-bold text-gray-900 mt-0.5">{formatBDT(order.total)}</p>
@@ -1319,6 +1495,10 @@ export function OrderDetailsContent({
           <div className="rounded-xl bg-purple-50/70 p-2.5 border border-purple-100">
             <p className="text-[10px] uppercase font-bold text-purple-700">Outstanding (COD)</p>
             <p className="font-bold text-purple-800 mt-0.5">{formatBDT(fin.outstandingAmount)}</p>
+          </div>
+          <div className="rounded-xl bg-amber-50/70 p-2.5 border border-amber-100">
+            <p className="text-[10px] uppercase font-bold text-amber-700">Pending Refunds</p>
+            <p className="font-bold text-amber-800 mt-0.5">{formatBDT(pendingRefundAmount)}</p>
           </div>
           <div className="rounded-xl bg-rose-50/70 p-2.5 border border-rose-100">
             <p className="text-[10px] uppercase font-bold text-rose-700">Total Refunded</p>
@@ -1372,18 +1552,9 @@ export function OrderDetailsContent({
               </button>
             )}
 
-            {/* Refund trigger: gateway payments refund through SSLCOMMERZ, offline
-                payments are recorded locally. */}
-            {capturedAmount > 0 &&
-              (gatewayPayment ? (
-                <Link
-                  href={`/admin/payments/${gatewayPayment.id}`}
-                  className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100"
-                  title="Refunds for SSLCOMMERZ payments are issued from the transaction page"
-                >
-                  Refund via SSLCOMMERZ →
-                </Link>
-              ) : (
+            {/* Unified Request Refund button (gateway or offline) when balance > 0 */}
+            {capturedAmount > 0 && (
+              <>
                 <button
                   type="button"
                   disabled={maxRefundable <= 0}
@@ -1395,14 +1566,24 @@ export function OrderDetailsContent({
                   }}
                   title={
                     maxRefundable > 0
-                      ? `Max refundable balance: ${formatBDT(maxRefundable)}`
+                      ? `Available refundable balance: ${formatBDT(maxRefundable)}`
                       : "No refundable balance remains on this order."
                   }
                   className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  Record Offline Refund
+                  Request Refund
                 </button>
-              ))}
+                {gatewayPayment && (
+                  <Link
+                    href={`/admin/payments/${gatewayPayment.id}`}
+                    className="rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100"
+                    title="View gateway transaction details"
+                  >
+                    Gateway Txn →
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -1511,6 +1692,102 @@ export function OrderDetailsContent({
                 {p.note && <p className="text-slate-600">{p.note}</p>}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Refund History Card */}
+      <div className="rounded-2xl border border-stone-200/90 bg-white p-4 space-y-3 shadow-xs">
+        <div className="flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-wider text-gray-500">
+            <RotateCcw className="h-3.5 w-3.5 text-rose-600" />
+            Refund History ({refunds.length})
+          </h3>
+          {refundSummary?.hasReconciliationPending && (
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+              Reconciliation Pending
+            </span>
+          )}
+        </div>
+
+        {refunds.length === 0 ? (
+          <p className="text-[12px] text-gray-400 py-1">No refunds requested or recorded for this order.</p>
+        ) : (
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            {refunds.map((r) => {
+              const isPendingSync =
+                r.refundChannel !== "manual_offline" &&
+                (r.status === "initiated" || r.status === "processing") &&
+                Boolean(r.refundRefId);
+              const badgeCls =
+                r.status === "succeeded"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : r.status === "failed"
+                    ? "border-rose-200 bg-rose-50 text-rose-700"
+                    : "border-amber-200 bg-amber-50 text-amber-800";
+              return (
+                <div
+                  key={r.id}
+                  className="rounded-xl border border-stone-200 bg-stone-50/60 p-3 text-[11.5px] space-y-1.5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-gray-900">{r.refundId}</span>
+                      <span className="rounded-md border border-stone-200 bg-white px-1.5 py-0.5 text-[9.5px] font-bold uppercase text-gray-600">
+                        {r.refundChannel === "manual_offline"
+                          ? `Offline (${r.refundMethod || "manual"})`
+                          : "SSLCOMMERZ"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gray-900">{formatBDT(r.amount)}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${badgeCls}`}>
+                        {r.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-700">{r.reason}</p>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-gray-500">
+                    <span>
+                      Requested by {r.requestedBy} · {formatDateTime(r.initiatedAt)}
+                      {r.refundRefId ? ` · Ref: ${r.refundRefId}` : ""}
+                      {r.externalReference ? ` · Ext: ${r.externalReference}` : ""}
+                    </span>
+                    {isPendingSync && onSyncRefund && (
+                      <button
+                        type="button"
+                        disabled={syncingRefundId === r.refundId || busy}
+                        onClick={async () => {
+                          setSyncingRefundId(r.refundId);
+                          try {
+                            await onSyncRefund(r.refundId);
+                          } finally {
+                            setSyncingRefundId(null);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10.5px] font-bold text-blue-700 hover:bg-blue-100 disabled:opacity-40 cursor-pointer"
+                      >
+                        <RefreshCw
+                          className={`h-3 w-3 ${syncingRefundId === r.refundId ? "animate-spin" : ""}`}
+                        />
+                        Sync Status
+                      </button>
+                    )}
+                  </div>
+
+                  {r.reconciliationRequired && (
+                    <p className="text-[10.5px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                      ⚠️ Timeout during gateway submission — reconciliation required before retrying.
+                    </p>
+                  )}
+                  {r.failureReason && (
+                    <p className="text-[10.5px] text-rose-700">Failure: {r.failureReason}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1624,6 +1901,122 @@ export function OrderDetailsContent({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* State-aware Return / Recall & Physical Receipt Inspection */}
+      {["picked_up", "in_transit", "out_for_delivery"].includes(effectiveShipmentStatus) &&
+        onRequestCourierReturn && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 space-y-2 text-[12px]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-amber-900">Parcel in transit — Return / Recall</span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setReturnFormOpen((v) => !v)}
+                className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-100 cursor-pointer"
+              >
+                Request Return / Recall
+              </button>
+            </div>
+            {returnFormOpen && (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={returnReasonInput}
+                  onChange={(e) => setReturnReasonInput(e.target.value)}
+                  placeholder="Return / recall reason..."
+                  className="flex-1 min-w-[180px] rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11.5px]"
+                />
+                <button
+                  type="button"
+                  disabled={busy || returnReasonInput.trim().length < 3}
+                  onClick={async () => {
+                    const ok = await onRequestCourierReturn(returnReasonInput.trim());
+                    if (ok) {
+                      setReturnFormOpen(false);
+                      setReturnReasonInput("");
+                    }
+                  }}
+                  className="rounded-lg bg-amber-700 px-3 py-1 text-[11px] font-bold text-white disabled:opacity-40 cursor-pointer"
+                >
+                  Confirm Return Request
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+      {["return_initiated", "returned"].includes(effectiveShipmentStatus) &&
+        !order.returnInspection?.physicalReceiptConfirmedAt &&
+        onConfirmPhysicalReturn && (
+          <div className="rounded-xl border border-purple-200 bg-purple-50/60 p-3 space-y-2 text-[12px]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-purple-900">
+                Return in progress — Physical receipt & inspection required before restocking
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setInspectionFormOpen((v) => !v)}
+                className="rounded-lg border border-purple-300 bg-white px-2.5 py-1 text-[11px] font-bold text-purple-800 hover:bg-purple-100 cursor-pointer"
+              >
+                Confirm Physical Return
+              </button>
+            </div>
+            {inspectionFormOpen && (
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={inspectionOutcomeInput}
+                    onChange={(e) =>
+                      setInspectionOutcomeInput(
+                        e.target.value === "damaged" ? "damaged" : "restockable"
+                      )
+                    }
+                    className="rounded-lg border border-purple-200 bg-white px-2.5 py-1 text-[11.5px]"
+                  >
+                    <option value="restockable">Restockable (restore inventory)</option>
+                    <option value="damaged">Damaged / Unsellable (do not restock)</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={inspectionNoteInput}
+                    onChange={(e) => setInspectionNoteInput(e.target.value)}
+                    placeholder="Inspection note (optional)..."
+                    className="flex-1 min-w-[160px] rounded-lg border border-purple-200 bg-white px-2.5 py-1 text-[11.5px]"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      const ok = await onConfirmPhysicalReturn(
+                        inspectionOutcomeInput,
+                        inspectionNoteInput.trim() || undefined
+                      );
+                      if (ok) {
+                        setInspectionFormOpen(false);
+                        setInspectionNoteInput("");
+                      }
+                    }}
+                    className="rounded-lg bg-purple-600 px-3 py-1 text-[11px] font-bold text-white disabled:opacity-40 cursor-pointer"
+                  >
+                    Save Inspection
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      {order.returnInspection?.physicalReceiptConfirmedAt && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 text-[11.5px] text-emerald-900">
+          Physical return confirmed ({order.returnInspection.inspectionOutcome}) by{" "}
+          {order.returnInspection.physicalReceiptConfirmedBy} ·{" "}
+          {formatDateTime(order.returnInspection.physicalReceiptConfirmedAt)}
+          {order.returnInspection.inspectionNote
+            ? ` · Note: ${order.returnInspection.inspectionNote}`
+            : ""}
         </div>
       )}
     </div>
@@ -2337,6 +2730,34 @@ export function OrderDetailsContent({
                     </button>
                   )}
 
+                  {allowed.includes("cancelled") && order.orderStatus !== "cancelled" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        requestOrderCancellation();
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-700 hover:bg-rose-50 cursor-pointer font-semibold"
+                    >
+                      <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                      Cancel Order
+                    </button>
+                  )}
+
+                  {order.orderStatus === "cancelled" && order.cancellationDetails && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionsMenuOpen(false);
+                        setCancellationDetailsOpen(true);
+                      }}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                      View Cancellation Details
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     disabled={!order.bookingEligibility.ok && !activeShipment}
@@ -2485,6 +2906,7 @@ export function OrderDetailsContent({
             <OrderActivityView
               order={order}
               timeline={timeline}
+              refunds={refunds}
               busy={busy}
               onAddNote={onAddNote}
               isDrawer={true}
@@ -2521,21 +2943,6 @@ export function OrderDetailsContent({
           )}
 
           <div className="flex items-center gap-2">
-            {allowed.length > 0 && (
-              <button
-                type="button"
-                disabled={busy || actionBusy}
-                onClick={() => {
-                  setTargetStatusToUpdate(allowed[0] || "");
-                  setUpdateStatusReason("");
-                  setUpdateStatusModalOpen(true);
-                }}
-                className="rounded-xl border border-stone-200 bg-stone-100 px-3.5 py-2 text-[12px] font-bold text-stone-700 hover:bg-stone-200 cursor-pointer"
-              >
-                Update Status...
-              </button>
-            )}
-
             {order.orderStatus === "pending" && (
               <>
                 {order.paymentMethod === "sslcommerz" && order.paymentStatus !== "paid" ? (
@@ -2715,6 +3122,34 @@ export function OrderDetailsContent({
                   </button>
                 )}
 
+                {allowed.includes("cancelled") && order.orderStatus !== "cancelled" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      requestOrderCancellation();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-rose-700 hover:bg-rose-50 cursor-pointer font-semibold"
+                  >
+                    <XCircle className="h-3.5 w-3.5 text-rose-600" />
+                    Cancel Order
+                  </button>
+                )}
+
+                {order.orderStatus === "cancelled" && order.cancellationDetails && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionsMenuOpen(false);
+                      setCancellationDetailsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-gray-700 hover:bg-stone-50 cursor-pointer"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                    View Cancellation Details
+                  </button>
+                )}
+
                 <button
                   type="button"
                   disabled={!order.bookingEligibility.ok && !activeShipment}
@@ -2849,6 +3284,7 @@ export function OrderDetailsContent({
             <OrderActivityView
               order={order}
               timeline={timeline}
+              refunds={refunds}
               busy={busy}
               onAddNote={onAddNote}
               isDrawer={false}

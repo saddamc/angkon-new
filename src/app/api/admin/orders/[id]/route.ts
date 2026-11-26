@@ -8,6 +8,8 @@ import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { commitStockForOrder, releaseStockForOrder } from "@/server/products/stock";
 import { clientIp } from "@/server/security/rate-limit";
 import { tryAutoBookOnConfirm } from "@/server/courier/core/auto-book";
+import { computeOrderRefundSummary } from "@/server/payments/services/order-refund-summary.service";
+import { ProcessRefundService } from "@/server/payments/services/process-refund";
 import {
   canTransitionOrderStatus,
   computeOrderFinancials,
@@ -229,6 +231,34 @@ export async function PATCH(
       // Check active shipment conditions on cancellation
       if (nextStatusNormalized === "cancelled") {
         if (
+          beforeOrder.shipmentBookingState === "booking_in_progress" ||
+          beforeOrder.shipmentStatus === "booking_pending"
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Courier booking is currently in progress. Reconcile the booking status before cancelling this order.",
+              code: "BOOKING_IN_PROGRESS",
+            },
+            { status: 409 }
+          );
+        }
+
+        if (
+          beforeOrder.shipmentStatus === "delivered" ||
+          beforeOrder.shipmentStatus === "partial_delivered"
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Delivered parcels cannot be cancelled. Use the separate customer return/exchange workflow.",
+              code: "DELIVERED_REQUIRES_RETURN_WORKFLOW",
+            },
+            { status: 409 }
+          );
+        }
+
+        if (
           beforeOrder.shipmentStatus === "in_transit" ||
           beforeOrder.shipmentStatus === "out_for_delivery" ||
           beforeOrder.shipmentStatus === "picked_up"
@@ -274,6 +304,30 @@ export async function PATCH(
             },
             { status: 409 }
           );
+        }
+
+        // Pre-validate coordinated refund if requested
+        if (body.cancelDecision === "cancel_and_refund" && body.refund) {
+          const reqAmt = Number(body.refund.amount);
+          if (!Number.isFinite(reqAmt) || reqAmt <= 0) {
+            return NextResponse.json(
+              { error: "Refund amount must be greater than zero.", code: "INVALID_REFUND_AMOUNT" },
+              { status: 400 }
+            );
+          }
+          const refundSummary = await computeOrderRefundSummary(
+            beforeOrder.orderNumber,
+            beforeOrder._id
+          );
+          if (reqAmt > refundSummary.availableRefundableAmount + 0.01) {
+            return NextResponse.json(
+              {
+                error: `Requested refund amount ৳${reqAmt} exceeds available refundable balance of ৳${refundSummary.availableRefundableAmount.toFixed(2)}.`,
+                code: "REFUND_AMOUNT_EXCEEDED",
+              },
+              { status: 400 }
+            );
+          }
         }
       }
 
@@ -347,6 +401,35 @@ export async function PATCH(
       }
     }
 
+    if (nextStatusNormalized === "cancelled") {
+      const shipStatus = String(beforeOrder.shipmentStatus || "not_booked").toLowerCase();
+      const courierDisposition =
+        shipStatus === "cancelled"
+          ? "cancelled"
+          : shipStatus === "return_initiated" || shipStatus === "returned"
+            ? "return_requested"
+            : "not_booked";
+
+      updateFields.cancellationDetails = {
+        cancelledAt: new Date(),
+        cancelledBy: auth.user || "admin",
+        reasonCode:
+          typeof body.reasonCode === "string" && body.reasonCode.trim()
+            ? body.reasonCode.trim().slice(0, 60)
+            : null,
+        reason:
+          typeof body.reason === "string" ? body.reason.trim().slice(0, 300) : "Cancelled by admin",
+        adminNote:
+          typeof body.adminNote === "string" && body.adminNote.trim()
+            ? body.adminNote.trim().slice(0, 500)
+            : null,
+        decision: body.cancelDecision === "cancel_and_refund" ? "cancel_and_refund" : "cancel_only",
+        refundId: null,
+        refundOutcome: null,
+        courierDisposition,
+      };
+    }
+
     const now = new Date();
     const statusChanged =
       nextStatusNormalized !== null &&
@@ -384,8 +467,9 @@ export async function PATCH(
       if (
         updated.orderStatus === "cancelled" ||
         updated.orderStatus === "refunded" ||
-        updated.orderStatus === "returned"
+        updated.orderStatus === "failed"
       ) {
+        // Never restore stock automatically if parcel is already picked up / in transit / delivered.
         await releaseStockForOrder(orderDoc);
       } else if (
         updated.orderStatus === "completed" ||
@@ -394,6 +478,8 @@ export async function PATCH(
       ) {
         await commitStockForOrder(orderDoc);
       }
+      // Note: "returned" status does NOT auto-restore stock; physical receipt + inspection
+      // via confirmPhysicalReturn is required first.
     }
 
     const paymentChanged = beforeOrder.paymentStatus !== updated.paymentStatus;
@@ -441,8 +527,110 @@ export async function PATCH(
       }
     }
 
+    let refundResult: {
+      ok: boolean;
+      refundId?: string;
+      status?: string;
+      error?: string;
+      reconciliationRequired?: boolean;
+    } | null = null;
+
+    if (
+      nextStatusNormalized === "cancelled" &&
+      body.cancelDecision === "cancel_and_refund" &&
+      body.refund &&
+      typeof body.refund === "object"
+    ) {
+      const reqAmt = Math.round(Number(body.refund.amount) * 100) / 100;
+      const refundReason =
+        typeof body.refund.reason === "string" && body.refund.reason.trim()
+          ? body.refund.reason.trim().slice(0, 240)
+          : typeof body.reason === "string" && body.reason.trim()
+            ? body.reason.trim().slice(0, 240)
+            : `Order #${updated.orderNumber} cancelled`;
+      const idempotencyKey =
+        typeof body.refund.idempotencyKey === "string" && body.refund.idempotencyKey.trim()
+          ? body.refund.idempotencyKey.trim()
+          : `cancel-${updated.orderNumber}-${Date.now().toString(36)}`;
+
+      try {
+        const summary = await computeOrderRefundSummary(updated.orderNumber, updated._id);
+        const gatewayAttempt = summary.eligibleGatewayAttempts.find(
+          (a) => a.available >= reqAmt - 0.01 && a.bankTranId && a.valId
+        );
+
+        if (gatewayAttempt && body.refund.channel !== "manual_offline") {
+          const gwRes = await ProcessRefundService.initiateRefund({
+            attemptId: gatewayAttempt.attemptId,
+            amount: reqAmt,
+            reason: refundReason,
+            requestedBy: auth.user || "admin",
+            idempotencyKey,
+          });
+          refundResult = {
+            ok: gwRes.ok,
+            refundId: gwRes.refundId,
+            status: gwRes.status,
+            error: gwRes.error,
+            reconciliationRequired: "reconciliationRequired" in gwRes ? gwRes.reconciliationRequired : false,
+          };
+        } else {
+          const manRes = await ProcessRefundService.recordManualRefund({
+            orderNumber: updated.orderNumber,
+            orderId: updated._id,
+            amount: reqAmt,
+            refundMethod:
+              typeof body.refund.method === "string" && body.refund.method.trim()
+                ? body.refund.method.trim()
+                : "manual_offline",
+            externalReference:
+              typeof body.refund.reference === "string" && body.refund.reference.trim()
+                ? body.refund.reference.trim()
+                : `CANCEL-${updated.orderNumber}`,
+            refundDate: body.refund.refundDate ? new Date(body.refund.refundDate) : new Date(),
+            reason: refundReason,
+            requestedBy: auth.user || "admin",
+            adminNote:
+              typeof body.adminNote === "string" ? body.adminNote.trim().slice(0, 300) : undefined,
+            idempotencyKey,
+            tenantId: auth.tenantId,
+            ip: clientIp(request),
+            userAgent: request.headers.get("user-agent") || "",
+          });
+          refundResult = manRes.ok
+            ? { ok: true, refundId: manRes.refundId, status: "succeeded" }
+            : { ok: false, status: "failed", error: manRes.error };
+        }
+
+        if (refundResult) {
+          await Order.updateOne(
+            { _id: updated._id },
+            {
+              $set: {
+                "cancellationDetails.refundId": refundResult.refundId || null,
+                "cancellationDetails.refundOutcome": refundResult.status || (refundResult.ok ? "processing" : "failed"),
+              },
+            }
+          );
+        }
+      } catch (refundErr) {
+        const msg = refundErr instanceof Error ? refundErr.message : String(refundErr);
+        refundResult = { ok: false, status: "failed", error: msg };
+        await Order.updateOne(
+          { _id: updated._id },
+          {
+            $set: {
+              "cancellationDetails.refundOutcome": "failed",
+            },
+          }
+        );
+      }
+    }
+
     const finalOrder =
-      autoBookResult?.booked ? (await Order.findById(updated._id).lean()) || updated : updated;
+      autoBookResult?.booked || refundResult
+        ? (await Order.findById(updated._id).lean()) || updated
+        : updated;
 
     return NextResponse.json(
       {
@@ -454,6 +642,8 @@ export async function PATCH(
         financials: computeOrderFinancials(finalOrder),
         allowedNextStatuses: getAllowedNextStatuses(finalOrder.orderStatus),
         ...(autoBookResult?.attempted ? { autoBook: autoBookResult } : {}),
+        ...(nextStatusNormalized === "cancelled" ? { orderCancelled: true } : {}),
+        ...(refundResult ? { refundResult } : {}),
       },
       { status: 200 }
     );

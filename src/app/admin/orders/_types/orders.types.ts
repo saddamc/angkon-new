@@ -441,6 +441,69 @@ export interface ComputedOrderFinancialsUI {
   codSettlementStatus: "none" | "expected" | "collected" | "settled" | "discrepancy";
 }
 
+export interface OrderRefundSummaryUI {
+  capturedAmount: number;
+  completedRefundAmount: number;
+  pendingRefundAmount: number;
+  availableRefundableAmount: number;
+  eligibleGatewayAttempts: Array<{
+    attemptId: string;
+    tranId: string;
+    bankTranId: string | null;
+    valId: string | null;
+    captured: number;
+    completedRefunds: number;
+    pendingRefunds: number;
+    available: number;
+  }>;
+  manualRefundableAmount: number;
+  totalRefundedAmount?: number;
+  hasReconciliationPending?: boolean;
+}
+
+export interface OrderRefundRecord {
+  id: string;
+  refundId: string;
+  refundChannel: "sslcommerz" | "manual_offline";
+  status: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  refundMethod?: string | null;
+  externalReference?: string | null;
+  refundRefId?: string | null;
+  refundDate?: string | null;
+  adminNote?: string | null;
+  requestedBy: string;
+  initiatedAt: string;
+  processedAt?: string | null;
+  failedAt?: string | null;
+  failureReason?: string | null;
+  reconciliationRequired?: boolean;
+}
+
+export interface OrderCancellationDetailsUI {
+  cancelledAt: string;
+  cancelledBy: string;
+  reasonCode?: string | null;
+  reason: string;
+  adminNote?: string | null;
+  decision: "cancel_only" | "cancel_and_refund";
+  refundId?: string | null;
+  refundOutcome?: string | null;
+  courierDisposition?: string | null;
+}
+
+export interface OrderReturnInspectionUI {
+  returnRequestedAt?: string | null;
+  returnRequestedBy?: string | null;
+  returnReason?: string | null;
+  physicalReceiptConfirmedAt?: string | null;
+  physicalReceiptConfirmedBy?: string | null;
+  inspectionOutcome?: "pending" | "restockable" | "damaged" | null;
+  inspectionNote?: string | null;
+}
+
 export interface OrderDetailsPayload {
   order: {
     orderNumber: string;
@@ -499,7 +562,11 @@ export interface OrderDetailsPayload {
       code?: string;
       reason?: string;
     };
+    cancellationDetails?: OrderCancellationDetailsUI | null;
+    returnInspection?: OrderReturnInspectionUI | null;
   };
+  refundSummary?: OrderRefundSummaryUI;
+  refunds?: OrderRefundRecord[];
   providers: CourierProviderStatus[];
   payments: PaymentAttempt[];
   shipments: ShipmentRecord[];

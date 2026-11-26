@@ -8,14 +8,20 @@ export type RefundStatus =
   | "failed"
   | "cancelled";
 
+export type RefundChannel = "sslcommerz" | "manual_offline";
+
 export interface IPaymentRefund extends Document {
   refundId: string;
-  paymentId: Types.ObjectId;
+  /** Null for manual offline refunds (no payment attempt to link). */
+  paymentId: Types.ObjectId | null;
   orderId: Types.ObjectId;
   orderNumber: string;
-  tranId: string;
-  valId: string;
-  bankTranId: string;
+  /** Gateway transaction ID — null for offline refunds. */
+  tranId: string | null;
+  /** Gateway validation ID — null for offline refunds. */
+  valId: string | null;
+  /** Bank transaction ID — null for offline refunds. */
+  bankTranId: string | null;
   amount: number;
   currency: string;
   status: RefundStatus;
@@ -28,6 +34,16 @@ export interface IPaymentRefund extends Document {
   failureReason?: string | null;
   rawResponse?: Record<string, unknown> | null;
   rawQueryResponse?: Record<string, unknown> | null;
+  // Extended fields for unified gateway + offline ledger
+  refundChannel?: RefundChannel;
+  refundMethod?: string | null;
+  externalReference?: string | null;
+  refundDate?: Date | null;
+  evidenceNote?: string | null;
+  adminNote?: string | null;
+  idempotencyKey?: string | null;
+  reconciliationRequired?: boolean;
+  reconcileError?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,7 +59,8 @@ const PaymentRefundSchema = new Schema<IPaymentRefund>(
     paymentId: {
       type: Schema.Types.ObjectId,
       ref: "PaymentAttempt",
-      required: true,
+      required: false,
+      default: null,
       index: true,
     },
     orderId: {
@@ -60,18 +77,22 @@ const PaymentRefundSchema = new Schema<IPaymentRefund>(
     },
     tranId: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
       trim: true,
       index: true,
+      sparse: true,
     },
     valId: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
       trim: true,
     },
     bankTranId: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
       trim: true,
     },
     amount: {
@@ -132,6 +153,21 @@ const PaymentRefundSchema = new Schema<IPaymentRefund>(
       type: Schema.Types.Mixed,
       default: null,
     },
+    // Unified ledger extensions
+    refundChannel: {
+      type: String,
+      enum: ["sslcommerz", "manual_offline"],
+      default: "sslcommerz",
+      index: true,
+    },
+    refundMethod: { type: String, default: null },
+    externalReference: { type: String, default: null },
+    refundDate: { type: Date, default: null },
+    evidenceNote: { type: String, default: null },
+    adminNote: { type: String, default: null },
+    idempotencyKey: { type: String, default: null, sparse: true },
+    reconciliationRequired: { type: Boolean, default: false },
+    reconcileError: { type: String, default: null },
   },
   {
     timestamps: true,
@@ -141,6 +177,7 @@ const PaymentRefundSchema = new Schema<IPaymentRefund>(
 
 PaymentRefundSchema.index({ orderNumber: 1, createdAt: -1 });
 PaymentRefundSchema.index({ status: 1, createdAt: -1 });
+PaymentRefundSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
 export const PaymentRefund: Model<IPaymentRefund> =
   mongoose.models.PaymentRefund ||

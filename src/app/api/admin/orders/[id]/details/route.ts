@@ -5,6 +5,8 @@ import { AdminAuditLog } from "@/models/AdminAuditLog";
 import { CourierLog } from "@/models/CourierLog";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
+import { PaymentRefund } from "@/models/PaymentRefund";
+import { PaymentEvent } from "@/models/PaymentEvent";
 import { Shipment } from "@/models/Shipment";
 import { User } from "@/models/User";
 import { requireAdminSessionCore } from "@/server/auth/admin-auth";
@@ -18,6 +20,7 @@ import {
   getAllowedNextStatuses,
 } from "@/server/orders/workflow";
 import { resolveLiveProductImageMap } from "@/server/orders/services/order-query.service";
+import { computeOrderRefundSummary } from "@/server/payments/services/order-refund-summary.service";
 
 export const dynamic = "force-dynamic";
 
@@ -56,12 +59,19 @@ function formatAuditTitle(action: string): string {
       return "Admin Internal Note";
     case "order.manual_payment":
       return "Manual Payment Recorded";
+    case "order.payment.manual_refund":
+      return "Manual Offline Refund Recorded";
     case "order.settlement":
       return "Courier Settlement Reconciled";
     case "order.shipment.create":
       return "Courier Consignment Booked";
     case "order.shipment.cancel":
+    case "order.shipment.cancelled":
       return "Courier Consignment Cancelled";
+    case "order.shipment.return_requested":
+      return "Courier Return / Recall Requested";
+    case "order.shipment.physical_return_confirmed":
+      return "Physical Return Receipt & Inspection Confirmed";
     default:
       return action
         .replace(/[\._]/g, " ")
@@ -117,20 +127,49 @@ export async function GET(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    const [payments, shipments, auditLogs, courierLogs, courierSettings, accountUser] =
-      await Promise.all([
-        Payment.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).limit(25).lean(),
-        Shipment.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).limit(20),
-        AdminAuditLog.find({ targetType: "order", targetId: order.orderNumber })
-          .sort({ createdAt: -1 })
-          .limit(50)
-          .lean(),
-        CourierLog.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).limit(30).lean(),
-        getCourierSettings(),
-        order.userId
-          ? User.findById(order.userId).select("email name phone").lean()
-          : Promise.resolve(null),
-      ]);
+    const [
+      payments,
+      shipments,
+      auditLogs,
+      courierLogs,
+      courierSettings,
+      accountUser,
+      paymentRefunds,
+      paymentEvents,
+      refundSummary,
+    ] = await Promise.all([
+      Payment.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).limit(25).lean(),
+      Shipment.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).limit(20),
+      AdminAuditLog.find({ targetType: "order", targetId: order.orderNumber })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
+      CourierLog.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).limit(30).lean(),
+      getCourierSettings(),
+      order.userId
+        ? User.findById(order.userId).select("email name phone").lean()
+        : Promise.resolve(null),
+      PaymentRefund.find({ orderNumber: order.orderNumber }).sort({ createdAt: -1 }).lean(),
+      PaymentEvent.find({
+        orderNumber: order.orderNumber,
+        eventType: {
+          $in: [
+            "refund_initiated",
+            "refund_completed",
+            "refund_failed",
+            "manual_refund_recorded",
+            "refund_timeout_reconcile_needed",
+            "courier_return_requested",
+            "physical_return_confirmed",
+            "stock_released",
+          ],
+        },
+      })
+        .sort({ timestamp: -1 })
+        .limit(50)
+        .lean(),
+      computeOrderRefundSummary(order.orderNumber, order._id),
+    ]);
 
     const activeShipment = shipments.find(
       (s) => !["cancelled", "returned", "failed"].includes(String(s.status))
@@ -236,6 +275,52 @@ export async function GET(
           valId: p.valId,
           cardType: p.cardType,
         },
+      });
+    }
+
+    for (const r of paymentRefunds) {
+      const rTime = r.processedAt || r.failedAt || r.initiatedAt || r.createdAt;
+      if (!rTime) continue;
+      const channelLabel = r.refundChannel === "manual_offline" ? "Manual Offline" : "SSLCOMMERZ";
+      const statusLabel = String(r.status).toUpperCase();
+      timeline.push({
+        id: `refund-${r.refundId}`,
+        at: new Date(rTime).toISOString(),
+        category: "payment",
+        title: `Refund ${statusLabel} (${channelLabel})`,
+        description: `৳${Number(r.amount).toLocaleString()} ${r.currency || "BDT"} · ID: ${r.refundId}${r.refundRefId ? ` · Ref: ${r.refundRefId}` : ""}${r.externalReference ? ` · Ext Ref: ${r.externalReference}` : ""}${r.reason ? ` · ${r.reason}` : ""}`,
+        actor: r.requestedBy || "admin",
+        action: `refund.${String(r.status).toLowerCase()}`,
+        metadata: {
+          refundId: r.refundId,
+          refundChannel: r.refundChannel || "sslcommerz",
+          status: r.status,
+          amount: r.amount,
+          refundRefId: r.refundRefId || null,
+          externalReference: r.externalReference || null,
+          reconciliationRequired: Boolean(r.reconciliationRequired),
+        },
+      });
+    }
+
+    for (const ev of paymentEvents) {
+      const evTime = ev.timestamp || ev.createdAt;
+      if (!evTime) continue;
+      const meta = (ev.metadata || {}) as Record<string, unknown>;
+      const refundId = typeof meta.refundId === "string" ? meta.refundId : undefined;
+      timeline.push({
+        id: `pevent-${String(ev._id)}`,
+        at: new Date(evTime).toISOString(),
+        category: "payment",
+        title: String(ev.eventType)
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+        description: refundId
+          ? `Refund ${refundId}${meta.amount ? ` · ৳${Number(meta.amount).toLocaleString()}` : ""}${meta.error ? ` · ${String(meta.error)}` : ""}`
+          : `Event ${ev.eventType}`,
+        actor: String(ev.source || "system"),
+        action: `payment_event.${ev.eventType}`,
+        metadata: { ...meta, refundId },
       });
     }
 
@@ -495,7 +580,30 @@ export async function GET(
           allowedNextStatuses,
           bookingEligibility: eligibility,
           reopenEligibility,
+          cancellationDetails: order.cancellationDetails || null,
+          returnInspection: order.returnInspection || null,
         },
+        refundSummary,
+        refunds: paymentRefunds.map((r) => ({
+          id: String(r._id),
+          refundId: r.refundId,
+          refundChannel: r.refundChannel || "sslcommerz",
+          status: r.status,
+          amount: r.amount,
+          currency: r.currency || "BDT",
+          reason: r.reason,
+          refundMethod: r.refundMethod || null,
+          externalReference: r.externalReference || null,
+          refundRefId: r.refundRefId || null,
+          refundDate: r.refundDate || null,
+          adminNote: r.adminNote || null,
+          requestedBy: r.requestedBy,
+          initiatedAt: r.initiatedAt,
+          processedAt: r.processedAt || null,
+          failedAt: r.failedAt || null,
+          failureReason: r.failureReason || null,
+          reconciliationRequired: Boolean(r.reconciliationRequired),
+        })),
         providers: courierService.getProviderStatuses(courierSettings),
         payments: payments.map((p) => ({
           id: String(p._id),

@@ -9,6 +9,7 @@ import { requireAdminSessionCore } from "@/server/auth/admin-auth";
 import { computeOrderFinancials } from "@/server/orders/workflow";
 import { commitStockForOrder } from "@/server/products/stock";
 import { clientIp } from "@/server/security/rate-limit";
+import { ProcessRefundService } from "@/server/payments/services/process-refund";
 
 /**
  * POST /api/admin/orders/[id]/payments/manual
@@ -53,71 +54,64 @@ export async function POST(
       typeof body.reference === "string" ? body.reference.trim().slice(0, 80) : "";
 
     if (action === "refund") {
-      if (prevFinancials.advancePaidAmount <= 0 && order.paymentStatus !== "paid") {
+      const refundMethod =
+        typeof body.refundMethod === "string" && body.refundMethod.trim()
+          ? body.refundMethod.trim().slice(0, 60)
+          : typeof body.method === "string" && body.method.trim()
+            ? body.method.trim().slice(0, 60)
+            : "manual_offline";
+      const externalReference =
+        typeof body.externalReference === "string" && body.externalReference.trim()
+          ? body.externalReference.trim().slice(0, 120)
+          : reference;
+      if (!externalReference) {
         return NextResponse.json(
-          { error: "Cannot record a refund before any payment is received." },
-          { status: 409 }
+          { error: "Transaction / reference ID is required for manual refunds." },
+          { status: 400 }
+        );
+      }
+      const refundDate = body.refundDate ? new Date(body.refundDate) : now;
+      const reason =
+        (typeof body.reason === "string" && body.reason.trim()) ||
+        note ||
+        "Manual offline refund recorded by admin";
+      const evidenceNote =
+        typeof body.evidenceNote === "string" ? body.evidenceNote.trim().slice(0, 300) : undefined;
+      const adminNote =
+        typeof body.adminNote === "string" ? body.adminNote.trim().slice(0, 300) : undefined;
+      const idempotencyKey =
+        typeof body.idempotencyKey === "string" && body.idempotencyKey.trim()
+          ? body.idempotencyKey.trim()
+          : undefined;
+
+      const result = await ProcessRefundService.recordManualRefund({
+        orderNumber: order.orderNumber,
+        orderId: order._id,
+        amount: Math.round(amount * 100) / 100,
+        refundMethod,
+        externalReference,
+        refundDate: Number.isNaN(refundDate.getTime()) ? now : refundDate,
+        reason,
+        requestedBy: auth.user || "admin",
+        adminNote,
+        evidenceNote,
+        idempotencyKey,
+        tenantId: auth.tenantId,
+        ip: clientIp(request),
+        userAgent: request.headers.get("user-agent") || "",
+      });
+
+      if (!result.ok) {
+        return NextResponse.json(
+          { ok: false, error: result.error, code: result.code },
+          { status: result.code === "REFUND_AMOUNT_EXCEEDED" ? 409 : 400 }
         );
       }
 
-      const refundCap = prevFinancials.advancePaidAmount || order.total;
-      const refundAmount = Math.min(refundCap, Math.round(amount * 100) / 100);
-      const remainingPaid = Math.max(0, Math.round((refundCap - refundAmount) * 100) / 100);
-      const nextPaymentStatus = remainingPaid === 0 ? "refunded" : "partially_refunded";
-
-      const paymentDoc = await Payment.create({
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        provider: "manual",
-        status: nextPaymentStatus,
-        amount: refundAmount,
-        expectedAmount: refundAmount,
-        currency: "BDT",
-        tranId: `REF-${order.orderNumber}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
-        refundedAmount: refundAmount,
-        refundRefId: reference || null,
-        refundReason: note || "Admin recorded refund",
-        refundedAt: now,
-        recordedBy: auth.user || "admin",
-        note: note || "Manual refund entry",
-      });
-
-      const updated = await Order.findOneAndUpdate(
-        { _id: order._id },
-        {
-          $set: {
-            paymentStatus: nextPaymentStatus,
-            paidAmount: remainingPaid,
-            expectedCodAmount: 0,
-            codSettlementStatus: "none",
-          },
-        },
-        { returnDocument: "after" }
-      ).lean();
-
-      await AdminAuditLog.create({
-        tenantId: auth.tenantId,
-        actor: auth.user || "admin",
-        action: "order.payment.refund_recorded",
-        targetType: "order",
-        targetId: order.orderNumber,
-        before: {
-          paymentStatus: order.paymentStatus,
-          paidAmount: prevFinancials.advancePaidAmount,
-        },
-        after: {
-          paymentStatus: nextPaymentStatus,
-          paidAmount: remainingPaid,
-          refundAmount,
-          reference,
-        },
-        ip: clientIp(request),
-        userAgent: request.headers.get("user-agent") || "",
-      }).catch((e) => console.warn("Audit log failed:", e));
-
+      const updated = await Order.findById(order._id).lean();
       return NextResponse.json({
         ok: true,
-        paymentId: String(paymentDoc._id),
+        refundId: result.refundId,
         financials: updated ? computeOrderFinancials(updated) : null,
       });
     }

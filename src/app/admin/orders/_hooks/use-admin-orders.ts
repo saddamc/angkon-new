@@ -482,13 +482,29 @@ export function useAdminOrders() {
   const handleStatusChange = async (
     orderId: string | number,
     newStatus: string,
-    options: { revertPayment?: boolean; reason?: string } = {}
+    options: {
+      revertPayment?: boolean;
+      reason?: string;
+      cancelDecision?: "cancel_only" | "cancel_and_refund";
+      adminNote?: string;
+      refund?: {
+        amount: number;
+        reason: string;
+        method?: string;
+        reference?: string;
+        refundDate?: string;
+        channel?: string;
+      };
+    } = {}
   ): Promise<boolean> => {
     setUpdating(orderId);
     try {
       const payload: Record<string, unknown> = { status: newStatus };
       if (options.reason) payload.reason = options.reason;
       if (options.revertPayment) payload.paymentStatus = "pending";
+      if (options.cancelDecision) payload.cancelDecision = options.cancelDecision;
+      if (options.adminNote) payload.adminNote = options.adminNote;
+      if (options.refund) payload.refund = options.refund;
 
       const res = await authFetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
@@ -501,7 +517,12 @@ export function useAdminOrders() {
         return false;
       }
 
-      if (body?.autoBook?.booked) {
+      if (body?.refundResult && !body.refundResult.ok) {
+        showToast(
+          `Order #${orderId} cancelled, but refund needs attention: ${body.refundResult.error || "failed"}`,
+          "error"
+        );
+      } else if (body?.autoBook?.booked) {
         showToast(
           `Order #${orderId} updated & auto-booked via ${getCourierLabel(body.autoBook.courier)} (${body.autoBook.trackingCode || "active"})`,
           "success"
@@ -648,6 +669,12 @@ export function useAdminOrders() {
         method?: string;
         reference?: string;
         note?: string;
+        refundMethod?: string;
+        externalReference?: string;
+        refundDate?: string;
+        reason?: string;
+        adminNote?: string;
+        evidenceNote?: string;
       }
     ) => {
       try {
@@ -672,6 +699,125 @@ export function useAdminOrders() {
       } catch {
         showToast("Network error while recording payment.", "error");
         return false;
+      }
+    },
+    [authFetch, fetchOrderDetails, filterStatus, load, showToast]
+  );
+
+  const initiateGatewayRefund = useCallback(
+    async (attemptId: string, amount: number, reason: string, orderId?: string | number) => {
+      try {
+        const res = await authFetch(`/api/payments/${attemptId}/refund`, {
+          method: "POST",
+          body: JSON.stringify({ amount, reason }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) {
+          showToast(data.error || "Failed to initiate SSLCOMMERZ refund.", "error");
+          return false;
+        }
+        showToast(`Refund initiated (${data.status || "processing"})`, "success");
+        await load(filterStatus, false);
+        if (orderId) void fetchOrderDetails(orderId);
+        return true;
+      } catch {
+        showToast("Network error while initiating refund.", "error");
+        return false;
+      }
+    },
+    [authFetch, fetchOrderDetails, filterStatus, load, showToast]
+  );
+
+  const syncRefundStatus = useCallback(
+    async (refundId: string, orderId?: string | number) => {
+      try {
+        const res = await authFetch(`/api/payments/refunds/${refundId}/sync`, {
+          method: "POST",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showToast(data.error || "Could not sync refund status.", "error");
+          return false;
+        }
+        showToast(
+          data.status === "succeeded"
+            ? "Refund confirmed as completed by gateway"
+            : `Refund status: ${data.status || "processing"}`,
+          "success"
+        );
+        await load(filterStatus, false);
+        if (orderId) void fetchOrderDetails(orderId);
+        return true;
+      } catch {
+        showToast("Network error while syncing refund status.", "error");
+        return false;
+      }
+    },
+    [authFetch, fetchOrderDetails, filterStatus, load, showToast]
+  );
+
+  const requestCourierReturn = useCallback(
+    async (orderId: string | number, reason: string) => {
+      setShipmentBusy(true);
+      try {
+        const res = await authFetch(`/api/admin/orders/${orderId}/shipment`, {
+          method: "PATCH",
+          body: JSON.stringify({ action: "request_return", reason }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) {
+          showToast(data.error || "Could not request courier return/recall.", "error");
+          return false;
+        }
+        showToast("Courier return / recall requested", "success");
+        await load(filterStatus, false);
+        void fetchOrderDetails(orderId);
+        return true;
+      } catch {
+        showToast("Network error while requesting return.", "error");
+        return false;
+      } finally {
+        setShipmentBusy(false);
+      }
+    },
+    [authFetch, fetchOrderDetails, filterStatus, load, showToast]
+  );
+
+  const confirmPhysicalReturn = useCallback(
+    async (
+      orderId: string | number,
+      inspectionOutcome: "restockable" | "damaged",
+      inspectionNote?: string
+    ) => {
+      setShipmentBusy(true);
+      try {
+        const res = await authFetch(`/api/admin/orders/${orderId}/shipment`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            action: "confirm_physical_return",
+            inspectionOutcome,
+            inspectionNote,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.ok === false) {
+          showToast(data.error || "Could not confirm physical return.", "error");
+          return false;
+        }
+        showToast(
+          data.stockReleased
+            ? "Physical return confirmed & stock restored"
+            : "Physical return confirmed (marked damaged — stock not restored)",
+          "success"
+        );
+        await load(filterStatus, false);
+        void fetchOrderDetails(orderId);
+        return true;
+      } catch {
+        showToast("Network error while confirming return.", "error");
+        return false;
+      } finally {
+        setShipmentBusy(false);
       }
     },
     [authFetch, fetchOrderDetails, filterStatus, load, showToast]
@@ -1322,6 +1468,10 @@ export function useAdminOrders() {
     addAdminNote,
     reconcileSettlement,
     recordManualPayment,
+    initiateGatewayRefund,
+    syncRefundStatus,
+    requestCourierReturn,
+    confirmPhysicalReturn,
     shipmentModal,
     setShipmentModal,
     shipments,

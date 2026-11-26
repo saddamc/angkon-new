@@ -121,11 +121,35 @@ export async function reserveStockForOrder(items: StockItem[]): Promise<ReserveS
   return { ok: true, reserved };
 }
 
+const ACTIVE_SHIPMENT_STATUSES = new Set([
+  "picked_up",
+  "in_transit",
+  "out_for_delivery",
+  "delivered",
+  "partial_delivered",
+]);
+
 /**
  * Restores stock for an order exactly once.
  * The atomic `stockReleasedAt` claim makes concurrent failure webhooks safe.
+ *
+ * Pass `options.skipIfShipped = true` when called from automated cancellation
+ * or return status transitions so parcels that are already with the courier
+ * or delivered are not restocked until physical receipt is confirmed.
  */
-export async function releaseStockForOrder(order: IOrder): Promise<{ released: boolean }> {
+export async function releaseStockForOrder(
+  order: IOrder,
+  options?: { skipIfShipped?: boolean }
+): Promise<{ released: boolean; reason?: string }> {
+  const skipIfShipped = options?.skipIfShipped ?? true;
+  if (
+    skipIfShipped &&
+    order.shipmentStatus &&
+    ACTIVE_SHIPMENT_STATUSES.has(String(order.shipmentStatus).toLowerCase())
+  ) {
+    return { released: false, reason: "shipment_active" };
+  }
+
   const claimed = await Order.findOneAndUpdate(
     {
       _id: order._id,

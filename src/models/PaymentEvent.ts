@@ -27,7 +27,13 @@ export type PaymentEventType =
   | "manual_status_override"
   | "manual_note"
   | "refund_initiated"
-  | "refund_completed";
+  | "refund_completed"
+  | "refund_failed"
+  | "manual_refund_recorded"
+  | "refund_timeout_reconcile_needed"
+  | "courier_return_requested"
+  | "physical_return_confirmed"
+  | "stock_released";
 
 export type PaymentEventSource =
   | "customer_browser"
@@ -38,7 +44,8 @@ export type PaymentEventSource =
   | "system";
 
 export interface IPaymentEventDocument extends Document {
-  attemptId: Types.ObjectId;
+  /** Null for manual offline refund events that have no payment attempt. */
+  attemptId: Types.ObjectId | null;
   orderId: Types.ObjectId;
   orderNumber: string;
   tranId: string;
@@ -57,7 +64,8 @@ const PaymentEventSchema = new Schema<IPaymentEventDocument>(
     attemptId: {
       type: Schema.Types.ObjectId,
       ref: "PaymentAttempt",
-      required: true,
+      required: false,
+      default: null,
       index: true,
     },
     orderId: {
@@ -74,9 +82,11 @@ const PaymentEventSchema = new Schema<IPaymentEventDocument>(
     },
     tranId: {
       type: String,
-      required: true,
+      required: false,
+      default: null,
       trim: true,
       index: true,
+      sparse: true,
     },
     eventType: {
       type: String,

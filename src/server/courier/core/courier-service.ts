@@ -1085,6 +1085,218 @@ export class CourierService {
     };
   }
 
+  /**
+   * Request return / recall for a parcel that has already been picked up or is
+   * in transit. Never marks the shipment as "cancelled".
+   */
+  async requestReturn(args: {
+    orderIdOrNumber: string;
+    reason?: string;
+    actor: string;
+    tenantId: string;
+    ip: string;
+    userAgent: string;
+  }): Promise<
+    | { ok: true; shipment: ReturnType<typeof serializeShipment> | null; shipmentStatus: string }
+    | { ok: false; status: number; code: string; error: string }
+  > {
+    const order = await findOrderDoc(args.orderIdOrNumber);
+    if (!order) {
+      return { ok: false, status: 404, code: "NOT_FOUND", error: "Order not found" };
+    }
+
+    const shipment = await Shipment.findOne({
+      orderId: order._id,
+      status: { $nin: ["cancelled", "delivered", "partial_delivered", "returned"] },
+    }).sort({ createdAt: -1 });
+
+    const currentStatus = String(shipment?.status || order.shipmentStatus || "not_booked").toLowerCase();
+    if (!["picked_up", "in_transit", "out_for_delivery"].includes(currentStatus)) {
+      return {
+        ok: false,
+        status: 409,
+        code: "INVALID_SHIPMENT_STATE",
+        error: `Return/recall can only be requested when the parcel is picked up or in transit (current: "${currentStatus}").`,
+      };
+    }
+
+    const now = new Date();
+    const reason = (args.reason || "Return / recall requested by admin").trim().slice(0, 240);
+
+    if (shipment) {
+      shipment.status = "return_initiated";
+      shipment.lastSyncedAt = now;
+      shipment.events.push({
+        status: "return_initiated",
+        at: now,
+        note: reason,
+      });
+      await shipment.save();
+    }
+
+    await Order.updateOne(
+      { _id: order._id },
+      {
+        $set: {
+          shipmentStatus: "return_initiated",
+          "returnInspection.returnRequestedAt": now,
+          "returnInspection.returnRequestedBy": args.actor,
+          "returnInspection.returnReason": reason,
+          "returnInspection.inspectionOutcome": "pending",
+        },
+      }
+    );
+
+    await this.logEvent({
+      provider: shipment?.provider || order.courier || "steadfast",
+      action: "return_requested",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      consignmentId: shipment?.consignmentId || order.consignmentId || "",
+      ok: true,
+      httpStatus: 200,
+      message: `Return / recall requested (${reason}).`,
+      actor: args.actor,
+    });
+
+    try {
+      await AdminAuditLog.create({
+        tenantId: args.tenantId,
+        actor: args.actor,
+        action: "order.shipment.return_requested",
+        targetType: "order",
+        targetId: order.orderNumber,
+        before: { shipmentStatus: currentStatus },
+        after: { shipmentStatus: "return_initiated", reason },
+        ip: args.ip,
+        userAgent: args.userAgent,
+      });
+    } catch (auditErr) {
+      console.warn("Admin audit log write failed:", auditErr);
+    }
+
+    return {
+      ok: true,
+      shipment: shipment ? serializeShipment(shipment) : null,
+      shipmentStatus: "return_initiated",
+    };
+  }
+
+  /**
+   * Confirm physical receipt of a returned parcel and record inspection outcome.
+   * Restores stock ONLY when `inspectionOutcome === "restockable"`.
+   */
+  async confirmPhysicalReturn(args: {
+    orderIdOrNumber: string;
+    inspectionOutcome: "restockable" | "damaged";
+    inspectionNote?: string;
+    actor: string;
+    tenantId: string;
+    ip: string;
+    userAgent: string;
+  }): Promise<
+    | {
+        ok: true;
+        shipmentStatus: string;
+        inspectionOutcome: "restockable" | "damaged";
+        stockReleased: boolean;
+      }
+    | { ok: false; status: number; code: string; error: string }
+  > {
+    const order = await findOrderDoc(args.orderIdOrNumber);
+    if (!order) {
+      return { ok: false, status: 404, code: "NOT_FOUND", error: "Order not found" };
+    }
+
+    const shipment = await Shipment.findOne({
+      orderId: order._id,
+      status: { $in: ["return_initiated", "returned", "picked_up", "in_transit", "out_for_delivery"] },
+    }).sort({ createdAt: -1 });
+
+    const currentStatus = String(shipment?.status || order.shipmentStatus || "not_booked").toLowerCase();
+    if (!["return_initiated", "returned"].includes(currentStatus)) {
+      return {
+        ok: false,
+        status: 409,
+        code: "RETURN_NOT_INITIATED",
+        error: `Physical return confirmation requires shipment status "return_initiated" or "returned" (current: "${currentStatus}").`,
+      };
+    }
+
+    const now = new Date();
+    const note = (args.inspectionNote || "").trim().slice(0, 300);
+
+    if (shipment && shipment.status !== "returned") {
+      shipment.status = "returned";
+      shipment.lastSyncedAt = now;
+      shipment.events.push({
+        status: "returned",
+        at: now,
+        note: note ? `Physical return confirmed (${args.inspectionOutcome}): ${note}` : `Physical return confirmed (${args.inspectionOutcome})`,
+      });
+      await shipment.save();
+    }
+
+    await Order.updateOne(
+      { _id: order._id },
+      {
+        $set: {
+          shipmentStatus: "returned",
+          "returnInspection.physicalReceiptConfirmedAt": now,
+          "returnInspection.physicalReceiptConfirmedBy": args.actor,
+          "returnInspection.inspectionOutcome": args.inspectionOutcome,
+          "returnInspection.inspectionNote": note || null,
+        },
+      }
+    );
+
+    let stockReleased = false;
+    if (args.inspectionOutcome === "restockable") {
+      const releaseRes = await releaseStockForOrder(order, { skipIfShipped: false });
+      stockReleased = releaseRes.released;
+    }
+
+    await this.logEvent({
+      provider: shipment?.provider || order.courier || "steadfast",
+      action: "physical_return_confirmed",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      consignmentId: shipment?.consignmentId || order.consignmentId || "",
+      ok: true,
+      httpStatus: 200,
+      message: `Physical return confirmed (${args.inspectionOutcome}). Stock released: ${stockReleased}.`,
+      actor: args.actor,
+    });
+
+    try {
+      await AdminAuditLog.create({
+        tenantId: args.tenantId,
+        actor: args.actor,
+        action: "order.shipment.physical_return_confirmed",
+        targetType: "order",
+        targetId: order.orderNumber,
+        before: { shipmentStatus: currentStatus },
+        after: {
+          shipmentStatus: "returned",
+          inspectionOutcome: args.inspectionOutcome,
+          inspectionNote: note || null,
+          stockReleased,
+        },
+        ip: args.ip,
+        userAgent: args.userAgent,
+      });
+    } catch (auditErr) {
+      console.warn("Admin audit log write failed:", auditErr);
+    }
+
+    return {
+      ok: true,
+      shipmentStatus: "returned",
+      inspectionOutcome: args.inspectionOutcome,
+      stockReleased,
+    };
+  }
+
   async testConnection(args: { provider?: string; actor: string; forceLive?: boolean }) {
     const startedAt = Date.now();
     const provider = (args.provider || "steadfast").trim().toLowerCase();

@@ -6,6 +6,7 @@ import { PaymentEventRepository } from "../repositories/payment-event.repository
 import { generateTranId } from "../utils/generate-tran-id";
 import { createSslcommerzSession } from "../providers/sslcommerz/create-session";
 import { maskSessionKey } from "../payment-idempotency";
+import { redactSensitiveData } from "../utils/redact-sensitive-data";
 import { getSslcommerzConfig } from "../providers/sslcommerz/config";
 import {
   isSslcommerzLiveReady,
@@ -202,11 +203,15 @@ export class InitiatePaymentService {
       const gatewayResponse = await createSslcommerzSession(sessionInput);
 
       if (gatewayResponse.status === "SUCCESS" && gatewayResponse.GatewayPageURL) {
-        // Success: update attempt to pending with session info
+        // Success: update attempt to pending with session info.
+        // Store the gateway sessionkey separately from tranId and also persist
+        // its one-way SHA-256 hash + sanitized initiation response.
         attempt.status = "pending";
         attempt.customerActivity = "redirected";
         attempt.gatewayPageUrl = gatewayResponse.GatewayPageURL;
-        attempt.sessionKey = maskSessionKey(gatewayResponse.sessionkey);
+        attempt.sessionKey = gatewayResponse.sessionkey ? String(gatewayResponse.sessionkey).trim() : null;
+        attempt.sessionKeyHash = maskSessionKey(gatewayResponse.sessionkey);
+        attempt.rawInit = redactSensitiveData(gatewayResponse as unknown as Record<string, unknown>);
         attempt.gatewaySessionCreatedAt = new Date();
         attempt.nextCheckAt = new Date(Date.now() + 5 * 60 * 1000); // Check in 5 mins if no return
         attempt.reconciliationStatus = "scheduled";

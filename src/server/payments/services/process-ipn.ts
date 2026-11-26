@@ -7,6 +7,7 @@ import { normalizeSslcommerzResponse } from "../providers/sslcommerz/normalize-r
 import { VerifyPaymentService } from "./verify-payment";
 import { FinalizePaymentService } from "./finalize-payment";
 import { isSuccessfulStatus } from "../payment-state-machine";
+import { getSslcommerzConfig } from "../providers/sslcommerz/config";
 
 export interface ProcessIpnResult {
   ok: boolean;
@@ -58,6 +59,18 @@ export class ProcessIpnService {
     if (!inboxDoc.attemptId) {
       inboxDoc.attemptId = attempt._id;
       await inboxDoc.save();
+    }
+
+    // Defense-in-depth per SSLCOMMERZ IPN docs: verify store_id when supplied
+    const incomingStoreId = payload.store_id ? String(payload.store_id).trim() : "";
+    const activeStoreId = getSslcommerzConfig().storeId;
+    if (incomingStoreId && activeStoreId && incomingStoreId !== activeStoreId) {
+      await PaymentWebhookRepository.markProcessed(
+        inboxDoc._id,
+        "ignored",
+        `Store ID mismatch in IPN payload (got ${incomingStoreId})`
+      );
+      return { ok: true, ignored: true, attemptId: String(attempt._id), orderNumber: attempt.orderNumber };
     }
 
     try {

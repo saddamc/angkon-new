@@ -4,8 +4,7 @@ import { PaymentEventRepository } from "../repositories/payment-event.repository
 import { OrderPaymentRepository } from "../repositories/order-payment.repository";
 import { isSuccessfulStatus } from "../payment-state-machine";
 import { sendVerifiedPurchaseCapi } from "../capi";
-import { Order } from "@/models/Order";
-import { sendPaymentInvoiceEmail } from "@/lib/email/invoice-email";
+import { dispatchVerifiedPaidInvoiceEmails } from "@/server/email/email-outbox.service";
 
 export class FinalizePaymentService {
   public static async finalize(input: FinalizePaymentInput): Promise<FinalizePaymentResult> {
@@ -53,8 +52,13 @@ export class FinalizePaymentService {
         reconciliationStatus: reconStatus,
         validationId: normalized.valId,
         bankTransactionId: normalized.bankTranId,
+        gatewayAmount: Number.isFinite(normalized.amount) ? normalized.amount : null,
+        storeAmount: normalized.storeAmount ?? null,
+        tranDate: normalized.tranDate ?? null,
+        validatedOn: normalized.validatedOn ?? null,
         cardType: normalized.cardType,
         cardBrand: normalized.cardBrand,
+        cardIssuer: normalized.cardIssuer ?? null,
         riskLevel: normalized.riskLevel,
         riskTitle: normalized.riskTitle,
         gatewayStatus: normalized.status,
@@ -93,63 +97,64 @@ export class FinalizePaymentService {
       if (!isHighRisk && orderSettlement.settled) {
         await sendVerifiedPurchaseCapi(attempt.orderId);
 
-        // Dispatch Official Payment Invoice Email (with atomic deduplication)
+        // Dispatch Official Paid Invoice Email via persistent EmailDelivery outbox.
+        // Never mark invoiceSentAt prior to Resend confirmation, and never allow
+        // PDF or email failure to roll back a canonically verified payment.
         try {
           const targetOrder = orderSettlement.order;
-          if (targetOrder?.customer?.email && !targetOrder.invoiceSentAt) {
-            const marked = await Order.findOneAndUpdate(
-              { _id: targetOrder._id, invoiceSentAt: null },
-              { $set: { invoiceSentAt: new Date() } }
-            );
-
-            if (marked) {
-              void sendPaymentInvoiceEmail({
-                order: {
-                  orderNumber: targetOrder.orderNumber,
-                  customer: {
-                    fullName: targetOrder.customer.fullName,
-                    email: targetOrder.customer.email,
-                    phone: targetOrder.customer.phone,
-                    address: targetOrder.customer.address,
-                    city: targetOrder.customer.city,
-                    district: targetOrder.customer.district,
-                    postalCode: targetOrder.customer.postalCode,
-                  },
-                  items: targetOrder.items.map((it) => ({
-                    productId: it.productId,
-                    name: it.name,
-                    price: it.price,
-                    quantity: it.quantity,
-                    size: it.size,
-                    color: it.color,
-                    image: it.image,
-                  })),
-                  subtotal: targetOrder.subtotal,
-                  shippingFee: targetOrder.shippingFee,
-                  discount: targetOrder.discount,
-                  promoCode: targetOrder.promoCode,
-                  total: targetOrder.total,
-                  paymentMethod: targetOrder.paymentMethod,
-                  notes: targetOrder.notes,
-                  createdAt: targetOrder.createdAt,
-                  paidAt: targetOrder.paidAt || new Date(),
-                },
-                payment: {
-                  tranId: attempt.tranId,
-                  valId: normalized.valId,
-                  cardType: normalized.cardType,
-                  bankTranId: normalized.bankTranId,
-                  amount: normalized.amount || attempt.expectedAmount || targetOrder.total,
-                  currency: attempt.currency || "BDT",
-                  paidAt: attempt.paidAt || new Date(),
-                },
-              }).catch((emailErr) => {
-                console.warn("Payment invoice email dispatch warning:", emailErr);
-              });
-            }
+          if (targetOrder) {
+            await dispatchVerifiedPaidInvoiceEmails({
+              orderId: String(targetOrder._id),
+              userId: targetOrder.userId ? String(targetOrder.userId) : null,
+              orderNumber: targetOrder.orderNumber,
+              paymentMethod: targetOrder.paymentMethod,
+              paymentStatus: targetOrder.paymentStatus || "paid",
+              orderStatus: targetOrder.orderStatus || "confirmed",
+              paidAmount: targetOrder.paidAmount ?? targetOrder.total,
+              expectedCodAmount: 0,
+              subtotal: targetOrder.subtotal,
+              shippingFee: targetOrder.shippingFee,
+              discount: targetOrder.discount ?? 0,
+              promoCode: targetOrder.promoCode || "",
+              total: targetOrder.total,
+              notes: targetOrder.notes,
+              createdAt: targetOrder.createdAt ? new Date(targetOrder.createdAt).toISOString() : null,
+              paidAt: (targetOrder.paidAt || attempt.paidAt || new Date()).toISOString(),
+              customer: {
+                fullName: targetOrder.customer.fullName,
+                email: targetOrder.customer.email,
+                phone: targetOrder.customer.phone,
+                address: targetOrder.customer.address,
+                city: targetOrder.customer.city,
+                district: targetOrder.customer.district,
+                postalCode: targetOrder.customer.postalCode,
+              },
+              items: targetOrder.items.map((it) => ({
+                productId: it.productId,
+                slug: it.slug,
+                name: it.name,
+                price: it.price,
+                quantity: it.quantity,
+                size: it.size,
+                color: it.color,
+                image: it.image,
+              })),
+              payment: {
+                attemptId: String(attempt._id),
+                tranId: attempt.tranId,
+                valId: normalized.valId || null,
+                bankTranId: normalized.bankTranId || null,
+                cardType: normalized.cardType || null,
+                cardBrand: normalized.cardBrand || null,
+                cardIssuer: normalized.cardIssuer || null,
+                amount: normalized.amount || attempt.expectedAmount || targetOrder.total,
+                currency: attempt.currency || "BDT",
+                paidAt: (attempt.paidAt || new Date()).toISOString(),
+              },
+            });
           }
         } catch (err) {
-          console.warn("Invoice email dispatch pre-check warning:", err);
+          console.warn("Paid invoice outbox dispatch warning:", err);
         }
       }
 

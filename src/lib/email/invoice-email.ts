@@ -1,6 +1,13 @@
 import { sendEmail, getOrderNotificationEmails } from "./resend";
-import type { IOrder } from "@/models/Order";
-import type { IPaymentAttempt } from "@/models/PaymentAttempt";
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 export interface PaymentInvoiceEmailData {
   order: {
@@ -78,11 +85,11 @@ export function getPaymentInvoiceEmailHtml(data: PaymentInvoiceEmailData): strin
       </td>
       <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle;">
         <div style="font-weight: 700; font-size: 14px; color: #230407; margin-bottom: 4px; line-height: 1.3;">
-          ${item.name}
+          ${escapeHtml(item.name)}
         </div>
         <div style="font-size: 11px; color: #530911;">
-          ${item.size ? `<span style="display: inline-block; background: #f7ede2; font-weight: 600; padding: 2px 7px; border-radius: 4px; border: 1px solid #e6ccb2; margin-right: 4px;">Size: ${item.size}</span>` : ""}
-          ${item.color ? `<span style="display: inline-block; background: #f7ede2; font-weight: 600; padding: 2px 7px; border-radius: 4px; border: 1px solid #e6ccb2;">Color: ${item.color}</span>` : ""}
+          ${item.size ? `<span style="display: inline-block; background: #f7ede2; font-weight: 600; padding: 2px 7px; border-radius: 4px; border: 1px solid #e6ccb2; margin-right: 4px;">Size: ${escapeHtml(item.size)}</span>` : ""}
+          ${item.color ? `<span style="display: inline-block; background: #f7ede2; font-weight: 600; padding: 2px 7px; border-radius: 4px; border: 1px solid #e6ccb2;">Color: ${escapeHtml(item.color)}</span>` : ""}
         </div>
       </td>
       <td style="padding: 14px 10px; border-bottom: 1px solid #f0e6dd; vertical-align: middle; text-align: center; font-size: 14px; font-weight: 600; color: #444;">
@@ -168,14 +175,14 @@ export function getPaymentInvoiceEmailHtml(data: PaymentInvoiceEmailData): strin
                       Billed &amp; Delivered To
                     </h3>
                     <p style="margin: 0 0 3px; font-size: 14px; font-weight: 700; color: #230407;">
-                      ${order.customer.fullName}
+                      ${escapeHtml(order.customer.fullName)}
                     </p>
                     <p style="margin: 0 0 3px; font-size: 13px; color: #555;">
-                      Phone: <strong>${order.customer.phone}</strong>
+                      Phone: <strong>${escapeHtml(order.customer.phone)}</strong>
                     </p>
-                    ${order.customer.email ? `<p style="margin: 0 0 3px; font-size: 13px; color: #555;">Email: ${order.customer.email}</p>` : ""}
+                    ${order.customer.email ? `<p style="margin: 0 0 3px; font-size: 13px; color: #555;">Email: ${escapeHtml(order.customer.email)}</p>` : ""}
                     <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                      ${order.customer.address}, ${order.customer.district} ${order.customer.postalCode ? `(${order.customer.postalCode})` : ""}
+                      ${escapeHtml(order.customer.address)}, ${escapeHtml(order.customer.district)} ${order.customer.postalCode ? `(${escapeHtml(order.customer.postalCode)})` : ""}
                     </p>
                   </td>
 
@@ -185,18 +192,23 @@ export function getPaymentInvoiceEmailHtml(data: PaymentInvoiceEmailData): strin
                       Payment Details
                     </h3>
                     <p style="margin: 0 0 3px; font-size: 13px; color: #555;">
-                      Order Reference: <strong>#${order.orderNumber}</strong>
+                      Order Reference: <strong>#${escapeHtml(order.orderNumber)}</strong>
                     </p>
                     <p style="margin: 0 0 3px; font-size: 13px; color: #555;">
-                      Transaction ID: <span style="font-family: monospace; font-size: 12px; font-weight: 700; color: #230407;">${payment.tranId}</span>
+                      Transaction ID: <span style="font-family: monospace; font-size: 12px; font-weight: 700; color: #230407;">${escapeHtml(payment.tranId)}</span>
                     </p>
                     ${
                       payment.valId
-                        ? `<p style="margin: 0 0 3px; font-size: 13px; color: #555;">Validation ID: <span style="font-family: monospace; font-size: 12px; font-weight: 600;">${payment.valId}</span></p>`
+                        ? `<p style="margin: 0 0 3px; font-size: 13px; color: #555;">Validation ID: <span style="font-family: monospace; font-size: 12px; font-weight: 600;">${escapeHtml(payment.valId)}</span></p>`
+                        : ""
+                    }
+                    ${
+                      payment.bankTranId
+                        ? `<p style="margin: 0 0 3px; font-size: 13px; color: #555;">Bank TXN ID: <span style="font-family: monospace; font-size: 12px; font-weight: 600;">${escapeHtml(payment.bankTranId)}</span></p>`
                         : ""
                     }
                     <p style="margin: 0 0 3px; font-size: 13px; color: #555;">
-                      Channel / Card: <strong>${payment.cardType || "Cards / MFS / Net Banking"}</strong>
+                      Channel / Card: <strong>${escapeHtml(payment.cardType || "Cards / MFS / Net Banking")}</strong>
                     </p>
                     <p style="margin: 0; font-size: 13px; color: #555;">
                       Est. Delivery: <strong>${deliveryTime}</strong>

@@ -66,7 +66,11 @@ export interface IPayment extends Document {
   amount: number;
   /** Original order/attempt amount. `amount` is the amount actually moved. */
   expectedAmount?: number | null;
+  gatewayAmount?: number | null;
+  storeAmount?: number | null;
   currency: string;
+  tranDate?: string | null;
+  validatedOn?: string | null;
   /** SSLCommerz `tran_id` — equal to the order number, unique per payment. */
   tranId: string;
   /** SSLCommerz `val_id`, stored once a callback/IPN is verified. */
@@ -77,6 +81,7 @@ export interface IPayment extends Document {
   bankTranId?: string | null;
   cardType?: string | null;
   cardBrand?: string | null;
+  cardIssuer?: string | null;
   riskLevel?: string | null;
   riskTitle?: string | null;
   failureReason?: string | null;
@@ -135,7 +140,11 @@ const PaymentSchema = new Schema<IPayment>(
     },
     amount: { type: Number, required: true, min: 0 },
     expectedAmount: { type: Number, default: null, min: 0 },
+    gatewayAmount: { type: Number, default: null, min: 0 },
+    storeAmount: { type: Number, default: null, min: 0 },
     currency: { type: String, default: "BDT" },
+    tranDate: { type: String, default: null },
+    validatedOn: { type: String, default: null },
     tranId: { type: String, required: true, unique: true },
     valId: { type: String },
     gatewayPageUrl: { type: String, default: null },
@@ -143,6 +152,7 @@ const PaymentSchema = new Schema<IPayment>(
     bankTranId: { type: String, default: null },
     cardType: { type: String, default: null },
     cardBrand: { type: String, default: null },
+    cardIssuer: { type: String, default: null },
     riskLevel: { type: String, default: null },
     riskTitle: { type: String, default: null },
     failureReason: { type: String, default: null },

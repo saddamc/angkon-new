@@ -95,6 +95,14 @@ export interface AccountOrderSummary {
     totalRefunded: number;
     pendingRefundAmount: number;
   };
+  verifiedPayment?: {
+    tranId: string;
+    valId?: string | null;
+    bankTranId?: string | null;
+    cardType?: string | null;
+    cardBrand?: string | null;
+    paidAt?: string | null;
+  } | null;
 }
 
 export type AccountNotice = {

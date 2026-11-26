@@ -270,15 +270,62 @@ export default async function AdminPaymentDetailPage({ params }: AdminPaymentDet
             ) : (
               <>
                 <div className="flex justify-between gap-3">
+                  <dt>Merchant TXN ID (tran_id)</dt>
+                  <dd className="max-w-[55%] truncate font-mono text-[11px] font-semibold text-neutral-900 dark:text-neutral-100">
+                    {attempt.tranId}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
                   <dt>Validation ID (val_id)</dt>
                   <dd className="max-w-[55%] truncate font-mono text-[11px] text-neutral-900 dark:text-neutral-100">
                     {attempt.valId || attempt.validationId || "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt>Bank transaction ID</dt>
+                  <dt>Bank TXN ID (bank_tran_id)</dt>
                   <dd className="max-w-[55%] truncate font-mono text-[11px] text-neutral-900 dark:text-neutral-100">
                     {attempt.bankTranId || attempt.bankTransactionId || "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt>Gateway Session Key</dt>
+                  <dd className="max-w-[55%] truncate font-mono text-[11px] text-neutral-900 dark:text-neutral-100">
+                    {attempt.sessionKey && attempt.sessionKey !== attempt.sessionKeyHash
+                      ? attempt.sessionKey
+                      : attempt.sessionKeyHash
+                      ? `SHA256:${attempt.sessionKeyHash.slice(0, 12)}…`
+                      : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt>Store Net Amount (store_amount)</dt>
+                  <dd className="font-semibold text-neutral-900 dark:text-neutral-100">
+                    {attempt.storeAmount !== null && attempt.storeAmount !== undefined
+                      ? formatCurrency(attempt.storeAmount, attempt.currency)
+                      : typeof (attempt.rawValidation as { store_amount?: unknown } | null)?.store_amount === "string"
+                      ? formatCurrency(
+                          Number((attempt.rawValidation as { store_amount?: string }).store_amount) || 0,
+                          attempt.currency
+                        )
+                      : "—"}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt>Gateway TXN Date (tran_date)</dt>
+                  <dd className="font-mono text-[11px] text-neutral-900 dark:text-neutral-100">
+                    {attempt.tranDate ||
+                      (typeof (attempt.rawValidation as { tran_date?: unknown } | null)?.tran_date === "string"
+                        ? (attempt.rawValidation as { tran_date?: string }).tran_date
+                        : "—")}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt>Card Issuer (card_issuer)</dt>
+                  <dd className="text-[11px] text-neutral-900 dark:text-neutral-100">
+                    {attempt.cardIssuer ||
+                      (typeof (attempt.rawValidation as { card_issuer?: unknown } | null)?.card_issuer === "string"
+                        ? (attempt.rawValidation as { card_issuer?: string }).card_issuer
+                        : "—")}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">

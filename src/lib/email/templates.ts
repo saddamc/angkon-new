@@ -24,10 +24,21 @@ export interface EmailOrderData {
   items: EmailOrderItem[];
   subtotal: number;
   shippingFee: number;
+  discount?: number;
+  promoCode?: string;
   total: number;
   paymentMethod: string;
   notes?: string;
   createdAt?: Date | string;
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatPrice(amount: number): string {
@@ -56,11 +67,11 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
       </td>
       <td style="padding: 14px 12px; border-bottom: 1px solid #f0e6dd; vertical-align: middle;">
         <div style="font-weight: 600; font-size: 14px; color: #230407; margin-bottom: 3px;">
-          ${item.name}
+          ${escapeHtml(item.name)}
         </div>
         ${
           item.size
-            ? `<span style="display: inline-block; font-size: 11px; background: #f7ede2; color: #530911; font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #e6ccb2;">Size: ${item.size}</span>`
+            ? `<span style="display: inline-block; font-size: 11px; background: #f7ede2; color: #530911; font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #e6ccb2;">Size: ${escapeHtml(item.size)}</span>`
             : ""
         }
       </td>
@@ -111,10 +122,10 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
                 </span>
               </div>
               <h2 style="margin: 0 0 10px; font-family: Georgia, serif; font-size: 24px; color: #230407; font-weight: 600;">
-                Thank You, ${order.customer.fullName}!
+                Thank You, ${escapeHtml(order.customer.fullName)}!
               </h2>
               <p style="margin: 0 auto; max-width: 480px; font-size: 14px; line-height: 1.6; color: #5a544d;">
-                We have received your order <strong>#${order.orderNumber}</strong>. Our team is carefully preparing your collection items for dispatch.
+                We have received your order <strong>#${escapeHtml(order.orderNumber)}</strong>. Our team is carefully preparing your collection items for dispatch.
               </p>
             </td>
           </tr>
@@ -169,9 +180,17 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
                   <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #230407; text-align: right;">${formatPrice(order.subtotal)}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 4px 0; font-size: 14px; color: #666;">Delivery Fee (${order.customer.district}):</td>
+                  <td style="padding: 4px 0; font-size: 14px; color: #666;">Delivery Fee (${escapeHtml(order.customer.district)}):</td>
                   <td style="padding: 4px 0; font-size: 14px; font-weight: 600; color: #230407; text-align: right;">${order.shippingFee === 0 ? "Free" : formatPrice(order.shippingFee)}</td>
                 </tr>
+                ${
+                  order.discount && order.discount > 0
+                    ? `<tr>
+                  <td style="padding: 4px 0; font-size: 14px; color: #27ae60;">Discount ${order.promoCode ? `(${escapeHtml(order.promoCode)})` : ""}:</td>
+                  <td style="padding: 4px 0; font-size: 14px; font-weight: 700; color: #27ae60; text-align: right;">-${formatPrice(order.discount)}</td>
+                </tr>`
+                    : ""
+                }
                 <tr>
                   <td style="padding: 12px 0 0; font-size: 16px; font-weight: 700; color: #530911;">Total Amount:</td>
                   <td style="padding: 12px 0 0; font-size: 18px; font-weight: 800; color: #530911; text-align: right;">${formatPrice(order.total)}</td>
@@ -186,12 +205,12 @@ export function getCustomerOrderEmailHtml(order: EmailOrderData): string {
               <h4 style="margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #530911; font-weight: 700;">
                 Delivery Destination
               </h4>
-              <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #230407;">${order.customer.fullName}</p>
-              <p style="margin: 0 0 4px; font-size: 13px; color: #5a544d;">Phone: <strong>${order.customer.phone}</strong></p>
-              <p style="margin: 0 0 4px; font-size: 13px; color: #5a544d;">Address: ${order.customer.address}, ${order.customer.district} ${order.customer.postalCode ? `(${order.customer.postalCode})` : ""}</p>
+              <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #230407;">${escapeHtml(order.customer.fullName)}</p>
+              <p style="margin: 0 0 4px; font-size: 13px; color: #5a544d;">Phone: <strong>${escapeHtml(order.customer.phone)}</strong></p>
+              <p style="margin: 0 0 4px; font-size: 13px; color: #5a544d;">Address: ${escapeHtml(order.customer.address)}, ${escapeHtml(order.customer.district)} ${order.customer.postalCode ? `(${escapeHtml(order.customer.postalCode)})` : ""}</p>
               ${
                 order.notes
-                  ? `<p style="margin: 8px 0 0; font-size: 12px; color: #887e74; font-style: italic;">Customer Note: "${order.notes}"</p>`
+                  ? `<p style="margin: 8px 0 0; font-size: 12px; color: #887e74; font-style: italic;">Customer Note: "${escapeHtml(order.notes)}"</p>`
                   : ""
               }
             </td>

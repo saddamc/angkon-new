@@ -68,6 +68,16 @@ export class ProcessSuccessService {
         metadata: { error: "Missing val_id in success callback" },
       });
 
+      if (alreadySuccessful) {
+        return {
+          ok: true,
+          attemptId: String(attempt._id),
+          orderNumber: attempt.orderNumber,
+          requiresManualReview: false,
+          redirectUrl: `/thankyou-for-shopping?order=${encodeURIComponent(attempt.orderNumber)}&payment=success`,
+        };
+      }
+
       return {
         ok: false,
         attemptId: String(attempt._id),
@@ -75,6 +85,19 @@ export class ProcessSuccessService {
         requiresManualReview: true,
         redirectUrl: `${statusRedirect}&status=unconfirmed`,
       };
+    }
+
+    const existingValId = attempt.valId || attempt.validationId;
+    if (alreadySuccessful && existingValId && valId && existingValId !== valId) {
+      await PaymentEventRepository.recordEvent({
+        attemptId: attempt._id,
+        orderId: attempt.orderId,
+        orderNumber: attempt.orderNumber,
+        tranId: attempt.tranId,
+        eventType: "duplicate_val_id_detected",
+        source: "customer_browser",
+        metadata: { settledValId: existingValId, replayValId: valId },
+      });
     }
 
     await PaymentEventRepository.recordEvent({
@@ -93,6 +116,8 @@ export class ProcessSuccessService {
     } catch (err) {
       // A validator outage must never be reported as a failed payment. Keep
       // the attempt pending and let reconciliation retry.
+      // CRITICAL: Never overwrite an already-settled attempt's reconciliationStatus,
+      // paidAt, or validatedAt when a replay callback hits a transient validator outage.
       await PaymentEventRepository.recordEvent({
         attemptId: attempt._id,
         orderId: attempt.orderId,
@@ -102,13 +127,24 @@ export class ProcessSuccessService {
         source: "sslcommerz_callback",
         metadata: {
           error: err instanceof Error ? err.message : String(err),
-          retryScheduled: true,
+          retryScheduled: !alreadySuccessful,
+          alreadySuccessful,
         },
       });
 
+      if (alreadySuccessful) {
+        return {
+          ok: true,
+          attemptId: String(attempt._id),
+          orderNumber: attempt.orderNumber,
+          requiresManualReview: false,
+          redirectUrl: `/thankyou-for-shopping?order=${encodeURIComponent(attempt.orderNumber)}&payment=success`,
+        };
+      }
+
       await PaymentAttemptRepository.atomicTransition({
         attemptId: attempt._id,
-        targetStatus: attempt.status === "succeeded" ? attempt.status : "unknown",
+        targetStatus: "unknown",
         reconciliationStatus: "scheduled",
         note: "Validator temporarily unavailable; awaiting reconciliation.",
       });

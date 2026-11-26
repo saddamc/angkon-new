@@ -8,12 +8,29 @@ import { getAppEnvironment } from "@/server/env/app-environment";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
 
+export interface EmailAttachment {
+  filename: string;
+  content: string; // Base64 encoded file content
+  contentType?: string;
+}
+
 interface SendEmailParams {
   to: string | string[];
   subject: string;
   html: string;
   from?: string;
   replyTo?: string | string[];
+  attachments?: EmailAttachment[];
+  idempotencyKey?: string;
+}
+
+export interface SendEmailResult {
+  success: boolean;
+  id?: string;
+  statusCode?: number;
+  isTransient?: boolean;
+  isMock?: boolean;
+  error?: string;
 }
 
 function sanitizeEnvValue(val?: string | null): string {
@@ -27,11 +44,23 @@ function sanitizeEnvValue(val?: string | null): string {
 function postResendOnce(
   apiKey: string,
   payload: Record<string, unknown>,
-  timeoutMs = 8000
+  timeoutMs = 8000,
+  idempotencyKey?: string
 ): Promise<{ status: number; data: Record<string, unknown> }> {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify(payload);
     const url = new URL(RESEND_API_URL);
+
+    const headers: Record<string, string | number> = {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "User-Agent": "angkon-store/1.0",
+      "Content-Length": Buffer.byteLength(body),
+    };
+    if (idempotencyKey && idempotencyKey.trim()) {
+      headers["Idempotency-Key"] = idempotencyKey.trim().slice(0, 256);
+    }
 
     const req = https.request(
       {
@@ -42,13 +71,7 @@ function postResendOnce(
         family: 4,
         agent: false,
         timeout: timeoutMs,
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "User-Agent": "angkon-store/1.0",
-          "Content-Length": Buffer.byteLength(body),
-        },
+        headers,
       },
       (res) => {
         let raw = "";
@@ -82,13 +105,18 @@ function postResendOnce(
 async function postResendJson(
   apiKey: string,
   payload: Record<string, unknown>,
-  timeoutMs = 8000
+  timeoutMs = 8000,
+  idempotencyKey?: string
 ): Promise<{ status: number; data: Record<string, unknown> }> {
   try {
-    return await postResendOnce(apiKey, payload, timeoutMs);
+    return await postResendOnce(apiKey, payload, timeoutMs, idempotencyKey);
   } catch {
-    return await postResendOnce(apiKey, payload, timeoutMs);
+    return await postResendOnce(apiKey, payload, timeoutMs, idempotencyKey);
   }
+}
+
+function isTransientResendStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
 }
 
 export async function sendEmail({
@@ -97,12 +125,14 @@ export async function sendEmail({
   html,
   from,
   replyTo,
-}: SendEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  attachments,
+  idempotencyKey,
+}: SendEmailParams): Promise<SendEmailResult> {
   const appEnv = getAppEnvironment();
 
   // Test environment: strictly mock without external network calls
   if (appEnv === "test") {
-    return { success: true, id: `test_mock_${Date.now()}` };
+    return { success: true, isMock: true, id: `test_mock_${Date.now()}` };
   }
 
   let recipients = Array.isArray(to) ? to : [to];
@@ -116,7 +146,7 @@ export async function sendEmail({
       console.info(
         `[Email Mock (${appEnv})] Non-production email delivery suppressed. To: ${recipients.join(", ")} | Subject: "${subject}"`
       );
-      return { success: true, id: `mock_${appEnv}_${Date.now()}` };
+      return { success: true, isMock: true, id: `mock_${appEnv}_${Date.now()}` };
     }
     recipients = [safeRedirect];
     emailSubject = `[${appEnv.toUpperCase()} TEST - For: ${Array.isArray(to) ? to.join(",") : to}] ${subject}`;
@@ -126,7 +156,7 @@ export async function sendEmail({
 
   if (!apiKey) {
     console.warn("⚠️ RESEND_API_KEY is not defined in environment variables. Email skipped.");
-    return { success: false, error: "Missing RESEND_API_KEY" };
+    return { success: false, isTransient: true, error: "Missing RESEND_API_KEY" };
   }
 
   // Use a human-replyable address by default. A no-reply sender reduces trust
@@ -138,25 +168,53 @@ export async function sendEmail({
   const configuredReplyTo =
     Array.isArray(rawReplyTo) ? (rawReplyTo.length ? rawReplyTo : undefined) : rawReplyTo || undefined;
 
+  const formattedAttachments =
+    attachments && attachments.length > 0
+      ? attachments.map((att) => ({
+          filename: att.filename,
+          content: att.content,
+          ...(att.contentType ? { content_type: att.contentType } : {}),
+        }))
+      : undefined;
+
   try {
-    const { status, data } = await postResendJson(apiKey, {
-      from: sender,
-      to: recipients.map((r) => r.trim()).filter(Boolean),
-      subject: emailSubject,
-      html,
-      ...(configuredReplyTo ? { reply_to: configuredReplyTo } : {}),
-    });
+    const { status, data } = await postResendJson(
+      apiKey,
+      {
+        from: sender,
+        to: recipients.map((r) => r.trim()).filter(Boolean),
+        subject: emailSubject,
+        html,
+        ...(configuredReplyTo ? { reply_to: configuredReplyTo } : {}),
+        ...(formattedAttachments ? { attachments: formattedAttachments } : {}),
+      },
+      8000,
+      idempotencyKey
+    );
 
     if (status < 200 || status >= 300) {
       console.warn("❌ Resend API Error:", status, data);
       const errMsg = typeof data?.message === "string" ? data.message : `Resend rejected email (HTTP ${status})`;
-      return { success: false, error: errMsg };
+      return {
+        success: false,
+        statusCode: status,
+        isTransient: isTransientResendStatus(status),
+        error: errMsg,
+      };
     }
 
-    return { success: true, id: typeof data?.id === "string" ? data.id : undefined };
+    return {
+      success: true,
+      statusCode: status,
+      id: typeof data?.id === "string" ? data.id : undefined,
+    };
   } catch (error) {
     console.error("❌ Email transmission error:", error);
-    return { success: false, error: (error as Error).message };
+    return {
+      success: false,
+      isTransient: true,
+      error: (error as Error).message,
+    };
   }
 }
 

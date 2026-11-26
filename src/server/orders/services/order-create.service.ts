@@ -24,7 +24,7 @@ import {
   type ReservedStockItem,
 } from "@/server/products/stock";
 import { sendMetaCapiEvent, extractClientIp } from "@/server/meta/capi/meta-capi";
-import { sendOrderConfirmationEmails } from "@/lib/email/resend";
+import { dispatchOrderCreatedEmails } from "@/server/email/email-outbox.service";
 import REAL_PRODUCTS from "@/data/real-products.json";
 
 export type AccountStatus = "signed_in" | "created" | "existing" | "none";
@@ -479,16 +479,24 @@ export async function processCustomerOrder({
 
     try {
       const emailTasks: Promise<unknown>[] = [
-        sendOrderConfirmationEmails({
+        dispatchOrderCreatedEmails({
+          orderId: String(newOrder._id),
+          userId: newOrder.userId ? String(newOrder.userId) : null,
           orderNumber: newOrder.orderNumber,
+          paymentMethod: newOrder.paymentMethod,
+          paymentStatus: newOrder.paymentStatus,
+          orderStatus: newOrder.orderStatus,
+          paidAmount: newOrder.paidAmount ?? 0,
+          expectedCodAmount: newOrder.expectedCodAmount ?? (newOrder.paymentMethod === "cod" ? newOrder.total : 0),
           customer: customerData,
           items: itemsData,
           subtotal: newOrder.subtotal,
           shippingFee: newOrder.shippingFee,
+          discount: newOrder.discount ?? 0,
+          promoCode: newOrder.promoCode || "",
           total: newOrder.total,
-          paymentMethod: newOrder.paymentMethod,
           notes: newOrder.notes,
-          createdAt: newOrder.createdAt,
+          createdAt: newOrder.createdAt ? new Date(newOrder.createdAt).toISOString() : null,
         }).catch((emailErr) => {
           console.warn("Order confirmation email dispatch warning:", emailErr);
         }),
@@ -502,9 +510,7 @@ export async function processCustomerOrder({
         );
       }
 
-      Promise.allSettled(emailTasks).catch((emailErr) => {
-        console.warn("Email background dispatch warning:", emailErr);
-      });
+      await Promise.allSettled(emailTasks);
 
       if (newOrder.paymentMethod === "cod") {
         try {

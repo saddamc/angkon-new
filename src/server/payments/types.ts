@@ -45,10 +45,14 @@ export interface NormalizedGatewayResult {
   valId?: string | null;
   status: "VALID" | "FAILED" | "CANCELLED" | "PENDING" | "UNATTEMPTED" | "EXPIRED" | "ERROR" | "UNKNOWN";
   amount: number;
+  storeAmount?: number | null;
   currency: string;
+  tranDate?: string | null;
+  validatedOn?: string | null;
   bankTranId?: string | null;
   cardType?: string | null;
   cardBrand?: string | null;
+  cardIssuer?: string | null;
   riskLevel?: string | null;
   riskTitle?: string | null;
   rawResponse?: Record<string, unknown>;

@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Copy,
   CreditCard,
+  Download,
   ExternalLink,
   FileText,
   MapPin,
@@ -364,6 +365,15 @@ export function AccountOrderCard({
             >
               <FileText className="h-3.5 w-3.5" /> Invoice
             </button>
+
+            <a
+              href={`/api/orders/${encodeURIComponent(order.orderNumber)}/invoice`}
+              download={`ANGKON-Invoice-${order.orderNumber}.pdf`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#E1B76F]/35 bg-[#2b0408] px-3 py-2 text-xs font-bold uppercase text-[#E1B76F] hover:border-[#E1B76F] transition"
+              title="Download PDF Invoice"
+            >
+              <Download className="h-3.5 w-3.5" /> PDF
+            </a>
 
             <button
               type="button"

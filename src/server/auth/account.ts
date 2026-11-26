@@ -4,6 +4,7 @@ import { User, type IUser } from "@/models/User";
 import { Order, type IOrder } from "@/models/Order";
 import { Shipment } from "@/models/Shipment";
 import { PaymentRefund } from "@/models/PaymentRefund";
+import { PaymentAttempt } from "@/models/PaymentAttempt";
 import {
   evaluateCustomerCancellationEligibility,
   ORDER_STATUS_LABELS,
@@ -121,6 +122,37 @@ export async function getAccountOrders(user: IUser): Promise<IOrder[]> {
     .sort({ initiatedAt: -1 })
     .lean();
 
+  const verifiedPaymentDocs = await PaymentAttempt.find({
+    orderId: { $in: orderIds },
+    provider: "sslcommerz",
+    status: { $in: ["succeeded", "partially_refunded", "refunded"] },
+  })
+    .select("orderId tranId valId validationId bankTranId bankTransactionId cardType cardBrand paidAt")
+    .sort({ paidAt: -1, createdAt: -1 })
+    .lean();
+
+  const verifiedPaymentByOrderId = new Map<string, {
+    tranId: string;
+    valId: string | null;
+    bankTranId: string | null;
+    cardType: string | null;
+    cardBrand: string | null;
+    paidAt: string | null;
+  }>();
+  for (const p of verifiedPaymentDocs) {
+    const key = String(p.orderId);
+    if (!verifiedPaymentByOrderId.has(key)) {
+      verifiedPaymentByOrderId.set(key, {
+        tranId: p.tranId,
+        valId: p.valId || p.validationId || null,
+        bankTranId: p.bankTranId || p.bankTransactionId || null,
+        cardType: p.cardType || null,
+        cardBrand: p.cardBrand || null,
+        paidAt: p.paidAt ? new Date(p.paidAt).toISOString() : null,
+      });
+    }
+  }
+
   const refundsByOrderId = new Map<string, Array<{
     refundId: string;
     amount: number;
@@ -183,6 +215,7 @@ export async function getAccountOrders(user: IUser): Promise<IOrder[]> {
         totalRefunded,
         pendingRefundAmount,
       },
+      verifiedPayment: verifiedPaymentByOrderId.get(String(o._id)) || null,
     };
   }) as unknown as IOrder[];
 }

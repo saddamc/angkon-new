@@ -76,8 +76,13 @@ export class PaymentAttemptRepository {
     reconciliationStatus?: ReconciliationStatus;
     validationId?: string | null;
     bankTransactionId?: string | null;
+    gatewayAmount?: number | null;
+    storeAmount?: number | null;
+    tranDate?: string | null;
+    validatedOn?: string | null;
     cardType?: string | null;
     cardBrand?: string | null;
+    cardIssuer?: string | null;
     riskLevel?: string | null;
     riskTitle?: string | null;
     gatewayStatus?: string | null;
@@ -125,8 +130,17 @@ export class PaymentAttemptRepository {
       updateOps.bankTransactionId = args.bankTransactionId;
       updateOps.bankTranId = args.bankTransactionId;
     }
+    if (args.gatewayAmount !== undefined && args.gatewayAmount !== null) {
+      updateOps.gatewayAmount = args.gatewayAmount;
+    }
+    if (args.storeAmount !== undefined && args.storeAmount !== null) {
+      updateOps.storeAmount = args.storeAmount;
+    }
+    if (args.tranDate) updateOps.tranDate = args.tranDate;
+    if (args.validatedOn) updateOps.validatedOn = args.validatedOn;
     if (args.cardType) updateOps.cardType = args.cardType;
     if (args.cardBrand) updateOps.cardBrand = args.cardBrand;
+    if (args.cardIssuer) updateOps.cardIssuer = args.cardIssuer;
     if (args.riskLevel) updateOps.riskLevel = args.riskLevel;
     if (args.riskTitle) updateOps.riskTitle = args.riskTitle;
     if (args.gatewayStatus) updateOps.gatewayStatus = args.gatewayStatus;

@@ -12,6 +12,7 @@ import {
   Copy,
   CreditCard,
   ExternalLink,
+  FileText,
   MapPin,
   MoreVertical,
   Package,
@@ -2888,6 +2889,15 @@ export function OrderDetailsContent({
             >
               <span>Print</span>
             </CourierPrintAction>
+
+            <a
+              href={`/api/orders/${encodeURIComponent(order.orderNumber)}/invoice`}
+              download={`ANGKON-Invoice-${order.orderNumber}.pdf`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-gray-700 hover:bg-stone-50 cursor-pointer shadow-2xs"
+            >
+              <FileText className="h-3.5 w-3.5 text-[#530911]" />
+              <span>Invoice PDF</span>
+            </a>
 
             {/* More Dropdown */}
             <div className="relative" ref={moreMenuRef}>

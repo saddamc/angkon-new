@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, Clock, FileText, Printer, RotateCcw, X } from "lucide-react";
+import { CheckCircle2, Clock, Download, FileText, Printer, RotateCcw, X } from "lucide-react";
 import { getCourierLabel } from "@/server/courier/core/tracking";
 import { getPaymentMethodLabel } from "@/lib/payment-methods";
 import type { AccountOrderSummary } from "@/types/account";
@@ -59,7 +59,14 @@ export function AccountInvoiceModal({
               Official Tax Invoice &amp; Receipt
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <a
+              href={`/api/orders/${encodeURIComponent(order.orderNumber)}/invoice`}
+              download={`ANGKON-Invoice-${order.orderNumber}.pdf`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#E1B76F]/50 bg-[#3b050b] px-3 py-1.5 text-xs font-bold uppercase text-[#E1B76F] hover:border-[#E1B76F] transition cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" /> Download PDF
+            </a>
             <button
               type="button"
               onClick={() => window.print()}
@@ -155,6 +162,24 @@ export function AccountInvoiceModal({
                   </span>
                 )}
               </p>
+              {order.verifiedPayment?.tranId && (
+                <p className="text-xs text-stone-300 mt-1">
+                  <span className="text-stone-400">Payment Ref (tran_id):</span>{" "}
+                  <span className="font-mono text-white">{order.verifiedPayment.tranId}</span>
+                </p>
+              )}
+              {order.verifiedPayment?.valId && (
+                <p className="text-xs text-stone-300 mt-1">
+                  <span className="text-stone-400">Confirmation ID (val_id):</span>{" "}
+                  <span className="font-mono text-white">{order.verifiedPayment.valId}</span>
+                </p>
+              )}
+              {order.verifiedPayment?.bankTranId && (
+                <p className="text-xs text-stone-300 mt-1">
+                  <span className="text-stone-400">Bank TXN ID:</span>{" "}
+                  <span className="font-mono text-white">{order.verifiedPayment.bankTranId}</span>
+                </p>
+              )}
               {order.courier && (
                 <p className="text-xs text-stone-300 mt-1">
                   <span className="text-stone-400">Assigned Courier:</span> {getCourierLabel(order.courier)}
@@ -260,7 +285,7 @@ export function AccountInvoiceModal({
           {/* Invoice Footer Seal */}
           <div className="mt-8 pt-4 border-t border-[#530911] flex flex-col sm:flex-row items-center justify-between text-[11px] text-stone-400 gap-2">
             <span>Official Computer-Generated Tax Invoice • ANGKON Luxury Fashion</span>
-            <span className="font-mono text-stone-400">Auth Token: ANG-{order.orderNumber.slice(-8)}</span>
+            <span className="font-mono text-stone-400">INV-{order.orderNumber}</span>
           </div>
         </div>
       </div>

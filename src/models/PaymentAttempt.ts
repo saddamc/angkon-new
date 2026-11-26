@@ -42,7 +42,11 @@ export interface IPaymentAttempt extends Document {
   gatewaySessionCreatedAt?: Date | null;
   expectedAmount: number;
   amount: number; // legacy alias for expectedAmount
+  gatewayAmount?: number | null;
+  storeAmount?: number | null;
   currency: string;
+  tranDate?: string | null;
+  validatedOn?: string | null;
   status: PaymentAttemptStatus;
   customerActivity: CustomerActivityStatus;
   reconciliationStatus: ReconciliationStatus;
@@ -55,6 +59,7 @@ export interface IPaymentAttempt extends Document {
   paymentChannel?: string | null;
   cardType?: string | null;
   cardBrand?: string | null;
+  cardIssuer?: string | null;
   riskLevel?: string | null;
   riskTitle?: string | null;
   initiatedAt: Date;
@@ -150,9 +155,29 @@ const PaymentAttemptSchema = new Schema<IPaymentAttempt>(
       type: Number,
       min: 0,
     },
+    gatewayAmount: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    storeAmount: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
     currency: {
       type: String,
       default: "BDT",
+      trim: true,
+    },
+    tranDate: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    validatedOn: {
+      type: String,
+      default: null,
       trim: true,
     },
     status: {
@@ -236,6 +261,10 @@ const PaymentAttemptSchema = new Schema<IPaymentAttempt>(
       default: null,
     },
     cardBrand: {
+      type: String,
+      default: null,
+    },
+    cardIssuer: {
       type: String,
       default: null,
     },

@@ -1,3 +1,4 @@
+import https from "node:https";
 import {
   EmailOrderData,
   getCustomerOrderEmailHtml,
@@ -17,6 +18,77 @@ interface SendEmailParams {
 
 function sanitizeEnvValue(val?: string | null): string {
   return (val || "").trim().replace(/^["']|["']$/g, "").trim();
+}
+
+/**
+ * Posts JSON to Resend over IPv4 (`family: 4`) to prevent Node 22/24 `fetch`
+ * IPv6 connection stalls inside IPv4-only Docker bridge networks (Coolify/VPS).
+ */
+function postResendOnce(
+  apiKey: string,
+  payload: Record<string, unknown>,
+  timeoutMs = 8000
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify(payload);
+    const url = new URL(RESEND_API_URL);
+
+    const req = https.request(
+      {
+        hostname: url.hostname,
+        port: 443,
+        path: url.pathname,
+        method: "POST",
+        family: 4,
+        agent: false,
+        timeout: timeoutMs,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": "angkon-store/1.0",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let raw = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          raw += chunk;
+        });
+        res.on("end", () => {
+          let parsed: Record<string, unknown> = {};
+          try {
+            parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+          } catch {
+            parsed = { message: raw || `HTTP ${res.statusCode || 500}` };
+          }
+          resolve({ status: res.statusCode || 500, data: parsed });
+        });
+      }
+    );
+
+    req.on("timeout", () => {
+      req.destroy(new Error(`Resend API request timed out after ${timeoutMs}ms`));
+    });
+    req.on("error", (err) => {
+      reject(err);
+    });
+    req.write(body);
+    req.end();
+  });
+}
+
+async function postResendJson(
+  apiKey: string,
+  payload: Record<string, unknown>,
+  timeoutMs = 8000
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  try {
+    return await postResendOnce(apiKey, payload, timeoutMs);
+  } catch {
+    return await postResendOnce(apiKey, payload, timeoutMs);
+  }
 }
 
 export async function sendEmail({
@@ -67,30 +139,21 @@ export async function sendEmail({
     Array.isArray(rawReplyTo) ? (rawReplyTo.length ? rawReplyTo : undefined) : rawReplyTo || undefined;
 
   try {
-    const res = await fetch(RESEND_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: sender,
-        to: recipients.map((r) => r.trim()).filter(Boolean),
-        subject: emailSubject,
-        html,
-        ...(configuredReplyTo ? { reply_to: configuredReplyTo } : {}),
-      }),
-      signal: AbortSignal.timeout(10000), // 10 second safety timeout
+    const { status, data } = await postResendJson(apiKey, {
+      from: sender,
+      to: recipients.map((r) => r.trim()).filter(Boolean),
+      subject: emailSubject,
+      html,
+      ...(configuredReplyTo ? { reply_to: configuredReplyTo } : {}),
     });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.warn("❌ Resend API Error:", res.status, data);
-      return { success: false, error: data?.message || `Resend rejected email (HTTP ${res.status})` };
+    if (status < 200 || status >= 300) {
+      console.warn("❌ Resend API Error:", status, data);
+      const errMsg = typeof data?.message === "string" ? data.message : `Resend rejected email (HTTP ${status})`;
+      return { success: false, error: errMsg };
     }
 
-    return { success: true, id: data.id };
+    return { success: true, id: typeof data?.id === "string" ? data.id : undefined };
   } catch (error) {
     console.error("❌ Email transmission error:", error);
     return { success: false, error: (error as Error).message };

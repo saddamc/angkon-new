@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         result.error === "Missing RESEND_API_KEY"
           ? "Email service not configured. Please contact support."
           : result.error || "We couldn't send the code right now. Please try again in a moment.";
-      return NextResponse.json({ error: errMsg }, { status: 502 });
+      return NextResponse.json({ error: errMsg }, { status: 503 });
     }
 
     return NextResponse.json({ ok: true, expiresInMinutes: CODE_TTL_MS / 60000, resendAfterSeconds: 60 });

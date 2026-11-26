@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         result.error === "Missing RESEND_API_KEY"
           ? "Email service not configured (RESEND_API_KEY is missing in production environment variables)."
           : result.error || "We couldn't send the email right now. Please try again shortly.";
-      return NextResponse.json({ error: errMsg }, { status: 502 });
+      return NextResponse.json({ error: errMsg }, { status: 503 });
     }
     return NextResponse.json({ ok: true });
   } catch (error) {

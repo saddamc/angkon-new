@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { PaymentSuccess } from "./payment-success";
 import { PaymentFailed } from "./payment-failed";
 import { PaymentCancelled } from "./payment-cancelled";
@@ -47,8 +47,21 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
   const [isRetrying, setIsRetrying] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
+  const redirectedRef = useRef(false);
 
   const token = attempt.statusToken || statusToken || "";
+
+  // Detect bfcache restores (browser Back/Forward) and force a full reload so
+  // the server always renders a fresh attempt status instead of a stale cache.
+  useEffect(() => {
+    function handlePageShow(e: PageTransitionEvent) {
+      if (e.persisted) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
 
   const fetchLatestStatus = useCallback(async () => {
     try {
@@ -58,9 +71,24 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
       if (res.ok) {
         const data = await res.json();
         if (data.ok && data.attempt) {
+          const updatedStatus = normalizeStatus(String(data.attempt.status));
+          // When the payment is confirmed via IPN/reconciliation while customer
+          // watches the processing spinner, redirect them to the proper
+          // thank-you page instead of silently switching the card state.
+          if (
+            updatedStatus === "succeeded" &&
+            !redirectedRef.current &&
+            data.attempt.orderNumber
+          ) {
+            redirectedRef.current = true;
+            window.location.replace(
+              `/thankyou-for-shopping?order=${encodeURIComponent(data.attempt.orderNumber)}&payment=success`
+            );
+            return;
+          }
           setAttempt({
             ...data.attempt,
-            status: normalizeStatus(String(data.attempt.status)),
+            status: updatedStatus,
             statusToken: data.attempt.statusToken || token,
           });
         }

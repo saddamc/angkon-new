@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import Link from "next/link";
-import { CheckCircle2, ArrowRight, ShoppingBag, Truck } from "lucide-react";
+import { CheckCircle2, ArrowRight, Download, ShoppingBag, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart-store";
 
@@ -103,22 +103,35 @@ export function PaymentSuccess({
             asChild
             className="border-[#E1B76F]/35 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
           >
+            <a
+              href={`/api/orders/${encodeURIComponent(orderNumber)}/invoice`}
+              download={`ANGKON-Invoice-${orderNumber}.pdf`}
+            >
+              <Download className="w-4 h-4 mr-2 text-[#E1B76F]" />
+              Download PDF
+            </a>
+          </Button>
+          <Button
+            variant="outline"
+            asChild
+            className="border-[#E1B76F]/35 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
+          >
             <Link href={`/track?orderNumber=${encodeURIComponent(orderNumber)}`}>
               <Truck className="w-4 h-4 mr-2 text-[#E1B76F]" />
               Track Order
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            asChild
-            className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
-          >
-            <Link href="/products">
-              <ShoppingBag className="w-4 h-4 mr-2 text-white/80" />
-              Continue Shopping
-            </Link>
-          </Button>
         </div>
+        <Button
+          variant="outline"
+          asChild
+          className="w-full border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
+        >
+          <Link href="/products">
+            <ShoppingBag className="w-4 h-4 mr-2 text-white/80" />
+            Continue Shopping
+          </Link>
+        </Button>
       </div>
     </div>
   );

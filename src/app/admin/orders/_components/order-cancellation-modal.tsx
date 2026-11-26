@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -87,7 +87,9 @@ export function OrderCancellationModal({
 
   const [reason, setReason] = useState("");
   const [adminNote, setAdminNote] = useState("");
-  const [decision, setDecision] = useState<"cancel_only" | "cancel_and_refund">("cancel_only");
+  const [decision, setDecision] = useState<"cancel_only" | "cancel_and_refund">(
+    availableRefundable > 0.009 ? "cancel_and_refund" : "cancel_only",
+  );
   const [refundAmount, setRefundAmount] = useState<string>(
     availableRefundable > 0 ? String(availableRefundable) : ""
   );
@@ -96,6 +98,10 @@ export function OrderCancellationModal({
   const [offlineDate, setOfflineDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (availableRefundable > 0.009) setDecision("cancel_and_refund");
+  }, [availableRefundable]);
 
   if (!isOpen) return null;
 
@@ -291,20 +297,12 @@ export function OrderCancellationModal({
             <div className="space-y-2 pt-1">
               <p className="text-[11px] font-bold text-gray-700">Cancellation & Refund Decision</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDecision("cancel_only")}
-                  className={`rounded-xl border p-2.5 text-left transition cursor-pointer ${
-                    decision === "cancel_only"
-                      ? "border-purple-600 bg-purple-50 text-purple-900"
-                      : "border-stone-200 bg-white text-gray-700 hover:bg-stone-50"
-                  }`}
-                >
-                  <p className="text-[12px] font-bold">1. Cancel Order Only</p>
+                <div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-left opacity-70">
+                  <p className="text-[12px] font-bold text-gray-700">1. Cancel Order Only (locked)</p>
                   <p className="text-[10.5px] text-gray-500">
-                    Do not initiate a refund right now. Please process a refund through the Payments tab later if needed.
+                    Captured payment requires a refund decision during cancellation. Please process a refund through the Payments panel when the gateway requires manual reconciliation.
                   </p>
-                </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => {

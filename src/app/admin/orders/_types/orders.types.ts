@@ -494,6 +494,17 @@ export interface OrderCancellationDetailsUI {
   courierDisposition?: string | null;
 }
 
+export interface OrderCancellationRequestUI {
+  status: "requested" | "approved" | "rejected" | "withdrawn";
+  requestedAt?: string | null;
+  requestedBy?: string | null;
+  reasonCode?: string | null;
+  reason?: string | null;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
+  reviewNote?: string | null;
+}
+
 export interface OrderReturnInspectionUI {
   returnRequestedAt?: string | null;
   returnRequestedBy?: string | null;
@@ -563,6 +574,7 @@ export interface OrderDetailsPayload {
       reason?: string;
     };
     cancellationDetails?: OrderCancellationDetailsUI | null;
+    cancellationRequest?: OrderCancellationRequestUI | null;
     returnInspection?: OrderReturnInspectionUI | null;
   };
   refundSummary?: OrderRefundSummaryUI;

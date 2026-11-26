@@ -84,6 +84,20 @@ export interface IOrderCancellationDetails {
     | null;
 }
 
+export type CancellationRequestStatus = "requested" | "approved" | "rejected" | "withdrawn";
+
+/** Customer-initiated cancellation review state. Kept separate from order/payment/shipment status. */
+export interface IOrderCancellationRequest {
+  status: CancellationRequestStatus;
+  requestedAt: Date;
+  requestedBy: mongoose.Types.ObjectId | string;
+  reasonCode?: string | null;
+  reason: string;
+  reviewedAt?: Date | null;
+  reviewedBy?: string | null;
+  reviewNote?: string | null;
+}
+
 /** Embedded when a physical return / recall is in progress. */
 export interface IOrderReturnInspection {
   returnRequestedAt?: Date | null;
@@ -211,6 +225,8 @@ export interface IOrder extends Document {
   adminNotes?: IOrderAdminNote[];
   /** Set when an administrator cancels the order. */
   cancellationDetails?: IOrderCancellationDetails | null;
+  /** Set when a customer asks for cancellation and admin review is required. */
+  cancellationRequest?: IOrderCancellationRequest | null;
   /** Set when a return / recall is initiated or confirmed. */
   returnInspection?: IOrderReturnInspection | null;
   createdAt: Date;
@@ -310,6 +326,24 @@ const OrderCancellationDetailsSchema = new Schema<IOrderCancellationDetails>(
       enum: ["not_booked", "cancelled", "portal_action_required", "return_requested", null],
       default: null,
     },
+  },
+  { _id: false }
+);
+
+const OrderCancellationRequestSchema = new Schema<IOrderCancellationRequest>(
+  {
+    status: {
+      type: String,
+      enum: ["requested", "approved", "rejected", "withdrawn"],
+      required: true,
+    },
+    requestedAt: { type: Date, required: true },
+    requestedBy: { type: Schema.Types.Mixed, required: true },
+    reasonCode: { type: String, default: null },
+    reason: { type: String, required: true, trim: true, maxlength: 300 },
+    reviewedAt: { type: Date, default: null },
+    reviewedBy: { type: String, default: null },
+    reviewNote: { type: String, default: null, maxlength: 500 },
   },
   { _id: false }
 );
@@ -450,6 +484,7 @@ const OrderSchema = new Schema<IOrder>(
     trackingUrl: { type: String, default: null },
     manualDeliveryDetails: { type: OrderManualDeliveryDetailsSchema, default: null },
     cancellationDetails: { type: OrderCancellationDetailsSchema, default: null },
+    cancellationRequest: { type: OrderCancellationRequestSchema, default: null },
     returnInspection: { type: OrderReturnInspectionSchema, default: null },
   },
   {
@@ -465,6 +500,7 @@ OrderSchema.index({ orderStatus: 1, createdAt: -1 });
 OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ "customer.email": 1 });
 OrderSchema.index({ "customer.phone": 1 });
+OrderSchema.index({ "cancellationRequest.status": 1, createdAt: -1 });
 
 export const Order: Model<IOrder> =
   mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);

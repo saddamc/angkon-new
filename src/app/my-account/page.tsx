@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { requestEmailCode } from "@/components/checkout/email-verify-dialog";
 import { getCourierLabel, getCourierTrackingUrl } from "@/server/courier/core/tracking";
 import { getPaymentMethodLabel, isOnlinePaymentMethod } from "@/lib/payment-methods";
+import { CustomerCancellationModal } from "@/components/account/customer-cancellation-modal";
 import {
   AlertTriangle,
   ArrowRight,
@@ -30,6 +31,7 @@ import {
   Truck,
   User as UserIcon,
   X,
+  XCircle,
   CreditCard,
   Sparkles,
 } from "lucide-react";
@@ -84,6 +86,18 @@ interface OrderSummary {
     district: string;
     postalCode?: string;
   };
+  cancellationRequest?: {
+    status: "requested" | "approved" | "rejected" | "withdrawn";
+    requestedAt?: string;
+    reason?: string;
+    reviewedAt?: string;
+    reviewNote?: string;
+  } | null;
+  cancellationDetails?: {
+    cancelledAt?: string;
+    reason?: string;
+    refundOutcome?: string | null;
+  } | null;
 }
 
 type Notice = { text: string; type: "error" | "success" | "info" } | null;
@@ -407,6 +421,7 @@ export default function MyAccountPage() {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [activeTab, setActiveTab] = useState<"orders" | "addresses" | "security">("orders");
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<OrderSummary | null>(null);
+  const [cancellationOrder, setCancellationOrder] = useState<OrderSummary | null>(null);
 
   // Print isolation: while the invoice modal is open, tag <body> so the
   // print stylesheet prints ONLY the invoice sheet (everything else on the
@@ -696,6 +711,14 @@ export default function MyAccountPage() {
       setMode("auth");
       setNotice({ text: "You have been signed out.", type: "info" });
     });
+
+  const canRequestCancellation = (order: OrderSummary) => {
+    const cancellable = ["pending", "confirmed", "processing", "ready_to_ship"].includes(order.orderStatus);
+    const lockedShipment = ["picked_up", "in_transit", "out_for_delivery", "delivered", "partial_delivered", "returned"].includes(
+      order.shipmentStatus || "",
+    );
+    return cancellable && !lockedShipment && order.orderStatus !== "cancelled" && order.cancellationRequest?.status !== "requested";
+  };
 
   // Calculate lifetime purchase total
   const totalSpent = useMemo(() => {
@@ -1263,10 +1286,34 @@ export default function MyAccountPage() {
 
                             {/* Actions: View & Print Official Invoice */}
                             <div className="mt-4 pt-3 border-t border-[#530911]/60 flex flex-wrap items-center justify-between gap-3">
-                              <span className="text-[11px] text-stone-400">
-                                Official invoice includes tax details, transaction IDs & print view.
-                              </span>
+                              <div className="space-y-1.5 text-[11px] text-stone-400">
+                                <span className="block">Official invoice includes tax details, transaction IDs & print view.</span>
+                                {ord.cancellationRequest?.status === "requested" && (
+                                  <span className="inline-flex rounded-full border border-amber-400/40 bg-amber-950/50 px-2.5 py-1 font-bold text-amber-200">
+                                    Cancellation request pending review
+                                  </span>
+                                )}
+                                {ord.cancellationRequest?.status === "rejected" && (
+                                  <span className="block text-rose-300">
+                                    Cancellation request declined{ord.cancellationRequest.reviewNote ? `: ${ord.cancellationRequest.reviewNote}` : "."}
+                                  </span>
+                                )}
+                                {ord.orderStatus === "cancelled" && ord.cancellationDetails && (
+                                  <span className="block text-stone-300">
+                                    Cancelled{ord.cancellationDetails.refundOutcome ? ` · Refund: ${ord.cancellationDetails.refundOutcome.replace(/_/g, " ")}` : ""}
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-3">
+                                {canRequestCancellation(ord) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setCancellationOrder(ord)}
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-rose-400/50 bg-rose-950/40 px-4 py-2 text-xs font-bold uppercase tracking-wider text-rose-200 hover:bg-rose-700 hover:text-white transition shadow-md cursor-pointer"
+                                  >
+                                    <XCircle className="h-3.5 w-3.5" /> Cancel order
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => setSelectedInvoiceOrder(ord)}
@@ -1435,6 +1482,20 @@ export default function MyAccountPage() {
           <InvoiceModal
             order={selectedInvoiceOrder}
             onClose={() => setSelectedInvoiceOrder(null)}
+          />
+        )}
+        {cancellationOrder && (
+          <CustomerCancellationModal
+            orderNumber={cancellationOrder.orderNumber}
+            orderStatus={cancellationOrder.orderStatus}
+            paymentStatus={cancellationOrder.paymentStatus}
+            shipmentStatus={cancellationOrder.shipmentStatus}
+            onClose={() => setCancellationOrder(null)}
+            onSubmitted={async (message) => {
+              setCancellationOrder(null);
+              setNotice({ text: message, type: "success" });
+              await loadSession();
+            }}
           />
         )}
       </div>

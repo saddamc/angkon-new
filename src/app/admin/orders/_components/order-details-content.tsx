@@ -458,6 +458,8 @@ export function OrderDetailsContent({
   const [actionBusy, setActionBusy] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancellationDetailsOpen, setCancellationDetailsOpen] = useState(false);
+  const [cancellationReviewBusy, setCancellationReviewBusy] = useState(false);
+  const [cancellationReviewNote, setCancellationReviewNote] = useState("");
 
   const requestOrderCancellation = useCallback(() => {
     setCancelModalOpen(true);
@@ -475,6 +477,33 @@ export function OrderDetailsContent({
     },
     [onStatusTransition]
   );
+
+  const reviewCustomerCancellation = async (action: "approve" | "reject") => {
+    if (cancellationReviewBusy) return;
+    if (action === "reject" && cancellationReviewNote.trim().length < 3) {
+      window.alert("Add a short reason before rejecting the customer request.");
+      return;
+    }
+    setCancellationReviewBusy(true);
+    try {
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.orderNumber)}/cancellation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          action === "approve"
+            ? { action, reason: order.cancellationRequest?.reason || "Customer cancellation approved." }
+            : { action, reviewNote: cancellationReviewNote.trim() },
+        ),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Could not update the cancellation request.");
+      window.location.reload();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Could not update the cancellation request.");
+    } finally {
+      setCancellationReviewBusy(false);
+    }
+  };
   const activeShipment = shipments.find(
     (s) => !["cancelled", "returned", "failed"].includes(s.status)
   );
@@ -670,6 +699,21 @@ export function OrderDetailsContent({
 
   const renderCancellationModal = () => (
     <>
+      {order.cancellationRequest?.status === "requested" && (
+        <div className="fixed bottom-4 left-4 right-4 z-[240] mx-auto max-w-2xl rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-2xl">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 text-[12px] text-amber-950">
+              <p className="font-bold">Customer cancellation request</p>
+              <p className="mt-1">{order.cancellationRequest.reason || "No reason supplied."}</p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button type="button" disabled={cancellationReviewBusy} onClick={() => void reviewCustomerCancellation("approve")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50">Approve & refund</button>
+              <button type="button" disabled={cancellationReviewBusy} onClick={() => void reviewCustomerCancellation("reject")} className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50">Reject</button>
+            </div>
+          </div>
+          <input value={cancellationReviewNote} onChange={(event) => setCancellationReviewNote(event.target.value)} placeholder="Rejection note (required for Reject)" className="mt-3 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-[11px] text-gray-800 outline-none" />
+        </div>
+      )}
       <OrderCancellationModal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}

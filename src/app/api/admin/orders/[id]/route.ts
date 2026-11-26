@@ -17,6 +17,7 @@ import {
   normalizeOrderStatus,
 } from "@/server/orders/workflow";
 import { isOnlinePaymentMethod } from "@/lib/payment-methods";
+import { executeOrderCancellation } from "@/server/orders/services/order-cancellation.service";
 
 const ORDER_STATUSES = new Set([
   "pending",
@@ -226,6 +227,42 @@ export async function PATCH(
           },
           { status: 400 }
         );
+      }
+
+      // All admin cancellations use the shared guarded domain service used by
+      // customer-request approvals. The legacy branch below remains as a
+      // compatibility reference for existing response contracts.
+      if (nextStatusNormalized === "cancelled") {
+        const result = await executeOrderCancellation({
+          orderIdOrNumber: id,
+          actor: auth.user || "admin",
+          actorType: "admin",
+          reason: String(body.reason).trim(),
+          reasonCode: typeof body.reasonCode === "string" ? body.reasonCode : null,
+          decision: body.cancelDecision === "cancel_only" ? "cancel_only" : "cancel_and_refund",
+          refundAmount: body.refund && typeof body.refund.amount === "number" ? body.refund.amount : null,
+          manualRefund:
+            body.refund && typeof body.refund === "object" && body.refund.channel === "manual_offline"
+              ? {
+                  method: typeof body.refund.method === "string" ? body.refund.method : null,
+                  reference: typeof body.refund.reference === "string" ? body.refund.reference : null,
+                  refundDate: typeof body.refund.refundDate === "string" ? body.refund.refundDate : null,
+                  adminNote: typeof body.adminNote === "string" ? body.adminNote : null,
+                }
+              : null,
+          ip: clientIp(request),
+          userAgent: request.headers.get("user-agent") || "",
+        });
+        return NextResponse.json({
+          ok: true,
+          status: result.order.orderStatus,
+          paymentStatus: result.order.paymentStatus,
+          payment_status: result.order.paymentStatus,
+          order: result.order,
+          refundResult: result.refundResult,
+          stockResult: result.stockResult,
+          orderCancelled: true,
+        });
       }
 
       // Check active shipment conditions on cancellation

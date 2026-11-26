@@ -69,6 +69,7 @@ const CSRF_PROTECTED_PATTERNS: RegExp[] = [
   /^\/api\/admin\//,
   /^\/api\/auth\//,
   /^\/api\/orders$/,
+  /^\/api\/orders\/[^/]+\/cancellation$/,
   /^\/api\/promo\/validate$/,
   /^\/api\/payment\/sslcommerz\/initiate$/,
   /^\/api\/payments\/sslcommerz\/initiate$/,

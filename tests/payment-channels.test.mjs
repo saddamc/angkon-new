@@ -19,7 +19,10 @@ const initiate = read("src/server/payments/initiate.ts");
 const adminOrderRoute = read("src/app/api/admin/orders/[id]/route.ts");
 const adminOrdersList = read("src/app/api/admin/orders/route.ts");
 const orderRow = read("src/app/admin/orders/_components/order-row.tsx");
-const myAccount = read("src/app/my-account/page.tsx");
+const myAccount = [
+  read("src/components/account/account-invoice-modal.tsx"),
+  read("src/components/account/account-order-card.tsx"),
+].join("\n");
 const trackPage = read("src/app/track/page.tsx");
 const emailTemplates = read("src/lib/email/templates.ts");
 const sharedHelper = read("src/lib/payment-methods.ts");
@@ -81,7 +84,7 @@ test("customer-facing surfaces label channels through the helper", () => {
     "the printable invoice must label card payments correctly (raw .toUpperCase() printed 'CARDS')"
   );
   assert.ok(
-    myAccount.includes("isOnlinePaymentMethod(ord.paymentMethod)"),
+    myAccount.includes("isOnlinePaymentMethod(order.paymentMethod)"),
     "the order-history pill must mark card/bKash/Nagad orders as online payments"
   );
   assert.ok(

@@ -67,6 +67,7 @@ export function isSameOriginRequest(request: NextRequest): boolean {
  */
 const CSRF_PROTECTED_PATTERNS: RegExp[] = [
   /^\/api\/admin\//,
+  /^\/api\/account\//,
   /^\/api\/auth\//,
   /^\/api\/orders$/,
   /^\/api\/orders\/[^/]+\/cancellation$/,

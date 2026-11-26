@@ -250,6 +250,9 @@ export function useAdminOrders() {
         setCourierOverview(data);
         if (data?.providers) {
           setCourierProviders(data.providers);
+          if (data.providers.steadfast?.mode) {
+            setCourierOperatingMode(data.providers.steadfast.mode === "live" ? "live" : "mock");
+          }
         }
         if (isManual) {
           if (data.balances?.steadfast?.error) {

@@ -100,6 +100,7 @@ export async function queryAdminOrders(params: AdminOrderQueryParams) {
       andClauses.push({
         $or: [
           { orderStatus: "pending" },
+          { "cancellationRequest.status": "requested" },
           {
             paymentMethod: { $in: [...ONLINE_PAYMENT_METHODS] },
             paymentStatus: { $ne: "paid" },
@@ -385,6 +386,7 @@ export async function queryAdminOrders(params: AdminOrderQueryParams) {
                 {
                   $or: [
                     { $eq: ["$orderStatus", "pending"] },
+                    { $eq: ["$cancellationRequest.status", "requested"] },
                     {
                       $and: [
                         { $eq: ["$paymentMethod", "sslcommerz"] },
@@ -694,6 +696,15 @@ export async function queryAdminOrders(params: AdminOrderQueryParams) {
           ],
         };
       }),
+      cancellationRequest: o.cancellationRequest
+        ? {
+            status: o.cancellationRequest.status,
+            requestedAt: o.cancellationRequest.requestedAt || null,
+            reason: o.cancellationRequest.reason || null,
+            reviewedAt: o.cancellationRequest.reviewedAt || null,
+            reviewNote: o.cancellationRequest.reviewNote || null,
+          }
+        : null,
       raw: o,
     };
   });

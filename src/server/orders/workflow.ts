@@ -506,3 +506,240 @@ export function evaluateReopenOrderEligibility(
       "COD order cancelled before fulfillment. Restoring order status to Pending and reinstating expected COD amount.",
   };
 }
+
+/**
+ * Order statuses where a customer may cancel BEFORE warehouse processing or
+ * courier booking begins. Once an order enters `processing` or `ready_to_ship`
+ * (or has an active courier consignment), self-service cancellation is locked.
+ */
+export const CUSTOMER_CANCELLABLE_ORDER_STATUSES = [
+  "pending",
+  "on-hold",
+  "confirmed",
+] as const;
+
+export const CUSTOMER_LOCKED_ORDER_STATUSES = [
+  "processing",
+  "ready_to_ship",
+  "shipped",
+  "delivered",
+  "completed",
+  "returned",
+  "cancelled",
+  "refunded",
+  "failed",
+] as const;
+
+const CUSTOMER_FREE_SHIPMENT_STATUSES = new Set([
+  "",
+  "none",
+  "not_booked",
+  "cancelled",
+  "failed",
+  "booking_failed",
+]);
+
+const CUSTOMER_LOCKED_BOOKING_STATES = new Set([
+  "booking_in_progress",
+  "booked",
+  "cancellation_pending",
+]);
+
+export interface CustomerCancellationInput {
+  orderStatus?: string | null;
+  paymentMethod?: string | null;
+  paymentStatus?: string | null;
+  paidAmount?: number | null;
+  shipmentStatus?: string | null;
+  shipmentBookingState?: string | null;
+  consignmentId?: string | null;
+  trackingCode?: string | null;
+  cancellationRequest?: { status?: string | null } | null;
+}
+
+export interface CustomerCancellationDecision {
+  canCancel: boolean;
+  canWithdraw: boolean;
+  requestPending: boolean;
+  hasActiveShipment: boolean;
+  mode: "instant" | "request" | "none";
+  code?: string;
+  message: string;
+  /** Concise status hint shown to the customer on My Account when locked. */
+  customerNotice: string | null;
+}
+
+/**
+ * Authoritative customer-facing cancellation eligibility engine.
+ * Shared across backend API enforcement and customer UI so the two never disagree.
+ */
+export function evaluateCustomerCancellationEligibility(
+  order: CustomerCancellationInput,
+  activeShipment?: { status?: string | null; consignmentId?: string | null; trackingCode?: string | null } | null
+): CustomerCancellationDecision {
+  const orderStatus = normalizeOrderStatus(order.orderStatus);
+  const paymentStatus = String(order.paymentStatus || "pending").trim().toLowerCase();
+  const paidAmount = Math.max(0, Number(order.paidAmount) || 0);
+  const shipmentStatus = String(
+    activeShipment?.status || order.shipmentStatus || "not_booked"
+  )
+    .trim()
+    .toLowerCase();
+  const bookingState = String(order.shipmentBookingState || "not_booked")
+    .trim()
+    .toLowerCase();
+  const trackingRef = String(
+    activeShipment?.trackingCode ||
+      activeShipment?.consignmentId ||
+      order.trackingCode ||
+      order.consignmentId ||
+      ""
+  ).trim();
+  const requestPending = order.cancellationRequest?.status === "requested";
+
+  if (orderStatus === "cancelled" || orderStatus === "refunded") {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending: false,
+      hasActiveShipment: false,
+      mode: "none",
+      code: "ORDER_CANCELLED_LOCKED",
+      message: "This order is already cancelled or closed.",
+      customerNotice: null,
+    };
+  }
+
+  if (orderStatus === "failed") {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending: false,
+      hasActiveShipment: false,
+      mode: "none",
+      code: "ORDER_FAILED",
+      message: "This order could not be completed.",
+      customerNotice: "Order payment was unsuccessful.",
+    };
+  }
+
+  if (
+    ["delivered", "completed", "returned"].includes(orderStatus) ||
+    ["delivered", "partial_delivered", "returned"].includes(shipmentStatus)
+  ) {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending: false,
+      hasActiveShipment: true,
+      mode: "none",
+      code: "DELIVERED_REQUIRES_RETURN_WORKFLOW",
+      message: "This order has already been delivered or returned. Contact support for return assistance.",
+      customerNotice: "Delivered order — contact support for returns or exchanges.",
+    };
+  }
+
+  if (
+    orderStatus === "shipped" ||
+    ["picked_up", "in_transit", "out_for_delivery", "return_initiated"].includes(shipmentStatus)
+  ) {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending,
+      hasActiveShipment: true,
+      mode: "none",
+      code: "SHIPMENT_IN_TRANSIT",
+      message: "Your parcel is already with the courier and cannot be cancelled online.",
+      customerNotice: "Parcel is on the way with courier — online cancellation unavailable.",
+    };
+  }
+
+  const hasNonTerminalShipmentStatus = !CUSTOMER_FREE_SHIPMENT_STATUSES.has(shipmentStatus);
+  const hasLockedBookingState = CUSTOMER_LOCKED_BOOKING_STATES.has(bookingState);
+  const hasActiveConsignment =
+    Boolean(activeShipment) ||
+    hasNonTerminalShipmentStatus ||
+    hasLockedBookingState ||
+    (Boolean(trackingRef) && !CUSTOMER_FREE_SHIPMENT_STATUSES.has(shipmentStatus));
+
+  if (hasActiveConsignment) {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending,
+      hasActiveShipment: true,
+      mode: "none",
+      code: "COURIER_BOOKED_LOCKED",
+      message:
+        "A courier consignment is already booked for this order, so online cancellation is closed. Please contact support for assistance.",
+      customerNotice: trackingRef
+        ? `Courier booked (${trackingRef}) — cancellation locked.`
+        : "Courier booked — online cancellation unavailable.",
+    };
+  }
+
+  if (orderStatus === "processing" || orderStatus === "ready_to_ship") {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending,
+      hasActiveShipment: false,
+      mode: "none",
+      code: "ORDER_PROCESSING_LOCKED",
+      message:
+        orderStatus === "ready_to_ship"
+          ? "This order is packed and ready for dispatch, so it can no longer be cancelled online."
+          : "This order is already being processed by our team, so online cancellation is closed.",
+      customerNotice:
+        orderStatus === "ready_to_ship"
+          ? "Packed & ready for dispatch — online cancellation unavailable."
+          : "Order is currently processing — online cancellation unavailable.",
+    };
+  }
+
+  if (
+    !CUSTOMER_CANCELLABLE_ORDER_STATUSES.includes(
+      orderStatus as (typeof CUSTOMER_CANCELLABLE_ORDER_STATUSES)[number]
+    )
+  ) {
+    return {
+      canCancel: false,
+      canWithdraw: false,
+      requestPending,
+      hasActiveShipment: false,
+      mode: "none",
+      code: "ORDER_NOT_CANCELLABLE",
+      message: "This order can no longer be cancelled online.",
+      customerNotice: "Online cancellation unavailable for current status.",
+    };
+  }
+
+  if (requestPending) {
+    return {
+      canCancel: false,
+      canWithdraw: true,
+      requestPending: true,
+      hasActiveShipment: false,
+      mode: "request",
+      code: "CANCELLATION_ALREADY_REQUESTED",
+      message: "A cancellation request is already pending administrator review.",
+      customerNotice: null,
+    };
+  }
+
+  const hasCapturedPayment =
+    ["paid", "partially_paid", "refund_pending"].includes(paymentStatus) || paidAmount > 0;
+
+  return {
+    canCancel: true,
+    canWithdraw: false,
+    requestPending: false,
+    hasActiveShipment: false,
+    mode: hasCapturedPayment ? "request" : "instant",
+    message: hasCapturedPayment
+      ? "Eligible to request cancellation with refund review."
+      : "Eligible for immediate self-service cancellation.",
+    customerNotice: null,
+  };
+}

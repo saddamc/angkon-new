@@ -41,11 +41,11 @@ export function PayNowButton({ orderNumber, amount }: PayNowButtonProps) {
         type="button"
         onClick={handlePay}
         disabled={busy}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+        className="w-full bg-gradient-to-r from-[#E1B76F] to-[#edd19b] hover:brightness-105 text-[#240407] font-black uppercase tracking-wider"
       >
         {busy ? "Opening secure gateway..." : `Pay ৳${amount.toLocaleString("en-BD")} Securely`}
       </Button>
-      {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-rose-300">{error}</p>}
     </div>
   );
 }

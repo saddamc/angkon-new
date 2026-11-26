@@ -17,7 +17,7 @@ import {
   normalizeOrderStatus,
 } from "@/server/orders/workflow";
 import { isOnlinePaymentMethod } from "@/lib/payment-methods";
-import { executeOrderCancellation } from "@/server/orders/services/order-cancellation.service";
+import { executeOrderCancellation, OrderCancellationError } from "@/server/orders/services/order-cancellation.service";
 
 const ORDER_STATUSES = new Set([
   "pending",
@@ -239,6 +239,7 @@ export async function PATCH(
           actorType: "admin",
           reason: String(body.reason).trim(),
           reasonCode: typeof body.reasonCode === "string" ? body.reasonCode : null,
+          adminNote: typeof body.adminNote === "string" ? body.adminNote : null,
           decision: body.cancelDecision === "cancel_only" ? "cancel_only" : "cancel_and_refund",
           refundAmount: body.refund && typeof body.refund.amount === "number" ? body.refund.amount : null,
           manualRefund:
@@ -685,6 +686,12 @@ export async function PATCH(
       { status: 200 }
     );
   } catch (error) {
+    if (error instanceof OrderCancellationError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: error.statusCode }
+      );
+    }
     console.error("Failed to update order:", error);
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }

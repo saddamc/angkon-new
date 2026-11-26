@@ -27,6 +27,7 @@ interface CourierOverview {
       mode?: "live" | "mock";
       isMock?: boolean;
       liveBookingEnabled?: boolean;
+      reason?: string | null;
     };
     pathao?: { configured?: boolean; enabled?: boolean; supported?: boolean; disabledReason?: string };
   };
@@ -262,7 +263,8 @@ export default function AdminCouriersPage() {
           {isLive ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
           {isLive
             ? "Live mode — bookings create real Steadfast parcels."
-            : "Mock / sandbox mode — bookings are simulated and no real parcels are created."}
+            : steadfast?.reason ||
+              "Mock / sandbox mode — bookings are simulated and no real parcels are created."}
         </span>
         <span className="text-[10.5px] font-bold uppercase tracking-wide">
           {steadfast?.configured ? (isLive ? "LIVE" : "SANDBOX") : "NOT CONFIGURED"}

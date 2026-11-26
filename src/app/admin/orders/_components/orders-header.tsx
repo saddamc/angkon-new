@@ -228,10 +228,22 @@ export function OrdersHeader({ state }: OrdersHeaderProps) {
           ) : isMockCourier ? (
             <div
               className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/90 px-3 py-1.5 text-[11px] font-semibold text-amber-800 shadow-xs"
-              title="Live Steadfast balance is intentionally not queried in mock/development mode."
+              title={
+                steadfastBalance?.modeReason ||
+                "Live Steadfast balance is intentionally not queried in mock/development mode."
+              }
             >
               <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
               <span>Steadfast Test Mode (live balance unavailable)</span>
+              <button
+                type="button"
+                onClick={() => void state?.loadCourierOverview?.(true)}
+                disabled={refreshing}
+                title="Refresh Steadfast status"
+                className="ml-0.5 rounded p-0.5 text-amber-800 hover:bg-amber-200/50 transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+              </button>
             </div>
           ) : (
             <div

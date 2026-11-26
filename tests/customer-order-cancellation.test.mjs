@@ -4,15 +4,18 @@ import fs from "node:fs";
 
 const read = (file) => fs.readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
 const service = read("src/server/orders/services/order-cancellation.service.ts");
+const workflow = read("src/server/orders/workflow.ts");
+const paymentRepo = read("src/server/payments/repositories/order-payment.repository.ts");
 const customerRoute = read("src/app/api/orders/[id]/cancellation/route.ts");
 const adminRoute = read("src/app/api/admin/orders/[id]/cancellation/route.ts");
-const accountPage = read("src/app/my-account/page.tsx");
+const accountPage = read("src/components/account/account-order-card.tsx");
 const customerModal = read("src/components/account/customer-cancellation-modal.tsx");
 
-test("customer cancellation has authenticated request and ownership checks", () => {
+test("customer cancellation has authenticated request, withdraw, and ownership checks", () => {
   assert.match(customerRoute, /withCustomerRoute/);
   assert.match(customerRoute, /requireAuth: true/);
   assert.match(customerRoute, /ORDER_FORBIDDEN/);
+  assert.match(customerRoute, /withdrawCustomerCancellation/);
   assert.match(service, /requestCustomerCancellation/);
   assert.match(service, /cancellationRequest\.status.*requested/);
 });
@@ -30,9 +33,18 @@ test("captured payment cannot be cancelled without a refund decision", () => {
   assert.match(accountPage, /Cancellation request pending review/);
 });
 
-test("customer UI hides cancellation after courier handoff or delivery", () => {
+test("customer UI and workflow lock cancellation once processing, ready_to_ship, or courier booked", () => {
   assert.match(accountPage, /picked_up/);
   assert.match(accountPage, /out_for_delivery/);
   assert.match(accountPage, /delivered/);
   assert.match(accountPage, /canRequestCancellation/);
+  assert.match(accountPage, /evaluateCustomerCancellationEligibility/);
+  assert.match(accountPage, /booked/);
+  assert.match(workflow, /ORDER_PROCESSING_LOCKED/);
+  assert.match(workflow, /COURIER_BOOKED_LOCKED/);
+  assert.match(service, /evaluateCustomerCancellationEligibility/);
+});
+
+test("settled SSLCOMMERZ orders enter confirmed state before warehouse processing starts", () => {
+  assert.match(paymentRepo, /isHighRisk \? "on-hold" : "confirmed"/);
 });

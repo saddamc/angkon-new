@@ -16,7 +16,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const read = (file) => readFileSync(file, "utf8");
-const accountPage = read("src/app/my-account/page.tsx");
+const accountPage = [
+  read("src/app/my-account/page.tsx"),
+  read("src/components/account/account-invoice-modal.tsx"),
+  read("src/components/account/account-auth-portal.tsx"),
+  read("src/components/account/account-hero-header.tsx"),
+].join("\n");
 const registerRoute = read("src/app/api/auth/register/route.ts");
 
 // ── 1. INVOICE PRINTING ────────────────────────────────────────────────────

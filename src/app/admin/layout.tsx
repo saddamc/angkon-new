@@ -115,6 +115,7 @@ export default function AdminLayout({
   // Hover flyout state (Meta Business Suite style: expand on hover, hide on leave)
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [needsActionCount, setNeedsActionCount] = useState(0);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,12 +129,15 @@ export default function AdminLayout({
     if (next) {
       setNotifLoading(true);
       try {
-        const res = await authFetch("/api/admin/orders?status=pending&per_page=5");
+        const res = await authFetch("/api/admin/orders?status=needs_action&per_page=8");
         if (res.ok) {
           const data = await res.json();
           setPendingOrdersList(data.orders || []);
           if (data.statusCounts?.pending !== undefined) {
             setPendingCount(data.statusCounts.pending);
+          }
+          if (data.statusCounts?.needs_action !== undefined) {
+            setNeedsActionCount(data.statusCounts.needs_action);
           }
         }
       } catch {
@@ -214,6 +218,7 @@ export default function AdminLayout({
         const data = await res.json();
         const pending = data.statusCounts?.pending ?? 0;
         setPendingCount(pending);
+        setNeedsActionCount(data.statusCounts?.needs_action ?? 0);
 
         const latest = data.orders?.[0];
         if (latest) {
@@ -705,14 +710,14 @@ export default function AdminLayout({
                     ? "bg-purple-100 text-purple-700 shadow-inner"
                     : "bg-purple-50 hover:bg-purple-100 text-purple-500"
                 }`}
-                title={pendingCount > 0 ? `${pendingCount} pending orders` : "Notifications"}
-                aria-label={`Notifications: ${pendingCount} pending orders`}
+                title={needsActionCount > 0 ? `${needsActionCount} order actions need attention` : "Notifications"}
+                aria-label={`Notifications: ${needsActionCount} order actions need attention`}
                 aria-expanded={notifOpen}
               >
                 <Bell className="h-[18px] w-[18px]" />
-                {pendingCount > 0 && (
+                {needsActionCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center shadow-sm">
-                    {pendingCount > 99 ? "99+" : pendingCount}
+                    {needsActionCount > 99 ? "99+" : needsActionCount}
                   </span>
                 )}
               </button>
@@ -720,7 +725,7 @@ export default function AdminLayout({
               {notifOpen && (
                 <div
                   role="dialog"
-                  aria-label="Pending orders notifications"
+                  aria-label="Order action notifications"
                   className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-stone-200/90 bg-white p-3.5 shadow-2xl z-50 animate-in fade-in-0 duration-150 space-y-2.5"
                 >
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100">
@@ -729,11 +734,11 @@ export default function AdminLayout({
                         <Clock className="h-3.5 w-3.5" />
                       </span>
                       <span className="text-[12.5px] font-bold text-gray-900">
-                        Pending Orders ({pendingCount})
+                        Needs Attention ({needsActionCount})
                       </span>
                     </div>
                     <Link
-                      href="/admin/orders?status=pending"
+                      href="/admin/orders?status=needs_action"
                       onClick={() => setNotifOpen(false)}
                       className="text-[11px] font-bold text-purple-600 hover:text-purple-700 hover:underline"
                     >
@@ -744,20 +749,20 @@ export default function AdminLayout({
                   {notifLoading ? (
                     <div className="py-8 flex flex-col items-center justify-center gap-2 text-gray-400">
                       <Loader2 className="h-5 w-5 animate-spin text-purple-600" />
-                      <span className="text-[11.5px] font-medium">Loading pending orders…</span>
+                      <span className="text-[11.5px] font-medium">Loading order actions…</span>
                     </div>
                   ) : pendingOrdersList.length === 0 ? (
                     <div className="py-8 text-center text-xs text-gray-400">
                       <CheckCircle2 className="h-6 w-6 text-emerald-500 mx-auto mb-1.5" />
                       <p className="font-semibold text-gray-700">All caught up!</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">No pending orders awaiting review.</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">No orders currently need attention.</p>
                     </div>
                   ) : (
                     <div className="space-y-1.5 max-h-72 overflow-y-auto">
                       {pendingOrdersList.map((order) => (
                         <Link
                           key={order.id || order.number}
-                          href="/admin/orders?status=pending"
+                          href="/admin/orders?status=needs_action"
                           onClick={() => setNotifOpen(false)}
                           className="flex items-center justify-between p-2.5 rounded-xl border border-stone-100 bg-stone-50/60 hover:bg-purple-50/70 hover:border-purple-200 transition group cursor-pointer"
                         >
@@ -770,8 +775,12 @@ export default function AdminLayout({
                               <span className="capitalize">{order.payment_method_title || order.paymentMethod || "SSLCOMMERZ"}</span>
                             </p>
                           </div>
-                          <span className="shrink-0 px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                            Pending
+                          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9.5px] font-bold border ${
+                            order.cancellationRequest?.status === "requested"
+                              ? "bg-amber-100 text-amber-800 border-amber-200"
+                              : "bg-purple-100 text-purple-700 border-purple-200"
+                          }`}>
+                            {order.cancellationRequest?.status === "requested" ? "Cancel review" : "Needs action"}
                           </span>
                         </Link>
                       ))}
@@ -780,7 +789,7 @@ export default function AdminLayout({
 
                   <div className="pt-2 border-t border-gray-100">
                     <Link
-                      href="/admin/orders?status=pending"
+                      href="/admin/orders?status=needs_action"
                       onClick={() => setNotifOpen(false)}
                       className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[12px] font-bold transition shadow-xs cursor-pointer"
                     >

@@ -697,23 +697,51 @@ export function OrderDetailsContent({
     return 10;
   };
 
+  const renderCancellationRequestBanner = () => {
+    if (order.cancellationRequest?.status !== "requested") return null;
+    return (
+      <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-xs space-y-2.5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 text-[12px] text-amber-950">
+            <p className="font-bold flex items-center gap-1.5">
+              <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+              Customer Cancellation Request Pending Review
+            </p>
+            <p className="mt-1 text-amber-900">
+              {order.cancellationRequest.reason || "No reason supplied."}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              disabled={cancellationReviewBusy}
+              onClick={() => void reviewCustomerCancellation("approve")}
+              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+            >
+              Approve &amp; refund
+            </button>
+            <button
+              type="button"
+              disabled={cancellationReviewBusy}
+              onClick={() => void reviewCustomerCancellation("reject")}
+              className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+        <input
+          value={cancellationReviewNote}
+          onChange={(event) => setCancellationReviewNote(event.target.value)}
+          placeholder="Rejection note (required if declining request)..."
+          className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-[11.5px] text-gray-800 outline-none focus:border-amber-400"
+        />
+      </div>
+    );
+  };
+
   const renderCancellationModal = () => (
     <>
-      {order.cancellationRequest?.status === "requested" && (
-        <div className="fixed bottom-4 left-4 right-4 z-[240] mx-auto max-w-2xl rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-2xl">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 text-[12px] text-amber-950">
-              <p className="font-bold">Customer cancellation request</p>
-              <p className="mt-1">{order.cancellationRequest.reason || "No reason supplied."}</p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <button type="button" disabled={cancellationReviewBusy} onClick={() => void reviewCustomerCancellation("approve")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50">Approve & refund</button>
-              <button type="button" disabled={cancellationReviewBusy} onClick={() => void reviewCustomerCancellation("reject")} className="rounded-lg bg-rose-600 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50">Reject</button>
-            </div>
-          </div>
-          <input value={cancellationReviewNote} onChange={(event) => setCancellationReviewNote(event.target.value)} placeholder="Rejection note (required for Reject)" className="mt-3 w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-[11px] text-gray-800 outline-none" />
-        </div>
-      )}
       <OrderCancellationModal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
@@ -2936,6 +2964,7 @@ export function OrderDetailsContent({
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {activeTab === "overview" && (
             <div className="space-y-4">
+              {renderCancellationRequestBanner()}
               {renderLifecycleBadgesStrip()}
               {renderOrderProgressStepper()}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -3284,6 +3313,7 @@ export function OrderDetailsContent({
       </div>
 
       {/* 4 Independent Lifecycles Strip */}
+      {renderCancellationRequestBanner()}
       {renderLifecycleBadgesStrip()}
 
       {/* Responsive Two-Column Grid: Left Main (2 cols) & Right Sidebar (1 col) */}

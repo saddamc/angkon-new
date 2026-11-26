@@ -11,6 +11,7 @@ import { registerHooks } from "node:module";
  * ────────────────────────────────────────────────────────────────────────── */
 
 const STUBS = {
+  "@/lib/mongodb": "tests/stubs/mongodb-stub.mjs",
   "@/lib/integrations/meta/client": "tests/stubs/meta-client-stub.mjs",
   "@/server/admin-auth": "tests/stubs/admin-auth-stub.mjs",
   "@/server/auth/admin-auth": "tests/stubs/admin-auth-stub.mjs",
@@ -77,6 +78,7 @@ const { sessionState, resetSession } = await import(
 const { pixelState, resetPixelSettings } = await import(
   "./stubs/pixel-settings-stub.mjs"
 );
+const { setDatabaseFailure, resetDb } = await import("./stubs/db-state.mjs");
 const { GET } = await import("../src/app/api/admin/meta/emq/route.ts");
 const { NextRequest } = await import("next/server");
 
@@ -144,21 +146,28 @@ function suppressWarn(fn) {
 }
 
 before(() => {
+  setDatabaseFailure(true);
   resetGraph();
   resetSession();
   resetPixelSettings();
 });
 
 beforeEach(() => {
+  setDatabaseFailure(true);
   resetGraph();
   resetSession();
   resetPixelSettings();
 });
 
-after(() => {
+after(async () => {
+  resetDb();
   resetGraph();
   resetSession();
   resetPixelSettings();
+  const mongoose = (await import("mongoose")).default;
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
 });
 
 /* ──────────────────────────────────────────────────────────────────────────

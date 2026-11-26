@@ -328,6 +328,7 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
         : Number(order.total || 0);
 
   const paymentBadge = getPaymentBadge(paymentStatus, isCancelled);
+  const hasPendingCancellation = order.cancellationRequest?.status === "requested";
 
   const shipmentBadgeTone = (() => {
     const s = (order.shipmentStatus || "").toLowerCase();
@@ -923,17 +924,19 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
 
         {/* Order Status */}
         <div className="min-w-0">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedStatus(null);
-              setStatusModal(order);
-            }}
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold capitalize transition cursor-pointer hover:shadow-xs hover:ring-1 hover:ring-purple-300 ${statusColor}`}
-            title="Click to change order status"
-          >
-            {statusLabel}
-          </button>
+          <div className="flex flex-col items-start gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStatus(null);
+                setStatusModal(order);
+              }}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold capitalize transition cursor-pointer hover:shadow-xs hover:ring-1 hover:ring-purple-300 ${statusColor}`}
+              title="Click to change order status"
+            >
+              {statusLabel}
+            </button>
+          </div>
         </div>
 
         {/* Actions */}
@@ -961,6 +964,16 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
           >
             <Eye className="h-3.5 w-3.5" />
           </button>
+          {hasPendingCancellation && (
+            <button
+              type="button"
+              onClick={() => openOrderDetails(order.id)}
+              className="inline-flex h-7 items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2 text-[10px] font-bold text-amber-800 hover:bg-amber-100"
+              title="Review customer cancellation request"
+            >
+              <AlertTriangle className="h-3 w-3" /> Review
+            </button>
+          )}
 
           <button
             ref={buttonRef}
@@ -1022,17 +1035,19 @@ export function OrderRow({ order, idx: _idx, state }: OrderRowProps) {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedStatus(null);
-              setStatusModal(order);
-            }}
-            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold cursor-pointer transition hover:ring-1 hover:ring-purple-300 ${statusColor}`}
-            title="Click to change order status"
-          >
-            {statusLabel}
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedStatus(null);
+                setStatusModal(order);
+              }}
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold cursor-pointer transition hover:ring-1 hover:ring-purple-300 ${statusColor}`}
+              title="Click to change order status"
+            >
+              {statusLabel}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 rounded-xl border border-purple-100/70 bg-purple-50/25 p-3 text-[12px]">

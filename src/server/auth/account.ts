@@ -2,6 +2,14 @@ import type { NextRequest } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { User, type IUser } from "@/models/User";
 import { Order, type IOrder } from "@/models/Order";
+import { Shipment } from "@/models/Shipment";
+import { PaymentRefund } from "@/models/PaymentRefund";
+import {
+  evaluateCustomerCancellationEligibility,
+  ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
+  SHIPMENT_STATUS_LABELS,
+} from "@/server/orders/workflow";
 import {
   EMAIL_RESEND_COOLDOWN_MS,
   RESET_TOKEN_TTL_MS,
@@ -89,5 +97,92 @@ export async function getAccountOrders(user: IUser): Promise<IOrder[]> {
     conditions.push({ "customer.email": { $regex: `^${escaped}$`, $options: "i" } });
   }
   const orders = await Order.find({ $or: conditions }).sort({ createdAt: -1 }).limit(100).lean();
-  return orders as unknown as IOrder[];
+  if (orders.length === 0) return [];
+
+  const orderIds = orders.map((o) => o._id);
+  const activeShipments = await Shipment.find({
+    orderId: { $in: orderIds },
+    status: { $nin: ["cancelled", "failed", "returned", "delivered", "partial_delivered"] },
+  })
+    .select("orderId status consignmentId trackingCode provider")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const shipmentByOrderId = new Map<string, (typeof activeShipments)[number]>();
+  for (const s of activeShipments) {
+    const key = String(s.orderId);
+    if (!shipmentByOrderId.has(key)) {
+      shipmentByOrderId.set(key, s);
+    }
+  }
+
+  const refundDocs = await PaymentRefund.find({ orderId: { $in: orderIds } })
+    .select("refundId orderId amount currency status refundChannel refundMethod initiatedAt processedAt failedAt")
+    .sort({ initiatedAt: -1 })
+    .lean();
+
+  const refundsByOrderId = new Map<string, Array<{
+    refundId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    refundChannel?: string;
+    refundMethod?: string | null;
+    initiatedAt?: string | null;
+    processedAt?: string | null;
+    failedAt?: string | null;
+  }>>();
+
+  for (const r of refundDocs) {
+    const key = String(r.orderId);
+    const list = refundsByOrderId.get(key) || [];
+    list.push({
+      refundId: r.refundId,
+      amount: Number(r.amount) || 0,
+      currency: r.currency || "BDT",
+      status: String(r.status || "pending").toLowerCase(),
+      refundChannel: r.refundChannel || "sslcommerz",
+      refundMethod: r.refundMethod || null,
+      initiatedAt: r.initiatedAt ? new Date(r.initiatedAt).toISOString() : null,
+      processedAt: r.processedAt ? new Date(r.processedAt).toISOString() : null,
+      failedAt: r.failedAt ? new Date(r.failedAt).toISOString() : null,
+    });
+    refundsByOrderId.set(key, list);
+  }
+
+  const formatLabel = (map: Record<string, string>, raw?: string | null, fallback = "Pending") => {
+    const key = String(raw || "").trim().toLowerCase();
+    if (!key) return fallback;
+    if (map[key]) return map[key];
+    return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  return orders.map((o) => {
+    const activeShipment = shipmentByOrderId.get(String(o._id)) || null;
+    const cancellationEligibility = evaluateCustomerCancellationEligibility(o, activeShipment);
+    const resolvedShipmentStatus = activeShipment?.status || o.shipmentStatus || "not_booked";
+    const orderRefunds = refundsByOrderId.get(String(o._id)) || [];
+    const totalRefunded = orderRefunds
+      .filter((r) => r.status === "succeeded")
+      .reduce((sum, r) => sum + r.amount, 0);
+    const pendingRefundAmount = orderRefunds
+      .filter((r) => ["initiated", "pending", "processing"].includes(r.status))
+      .reduce((sum, r) => sum + r.amount, 0);
+
+    return {
+      ...o,
+      shipmentStatus: resolvedShipmentStatus,
+      consignmentId: activeShipment?.consignmentId || o.consignmentId,
+      trackingCode: activeShipment?.trackingCode || o.trackingCode,
+      orderStatusLabel: formatLabel(ORDER_STATUS_LABELS, o.orderStatus, "Pending"),
+      paymentStatusLabel: formatLabel(PAYMENT_STATUS_LABELS, o.paymentStatus, "Pending"),
+      shipmentStatusLabel: formatLabel(SHIPMENT_STATUS_LABELS, resolvedShipmentStatus, "Not Booked"),
+      cancellationEligibility,
+      refunds: orderRefunds,
+      refundSummary: {
+        totalRefunded,
+        pendingRefundAmount,
+      },
+    };
+  }) as unknown as IOrder[];
 }

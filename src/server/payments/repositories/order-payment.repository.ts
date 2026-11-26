@@ -45,8 +45,9 @@ export class OrderPaymentRepository {
     );
 
     if (claimed) {
-      // Order status transition: high risk -> "on-hold", safe -> "processing"
-      const nextOrderStatus = args.isHighRisk ? "on-hold" : "processing";
+      // Order status transition: high risk -> "on-hold", safe -> "confirmed"
+      // Warehouse processing ("processing") starts only when an admin begins fulfillment.
+      const nextOrderStatus = args.isHighRisk ? "on-hold" : "confirmed";
       const note = args.isHighRisk
         ? `SSLCOMMERZ payment verified with HIGH RISK (val_id: ${args.valId || "N/A"}). Held for manual inspection.`
         : `SSLCOMMERZ payment verified (val_id: ${args.valId || "N/A"})`;

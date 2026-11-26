@@ -24,7 +24,7 @@ export function withCustomerRoute(
   handler: CustomerRouteHandler,
   options: CustomerRouteOptions = {}
 ) {
-  return async (request: NextRequest, rawRouteContext?: { params?: Promise<Record<string, string | string[]>> | Record<string, string | string[]> }) => {
+  return async (request: NextRequest, rawRouteContext: { params: Promise<Record<string, string | string[]>> }) => {
     try {
       if (options.autoConnectDb !== false) {
         await connectToDatabase();

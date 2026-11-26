@@ -97,6 +97,13 @@ export interface WCOrder {
     postcode?: string;
   };
   customer_note?: string;
+  cancellationRequest?: {
+    status: "requested" | "approved" | "rejected" | "withdrawn";
+    requestedAt?: string | Date | null;
+    reason?: string | null;
+    reviewedAt?: string | Date | null;
+    reviewNote?: string | null;
+  } | null;
   line_items: WCLineItem[];
 }
 
@@ -358,6 +365,7 @@ export interface CourierOverviewData {
       mode?: "mock" | "live";
       isMock?: boolean;
       simulated?: boolean;
+      modeReason?: string | null;
     } | null;
   };
   diagnostics?: {

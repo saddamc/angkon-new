@@ -22,7 +22,9 @@ export async function GET(request: NextRequest) {
     const settings = await getCourierSettings();
     const modeConfig = getCourierModeConfig();
     const providerList = courierService.getProviderStatuses(settings);
-    const steadfastAdapter = courierService.getAdapter("steadfast");
+    const steadfastAdapter = courierService.getAdapter("steadfast", {
+      mode: modeConfig.isLive && modeConfig.hasCredentials ? "live" : "mock",
+    });
 
     const isConfigured = steadfastAdapter.isConfigured();
     const [steadfastBalance, diagnostics] = await Promise.all([
@@ -39,7 +41,7 @@ export async function GET(request: NextRequest) {
           error: {
               code: modeConfig.isMock ? ("mock-mode" as const) : ("not-configured" as const),
               message: modeConfig.isMock
-                ? "Live Steadfast balance is unavailable in mock mode"
+                ? modeConfig.reason || "Live Steadfast balance is unavailable in mock mode"
                 : "Steadfast credentials are not configured",
             },
           }),
@@ -66,6 +68,7 @@ export async function GET(request: NextRequest) {
       mode: modeConfig.mode,
       isMock: modeConfig.isMock,
       simulated: modeConfig.isMock,
+      modeReason: modeConfig.reason || null,
     };
 
     return NextResponse.json(
@@ -79,6 +82,7 @@ export async function GET(request: NextRequest) {
             mode: modeConfig.mode,
             isMock: modeConfig.isMock,
             liveBookingEnabled: modeConfig.liveBookingEnabled,
+            reason: modeConfig.reason || null,
           },
           pathao: {
             configured: false,

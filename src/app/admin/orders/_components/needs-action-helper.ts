@@ -2,6 +2,7 @@ import type { WCOrder } from "../_types/orders.types";
 
 export interface OrderActionCategory {
   category:
+    | "cancellation_request"
     | "payment_verification"
     | "awaiting_confirmation"
     | "ready_to_ship"
@@ -21,7 +22,8 @@ export interface OrderActionCategory {
     | "retry_booking"
     | "view_delivery"
     | "process_refund"
-    | "settle_cod";
+    | "settle_cod"
+    | "review_cancellation";
 }
 
 /**
@@ -35,6 +37,20 @@ export function getOrderActionCategory(order: WCOrder): OrderActionCategory | nu
   const shipmentBookingState = order.shipmentBookingState || "not_booked";
   const shipmentStatus = (order.shipmentStatus || "").toLowerCase();
   const hasConsignment = Boolean(order.consignmentId || order.trackingCode);
+
+  // Customer requests are reviewed before normal fulfillment actions. Keeping
+  // this as a first-class action makes the request visible in the main table
+  // as well as the order drawer.
+  if (order.cancellationRequest?.status === "requested") {
+    return {
+      category: "cancellation_request",
+      label: "Cancellation Request",
+      badgeTone: "bg-amber-100 text-amber-900 border-amber-300",
+      reason: "Customer asked to cancel this order and is waiting for review.",
+      recommendedAction: "Review customer cancellation request",
+      actionKind: "review_cancellation",
+    };
+  }
 
   // Category 1: Booking Failure (Urgent: parcel physically stuck)
   if (shipmentBookingState === "booking_failed") {

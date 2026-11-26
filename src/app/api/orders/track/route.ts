@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
       tracking: {
         orderNumber: order.orderNumber,
         createdAt: order.createdAt,
-        orderStatus: order.status,
+        orderStatus: order.orderStatus || order.status || "pending",
         paymentStatus: order.paymentStatus || "pending",
         paymentMethod: order.paymentMethod || "cod",
         shipmentStatus: order.shipmentStatus || (activeShipment ? activeShipment.status : "not_booked"),

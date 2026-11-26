@@ -75,10 +75,11 @@ export function PaymentSuccess({
         {paidAt && (
           <div className="flex justify-between items-center">
             <span>Confirmed At</span>
-            <span className="text-white/90">
-              {new Date(paidAt).toLocaleString([], {
+            <span className="text-white/90" suppressHydrationWarning>
+              {new Date(paidAt).toLocaleString("en-BD", {
                 dateStyle: "medium",
                 timeStyle: "short",
+                timeZone: "Asia/Dhaka",
               })}
             </span>
           </div>
@@ -90,7 +91,7 @@ export function PaymentSuccess({
           asChild
           className="w-full bg-[#E1B76F] hover:bg-[#d4a657] text-[#2a0408] font-bold"
         >
-          <Link href={`/account/orders/${encodeURIComponent(orderNumber)}`}>
+          <Link href={`/my-account?tab=orders&order=${encodeURIComponent(orderNumber)}`}>
             View Order Details
             <ArrowRight className="w-4 h-4 ml-2" />
           </Link>
@@ -102,7 +103,7 @@ export function PaymentSuccess({
             asChild
             className="border-[#E1B76F]/35 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
           >
-            <Link href={`/track-order?order=${encodeURIComponent(orderNumber)}`}>
+            <Link href={`/track?orderNumber=${encodeURIComponent(orderNumber)}`}>
               <Truck className="w-4 h-4 mr-2 text-[#E1B76F]" />
               Track Order
             </Link>
@@ -112,7 +113,7 @@ export function PaymentSuccess({
             asChild
             className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
           >
-            <Link href="/shop">
+            <Link href="/products">
               <ShoppingBag className="w-4 h-4 mr-2 text-white/80" />
               Continue Shopping
             </Link>

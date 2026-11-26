@@ -16,10 +16,12 @@ interface OrdersSearchBarProps {
 }
 
 function toIsoDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
 }
 
 export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
@@ -94,7 +96,7 @@ export function OrdersSearchBar({ state }: OrdersSearchBarProps) {
             <Calendar className="h-3.5 w-3.5 text-gray-400 shrink-0" />
             <select
               aria-label="Filter by date range"
-              value={datePreset}
+              value={!dateFrom && !dateTo && datePreset !== "all" ? "all" : datePreset}
               onChange={(e) => handlePresetChange(e.target.value)}
               className="bg-transparent text-[12px] font-medium text-gray-700 focus:outline-none cursor-pointer"
             >

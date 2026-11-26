@@ -46,8 +46,10 @@ export function escapeCsvCell(value: unknown): string {
 export function parseDateBoundary(raw: string | null, endOfDay: boolean): Date | null {
   if (!raw || !raw.trim()) return null;
   const trimmed = raw.trim();
+  // Interpret YYYY-MM-DD filters in Asia/Dhaka (+06:00) so orders placed
+  // between 00:00 and 05:59 BST are included in "Today" and custom date ranges.
   const iso = /^\d{4}-\d{2}-\d{2}$/.test(trimmed)
-    ? `${trimmed}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`
+    ? `${trimmed}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}+06:00`
     : trimmed;
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d;

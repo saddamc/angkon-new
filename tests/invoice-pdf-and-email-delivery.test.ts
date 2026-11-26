@@ -29,6 +29,7 @@ import { PaymentAttemptRepository } from "../src/server/payments/repositories/pa
 import { PaymentEventRepository } from "../src/server/payments/repositories/payment-event.repository.ts";
 import { OrderPaymentRepository } from "../src/server/payments/repositories/order-payment.repository.ts";
 import { createAuthToken } from "../src/server/auth/auth.ts";
+import { parseDateBoundary } from "../src/server/orders/services/order-query.service.ts";
 import { GET as getInvoiceRoute } from "../src/app/api/orders/[id]/invoice/route.ts";
 import { drainEmailDeliveryOutbox } from "../src/server/email/email-outbox.service.ts";
 import mongoose from "mongoose";
@@ -665,4 +666,14 @@ test("SSLCOMMERZ normalization: extracts store_amount, tran_date, card_issuer, v
   assert.equal(normalized.storeAmount, 8658);
   assert.equal(normalized.tranDate, "2026-11-26 23:11:18");
   assert.equal(normalized.cardIssuer, "DBBL Mobile Banking");
+});
+
+test("Admin Date: Today boundary uses Asia/Dhaka (+06:00) so 00:00-05:59 BST orders appear", () => {
+  const start = parseDateBoundary("2026-11-27", false);
+  const end = parseDateBoundary("2026-11-27", true);
+  assert.ok(start && end);
+  assert.equal(start.toISOString(), "2026-11-26T18:00:00.000Z");
+  assert.equal(end.toISOString(), "2026-11-27T17:59:59.999Z");
+  const earlyMorningOrder = new Date("2026-11-26T20:18:36.000Z"); // 2:18 AM BST Nov 27
+  assert.ok(earlyMorningOrder >= start && earlyMorningOrder <= end);
 });

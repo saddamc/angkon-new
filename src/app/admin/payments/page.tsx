@@ -96,11 +96,15 @@ export default async function AdminPaymentsPage({ searchParams }: AdminPaymentsP
   if (fromFilter || toFilter) {
     const range: Record<string, Date> = {};
     if (fromFilter) {
-      const from = new Date(`${fromFilter}T00:00:00.000Z`);
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(fromFilter)
+        ? new Date(`${fromFilter}T00:00:00.000+06:00`)
+        : new Date(fromFilter);
       if (!Number.isNaN(from.getTime())) range.$gte = from;
     }
     if (toFilter) {
-      const to = new Date(`${toFilter}T23:59:59.999Z`);
+      const to = /^\d{4}-\d{2}-\d{2}$/.test(toFilter)
+        ? new Date(`${toFilter}T23:59:59.999+06:00`)
+        : new Date(toFilter);
       if (!Number.isNaN(to.getTime())) range.$lte = to;
     }
     if (Object.keys(range).length > 0) filter.createdAt = range;

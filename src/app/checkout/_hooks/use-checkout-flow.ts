@@ -403,11 +403,15 @@ export function useCheckoutFlow() {
         pendingOrderValues.current = data;
         const sent = await requestEmailCode(data.email, data.name);
         setPlacing(false);
+        if (!sent.ok) {
+          setSubmitError(sent.error || "Unable to send verification code. Please check your email address or try again.");
+          return;
+        }
         setVerifyDialog({
           email: data.email,
           name: data.name,
           phone: data.phone,
-          resendAfter: sent.ok ? sent.resendAfter : 60,
+          resendAfter: sent.resendAfter,
         });
         return;
       }
@@ -482,11 +486,15 @@ export function useCheckoutFlow() {
           pendingOrderValues.current = data;
           const sent = await requestEmailCode(data.email, data.name);
           setPlacing(false);
+          if (!sent.ok) {
+            setSubmitError(sent.error || "Unable to send verification code. Please try again.");
+            return;
+          }
           setVerifyDialog({
             email: data.email,
             name: data.name,
             phone: data.phone,
-            resendAfter: sent.ok ? sent.resendAfter : 60,
+            resendAfter: sent.resendAfter,
           });
           return;
         }

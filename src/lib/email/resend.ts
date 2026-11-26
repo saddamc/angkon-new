@@ -15,6 +15,10 @@ interface SendEmailParams {
   replyTo?: string | string[];
 }
 
+function sanitizeEnvValue(val?: string | null): string {
+  return (val || "").trim().replace(/^["']|["']$/g, "").trim();
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -31,10 +35,11 @@ export async function sendEmail({
 
   let recipients = Array.isArray(to) ? to : [to];
   let emailSubject = subject;
+  const realEmailEnabled = sanitizeEnvValue(process.env.ENABLE_REAL_EMAIL).toLowerCase() === "true";
 
   // Development & Preview: Prevent accidental customer emails unless explicitly enabled
-  if (appEnv !== "production" && process.env.ENABLE_REAL_EMAIL !== "true") {
-    const safeRedirect = process.env.SAFE_TEST_EMAIL?.trim();
+  if (appEnv !== "production" && !realEmailEnabled) {
+    const safeRedirect = sanitizeEnvValue(process.env.SAFE_TEST_EMAIL);
     if (!safeRedirect) {
       console.info(
         `[Email Mock (${appEnv})] Non-production email delivery suppressed. To: ${recipients.join(", ")} | Subject: "${subject}"`
@@ -45,7 +50,7 @@ export async function sendEmail({
     emailSubject = `[${appEnv.toUpperCase()} TEST - For: ${Array.isArray(to) ? to.join(",") : to}] ${subject}`;
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = sanitizeEnvValue(process.env.RESEND_API_KEY);
 
   if (!apiKey) {
     console.warn("⚠️ RESEND_API_KEY is not defined in environment variables. Email skipped.");
@@ -54,8 +59,12 @@ export async function sendEmail({
 
   // Use a human-replyable address by default. A no-reply sender reduces trust
   // and prevents customers from replying when they need order support.
-  const sender = from || process.env.EMAIL_FROM || "ANGKON Orders <orders@angkon.net>";
-  const configuredReplyTo = replyTo || process.env.EMAIL_REPLY_TO?.trim() || undefined;
+  const sender = sanitizeEnvValue(from || process.env.EMAIL_FROM) || "ANGKON Orders <orders@angkon.net>";
+  const rawReplyTo = Array.isArray(replyTo)
+    ? replyTo.map((r) => sanitizeEnvValue(r)).filter(Boolean)
+    : sanitizeEnvValue(replyTo || process.env.EMAIL_REPLY_TO);
+  const configuredReplyTo =
+    Array.isArray(rawReplyTo) ? (rawReplyTo.length ? rawReplyTo : undefined) : rawReplyTo || undefined;
 
   try {
     const res = await fetch(RESEND_API_URL, {
@@ -65,7 +74,7 @@ export async function sendEmail({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: sender.trim(),
+        from: sender,
         to: recipients.map((r) => r.trim()).filter(Boolean),
         subject: emailSubject,
         html,
@@ -77,8 +86,8 @@ export async function sendEmail({
     const data = await res.json();
 
     if (!res.ok) {
-      console.warn("❌ Resend API Error:", data);
-      return { success: false, error: data?.message || "Failed to send email" };
+      console.warn("❌ Resend API Error:", res.status, data);
+      return { success: false, error: data?.message || `Resend rejected email (HTTP ${res.status})` };
     }
 
     return { success: true, id: data.id };

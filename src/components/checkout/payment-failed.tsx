@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 
 interface PaymentFailedProps {
   orderNumber: string;
+  amount?: number;
+  tranId?: string;
   reason?: string | null;
   onRetry?: () => void;
   isRetrying?: boolean;
@@ -14,67 +16,80 @@ interface PaymentFailedProps {
 
 export function PaymentFailed({
   orderNumber,
+  amount,
+  tranId,
   reason,
   onRetry,
   isRetrying = false,
 }: PaymentFailedProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
-      <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950 flex items-center justify-center mb-6">
-        <AlertCircle className="w-10 h-10 text-rose-600 dark:text-rose-400" />
+    <div className="flex flex-col items-center text-center">
+      <div className="w-16 h-16 rounded-full bg-rose-500/15 border border-rose-400/40 flex items-center justify-center mb-5">
+        <AlertCircle className="w-9 h-9 text-rose-400" />
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-400/30 mb-3">
         Payment Failed
+      </span>
+
+      <h2 className="text-2xl font-heading font-black tracking-wide text-white mb-2">
+        Payment Not Completed
       </h2>
 
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-        {reason || "Your bank or mobile wallet could not complete this transaction. No funds were charged."}
+      <p className="text-sm text-white/75 mb-6 max-w-sm leading-relaxed">
+        {reason ||
+          "Your bank or mobile wallet could not complete this transaction. No funds were charged, and your bag items are still saved."}
       </p>
 
-      <div className="w-full bg-neutral-50 dark:bg-neutral-800/60 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700 space-y-2 text-xs text-neutral-600 dark:text-neutral-400 mb-6">
-        <div className="flex justify-between">
-          <span>Order Number:</span>
-          <span className="font-semibold text-neutral-900 dark:text-neutral-100">{orderNumber}</span>
+      <div className="w-full rounded-xl p-4 bg-[#2e050a]/80 border border-[#E1B76F]/25 space-y-2.5 text-xs text-white/75 mb-6">
+        <div className="flex justify-between items-center">
+          <span>Order Reference</span>
+          <span className="font-bold text-white tracking-wide">{orderNumber}</span>
         </div>
-        {reason && (
-          <div className="flex justify-between text-left">
-            <span>Gateway Note:</span>
-            <span className="font-medium text-rose-600 dark:text-rose-400 max-w-[200px] truncate">{reason}</span>
+        {typeof amount === "number" && (
+          <div className="flex justify-between items-center">
+            <span>Order Amount</span>
+            <span className="font-bold text-[#E1B76F]">৳{amount.toLocaleString("en-BD")}</span>
+          </div>
+        )}
+        {tranId && (
+          <div className="flex justify-between items-center">
+            <span>Payment Reference</span>
+            <span className="font-mono text-white/90">{tranId}</span>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 w-full">
+      <div className="flex flex-col gap-2.5 w-full">
         {onRetry && (
           <Button
             onClick={onRetry}
             disabled={isRetrying}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+            className="w-full bg-[#E1B76F] hover:bg-[#d4a657] text-[#2a0408] font-bold"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isRetrying ? "animate-spin" : ""}`} />
             {isRetrying ? "Starting New Payment..." : "Retry Payment"}
           </Button>
         )}
 
-        <div className="flex gap-3 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
           <Button
             variant="outline"
             asChild
-            className="flex-1 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-950 font-semibold shadow-xs"
+            className="border-[#E1B76F]/35 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
           >
             <Link href="/checkout">
-              <ShoppingCart className="w-4 h-4 mr-2 text-neutral-700 dark:text-neutral-300" />
-              Back to Checkout
+              <ShoppingCart className="w-4 h-4 mr-2 text-[#E1B76F]" />
+              Return to Checkout
             </Link>
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             asChild
-            className="flex-1 border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-950 font-semibold"
+            className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
           >
             <Link href="/contact">
-              <HelpCircle className="w-4 h-4 mr-2 text-neutral-700 dark:text-neutral-300" />
+              <HelpCircle className="w-4 h-4 mr-2 text-white/80" />
               Contact Support
             </Link>
           </Button>

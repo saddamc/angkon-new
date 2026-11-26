@@ -249,4 +249,22 @@ test("Scenarios 13 & 14: Lost browser session resolved by IPN; pending UI state 
     const content = fs.readFileSync(file, "utf8");
     assert.ok(content.includes("/checkout/payment/result"), `${file} must redirect to /checkout/payment/result`);
   }
+
+  // Cart preservation: online gateway redirect must NOT clear cart prematurely;
+  // PaymentSuccess clears cart only after server-confirmed payment.
+  const checkoutFlow = fs.readFileSync("src/app/checkout/_hooks/use-checkout-flow.ts", "utf8");
+  const gatewayRedirectBlock = checkoutFlow.slice(
+    checkoutFlow.indexOf("if (result.gatewayUrl)"),
+    checkoutFlow.indexOf("window.location.assign(result.gatewayUrl)") + 50
+  );
+  assert.equal(
+    gatewayRedirectBlock.includes("clearCart()"),
+    false,
+    "Cart must NOT be cleared before SSLCOMMERZ payment is confirmed"
+  );
+  const paymentSuccessUi = fs.readFileSync("src/components/checkout/payment-success.tsx", "utf8");
+  assert.ok(
+    paymentSuccessUi.includes("clearCart()"),
+    "PaymentSuccess must clear the cart once payment is server-confirmed"
+  );
 });

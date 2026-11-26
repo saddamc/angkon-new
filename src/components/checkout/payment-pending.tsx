@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 interface PaymentPendingProps {
   orderNumber: string;
   amount: number;
+  tranId?: string;
   onRefreshStatus?: () => void;
   isRefreshing?: boolean;
 }
@@ -15,40 +16,51 @@ interface PaymentPendingProps {
 export function PaymentPending({
   orderNumber,
   amount,
+  tranId,
   onRefreshStatus,
   isRefreshing = false,
 }: PaymentPendingProps) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
-      <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center mb-6">
-        <Clock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+    <div className="flex flex-col items-center text-center">
+      <div className="w-16 h-16 rounded-full bg-amber-500/15 border border-amber-400/40 flex items-center justify-center mb-5">
+        <Clock className="w-9 h-9 text-[#E1B76F]" />
       </div>
 
-      <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-amber-500/15 text-[#E1B76F] border border-[#E1B76F]/30 mb-3">
+        Verification Pending
+      </span>
+
+      <h2 className="text-2xl font-heading font-black tracking-wide text-white mb-2">
         Payment Verification in Progress
       </h2>
 
-      <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
-        If you completed payment in the gateway or bank app, we are waiting for the final confirmation from the payment provider.
+      <p className="text-sm text-white/75 mb-6 max-w-sm leading-relaxed">
+        If you completed payment in your bank or mobile wallet, we are awaiting final confirmation from SSLCOMMERZ. This page updates automatically.
       </p>
 
-      <div className="w-full bg-neutral-50 dark:bg-neutral-800/60 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700 space-y-2 text-xs text-neutral-600 dark:text-neutral-400 mb-6">
-        <div className="flex justify-between">
-          <span>Order Number:</span>
-          <span className="font-semibold text-neutral-900 dark:text-neutral-100">{orderNumber}</span>
+      <div className="w-full rounded-xl p-4 bg-[#2e050a]/80 border border-[#E1B76F]/25 space-y-2.5 text-xs text-white/75 mb-6">
+        <div className="flex justify-between items-center">
+          <span>Order Reference</span>
+          <span className="font-bold text-white tracking-wide">{orderNumber}</span>
         </div>
-        <div className="flex justify-between">
-          <span>Expected Amount:</span>
-          <span className="font-semibold text-neutral-900 dark:text-neutral-100">৳{amount.toLocaleString("en-BD")}</span>
+        <div className="flex justify-between items-center">
+          <span>Expected Amount</span>
+          <span className="font-bold text-[#E1B76F]">৳{amount.toLocaleString("en-BD")}</span>
         </div>
+        {tranId && (
+          <div className="flex justify-between items-center">
+            <span>Payment Reference</span>
+            <span className="font-mono text-white/90">{tranId}</span>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
         {onRefreshStatus && (
           <Button
             onClick={onRefreshStatus}
             disabled={isRefreshing}
-            className="flex-1 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-neutral-100 dark:hover:bg-white dark:text-neutral-900"
+            className="bg-[#E1B76F] hover:bg-[#d4a657] text-[#2a0408] font-bold"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
             {isRefreshing ? "Checking..." : "Check Status"}
@@ -57,11 +69,11 @@ export function PaymentPending({
         <Button
           variant="outline"
           asChild
-          className="flex-1 border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-700 hover:text-neutral-950 font-semibold shadow-xs"
+          className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white font-semibold"
         >
           <Link href="/contact">
-            <HelpCircle className="w-4 h-4 mr-2 text-neutral-700 dark:text-neutral-300" />
-            Support
+            <HelpCircle className="w-4 h-4 mr-2 text-white/80" />
+            Contact Support
           </Link>
         </Button>
       </div>

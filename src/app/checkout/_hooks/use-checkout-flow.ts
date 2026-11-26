@@ -133,6 +133,24 @@ export function useCheckoutFlow() {
 
   useEffect(() => {
     setMounted(true);
+    try {
+      const errParam = new URLSearchParams(window.location.search).get("error");
+      if (errParam === "payment_cancelled") {
+        setSubmitError(
+          "Your payment was cancelled. Your bag items are still saved — you can try paying again or choose Cash on Delivery."
+        );
+      } else if (errParam === "payment_failed") {
+        setSubmitError(
+          "Your payment could not be completed. Your bag items are still saved — you can retry or choose Cash on Delivery."
+        );
+      } else if (errParam === "payment_attempt_not_found") {
+        setSubmitError(
+          "We could not locate that payment session. Your bag items are still saved so you can try again."
+        );
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Pre-fill user data when signed in
@@ -536,13 +554,9 @@ export function useCheckoutFlow() {
       });
 
       if (result.gatewayUrl) {
-        // Redirect customer to SSLCOMMERZ official hosted payment page (full-page redirect)
-        clearCart();
-        try {
-          localStorage.removeItem("angkon_applied_promo");
-        } catch {
-          /* ignore */
-        }
+        // Redirect customer to SSLCOMMERZ official hosted payment page (full-page redirect).
+        // Do NOT clear the cart here: only clear it inside PaymentSuccess once the
+        // server confirms payment, so cancelled/failed attempts preserve the customer's bag.
         window.location.assign(result.gatewayUrl);
         return;
       }

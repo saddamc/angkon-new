@@ -46,6 +46,7 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
   });
   const [isRetrying, setIsRetrying] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const token = attempt.statusToken || statusToken || "";
 
@@ -93,6 +94,7 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
   const handleRetry = async () => {
     try {
       setIsRetrying(true);
+      setRetryError(null);
       const query = token ? `?token=${encodeURIComponent(token)}` : "";
       const res = await fetch(`/api/payments/${attempt.id}/retry${query}`, {
         method: "POST",
@@ -103,59 +105,80 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
       if (data.ok && data.data?.gatewayUrl) {
         window.location.assign(data.data.gatewayUrl);
       } else {
-        alert(data.error || "Unable to restart payment. Please try again.");
+        setRetryError(data.error || "Unable to restart payment. Please return to checkout.");
         setIsRetrying(false);
       }
     } catch {
-      alert("Network error restarting payment. Please check your connection.");
+      setRetryError("Network error restarting payment. Please check your connection.");
       setIsRetrying(false);
     }
   };
 
   return (
-    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-800 p-6 md:p-8">
-      {(status === "succeeded" || status === "refunded" || status === "partially_refunded") && (
-        <PaymentSuccess
-          orderNumber={attempt.orderNumber}
-          amount={attempt.expectedAmount}
-          tranId={attempt.tranId}
-          valId={attempt.valId}
-          paidAt={attempt.paidAt}
-        />
-      )}
+    <div className="rounded-2xl border border-[#E1B76F]/30 bg-[#3b050b] shadow-2xl overflow-hidden">
+      <div className="border-b border-[#E1B76F]/20 bg-[#2e0409] px-6 py-3 flex items-center justify-between text-[11px] uppercase tracking-widest text-[#E1B76F]/90 font-semibold">
+        <span>ANGKON · Payment Status</span>
+        <span className="text-white/60 font-mono">SSLCOMMERZ</span>
+      </div>
 
-      {status === "failed" && (
-        <PaymentFailed
-          orderNumber={attempt.orderNumber}
-          reason={attempt.failureReason}
-          onRetry={attempt.canRetry !== false ? handleRetry : undefined}
-          isRetrying={isRetrying}
-        />
-      )}
+      <div className="p-6 md:p-8">
+        {retryError && (
+          <div className="mb-5 rounded-xl border border-rose-400/40 bg-rose-500/15 px-4 py-3 text-xs text-rose-200 text-center">
+            {retryError}
+          </div>
+        )}
 
-      {isCancelled && (
-        <PaymentCancelled
-          orderNumber={attempt.orderNumber}
-          onRetry={attempt.canRetry !== false ? handleRetry : undefined}
-          isRetrying={isRetrying}
-        />
-      )}
+        {(status === "succeeded" || status === "refunded" || status === "partially_refunded") && (
+          <PaymentSuccess
+            orderNumber={attempt.orderNumber}
+            amount={attempt.expectedAmount}
+            tranId={attempt.tranId}
+            valId={attempt.valId}
+            paidAt={attempt.paidAt}
+          />
+        )}
 
-      {(status === "expired" || status === "unknown" || status === "review_required") && !isCancelled && (
-        <PaymentPending
-          orderNumber={attempt.orderNumber}
-          amount={attempt.expectedAmount}
-          onRefreshStatus={fetchLatestStatus}
-          isRefreshing={isRefreshing}
-        />
-      )}
+        {status === "failed" && (
+          <PaymentFailed
+            orderNumber={attempt.orderNumber}
+            amount={attempt.expectedAmount}
+            tranId={attempt.tranId}
+            reason={attempt.failureReason}
+            onRetry={attempt.canRetry !== false ? handleRetry : undefined}
+            isRetrying={isRetrying}
+          />
+        )}
 
-      {(status === "created" || status === "initiating" || status === "pending") && !isCancelled && (
-        <PaymentProcessing
-          orderNumber={attempt.orderNumber}
-          amount={attempt.expectedAmount}
-        />
-      )}
+        {isCancelled && (
+          <PaymentCancelled
+            orderNumber={attempt.orderNumber}
+            amount={attempt.expectedAmount}
+            tranId={attempt.tranId}
+            onRetry={attempt.canRetry !== false ? handleRetry : undefined}
+            isRetrying={isRetrying}
+          />
+        )}
+
+        {(status === "expired" || status === "unknown" || status === "review_required") && !isCancelled && (
+          <PaymentPending
+            orderNumber={attempt.orderNumber}
+            amount={attempt.expectedAmount}
+            tranId={attempt.tranId}
+            onRefreshStatus={fetchLatestStatus}
+            isRefreshing={isRefreshing}
+          />
+        )}
+
+        {(status === "created" || status === "initiating" || status === "pending") && !isCancelled && (
+          <PaymentProcessing
+            orderNumber={attempt.orderNumber}
+            amount={attempt.expectedAmount}
+            tranId={attempt.tranId}
+            onRefreshStatus={fetchLatestStatus}
+            isRefreshing={isRefreshing}
+          />
+        )}
+      </div>
     </div>
   );
 }

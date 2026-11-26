@@ -16,6 +16,24 @@ export const APP_ENVIRONMENTS: readonly AppEnvironment[] = [
 ] as const;
 
 /**
+ * Supported Application Databases for Manual Selection.
+ * The operator explicitly chooses 'angkon_dev' or 'angkon' via DATABASE_URL.
+ */
+export const SUPPORTED_APPLICATION_DATABASES = [
+  "angkon_dev",
+  "angkon",
+] as const;
+
+export const ALL_SUPPORTED_DATABASES = [
+  "angkon_dev",
+  "angkon",
+  "angkon_preview",
+  "angkon_test",
+] as const;
+
+export type SupportedDatabase = typeof ALL_SUPPORTED_DATABASES[number];
+
+/**
  * Authoritative Environment-to-Database Mapping
  *
  * Each environment is strictly mapped to its own isolated database:
@@ -43,7 +61,7 @@ export const ENVIRONMENT_DATABASE_MAP: Record<AppEnvironment, string> = {
  */
 export function getAppEnvironment(): AppEnvironment {
   const explicit = process.env.APP_ENVIRONMENT?.trim().toLowerCase();
-  if (explicit) {
+  if (explicit && explicit !== "undefined") {
     if (APP_ENVIRONMENTS.includes(explicit as AppEnvironment)) {
       return explicit as AppEnvironment;
     }
@@ -53,7 +71,7 @@ export function getAppEnvironment(): AppEnvironment {
   }
 
   const vercelEnv = process.env.VERCEL_ENV?.trim().toLowerCase();
-  if (vercelEnv) {
+  if (vercelEnv && vercelEnv !== "undefined") {
     if (APP_ENVIRONMENTS.includes(vercelEnv as AppEnvironment)) {
       return vercelEnv as AppEnvironment;
     }
@@ -149,6 +167,8 @@ export interface DatabaseValidationResult {
   environment: AppEnvironment;
   expectedDatabase: string;
   actualDatabase: string;
+  isProductionDatabase: boolean;
+  productionWarning: string | null;
   sanitizedHost: string;
   uri: string;
   error?: string;
@@ -159,8 +179,9 @@ export interface DatabaseValidationResult {
  *
  * Rules:
  * 1. Checks for conflicting connection variables (DATABASE_URL, MONGODB_URI, MONGODB_URL).
- * 2. Compares actual database against ENVIRONMENT_DATABASE_MAP for the resolved environment.
- * 3. FORBIDS non-production environments (development, preview, test) from connecting to "angkon".
+ * 2. Compares actual database against ALL_SUPPORTED_DATABASES.
+ * 3. FORBIDS non-production environments (development, preview, test) from connecting to "angkon"
+ *    unless explicitly authorized via ALLOW_PRODUCTION_DB_ACCESS=true.
  * 4. FORBIDS production from connecting to any database other than "angkon".
  * 5. Rejects any database mismatch rather than silently rewriting it.
  */
@@ -198,6 +219,8 @@ export function validateDatabaseConnection(
             environment: env,
             expectedDatabase,
             actualDatabase: first.databaseName,
+            isProductionDatabase: first.databaseName === "angkon",
+            productionWarning: null,
             sanitizedHost: first.host,
             uri: "",
             error: err,
@@ -220,6 +243,8 @@ export function validateDatabaseConnection(
       environment: env,
       expectedDatabase,
       actualDatabase: "",
+      isProductionDatabase: false,
+      productionWarning: null,
       sanitizedHost: "",
       uri: "",
       error: `Missing database configuration. Define DATABASE_URL for environment "${env}".`,
@@ -235,6 +260,8 @@ export function validateDatabaseConnection(
       environment: env,
       expectedDatabase,
       actualDatabase: "",
+      isProductionDatabase: false,
+      productionWarning: null,
       sanitizedHost: "",
       uri: "",
       error: (err as Error).message,
@@ -242,51 +269,90 @@ export function validateDatabaseConnection(
   }
 
   const actualDatabase = parsed.databaseName;
+  const isProductionDatabase = actualDatabase === "angkon";
+  const isCiDatabase = process.env.CI?.trim().toLowerCase() === "true" && actualDatabase === "angkon_ci";
 
-  // RULE 1: Non-production MUST NEVER connect to production database "angkon"
-  if (env !== "production" && actualDatabase === "angkon") {
+  // RULE 0: Check supported database names
+  const isRecognized = (ALL_SUPPORTED_DATABASES as readonly string[]).includes(actualDatabase) || isCiDatabase;
+  if (!isRecognized) {
     return {
       valid: false,
       environment: env,
       expectedDatabase,
       actualDatabase,
+      isProductionDatabase: false,
+      productionWarning: null,
       sanitizedHost: parsed.host,
       uri: rawUri,
-      error: `CRITICAL ISOLATION VIOLATION: Environment "${env}" is configured with production database "angkon". Non-production environments must connect to their dedicated isolated database "${expectedDatabase}". Refusing unsafe connection.`,
+      error: `UNSUPPORTED_DATABASE: "${actualDatabase}" is not a recognized ANGKON database. Supported databases: ${SUPPORTED_APPLICATION_DATABASES.join(", ")}.`,
     };
   }
 
-  // RULE 2: Production MUST connect to "angkon"
-  if (env === "production" && actualDatabase !== "angkon") {
+  // RULE 1: Non-production MUST NOT connect to production database "angkon" unless ALLOW_PRODUCTION_DB_ACCESS=true
+  const allowProdDbAccess = process.env.ALLOW_PRODUCTION_DB_ACCESS?.trim().toLowerCase() === "true";
+  if (env !== "production" && isProductionDatabase) {
+    if (!allowProdDbAccess) {
+      return {
+        valid: false,
+        environment: env,
+        expectedDatabase,
+        actualDatabase,
+        isProductionDatabase: true,
+        productionWarning: null,
+        sanitizedHost: parsed.host,
+        uri: rawUri,
+        error: `CRITICAL ISOLATION VIOLATION: Environment "${env}" is configured with production database "angkon". Non-production environments must connect to their dedicated isolated database "${expectedDatabase}". Refusing unsafe connection. To explicitly allow manual production DB access, set ALLOW_PRODUCTION_DB_ACCESS=true.`,
+      };
+    }
+  }
+
+  // RULE 2: Production MUST connect to "angkon" (unless running CI build with angkon_ci)
+  if (env === "production" && actualDatabase !== "angkon" && !isCiDatabase) {
     return {
       valid: false,
       environment: env,
       expectedDatabase,
       actualDatabase,
+      isProductionDatabase: false,
+      productionWarning: null,
       sanitizedHost: parsed.host,
       uri: rawUri,
       error: `CRITICAL PRODUCTION CONFIGURATION ERROR: Production environment requires database "angkon", but connection string specifies "${actualDatabase}".`,
     };
   }
 
-  // RULE 3: Exact mapping match
-  if (actualDatabase !== expectedDatabase) {
+  // RULE 3: Exact mapping match for standard isolation (unless ALLOW_PRODUCTION_DB_ACCESS or CI angkon_ci)
+  if (
+    actualDatabase !== expectedDatabase &&
+    !(env !== "production" && isProductionDatabase && allowProdDbAccess) &&
+    !isCiDatabase
+  ) {
     return {
       valid: false,
       environment: env,
       expectedDatabase,
       actualDatabase,
+      isProductionDatabase,
+      productionWarning: null,
       sanitizedHost: parsed.host,
       uri: rawUri,
       error: `Database isolation mismatch for environment "${env}": expected database "${expectedDatabase}", but connection string specifies "${actualDatabase}".`,
     };
   }
 
+  const productionWarning = isProductionDatabase
+    ? env === "production"
+      ? "⚠️ [SECURITY WARNING] ACTIVE DATABASE IS PRODUCTION: 'angkon'. Any modifications affect real production data!"
+      : `⚠️ [SECURITY WARNING] ACTIVE DATABASE IS PRODUCTION: 'angkon' running under non-production environment '${env}' with ALLOW_PRODUCTION_DB_ACCESS=true. Extreme caution advised!`
+    : null;
+
   return {
     valid: true,
     environment: env,
     expectedDatabase,
     actualDatabase,
+    isProductionDatabase,
+    productionWarning,
     sanitizedHost: `${parsed.host}/${actualDatabase}`,
     uri: rawUri,
   };
@@ -304,6 +370,8 @@ export interface RuntimeEnvironmentInfo {
   environment: AppEnvironment;
   expectedDatabase: string;
   actualDatabase: string;
+  isProductionDatabase: boolean;
+  productionWarning: string | null;
   sanitizedHost: string;
   isolationValid: boolean;
   /** True when the process is a development server (`next dev`). */
@@ -325,6 +393,8 @@ export function getRuntimeEnvironmentInfo(): RuntimeEnvironmentInfo {
       environment: validation.environment,
       expectedDatabase: validation.expectedDatabase,
       actualDatabase: validation.actualDatabase || "unknown",
+      isProductionDatabase: Boolean(validation.isProductionDatabase),
+      productionWarning: validation.productionWarning || null,
       sanitizedHost: validation.sanitizedHost || "unknown",
       isolationValid: validation.valid,
       isDevServer,
@@ -335,6 +405,8 @@ export function getRuntimeEnvironmentInfo(): RuntimeEnvironmentInfo {
       environment,
       expectedDatabase: ENVIRONMENT_DATABASE_MAP[environment],
       actualDatabase: "unknown",
+      isProductionDatabase: false,
+      productionWarning: null,
       sanitizedHost: "unknown",
       isolationValid: false,
       isDevServer,

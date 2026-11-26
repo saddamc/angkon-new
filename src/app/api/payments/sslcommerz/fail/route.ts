@@ -2,7 +2,7 @@
 import { ProcessFailureService } from "@/server/payments/services/process-failure";
 import { parseGatewayCallback, firstDefined } from "@/server/payments/parse-callback";
 import { checkDualRateLimit, createRateLimitResponse } from "@/server/security/rate-limit";
-import { getSiteUrl } from "@/server/auth/auth";
+import { getPaymentCallbackBaseUrl } from "@/server/payments/config/sslcommerz";
 
 async function handleCallback(req: NextRequest) {
   const limit = await checkDualRateLimit({
@@ -28,7 +28,7 @@ async function handleCallback(req: NextRequest) {
     payload,
   });
 
-  return NextResponse.redirect(new URL(result.redirectUrl, getSiteUrl(req)), 303);
+  return NextResponse.redirect(new URL(result.redirectUrl, getPaymentCallbackBaseUrl()), 303);
 }
 
 export async function POST(req: NextRequest) {

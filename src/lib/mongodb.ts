@@ -5,6 +5,11 @@ import {
   getAppEnvironment,
 } from "../server/env/app-environment";
 import { isSrvResolutionError } from "./mongodb-dns";
+import {
+  getSslcommerzCredentials,
+  isSslcommerzLiveReady,
+} from "../server/payments/config/sslcommerz";
+import { getCourierModeConfig } from "../server/courier/core/courier-mode";
 
 const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || process.env.DATABASE_URL;
 
@@ -205,6 +210,20 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   }
 
   const uri = isolation.uri;
+  const actualDb = isolation.actualDatabase;
+
+  // Prominent warning banner when connecting to production database 'angkon'
+  if (actualDb === "angkon") {
+    console.warn("\n=======================================================");
+    console.warn("⚠️  [SECURITY WARNING] ACTIVE DATABASE IS PRODUCTION: 'angkon'");
+    if (isolation.environment !== "production") {
+      console.warn(`⚠️  Running in '${isolation.environment}' with ALLOW_PRODUCTION_DB_ACCESS=true.`);
+    }
+    console.warn("⚠️  All database operations affect live customer data!");
+    console.warn("=======================================================\n");
+  } else if (process.env.NODE_ENV !== "test") {
+    console.info(`[MongoDB] Connected to database: '${actualDb}' (${isolation.environment})`);
+  }
 
   // 1. If actively connected (readyState === 1), return cached connection immediately
   if (cached.conn && cached.conn.connection.readyState === 1) {
@@ -293,6 +312,8 @@ export function getDatabaseDiagnostics() {
     environment: "unknown",
     expectedDatabase: "unknown",
     actualDatabase: "unknown",
+    isProductionDatabase: false,
+    productionWarning: null as string | null,
     sanitizedHost: "unknown",
     isolationValid: false,
   };
@@ -303,11 +324,63 @@ export function getDatabaseDiagnostics() {
       environment: iso.environment,
       expectedDatabase: iso.expectedDatabase,
       actualDatabase: iso.actualDatabase,
+      isProductionDatabase: Boolean(iso.isProductionDatabase),
+      productionWarning: iso.productionWarning || null,
       sanitizedHost: iso.sanitizedHost,
       isolationValid: iso.valid,
     };
   } catch {
     isolationInfo.environment = getAppEnvironment();
+  }
+
+  // Decoupled payment configuration snapshot (secret-free)
+  let paymentInfo = {
+    mode: "sandbox",
+    isLive: false,
+    isLiveReady: false,
+    configured: false,
+    storeIdMasked: "not-configured",
+  };
+  try {
+    const creds = getSslcommerzCredentials();
+    const isLive = creds.mode === "live";
+    const maskStoreId = (id: string) => {
+      if (!id) return "not-configured";
+      if (id.length <= 6) return id.slice(0, 2) + "***";
+      return id.slice(0, 4) + "***" + id.slice(-2);
+    };
+    paymentInfo = {
+      mode: creds.mode,
+      isLive,
+      isLiveReady: isSslcommerzLiveReady(creds),
+      configured: creds.configured,
+      storeIdMasked: maskStoreId(creds.storeId),
+    };
+  } catch {
+    // Graceful fallback
+  }
+
+  // Decoupled courier configuration snapshot (secret-free)
+  let courierInfo = {
+    mode: "mock",
+    isLive: false,
+    isMock: true,
+    liveBookingEnabled: false,
+    hasCredentials: false,
+    reason: undefined as string | undefined,
+  };
+  try {
+    const courierConfig = getCourierModeConfig();
+    courierInfo = {
+      mode: courierConfig.mode,
+      isLive: courierConfig.isLive,
+      isMock: courierConfig.isMock,
+      liveBookingEnabled: courierConfig.liveBookingEnabled,
+      hasCredentials: courierConfig.hasCredentials,
+      reason: courierConfig.reason,
+    };
+  } catch {
+    // Graceful fallback
   }
 
   return {
@@ -320,6 +393,17 @@ export function getDatabaseDiagnostics() {
       uptimeSeconds: Math.floor(process.uptime()),
       pid: process.pid,
     },
+    database: {
+      activeDatabase: isolationInfo.actualDatabase,
+      isProductionDatabase: isolationInfo.isProductionDatabase,
+      productionWarning: isolationInfo.productionWarning,
+      declaredEnvironment: isolationInfo.environment,
+      expectedDatabase: isolationInfo.expectedDatabase,
+      sanitizedHost: isolationInfo.sanitizedHost,
+      isolationValid: isolationInfo.isolationValid,
+    },
+    payment: paymentInfo,
+    courier: courierInfo,
     isolation: isolationInfo,
     connection: {
       readyState,

@@ -128,7 +128,7 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
         <PaymentFailed
           orderNumber={attempt.orderNumber}
           reason={attempt.failureReason}
-          onRetry={handleRetry}
+          onRetry={attempt.canRetry !== false ? handleRetry : undefined}
           isRetrying={isRetrying}
         />
       )}
@@ -136,7 +136,7 @@ export function PaymentStatusCard({ initialAttempt, statusToken }: PaymentStatus
       {isCancelled && (
         <PaymentCancelled
           orderNumber={attempt.orderNumber}
-          onRetry={handleRetry}
+          onRetry={attempt.canRetry !== false ? handleRetry : undefined}
           isRetrying={isRetrying}
         />
       )}

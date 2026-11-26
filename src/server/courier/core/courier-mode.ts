@@ -118,7 +118,7 @@ export function getCourierModeConfig(): CourierModeConfig {
  */
 export function isLocalTestOrder(
   orderNumber: string,
-  customer?: { phone?: string; email?: string; fullName?: string },
+  customer?: { phone?: string; email?: string; fullName?: string; name?: string },
   orderDoc?: { isTestOrder?: boolean; isTest?: boolean }
 ): boolean {
   if (orderDoc?.isTestOrder === true || orderDoc?.isTest === true) {
@@ -166,7 +166,7 @@ export function isLocalTestOrder(
     return true;
   }
 
-  const name = (customer?.fullName || "").toLowerCase();
+  const name = (customer?.fullName || customer?.name || "").toLowerCase();
   if (
     name.includes("test customer") ||
     name.includes("qa customer") ||

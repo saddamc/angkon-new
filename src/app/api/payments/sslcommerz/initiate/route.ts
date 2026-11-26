@@ -4,6 +4,7 @@ import { InitiatePaymentService } from "@/server/payments/services/initiate-paym
 import { PaymentError } from "@/server/payments/payment-errors";
 import { requireCustomerId, assertOrderOwnership } from "@/server/payments/customer-auth";
 import { OrderPaymentRepository } from "@/server/payments/repositories/order-payment.repository";
+import { getPaymentCallbackBaseUrl } from "@/server/payments/config/sslcommerz";
 
 export async function POST(req: NextRequest) {
   const rateLimitResult = await checkDualRateLimit({
@@ -32,11 +33,7 @@ export async function POST(req: NextRequest) {
     }
     await assertOrderOwnership(order, userId);
 
-    const appBaseUrl =
-      process.env.NEXTAUTH_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      req.nextUrl.origin ||
-      "http://localhost:3000";
+    const appBaseUrl = getPaymentCallbackBaseUrl();
 
     const result = await InitiatePaymentService.initiate({
       orderNumber,

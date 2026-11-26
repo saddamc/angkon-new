@@ -7,7 +7,11 @@ import { generateTranId } from "../utils/generate-tran-id";
 import { createSslcommerzSession } from "../providers/sslcommerz/create-session";
 import { maskSessionKey } from "../payment-idempotency";
 import { getSslcommerzConfig } from "../providers/sslcommerz/config";
-import { isSslcommerzLiveReady } from "@/server/payments/config/sslcommerz";
+import {
+  isSslcommerzLiveReady,
+  getPaymentCallbackBaseUrl,
+  getPaymentIpnBaseUrl,
+} from "@/server/payments/config/sslcommerz";
 import { getAppEnvironment } from "@/server/env/app-environment";
 import { GatewayTimeoutError, PaymentError } from "../payment-errors";
 import { createPaymentReturnToken } from "../return-token";
@@ -155,8 +159,9 @@ export class InitiatePaymentService {
       metadata: { attemptNumber, amount: order.total },
     });
 
-    // 2. Build SSLCOMMERZ gateway URLs
-    const baseUrl = input.appBaseUrl.replace(/\/$/, "");
+    // 2. Build SSLCOMMERZ gateway URLs from server-side configuration (never untrusted Host)
+    const baseUrl = (input.appBaseUrl || getPaymentCallbackBaseUrl()).replace(/\/+$/, "");
+    const ipnBaseUrl = getPaymentIpnBaseUrl();
     const attemptQuery = `attemptId=${encodeURIComponent(String(attempt._id))}&tranId=${encodeURIComponent(tranId)}&token=${encodeURIComponent(
       createPaymentReturnToken(tranId)
     )}`;
@@ -189,7 +194,7 @@ export class InitiatePaymentService {
       successUrl: `${baseUrl}/api/payments/sslcommerz/success?${attemptQuery}`,
       failUrl: `${baseUrl}/api/payments/sslcommerz/fail?${attemptQuery}`,
       cancelUrl: `${baseUrl}/api/payments/sslcommerz/cancel?${attemptQuery}`,
-      ipnUrl: `${baseUrl}/api/payments/sslcommerz/ipn`,
+      ipnUrl: `${ipnBaseUrl}/api/payments/sslcommerz/ipn`,
       multiCardName,
     };
 

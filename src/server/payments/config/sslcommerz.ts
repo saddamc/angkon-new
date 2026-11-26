@@ -126,3 +126,73 @@ export function isOnlinePaymentAvailableForEnvironment(
 
   return creds.configured;
 }
+
+const LOCALHOST_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?(\/|$)/i;
+
+/**
+ * Resolves the canonical server-side base URL for SSLCOMMERZ customer callbacks.
+ *
+ * Security & Environment Rules:
+ * - Never constructs URLs from untrusted request `Host` or `x-forwarded-host` headers.
+ * - Production always uses `https://angkon.net` (or an explicit HTTPS non-localhost env URL).
+ * - Staging uses the configured public HTTPS staging domain.
+ * - Local development falls back to `http://localhost:3000`.
+ */
+export function getPaymentCallbackBaseUrl(envOverride?: AppEnvironment): string {
+  const appEnv = envOverride || getAppEnvironment();
+  const raw =
+    process.env.PAYMENT_CALLBACK_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    process.env.NEXT_PUBLIC_BASE_URL?.trim() ||
+    process.env.NEXTAUTH_URL?.trim() ||
+    "";
+
+  if (appEnv === "production") {
+    const prodUrl = (raw || "https://angkon.net").replace(/\/+$/, "");
+    if (LOCALHOST_PATTERN.test(prodUrl) || !prodUrl.startsWith("https://")) {
+      throw new Error(
+        `Invalid production payment callback base URL "${prodUrl}". Production must use a public HTTPS domain (e.g. https://angkon.net).`
+      );
+    }
+    return prodUrl;
+  }
+
+  if (raw) {
+    const clean = raw.replace(/\/+$/, "");
+    if (appEnv === "preview" && (LOCALHOST_PATTERN.test(clean) || !clean.startsWith("https://"))) {
+      throw new Error(
+        `Invalid staging payment callback base URL "${clean}". Staging must use a public HTTPS domain.`
+      );
+    }
+    return clean;
+  }
+
+  if (appEnv === "preview") {
+    throw new Error(
+      "Staging payment callback base URL is not configured. Set NEXT_PUBLIC_SITE_URL to your public HTTPS staging domain."
+    );
+  }
+
+  return "http://localhost:3000";
+}
+
+/**
+ * Resolves the server-side base URL for the SSLCOMMERZ server-to-server IPN listener.
+ *
+ * Production and staging must never use `localhost` for an IPN endpoint.
+ */
+export function getPaymentIpnBaseUrl(envOverride?: AppEnvironment): string {
+  const appEnv = envOverride || getAppEnvironment();
+  const explicitIpn = process.env.PAYMENT_IPN_BASE_URL?.trim().replace(/\/+$/, "");
+  const base = explicitIpn || getPaymentCallbackBaseUrl(appEnv);
+
+  if ((appEnv === "production" || appEnv === "preview") && LOCALHOST_PATTERN.test(base)) {
+    throw new Error(
+      `Invalid IPN base URL "${base}" for ${appEnv}. Never use localhost for an externally accessible IPN endpoint.`
+    );
+  }
+
+  return base;
+}

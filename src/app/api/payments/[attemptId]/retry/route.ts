@@ -6,6 +6,7 @@ import { requireCustomerId, assertAttemptOwnership } from "@/server/payments/cus
 import { PaymentAttemptRepository } from "@/server/payments/repositories/payment-attempt.repository";
 import { verifyPaymentStatusToken } from "@/server/payments/status-token";
 import { isValidObjectId } from "@/server/payments/utils/object-id";
+import { getPaymentCallbackBaseUrl } from "@/server/payments/config/sslcommerz";
 
 export async function POST(
   req: NextRequest,
@@ -42,11 +43,7 @@ export async function POST(
       await assertAttemptOwnership(previous, userId);
     }
 
-    const appBaseUrl =
-      process.env.NEXTAUTH_URL ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      req.nextUrl.origin ||
-      "http://localhost:3000";
+    const appBaseUrl = getPaymentCallbackBaseUrl();
 
     const body = await req.json().catch(() => ({}));
 

@@ -39,9 +39,9 @@ export class ProcessSuccessService {
     }
 
     const alreadySuccessful = isSuccessfulStatus(attempt.status);
-    const statusRedirect = `/checkout/payment-status/${attempt._id}?token=${encodeURIComponent(
-      createPaymentStatusToken(String(attempt._id))
-    )}`;
+    const statusRedirect = `/checkout/payment/result?attemptId=${encodeURIComponent(
+      String(attempt._id)
+    )}&token=${encodeURIComponent(createPaymentStatusToken(String(attempt._id)))}`;
 
     await PaymentEventRepository.recordEvent({
       attemptId: attempt._id,

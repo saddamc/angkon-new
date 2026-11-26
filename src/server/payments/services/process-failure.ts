@@ -35,9 +35,9 @@ export class ProcessFailureService {
       };
     }
 
-    const statusUrl = `/checkout/payment-status/${attempt._id}?token=${encodeURIComponent(
-      createPaymentStatusToken(String(attempt._id))
-    )}`;
+    const statusUrl = `/checkout/payment/result?attemptId=${encodeURIComponent(
+      String(attempt._id)
+    )}&token=${encodeURIComponent(createPaymentStatusToken(String(attempt._id)))}`;
 
     // Safety rule: never downgrade an already successful payment.
     if (isSuccessfulStatus(attempt.status)) {

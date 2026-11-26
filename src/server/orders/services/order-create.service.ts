@@ -9,6 +9,7 @@ import { getProductDeliveryRates, getShippingSettings } from "@/server/settings/
 import { getCheckoutSettings } from "@/server/settings/checkout-settings";
 import { getAllDbProducts } from "@/lib/db/products";
 import { initiateSslcommerzForOrder } from "@/server/payments/initiate";
+import { getPaymentCallbackBaseUrl } from "@/server/payments/config/sslcommerz";
 import {
   COD_PAYMENT_METHOD,
   isOnlinePaymentMethod,
@@ -86,7 +87,7 @@ export async function respondWithExistingOrder(existing: ReplayOrderShape, reque
     if (!gatewayUrl) {
       const resumed = await initiateSslcommerzForOrder(
         existing as unknown as IOrder,
-        getSiteUrl(request)
+        getPaymentCallbackBaseUrl()
       );
       if (resumed.ok) gatewayUrl = resumed.gatewayUrl;
     }
@@ -449,7 +450,7 @@ export async function processCustomerOrder({
 
     let gatewayUrl: string | null = null;
     if (isOnlineMethod) {
-      const gateway = await initiateSslcommerzForOrder(newOrder, getSiteUrl(request));
+      const gateway = await initiateSslcommerzForOrder(newOrder, getPaymentCallbackBaseUrl());
       if (!gateway.ok) {
         await releaseStockForOrder(newOrder);
         await Order.updateOne(

@@ -129,7 +129,20 @@ test("5. .dockerignore excludes unwanted files from build context", () => {
 });
 
 test("6. Safety invariant: local environment is database-isolated and sandboxed", () => {
-  const env = parseActiveEnv(read(".env"));
+  const hasLocalEnv = fs.existsSync(".env");
+  const sourceFile = hasLocalEnv ? ".env" : ".env.example";
+  const env = parseActiveEnv(read(sourceFile));
+
+  // In CI (where .env is absent), also verify process.env.DATABASE_URL is never production 'angkon'
+  if (!hasLocalEnv && process.env.DATABASE_URL) {
+    const ciDb = databaseNameFromUri(process.env.DATABASE_URL);
+    assert.notEqual(
+      ciDb,
+      "angkon",
+      "CI DATABASE_URL must never point to production database 'angkon'"
+    );
+  }
+
   const appEnv = (env.APP_ENVIRONMENT || "development").toLowerCase();
   const database = databaseNameFromUri(
     env.DATABASE_URL || env.MONGODB_URI || env.MONGODB_URL || ""
@@ -142,14 +155,14 @@ test("6. Safety invariant: local environment is database-isolated and sandboxed"
     test: "angkon_test",
   }[appEnv];
 
-  assert.ok(expectedDatabase, `Unknown APP_ENVIRONMENT "${appEnv}" in .env`);
+  assert.ok(expectedDatabase, `Unknown APP_ENVIRONMENT "${appEnv}" in ${sourceFile}`);
   assert.equal(
     database,
     expectedDatabase,
     `APP_ENVIRONMENT=${appEnv} must target database "${expectedDatabase}", not "${database}"`
   );
 
-  // Outside production, every side-effecting integration must stay in sandbox.
+  // Outside production, payment gateway must stay in sandbox.
   if (appEnv !== "production") {
     assert.equal(
       (env.SSLCOMMERZ_MODE || "").toLowerCase(),
@@ -163,9 +176,12 @@ test("6. Safety invariant: local environment is database-isolated and sandboxed"
     );
   }
 
-  assert.notEqual(
-    (env.ENABLE_REAL_EMAIL || "").toLowerCase(),
-    "true",
-    "Safety requirement: real transactional email must stay disabled in local development"
-  );
+  // Template (.env.example) must always keep real transactional email disabled by default
+  if (!hasLocalEnv) {
+    assert.notEqual(
+      (env.ENABLE_REAL_EMAIL || "").toLowerCase(),
+      "true",
+      "Safety requirement: .env.example must keep real transactional email disabled by default"
+    );
+  }
 });

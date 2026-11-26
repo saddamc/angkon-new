@@ -52,12 +52,15 @@ test("Manual DB Selection: Supported application databases are angkon_dev and an
   assert.ok(ALL_SUPPORTED_DATABASES.includes("angkon_test"));
 });
 
-test("Manual DB Selection: Unsupported database names are rejected immediately", () => {
-  const invalidUri = "mongodb+srv://admin:pass@cluster.mongodb.net/random_db?retryWrites=true";
-  const res = validateDatabaseConnection(invalidUri, "development");
-  assert.equal(res.valid, false);
-  assert.match(res.error || "", /UNSUPPORTED_DATABASE/);
-  assert.match(res.error || "", /random_db/);
+test("Manual DB Selection: Any custom database name in DATABASE_URL is allowed without whitelist blocking", () => {
+  const customUri = "mongodb+srv://admin:pass@cluster.mongodb.net/angkon_custom_2026?retryWrites=true";
+  const devRes = validateDatabaseConnection(customUri, "development");
+  assert.equal(devRes.valid, true);
+  assert.equal(devRes.actualDatabase, "angkon_custom_2026");
+
+  const prodRes = validateDatabaseConnection(customUri, "production");
+  assert.equal(prodRes.valid, true);
+  assert.equal(prodRes.actualDatabase, "angkon_custom_2026");
 });
 
 test("Permitted Combination 1: Development DB + Sandbox Payment + Mock Courier", () => {
@@ -258,11 +261,13 @@ test("Safety Bypass: Non-production connecting to 'angkon' with ALLOW_PRODUCTION
   }
 });
 
-test("Safety Rejection: Production connecting to non-angkon database is strictly rejected", () => {
+test("Manual DB Selection: Production allows manually configured 'angkon_dev' via DATABASE_URL with notice", () => {
   const devUri = "mongodb+srv://user:pass@cluster.mongodb.net/angkon_dev?retryWrites=true";
   const res = validateDatabaseConnection(devUri, "production");
-  assert.equal(res.valid, false);
-  assert.match(res.error || "", /CRITICAL PRODUCTION CONFIGURATION ERROR/);
+  assert.equal(res.valid, true);
+  assert.equal(res.actualDatabase, "angkon_dev");
+  assert.equal(res.isProductionDatabase, false);
+  assert.match(res.productionWarning || "", /angkon_dev/);
 });
 
 test("Safety Rejection: Live payment mode with sandbox store ID (testbox) is rejected", () => {

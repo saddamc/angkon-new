@@ -148,15 +148,24 @@ async function run() {
     testCheck.error
   );
 
-  // Check Production rejecting non-angkon DB
+  // Check Production allowing any manually configured DB in DATABASE_URL
   const prodCheck = validateDatabaseConnection(
     "mongodb+srv://user:pass@cluster0.sdaudkh.mongodb.net/angkon_dev",
     "production"
   );
   assertCheck(
-    "Non-Production DB Access STRICTLY DENIED from Production",
-    !prodCheck.valid && prodCheck.error.includes("CRITICAL PRODUCTION CONFIGURATION ERROR"),
+    "Production allows manually configured angkon_dev via DATABASE_URL",
+    prodCheck.valid && prodCheck.actualDatabase === "angkon_dev",
     prodCheck.error
+  );
+  const prodCustomCheck = validateDatabaseConnection(
+    "mongodb+srv://user:pass@cluster0.sdaudkh.mongodb.net/angkon_custom_db",
+    "production"
+  );
+  assertCheck(
+    "Production allows any custom DB name configured in DATABASE_URL",
+    prodCustomCheck.valid && prodCustomCheck.actualDatabase === "angkon_custom_db",
+    prodCustomCheck.error
   );
 
   // ── 6. SSLCOMMERZ Sandbox Containment in Production ──

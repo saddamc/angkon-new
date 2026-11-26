@@ -65,13 +65,20 @@ test("environment isolation: non-production connecting to production 'angkon' is
   }
 });
 
-test("environment isolation: production connecting to non-angkon database is strictly rejected", async () => {
+test("environment isolation: production allows any database configured in DATABASE_URL", async () => {
   const { validateDatabaseConnection } = await import("../src/server/env/app-environment.ts");
 
   const devUri = "mongodb+srv://user:secret@cluster0.sdaudkh.mongodb.net/angkon_dev?retryWrites=true";
-  const res = validateDatabaseConnection(devUri, "production");
-  assert.equal(res.valid, false);
-  assert.match(res.error || "", /CRITICAL PRODUCTION CONFIGURATION ERROR/);
+  const devRes = validateDatabaseConnection(devUri, "production");
+  assert.equal(devRes.valid, true);
+  assert.equal(devRes.actualDatabase, "angkon_dev");
+  assert.equal(devRes.isProductionDatabase, false);
+  assert.match(devRes.productionWarning || "", /manually configured via DATABASE_URL/);
+
+  const customUri = "mongodb+srv://user:secret@cluster0.sdaudkh.mongodb.net/angkon_v2_custom?retryWrites=true";
+  const customRes = validateDatabaseConnection(customUri, "production");
+  assert.equal(customRes.valid, true);
+  assert.equal(customRes.actualDatabase, "angkon_v2_custom");
 });
 
 test("environment isolation: conflicting connection variables are rejected", async () => {

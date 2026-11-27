@@ -88,12 +88,11 @@ test("Marketing (Super Admin only) lives in the Operations group, after Couriers
 });
 
 test("Marketing and Users & Access stay hidden from non-superadmin accounts", () => {
+  const superAdminOnlyItems =
+    layout.match(/if\s*\(([^)]*)\)\s*\{\s*return isSuperAdmin;\s*\}/)?.[1] || "";
   assert.ok(
-    layout.includes('if (item.href === "/admin/meta" || item.href === "/admin/users")'),
-    "the nav filter must keep hiding Marketing and Users & Access from admins"
-  );
-  assert.ok(
-    layout.includes('return isSuperAdmin;'),
-    "both restricted items must resolve through the superadmin role check"
+    superAdminOnlyItems.includes('item.href === "/admin/meta"') &&
+      superAdminOnlyItems.includes('item.href === "/admin/users"'),
+    "Marketing and Users & Access must remain behind the superadmin role check"
   );
 });
